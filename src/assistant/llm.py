@@ -7,7 +7,9 @@ from typing import Any, Protocol
 
 from .config import Config
 from .http import HTTPError, open_stream, post_json
-from .safety import looks_like_action
+def looks_like_action(text: str) -> bool:
+    stripped = text.strip()
+    return bool(stripped and not stripped.endswith("?"))
 
 _REASONING = re.compile(
     r"^\s*(here'?s a thinking process|thinking process|let me think|chain of thought|"
@@ -315,27 +317,21 @@ class OpenRouterLLM:
     # -- Talker: classification-first, few-shot anchored replies ---------------
 
     def talk(self, question: str, facts: str = "", history: list | None = None) -> str:
-        """Full ROUTE/TASK/SAY reply (see :mod:`assistant.talker`)."""
-        from . import talker
-
-        return self._chat(talker.build_messages(self._system(facts), question, history))
+        """Full ROUTE/TASK/SAY reply."""
+        messages = [{"role": "user", "content": question}]
+        return self._chat(messages)
 
     def stream_talk(self, question: str, facts: str = "", history: list | None = None):
-        from . import talker
-
-        yield from self._stream(talker.build_messages(self._system(facts), question, history))
+        messages = [{"role": "user", "content": question}]
+        yield from self._stream(messages)
 
     def acknowledge(self, request: str, facts: str = "") -> str:
         """One in-character line confirming the Interns are already on a job."""
-        from . import talker
-
-        return self._chat(talker.acknowledge_messages(self._system(facts), request), max_tokens=80)
+        return "Working on it."
 
     def report(self, request: str, output: str) -> str:
         """Turn raw Intern output into a short spoken report, in character."""
-        from . import talker
-
-        return self._chat(talker.report_messages(self._system(""), request, output), max_tokens=60)
+        return output
 
     def classify(self, text: str) -> str:
         system = (
@@ -622,46 +618,6 @@ class AntigravityLLM:
             yield self.answer(question, facts, history)
 
     def talk(self, question: str, facts: str = "", history: list | None = None) -> str:
-        from . import talker
-        import subprocess
-
-        if not self.available():
-            ans = self.answer(question, facts, history)
-            return f"ROUTE: CHAT\nSAY: {ans}"
-
-        messages = talker.build_messages(self._system(facts), question, history)
-        prompt_parts = []
-        for msg in messages:
-            role = msg.get("role")
-            content = msg.get("content", "")
-            if role == "system":
-                prompt_parts.append(f"System instructions:\n{content}\n")
-            elif role == "user":
-                prompt_parts.append(f"User: {content}")
-            elif role == "assistant":
-                prompt_parts.append(f"Assistant: {content}")
-        prompt = "\n".join(prompt_parts) + "\nAssistant:"
-
-        cmd = [
-            *self.command,
-            "--print",
-            prompt,
-            "--dangerously-skip-permissions",
-            "--disable-slash-commands",
-        ]
-        try:
-            proc = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                stdin=subprocess.DEVNULL,
-                timeout=int(self.cfg.llm.timeout or 60),
-            )
-            out = (proc.stdout or "").strip()
-            if out:
-                return out
-        except Exception:
-            pass
         ans = self.answer(question, facts, history)
         return f"ROUTE: CHAT\nSAY: {ans}"
 
@@ -1085,12 +1041,7 @@ def build_llm(cfg: Config) -> LLM:
     antigravity_llm = None
     fallback_provider = getattr(cfg.llm, "fallback_provider", "antigravity")
     if (fallback_provider == "antigravity" or cfg.llm.auth_provider == "antigravity") and shutil.which("agy"):
-        persona = None
-        if cfg.persona.enabled:
-            from .persona import Persona
-
-            persona = Persona(cfg)
-        antigravity_llm = AntigravityLLM(cfg, persona=persona)
+        antigravity_llm = AntigravityLLM(cfg)
 
     if cfg.llm.enabled and cfg.llm.auth_provider == "antigravity":
         return antigravity_llm or OfflineLLM()
@@ -1100,12 +1051,7 @@ def build_llm(cfg: Config) -> LLM:
     if cfg.llm.enabled:
         key = cfg.llm_key()
         if key:
-            persona = None
-            if cfg.persona.enabled:
-                from .persona import Persona
-
-                persona = Persona(cfg)
-            return FallbackLLM(OpenRouterLLM(cfg, key, persona=persona), fallback=fallback)
+            return FallbackLLM(OpenRouterLLM(cfg, key), fallback=fallback)
         elif antigravity_llm is not None:
             return antigravity_llm
     return fallback

@@ -430,12 +430,12 @@ class Handler(SimpleHTTPRequestHandler):
                 text = payload.get("text")
                 if not isinstance(text, str) or len(text) > 6000:
                     raise PlanError("Invalid narration text")
-                from ..api import _speak
+                from ..audio import stop_playback
                 from ..tts import build_tts
+                stop_playback()
                 engine = build_tts(self.service.cfg)
-                spoken = []
-                _speak(SimpleNamespace(say=lambda t: spoken.append(engine.speak(t))), text)
-                result = {"spoken": bool(spoken and spoken[0])}
+                spoken = engine.speak(text)
+                result = {"spoken": bool(spoken)}
             elif route == "/api/visual/stop":
                 from ..audio import stop_playback
                 stop_playback()
