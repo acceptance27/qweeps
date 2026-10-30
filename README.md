@@ -2,159 +2,113 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23791785.svg)](https://doi.org/10.5281/zenodo.23791785)
 [![ORCID](https://img.shields.io/badge/ORCID-0009--0003--2325--7968-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0009-0003-2325-7968)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code: PolyForm Noncommercial](https://img.shields.io/badge/Code-PolyForm_Noncommercial-blue.svg)](LICENSE)
+[![Documentation: CC BY-NC 4.0](https://img.shields.io/badge/Documentation-CC_BY--NC_4.0-lightgrey.svg)](LICENSE-DOCUMENTATION)
 
-> AI-generated visual lessons with synchronized narration, interactive exploration, and contextual Q&A.
+AI-generated visual lessons with synchronized narration, interactive exploration, and contextual Q&A.
 
----
+QWEEPS is an experimental local teaching system that turns a question or supplied document into a live visual explanation. It plans connected reasoning beats, chooses a presentation method for each beat, generates scene data, and checks content and actual browser-rendered frames before making a lesson available.
 
-## What is QWEEPS?
+Learners can pause, move through the explanation, inspect objects or a selected region, ask questions, and request a focused visual branch. The browser scenes use SVG, GSAP and a Hyperframes adapter. **Live playback does not require baking an MP4.** Native Manim export and rendering are separate, optional paths.
 
-QWEEPS is a local, voice-first companion and system coordinator for Omarchy Linux workstations with an autonomous visual teaching engine. It pairs AI-generated visual lessons, interactive step-by-step simulations, and synchronized narration with built-in desktop skills and coding agents.
+The project also includes the Omarchy desktop assistant from which it developed. Its existing CLI and configuration directory retain the `omarchy-assistant` name.
 
-QWEEPS operates under a **Talker-Reasoner** architecture:
-- **The Talker (Quick-Response Voice Layer)**: Uses a fast non-thinking model (DeepSeek V4.1 Flash via OpenRouter/OpenCode Zen) framed as the voice interface of the local daemon. It answers questions, chats, and coordinates hand-offs with sub-second latency.
-- **The Reasoner / Hands ("My Interns")**: When a task requires local filesystem manipulation, code execution, system monitoring, or complex desktop operations, QWEEPS delegates the task to background coding agents (such as `opencode` or `antigravity`).
-- **The Voice Stack**: Speech-to-text (STT) powered by Voxtype (Whisper / Cohere / Parakeet) paired with natural text-to-speech (TTS) powered by Fish Audio (`s2.1-pro-free` via OpenRouter), local Piper, or eSpeak.
+## Project status
 
----
+This is a research and development prototype. Automated review can miss factual, visual and teaching errors; it is not independent expert review or evidence of improved learning outcomes. External providers can time out or become unavailable.
 
-## Architecture & Request Flow
+The archive includes **How Massless Light Materializes into Matter**, a saved interactive lesson with narration audio. Its saved review records approval by QWEEPS's automated content and rendered-frame checks. This is a reproducible demonstration artifact, not a guarantee that every new request will produce an equally good lesson.
+
+## Try the bundled lesson
+
+### Requirements
+
+- Python 3.11 or newer and a browser. The primary development environment is Linux/Omarchy; other platforms have not been established as supported.
+- The supplied `visual-studio/dist/` and `bundled-lessons/` directories, retained alongside the source checkout. A Python package installation alone does not bundle the whole studio.
+- For **new lesson generation and contextual Q&A** with the default configuration: an installed, authenticated Antigravity CLI (`agy`) with access to the configured models.
+- For **new Fish narration**: an OpenRouter API key and the configured Fish model/voice, plus the local speech-alignment runtime described in [visual learning documentation](docs/visual-learning.md). Playing the included recording does not require generating it again.
+
+### Install from the source checkout
+
+```bash
+git clone https://github.com/acceptance27/qweeps.git
+cd qweeps
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+```
+
+If using the Zenodo ZIP, extract it and run the same environment/install commands from its root instead of cloning. Keep the checkout in place when using the editable installation.
+
+With the default generation provider installed and configured, start the studio:
+
+```bash
+python -m assistant.visual.server
+```
+
+Open [the studio](http://127.0.0.1:4174), or [the bundled lesson](http://127.0.0.1:4174/?lesson=61d56323819e14949204a5e95f1214fc).
+
+The supplied build requires no npm command for playback. Provider construction happens at server startup, so the default configuration still requires `agy` even when opening a saved lesson.
+
+**Replay without provider access:** in `~/.config/omarchy-assistant/config.toml`, set `enabled = false` under `[llm]` and `provider = "none"` under `[tts]` before starting the server. Retain the other settings for later use. This disables new AI generation, AI answers and speech synthesis; the bundled lesson and its saved audio remain available. Re-enable the relevant providers for live questions or new lessons.
+
+### Controls
+
+- **Left / Right:** move to the previous or next beat at its completed state.
+- **Shift + Left / Right:** move to the start of the previous or next beat.
+- Pause or seek to revisit a construction; select objects or a region to provide question context.
+- **Ask & Explore:** ask about the current scene or request a visual branch, then return to the saved parent state.
+
+See [setup, controls, architecture and limitations](docs/visual-learning.md) for details.
+
+## How the teaching pipeline works
 
 ```mermaid
 flowchart TD
-    User([User Voice / Text]) --> STT[STT: Voxtype / Whisper]
-    STT --> Dispatcher{Local Fast Dispatcher}
-
-    Dispatcher -->|Polite Command / Exact Regex| Builtin[Built-in Skills: Time, Timer, Desktop, Notes...]
-    Dispatcher -->|Explicit Hand-off / Risky Action| Interns[Interns: opencode / antigravity]
-    Dispatcher -->|General Chat / Ambiguous Request| Talker[Fast Talker: DeepSeek Flash]
-
-    Talker -->|ROUTE: CHAT| VoiceOut[Fish Audio TTS]
-    Talker -->|ROUTE: INTERNS| ParallelDispatch[Parallel Ack + Interns Execution]
-
-    ParallelDispatch --> VoiceOut
-    ParallelDispatch --> Interns
-    Interns --> SkillPromotion[Automatic Skill Learning & Promotion]
-    Interns --> ReportOut[Talker Voice Summary]
-    ReportOut --> VoiceOut
+    Input[Question or supplied document] --> Plan[Connected teaching plan]
+    Plan --> Direction[Per-beat presentation and scene data]
+    Direction --> Content[Content and narrative checks]
+    Content --> Frames[Browser-rendered frame capture]
+    Frames --> Review[Automated visual review]
+    Review -->|Approved| Live[Live interactive lesson]
+    Review -->|Needs revision| Repair[Bounded targeted revision]
+    Repair --> Content
+    Live --> Ask[Contextual questions and visual branches]
+    Ask --> Return[Return to saved parent state]
 ```
 
-### Key Architectural Behaviors
-1. **Classification-First Protocol (`ROUTE / TASK / SAY`)**: The Talker is forced to decide `ROUTE: CHAT` vs `ROUTE: INTERNS` before outputting conversational text, eliminating LLM capability refusals.
-2. **Parallel Acknowledgment**: When an action is sent to the Interns, QWEEPS confirms immediately out loud (*"On it! My Interns are closing the browser and checking CPU usage now..."*) while the Interns begin work simultaneously in the background.
-3. **Unified Speech Delivery**: Full sentences are sent to Fish Audio at once for seamless, natural voice prosody without mid-sentence chops.
-4. **Autonomous Skill Promotion**: Headless agent tasks that reduce to single commands are saved as persistent skills, turning one-off terminal actions into instant local tools.
+- **Choose methods per beat:** geometric construction, descriptive infographic, worked execution, comparison or another approach appropriate to the inference. A lesson need not repeat one layout throughout.
+- **Keep reasoning connected:** preserve object identities and explain why the next question follows from the previous result.
+- **Validate scene data:** reject unsupported fields or incomplete outputs rather than inventing missing geometry.
+- **Inspect actual frames:** review early and completed states, plus intermediate states for diagrams. Failed candidates remain unapproved after the bounded revision allowance is exhausted.
+- **Synchronize to generated speech:** map exact narration phrases to measured word timing, rather than asking the model to guess audio timestamps.
+- **Preserve exploration context:** include the parent scene, time, selection, camera and experiment state when branching.
 
----
+The maintained teaching skill draws on PDF Explainer, Math 01, A* Pathfinding & Heuristics and the accepted Rizal reference. These are authoring references, not evidence of equivalence to their visual quality or to 3Blue1Brown's work.
 
-## What QWEEPS Can Do
+## Current limitations and proposed work
 
-### 1. Instant Built-in Skills (Sub-100ms)
-- **Time & Stopwatch**: Check the current time, start/stop/query stopwatches.
-- **Timers & Reminders**: Set countdown timers or schedule reminders (`"remind me to check the oven in 15 minutes"`).
-- **Desktop & Hyprland Control**:
-  - Focus, move, or close workspace tiles (`"move this window to workspace 3"`).
-  - Toggle fullscreen, floating, top bar, scratchpad, or night light.
-  - Adjust system volume (`"set volume to 80"`, `"mute"`).
-  - Open new browser windows or search sites (`"search github for fastchat"`).
-- **Window Queries**: Inspect what apps and coding agents are currently open.
-- **App Launcher**: Launch applications by name (`"open firefox"`, `"launch terminal"`).
-- **Configured Routes**: Deep links and shortcut launchers (e.g. Teams, Web links).
-- **System Status**: Check whether STT, TTS, LLM, or agent backends are operational.
+- Generated explanations can contain incorrect facts, unclear mechanisms, overlaps or poor visual choices despite passing automated checks. General-topic model review is not the same as verification against retrieved sources.
+- Generated choice interactions highlight cases and explain consequences; they are not a general numerical simulation engine. The authored A* demonstration has its own executable grid-search behavior.
+- Provider response times vary. There is no guaranteed sub-second response or first-pass lesson approval. Interrupted preparation can resume saved checkpoints where available.
+- Default lesson requests have a bounded Antigravity timeout. A timeout alone does not identify whether the cause was reasoning, response length, transport failure or provider delay.
+- **Proposed, not implemented as a general system:** perimeter-port routing for diagrams, relative annotation constraints, failed-frame images supplied directly to the reviser, and selective bounding-box collision telemetry. Existing text-fit checks are more limited.
+- No controlled model ranking, learning-outcome study or fixed recall improvement is claimed.
 
-### 2. Interactive Visual Learning
-- **Live AI conversation**: Ask the configured QWEEPS model about the current time, selected objects or region, and attached source excerpts.
-- **Actual A* grid trace**: Inspect the open queue, accumulated costs, walls, parent links and shortest path. Drag S/G to recompute.
-- **Reference-guided teaching harness**: Plan visual inferences, direct the animation, and review the explanation against PDF Explainer, Math 01, and A* Pathfinding & Heuristics.
-- **Saved branches**: Open a visual answer and return to the parent's saved time, camera, selection and experiment.
-- **Manim export/rendering**: Compile generated plans into Manim Community Edition scenes and preview MP4 output.
-- **Shared controls**: Voice, browser and optional MCP tools use the same local session.
-- **Autonomous Multi-Stage Visual Generation**: Autonomously plans, scripts, generates SVG vector diagrams, conducts automated physics & narrative consistency checks, captures real browser screenshots, and executes multimodal vision reviews using Gemini 3.8 Flash Vision.
-- **Bundled Lesson Included**: Includes the published, fully-reviewed interactive lesson *"How Massless Light Materializes into Matter"* (`bundled-lessons/`) complete with synchronized narration audio.
+Read the [technical report](docs/QWEEPS_Live_Visual_Teaching_Technical_Report.pdf) for the implementation audit, proposed layout/revision design and evaluation plan.
 
-#### Quick Start (Visual Learning & Bundled Lesson)
-```bash
-# Start the local visual studio server (uses pre-built bundle, no npm required)
-python -m assistant.visual.server
+## Models, narration and configuration
 
-# Open http://127.0.0.1:4174 in your browser
-# Or play the bundled lesson directly:
-# http://127.0.0.1:4174/?lesson=61d56323819e14949204a5e95f1214fc
-```
+Configuration is stored at `~/.config/omarchy-assistant/config.toml`. Roles are configurable; the inspected defaults separate ordinary chat from lesson work:
 
-See [visual learning setup, controls, architecture and limitations](docs/visual-learning.md).
-
-### 3. Personal Knowledge & Productivity
-- **Notes**: Create, read, and search local Markdown notes in your vault (`~/Documents/Vault` or `~/Documents/Notes`).
-- **Documents & Deep Research**: Draft long-form Markdown documents or conduct multi-step web research reports.
-- **Long-Term Memory**: Remember user preferences and personal facts (`"remember that I prefer dark mode"`).
-- **Semantic RAG**: Instant local semantic search over notes and documentation using SQLite embeddings.
-- **Google Calendar & Drive Integration**: OAuth-backed calendar event queries, event scheduling, and Google Docs synchronization.
-
-### 4. "The Interns" (Autonomous System Execution)
-Anything outside built-in skills is seamlessly dispatched to coding agents (`opencode` or `antigravity`):
-- Run shell commands and diagnostics (`"check disk space on all mounted drives"`).
-- Kill processes or unbind ports (`"kill whatever is listening on port 8080"`).
-- Read, modify, compile, or debug code in your workspaces.
-- Check hardware metrics (CPU, GPU load, temperatures, battery).
-- Install packages and configure Arch Linux software.
-- In-character progress reporting and spoken summaries of complex output.
-
----
-
-## Installation & Setup
-
-### Requirements
-- Linux (Arch Linux / Omarchy recommended)
-- Python >= 3.11
-- Hyprland (for desktop window management features)
-- `mpv` or `ffplay` (for audio playback)
-- OpenRouter API key (for Fish Audio TTS & DeepSeek Flash LLM) or local Piper/eSpeak
-
-### Quick Install
-```bash
-cd omarchy-assistant
-./packaging/install.sh
-```
-
-### Hyprland Keybinding
-Add the summon hotkey to your `~/.config/hypr/bindings.lua` (or `hyprland.conf`):
-```lua
-o.bind("SUPER + SHIFT + A", "Ask QWEEPS", "omarchy-assistant summon")
-```
-
----
-
-## CLI Reference
-
-`omarchy-assistant` includes a rich command-line interface:
-
-| Command | Description |
+| Role | Default route |
 |---|---|
-| `omarchy-assistant text "..."` | Handle a single text input turn and speak the result |
-| `omarchy-assistant chat` | Interactive conversational terminal REPL |
-| `omarchy-assistant listen` | Listen from microphone, transcribe with STT, and respond |
-| `omarchy-assistant summon` | Pop up an interactive desktop input prompt |
-| `omarchy-assistant ask "..."` | Stream newline-delimited tokens for desktop GUI overlays |
-| `omarchy-assistant doctor` | Diagnostic report of LLM, TTS, STT, and Intern dependencies |
-| `omarchy-assistant skills [list/remove]` | View or manage registered built-in and promoted skills |
-| `omarchy-assistant capabilities [list]` | View available vs. planned capabilities |
-| `omarchy-assistant interns [list/clear]` | Inspect running and historical agent tasks |
-| `omarchy-assistant facts [list/add/forget]` | Manage remembered user facts |
-| `omarchy-assistant sessions [list/show/clear]` | Inspect or wipe conversation history |
-| `omarchy-assistant set-key` | Configure and persist your OpenRouter API key |
-| `omarchy-assistant set-calendar` | Run Google OAuth setup for Calendar & Drive sync |
-| `omarchy-assistant visual [topic]` | Launch or control interactive 3Blue1Brown visual explainers (e.g. `astar`) |
-| `omarchy-assistant api` | Run OpenAI-compatible HTTP server (`127.0.0.1:8765`) for Home Assistant |
-| `omarchy-assistant serve` | Start the background timer and reminder notification daemon |
-| `omarchy-assistant logs` | View recent assistant runtime logs |
+| General conversation and orchestration text | OpenRouter: `nvidia/nemotron-3.5-super-vl:free` |
+| Lesson planning, direction, review, narration writing and lesson Q&A | Antigravity: `gemini-3.8-flash-high` |
+| Speech synthesis | Configurable independently; the default is eSpeak, with Fish via OpenRouter and Piper as options |
+| Speech recognition | Voxtype by default; optional for typed/browser use |
 
----
-
-## Configuration (`config.toml`)
-
-The configuration file is located at `~/.config/omarchy-assistant/config.toml`.
+These are configured route identifiers, not guarantees of current provider availability or price. Lesson narration writing and voice synthesis are different stages: changing the lesson model does not change the selected voice.
 
 ```toml
 [llm]
@@ -164,66 +118,96 @@ auth_provider = "openrouter"
 api_key_env = "OPENROUTER_API_KEY"
 model = "nvidia/nemotron-3.5-super-vl:free"
 fallback_models = []
-fallback_provider = "offline"             # antigravity | offline
+fallback_provider = "offline"
 visual_provider = "antigravity"
 visual_model = "gemini-3.8-flash-high"
 visual_vision_model = "gemini-3.8-flash-high"
-classify_mode = "local"
 reasoning_effort = "none"
 
+# Optional Fish synthesis; this differs from the eSpeak default.
 [tts]
-provider = "openrouter"              # openrouter | piper | espeak | none
+provider = "openrouter"
 base_url = "https://openrouter.ai/api/v1"
 model = "fish-audio/s2.1-pro-free:free"
 voice = "33a2191b8fda440cae962137e9793985"
-stream = true                        # stream mp3 bytes directly into player
-split_sentences = false              # false delivers natural full-sentence prosody
-
-[stt]
-provider = "voxtype"                 # voxtype | openrouter | file | none
-engine = "whisper"                   # whisper | cohere | parakeet
-
-[agent]
-enabled = true
-command = ["opencode", "run", "--auto", "{prompt}"]
-fallback_command = ["agy", "--continue", "--print", "{prompt}"]
-visible_only = true                  # interact with open desktop agent windows
-promote_skills = true                # learn repeatable commands as persistent skills
-report = true                        # speak conversational summaries of long agent output
-
-[persona]
-enabled = true
-name = "QWEEPS"
-register = "gush"                    # gush | report
-hands = "a small crew of coding agents who are your hands"
 ```
 
----
+Use `omarchy-assistant set-key` for the OpenRouter key, or configure the documented environment variable. Antigravity uses its own authentication. See the visual documentation for alternative provider adapters and alignment requirements.
 
-## Running Tests
+## Optional desktop assistant
 
-Run the test suite using `pytest`:
+The broader assistant includes timers, reminders, notes, desktop controls, knowledge tools and coding-agent delegation. Hyprland/Omarchy is needed for the relevant desktop integrations; it is not the browser renderer.
+
+Its Talker layer handles conversational responses and can route execution to configured agents such as OpenCode or Antigravity. Routing instructions reduce inappropriate handoffs or capability refusals; they do not guarantee model compliance. Repeatable actions may be promoted into skills according to the configured promotion policy.
+
+After installing from the checkout, the optional desktop installer links the launcher and enables the user timer/reminder service:
+
 ```bash
-uv run --with pytest pytest tests/
+./packaging/install.sh
+omarchy-assistant doctor
 ```
-Tests cover routing, voice, visual model validation, scene context, session isolation, and the local API.
 
----
+The installer does not install or authenticate external model, audio or desktop dependencies. Audio tools such as `mpv` or `ffplay`, STT software and system integrations depend on the enabled features.
 
-## Citation & Prior Art
+| Command | Purpose |
+|---|---|
+| `omarchy-assistant text "..."` | Handle a text request |
+| `omarchy-assistant chat` | Open a terminal conversation |
+| `omarchy-assistant visual [topic]` | Open the visual interface |
+| `omarchy-assistant doctor` | Inspect configured dependencies |
+| `omarchy-assistant set-key` | Configure the OpenRouter key |
+| `omarchy-assistant --help` | List available CLI commands |
 
-If you reference or build upon QWEEPS in research, publications, or benchmarks:
+## Development and checks
+
+Backend checks, from the repository root:
+
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest tests/
+```
+
+Frontend development requires Node.js/npm and the studio's dependencies:
+
+```bash
+cd visual-studio
+npm ci
+npm test
+npm run lint
+npm run build
+```
+
+Automated tests exercise software behavior, including routing, validation, cue timing, navigation and saved branch state. Fixture or mocked-provider tests do not establish successful fresh model generation or teaching effectiveness.
+
+## Citation and attribution
+
+Author: **Rayven Pahignalo** · [ORCID 0009-0003-2325-7968](https://orcid.org/0009-0003-2325-7968)
 
 ```bibtex
 @software{pahignalo_qweeps_2026,
   author       = {Pahignalo, Rayven},
-  title        = {QWEEPS — Live Interactive Visual Teaching},
+  title        = {QWEEPS: Live Interactive Visual Teaching},
   year         = 2026,
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.23791785},
   url          = {https://doi.org/10.5281/zenodo.23791785}
 }
 ```
-- **Zenodo DOI**: [10.5281/zenodo.23791785](https://doi.org/10.5281/zenodo.23791785)
-- **Author ORCID**: [0009-0003-2325-7968](https://orcid.org/0009-0003-2325-7968)
 
+## Licensing
+
+- **Application code:** [PolyForm Noncommercial License 1.0.0](LICENSE).
+- **Technical report and QWEEPS-authored documentation/lesson content:** [CC BY-NC 4.0](LICENSE-DOCUMENTATION), subject to the exclusions in [LICENSING.md](LICENSING.md).
+- **Third-party materials:** retain their own licenses and attribution notices.
+
+This release is source-available with noncommercial restrictions. PolyForm defines
+its permitted purposes, including specified organizational uses; commercial uses
+outside those permissions require separate authorization. See the full license
+rather than assuming every research or educational activity is covered.
+
+Earlier MIT grants are not revoked by this change. See [licensing scope and prior
+releases](LICENSING.md) for details. For reproducible references, identify the
+release or commit and the deposited archive version.
+
+An unrelated teaching PDF with unverified redistribution permission is excluded
+from this release. See the [redistribution review](docs/redistribution-review.md).
