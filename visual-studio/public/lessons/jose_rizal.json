@@ -1,0 +1,328 @@
+{
+  "id": "jose_rizal",
+  "title": "José Rizal · a life, an argument, a national symbol",
+  "question": "How did a doctor and novelist become a national symbol?",
+  "visual_design": {
+    "family": "persistent spatial history with concrete objects, organizational comparison and aligned chronology",
+    "encodings": "Cyan: Rizal’s identity and work. Gold: writing and learning. Coral: colonial restriction and execution. Green: civic/community work. Spatial position connects scenes; timelines alone encode chronological order.",
+    "misreading": "Rizal founded the Katipunan or his execution began the 1896 revolution.",
+    "safeguard": "Separate labeled groups and aligned August/December tracks; influence is distinguished from leadership."
+  },
+  "sources": [
+    {
+      "id": "birth",
+      "title": "NCCA — Rizal birth and commemoration",
+      "url": "https://ncca.gov.ph/about-culture-and-arts/in-focus/nation-observes-142nd-birth-anniversary-of-jose-rizal/"
+    },
+    {
+      "id": "museum",
+      "title": "Intramuros Administration — Museo ni Rizal",
+      "url": "https://intramuros.gov.ph/mnr/"
+    },
+    {
+      "id": "liga",
+      "title": "NHCP — La Liga Filipina historical marker",
+      "url": "https://philhistoricsites.nhcp.gov.ph/registry_database/la-liga-filipina/"
+    },
+    {
+      "id": "dapitan",
+      "title": "City of Dapitan — Rizal Shrine",
+      "url": "https://dapitancity.gov.ph/rizal-shrine/"
+    },
+    {
+      "id": "revolution",
+      "title": "NCCA — Bonifacio and the 1896 Revolution",
+      "url": "https://ncca.gov.ph/about-culture-and-arts/in-focus/andres-bonifacio-and-the-1896-revolution/"
+    },
+    {
+      "id": "chronology",
+      "title": "Library of Congress — Philippines: a country study",
+      "url": "https://tile.loc.gov/storage-services/master/frd/frdcstdy/ph/philippinescount00dola_0/philippinescount00dola_0.pdf"
+    },
+    {
+      "id": "law",
+      "title": "Philippine Senate — Republic Act 1425, 1956",
+      "url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Republic%20Act%20No.%201425"
+    }
+  ],
+  "chapters": [
+    {
+      "id": "formation",
+      "title": "A person before a monument",
+      "years": "1861–1886",
+      "question": "What tools did Rizal develop before he became a symbol?",
+      "sources": [
+        "birth",
+        "museum"
+      ],
+      "clauses": [
+        "José Rizal was born in Calamba, Laguna, in 1861. Before the monument, there was a student: his education took him from the Philippines to Europe.",
+        "He studied medicine in Manila and Madrid, and became an eye specialist. Keep the lens and the pen in view: they represent two different kinds of work, treating patients and examining society.",
+        "These journeys connected a Filipino scholar to a wider world. Our route is a schematic of selected places, not every stop he made. Now follow what the pen produced."
+      ],
+      "roles": {
+        "calamba": "Rizal was born in Calamba, Laguna, on 19 June 1861.",
+        "education-route": "Selected education locations: Manila and Madrid. Schematic route, not an exhaustive travel itinerary.",
+        "medical-lens": "Eye care represents his work as an ophthalmologist; the lens is an explanatory symbol.",
+        "writing-pen": "Rizal also wrote literature and political commentary. Medicine and writing are distinct contributions."
+      },
+      "visual_test": "A named person travels between selected places; his single identity remains while lens and pen separate into two tools.",
+      "safeguard": "Schematic route label; no implication that the route includes every journey.",
+      "start": 0.0,
+      "end": 35.479,
+      "narrationAt": 1.15,
+      "narration": "José Rizal was born in Calamba, Laguna, in 1861. Before the monument, there was a student: his education took him from the Philippines to Europe. He studied medicine in Manila and Madrid, and became an eye specialist. Keep the lens and the pen in view: they represent two different kinds of work, treating patients and examining society. These journeys connected a Filipino scholar to a wider world. Our route is a schematic of selected places, not every stop he made. Now follow what the pen produced.",
+      "audio": "/lessons/rizal/formation-091b87411174.mp3",
+      "cues": [
+        {
+          "at": 1.15,
+          "duration": 11.0759,
+          "text": "José Rizal was born in Calamba, Laguna, in 1861. Before the monument, there was a student: his education took him from the Philippines to Europe."
+        },
+        {
+          "at": 12.4459,
+          "duration": 11.3894,
+          "text": "He studied medicine in Manila and Madrid, and became an eye specialist. Keep the lens and the pen in view: they represent two different kinds of work, treating patients and examining society."
+        },
+        {
+          "at": 24.0553,
+          "duration": 11.0237,
+          "text": "These journeys connected a Filipino scholar to a wider world. Our route is a schematic of selected places, not every stop he made. Now follow what the pen produced."
+        }
+      ]
+    },
+    {
+      "id": "novels",
+      "title": "How a novel becomes a public argument",
+      "years": "1887 · 1891",
+      "question": "How could writing challenge colonial society?",
+      "sources": [
+        "museum"
+      ],
+      "clauses": [
+        "Noli Me Tangere appeared in Berlin in 1887. El Filibusterismo followed in Ghent in 1891. Open the books: the subject was society under Spanish colonial rule, not an instruction manual for battle.",
+        "A novel lets a reader encounter injustice through characters and events. Our small scenes stand for criticism of abuses; they are illustrations, not portraits of particular historical people.",
+        "Printed pages could travel farther than their author. Readers could discuss the same criticism. This shows a mechanism of influence, not measured readership, and not proof that everyone agreed."
+      ],
+      "roles": {
+        "noli": "Noli Me Tangere, published Berlin, 1887; a novel criticizing abuses in colonial society.",
+        "fili": "El Filibusterismo, published Ghent, 1891; Rizal’s second novel.",
+        "readers": "Illustrative readers and discussion groups. Their number is not a historical readership estimate. The novels were written in Spanish.",
+        "colonial-abuses": "Schematic representations of social injustice; not a reconstruction of one documented incident."
+      },
+      "visual_test": "One page is copied out of a book and reaches separate groups; shared miniature scenes remain recognizable across copies.",
+      "safeguard": "Illustrative readers; written in Spanish. Influence is not military command.",
+      "start": 35.479,
+      "end": 74.825,
+      "narrationAt": 0.55,
+      "narration": "Noli Me Tangere appeared in Berlin in 1887. El Filibusterismo followed in Ghent in 1891. Open the books: the subject was society under Spanish colonial rule, not an instruction manual for battle. A novel lets a reader encounter injustice through characters and events. Our small scenes stand for criticism of abuses; they are illustrations, not portraits of particular historical people. Printed pages could travel farther than their author. Readers could discuss the same criticism. This shows a mechanism of influence, not measured readership, and not proof that everyone agreed.",
+      "audio": "/lessons/rizal/novels-aebcb08c972a.mp3",
+      "cues": [
+        {
+          "at": 0.55,
+          "duration": 14.3674,
+          "text": "Noli Me Tangere appeared in Berlin in 1887. El Filibusterismo followed in Ghent in 1891. Open the books: the subject was society under Spanish colonial rule, not an instruction manual for battle."
+        },
+        {
+          "at": 15.1374,
+          "duration": 11.8596,
+          "text": "A novel lets a reader encounter injustice through characters and events. Our small scenes stand for criticism of abuses; they are illustrations, not portraits of particular historical people."
+        },
+        {
+          "at": 27.217,
+          "duration": 11.729,
+          "text": "Printed pages could travel farther than their author. Readers could discuss the same criticism. This shows a mechanism of influence, not measured readership, and not proof that everyone agreed."
+        }
+      ]
+    },
+    {
+      "id": "liga",
+      "title": "From readers to a civic organization",
+      "years": "July 1892",
+      "question": "How did Rizal try to turn ideas into collective action?",
+      "sources": [
+        "liga",
+        "revolution"
+      ],
+      "clauses": [
+        "Back in Manila, Rizal founded La Liga Filipina on July third, 1892. Its aims included unity, mutual help, education and reform. Separate people join around practical shared tasks.",
+        "Colonial authorities arrested Rizal and sent him into exile in Dapitan that July. Watch his position leave the network. The organization was weakened; removing one person did not erase every member.",
+        "Bonifacio was also a Liga member, but the Katipunan was a separate organization seeking independence through revolution. Shared people and influences do not make the two organizations identical."
+      ],
+      "roles": {
+        "la-liga": "La Liga Filipina founded 3 July 1892 in Tondo, Manila. Civic aims included unity, mutual aid, education, agriculture, commerce and reform.",
+        "exile-route": "Arrest and deportation to Dapitan, July 1892. La Liga weakened after Rizal’s removal.",
+        "bonifacio": "Andrés Bonifacio belonged to La Liga and helped form the separate Katipunan.",
+        "katipunan": "A separate revolutionary organization, formed in July 1892, seeking independence from Spain."
+      },
+      "visual_test": "Rizal leaves a still partly connected civic group; Bonifacio is trackable when a second, differently labeled organization appears.",
+      "safeguard": "Separate organizational boundaries; no claim that Rizal founded the Katipunan.",
+      "start": 74.825,
+      "end": 116.5481,
+      "narrationAt": 0.55,
+      "narration": "Back in Manila, Rizal founded La Liga Filipina on July third, 1892. Its aims included unity, mutual help, education and reform. Separate people join around practical shared tasks. Colonial authorities arrested Rizal and sent him into exile in Dapitan that July. Watch his position leave the network. The organization was weakened; removing one person did not erase every member. Bonifacio was also a Liga member, but the Katipunan was a separate organization seeking independence through revolution. Shared people and influences do not make the two organizations identical.",
+      "audio": "/lessons/rizal/liga-83942ca465f6.mp3",
+      "cues": [
+        {
+          "at": 0.55,
+          "duration": 14.4719,
+          "text": "Back in Manila, Rizal founded La Liga Filipina on July third, 1892. Its aims included unity, mutual help, education and reform. Separate people join around practical shared tasks."
+        },
+        {
+          "at": 15.2419,
+          "duration": 12.5649,
+          "text": "Colonial authorities arrested Rizal and sent him into exile in Dapitan that July. Watch his position leave the network. The organization was weakened; removing one person did not erase every member."
+        },
+        {
+          "at": 28.0268,
+          "duration": 13.2963,
+          "text": "Bonifacio was also a Liga member, but the Katipunan was a separate organization seeking independence through revolution. Shared people and influences do not make the two organizations identical."
+        }
+      ]
+    },
+    {
+      "id": "dapitan",
+      "title": "Exile did not mean inactivity",
+      "years": "1892–1896",
+      "question": "What could reform look like as everyday work?",
+      "sources": [
+        "dapitan",
+        "museum"
+      ],
+      "clauses": [
+        "Rizal spent four years in exile in Dapitan. The travel route contracts into a village: his freedom was restricted, but his work did not stop.",
+        "He practiced medicine, taught pupils and worked on community improvements. The lens returns beside a patient; the page becomes a lesson shared by a teacher and students.",
+        "He also helped design waterworks. Trace the channel from a source to the settlement. This village is schematic: it connects documented kinds of work, without pretending to reproduce the exact historic engineering plan."
+      ],
+      "roles": {
+        "dapitan": "Rizal’s exile in Dapitan, 1892–1896; lived and worked at Talisay.",
+        "clinic": "Rizal worked as a physician in Dapitan.",
+        "school": "He taught pupils during exile. The drawn group is illustrative, not a class-size claim.",
+        "waterworks": "Rizal helped design waterworks in Dapitan. The on-screen channel is a functional illustration, not a surveyed reconstruction."
+      },
+      "visual_test": "The same lens and page become concrete services; a channel visibly connects source and houses.",
+      "safeguard": "Village schematic; no invented output statistics or exact waterworks layout.",
+      "start": 116.5481,
+      "end": 149.5724,
+      "narrationAt": 0.55,
+      "narration": "Rizal spent four years in exile in Dapitan. The travel route contracts into a village: his freedom was restricted, but his work did not stop. He practiced medicine, taught pupils and worked on community improvements. The lens returns beside a patient; the page becomes a lesson shared by a teacher and students. He also helped design waterworks. Trace the channel from a source to the settlement. This village is schematic: it connects documented kinds of work, without pretending to reproduce the exact historic engineering plan.",
+      "audio": "/lessons/rizal/dapitan-2ca104e2d12e.mp3",
+      "cues": [
+        {
+          "at": 0.55,
+          "duration": 8.8816,
+          "text": "Rizal spent four years in exile in Dapitan. The travel route contracts into a village: his freedom was restricted, but his work did not stop."
+        },
+        {
+          "at": 9.6516,
+          "duration": 9.7698,
+          "text": "He practiced medicine, taught pupils and worked on community improvements. The lens returns beside a patient; the page becomes a lesson shared by a teacher and students."
+        },
+        {
+          "at": 19.6415,
+          "duration": 12.9829,
+          "text": "He also helped design waterworks. Trace the channel from a source to the settlement. This village is schematic: it connects documented kinds of work, without pretending to reproduce the exact historic engineering plan."
+        }
+      ]
+    },
+    {
+      "id": "1896",
+      "title": "Put cause and chronology to the test",
+      "years": "August → December 1896",
+      "question": "Did Rizal’s execution start the revolution?",
+      "sources": [
+        "chronology",
+        "museum",
+        "revolution"
+      ],
+      "clauses": [
+        "The Philippine Revolution began in August 1896. Put that event on the upper track, while Rizal’s final months continue on the lower one. These are related histories, not the same role.",
+        "After a military trial, Rizal was executed at Bagumbayan, Manila, on December thirtieth, 1896. Align the tracks: the revolution had already begun before his execution.",
+        "So his death cannot have started an uprising already underway. His writings and martyrdom could inspire people without making him its military commander. Ordering the dates corrects one claim; influence is a different question."
+      ],
+      "roles": {
+        "revolution-august": "Philippine Revolution began August 1896, before Rizal’s execution.",
+        "execution-december": "Rizal executed at Bagumbayan, Manila, 30 December 1896, after a military trial.",
+        "chronology-test": "August precedes December. The execution did not initiate the already ongoing revolution. This does not deny later inspirational influence.",
+        "influence": "Rizal’s writings and death inspired reformists and revolutionaries; influence must be distinguished from organizational or military leadership."
+      },
+      "visual_test": "Two dated tracks align; August is visibly earlier than December, and the proposed backward causal arrow is crossed out.",
+      "safeguard": "Actual event order stays fixed. No alternate-history slider or invented strength of influence.",
+      "start": 149.5724,
+      "end": 188.9706,
+      "narrationAt": 0.55,
+      "narration": "The Philippine Revolution began in August 1896. Put that event on the upper track, while Rizal’s final months continue on the lower one. These are related histories, not the same role. After a military trial, Rizal was executed at Bagumbayan, Manila, on December thirtieth, 1896. Align the tracks: the revolution had already begun before his execution. So his death cannot have started an uprising already underway. His writings and martyrdom could inspire people without making him its military commander. Ordering the dates corrects one claim; influence is a different question.",
+      "audio": "/lessons/rizal/1896-6f64fec676ae.mp3",
+      "cues": [
+        {
+          "at": 0.55,
+          "duration": 12.382,
+          "text": "The Philippine Revolution began in August 1896. Put that event on the upper track, while Rizal’s final months continue on the lower one. These are related histories, not the same role."
+        },
+        {
+          "at": 13.152,
+          "duration": 12.382,
+          "text": "After a military trial, Rizal was executed at Bagumbayan, Manila, on December thirtieth, 1896. Align the tracks: the revolution had already begun before his execution."
+        },
+        {
+          "at": 25.7541,
+          "duration": 13.2441,
+          "text": "So his death cannot have started an uprising already underway. His writings and martyrdom could inspire people without making him its military commander. Ordering the dates corrects one claim; influence is a different question."
+        }
+      ]
+    },
+    {
+      "id": "memory",
+      "title": "How a life becomes a national symbol",
+      "years": "1896 → remembrance",
+      "question": "Why is Rizal remembered beyond his lifetime?",
+      "sources": [
+        "museum",
+        "law"
+      ],
+      "clauses": [
+        "A monument compresses a complicated life into one image. Expand it again: the books, civic work and community service remain separate contributions, rather than turning every action into a battle.",
+        "Public remembrance also depends on institutions. Republic Act fourteen twenty-five, approved in 1956, placed study of Rizal’s life and writings, particularly his novels, in school curricula.",
+        "The books return to new readers. That is our answer: a person’s work, the meaning attached to his death, and repeated acts of remembrance made Rizal a lasting national symbol. Select a book, a place or either date to ask a closer question."
+      ],
+      "roles": {
+        "monument": "Schematic monument as a representation of public memory, not an exact architectural model.",
+        "rizal-law": "Republic Act 1425, approved 12 June 1956, requires courses on Rizal’s life, works and writings, particularly the novels, in school curricula.",
+        "legacy-books": "The novels persist as objects of study; no claim that the law first made Rizal a hero.",
+        "contributions": "Writing, civic organizing and community service are distinct strands of Rizal’s life."
+      },
+      "visual_test": "A single monument opens into retained evidence objects, then the same books enter a later classroom.",
+      "safeguard": "The 1956 law concerns education, not a claim that it declared the first national hero.",
+      "start": 188.9706,
+      "end": 231.6863,
+      "narrationAt": 0.55,
+      "narration": "A monument compresses a complicated life into one image. Expand it again: the books, civic work and community service remain separate contributions, rather than turning every action into a battle. Public remembrance also depends on institutions. Republic Act fourteen twenty-five, approved in 1956, placed study of Rizal’s life and writings, particularly his novels, in school curricula. The books return to new readers. That is our answer: a person’s work, the meaning attached to his death, and repeated acts of remembrance made Rizal a lasting national symbol. Select a book, a place or either date to ask a closer question.",
+      "audio": "/lessons/rizal/memory-7bec62d8e3d2.mp3",
+      "cues": [
+        {
+          "at": 0.55,
+          "duration": 12.4082,
+          "text": "A monument compresses a complicated life into one image. Expand it again: the books, civic work and community service remain separate contributions, rather than turning every action into a battle."
+        },
+        {
+          "at": 13.1782,
+          "duration": 13.4792,
+          "text": "Public remembrance also depends on institutions. Republic Act fourteen twenty-five, approved in 1956, placed study of Rizal’s life and writings, particularly his novels, in school curricula."
+        },
+        {
+          "at": 26.8774,
+          "duration": 15.4384,
+          "text": "The books return to new readers. That is our answer: a person’s work, the meaning attached to his death, and repeated acts of remembrance made Rizal a lasting national symbol. Select a book, a place or either date to ask a closer question."
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "Selected life history, not an exhaustive biography.",
+    "Original illustrative vectors, no borrowed 3b1b scene code or historical likeness claims.",
+    "Historical experiments change focus or comparison, never the documented dates."
+  ],
+  "duration": 231.6863,
+  "audioPrepared": true,
+  "storyboard_sha256": "1b8ba63602438987d145ef6c0166e2dcca128fbd4820973f261e841c34c73070"
+}

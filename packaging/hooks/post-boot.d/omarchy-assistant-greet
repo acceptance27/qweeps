@@ -1,0 +1,3 @@
+#!/bin/bash
+# Proactive post-boot greeting from QWEEPS.
+omarchy-assistant event post-boot >/dev/null 2>&1 &

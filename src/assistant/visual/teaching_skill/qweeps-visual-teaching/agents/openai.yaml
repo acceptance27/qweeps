@@ -1,0 +1,4 @@
+interface:
+  display_name: "QWEEPS Visual Teaching"
+  short_description: "Choose visuals that expose the reasoning"
+  default_prompt: "Use $qweeps-visual-teaching to plan an animated explanation that follows the teaching methods of my approved examples."

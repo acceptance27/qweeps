@@ -1,0 +1,3 @@
+#!/bin/bash
+# Proactive low-battery remark from QWEEPS ($1 = percentage).
+omarchy-assistant event battery-low "${1:-low}" >/dev/null 2>&1 &

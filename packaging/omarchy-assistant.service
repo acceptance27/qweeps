@@ -1,0 +1,13 @@
+[Unit]
+Description=Omarchy Assistant (QWEEPS) - timers and reminders
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/omarchy-assistant serve
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

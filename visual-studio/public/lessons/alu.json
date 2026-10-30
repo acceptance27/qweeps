@@ -1,0 +1,234 @@
+{
+  "id": "alu",
+  "title": "Arithmetic Logic Unit · Operands, Competing Operations & Multiplexed Selection",
+  "question": "How does an ALU use control lines to select between competing arithmetic and logic operations?",
+  "visual_design": {
+    "family": "mechanism with persistent circuit blackboard, shared operand registers, competing functional units, and multiplexer selection",
+    "why": "Carries concrete input bits through parallel arithmetic and logic units into a multiplexer, showing that candidate results exist simultaneously before control lines select the output.",
+    "encodings": "Cyan (#58C4DD): Operands A and B and active input distribution lines. Gold (#FFD166): Opcode control lines and selected internal datapath. Green (#83C167): Multiplexer output and result bus. Muted (#8090A0): Inactive connections and unselected candidate paths. Red (#FC6255): Carry and status indicators.",
+    "misreading": "Control signals overwrite or alter the input operand values directly before calculation.",
+    "safeguard": "Operands A and B remain visibly latched and held constant on the input bus while the opcode line highlights only the multiplexer's internal routing."
+  },
+  "sources": [
+    {
+      "id": "patterson",
+      "title": "Patterson & Hennessy — Computer Organization and Design (RISC-V Edition)",
+      "url": "https://www.elsevier.com/books/computer-organization-and-design-risc-v-edition/patterson/978-0-12-812275-4"
+    },
+    {
+      "id": "tanenbaum",
+      "title": "Tanenbaum & Austin — Structured Computer Organization",
+      "url": "https://www.pearson.com/en-us/subject-catalog/p/structured-computer-organization/P200000003254"
+    }
+  ],
+  "chapters": [
+    {
+      "id": "operands",
+      "title": "Operands & Distribution Bus",
+      "question": "How do inputs reach the ALU?",
+      "visual_test": "Do both input lines branch to all units before any calculation starts?",
+      "sources": [
+        "patterson"
+      ],
+      "clauses": [
+        "The ALU begins with two input operands held in registers, here loaded with bits A equals one and B equals zero.",
+        "Notice how the input busses branch simultaneously to every functional unit.",
+        "The inputs do not choose an operation; they simply make the data available across the entire circuit."
+      ],
+      "roles": {
+        "register_a": "Register A holds input bit 1.",
+        "register_b": "Register B holds input bit 0.",
+        "bus_a": "Distribution bus A delivers bit 1 simultaneously to all functional units.",
+        "bus_b": "Distribution bus B delivers bit 0 simultaneously to all functional units."
+      },
+      "start": 0.0,
+      "end": 18.2,
+      "narrationAt": 1.15,
+      "narration": "The ALU begins with two input operands held in registers, here loaded with bits A equals one and B equals zero. Notice how the input busses branch simultaneously to every functional unit. The inputs do not choose an operation; they simply make the data available across the entire circuit.",
+      "cues": [
+        {
+          "at": 1.15,
+          "duration": 6.77,
+          "text": "The ALU begins with two input operands held in registers, here loaded with bits A equals one and B equals zero."
+        },
+        {
+          "at": 8.17,
+          "duration": 3.55,
+          "text": "Notice how the input busses branch simultaneously to every functional unit."
+        },
+        {
+          "at": 11.97,
+          "duration": 5.48,
+          "text": "The inputs do not choose an operation; they simply make the data available across the entire circuit."
+        }
+      ]
+    },
+    {
+      "id": "competing_units",
+      "title": "Parallel Arithmetic & Logic Units",
+      "question": "Do unselected operations still compute?",
+      "visual_test": "Which unit produces 0 and which units produce 1 on these unchanged inputs?",
+      "sources": [
+        "patterson",
+        "tanenbaum"
+      ],
+      "clauses": [
+        "Inside the ALU, arithmetic and logic units compute their outputs in parallel from the same input bits.",
+        "The AND gate calculates zero, while OR, ADD, and XOR each produce one.",
+        "All four candidate results exist at the same time, waiting at the inputs of the multiplexer."
+      ],
+      "roles": {
+        "unit_and": "AND gate: evaluates 1 AND 0 = 0.",
+        "unit_or": "OR gate: evaluates 1 OR 0 = 1.",
+        "unit_add": "Full Adder: computes 1 + 0 = 1 (sum=1, carry=0).",
+        "unit_xor": "XOR gate: evaluates 1 XOR 0 = 1.",
+        "candidates": "Four parallel candidate results arriving at multiplexer inputs."
+      },
+      "start": 18.2,
+      "end": 34.88,
+      "narrationAt": 0.6,
+      "narration": "Inside the ALU, arithmetic and logic units compute their outputs in parallel from the same input bits. The AND gate calculates zero, while OR, ADD, and XOR each produce one. All four candidate results exist at the same time, waiting at the inputs of the multiplexer.",
+      "cues": [
+        {
+          "at": 0.6,
+          "duration": 5.48,
+          "text": "Inside the ALU, arithmetic and logic units compute their outputs in parallel from the same input bits."
+        },
+        {
+          "at": 6.33,
+          "duration": 4.19,
+          "text": "The AND gate calculates zero, while OR, ADD, and XOR each produce one."
+        },
+        {
+          "at": 10.77,
+          "duration": 5.16,
+          "text": "All four candidate results exist at the same time, waiting at the inputs of the multiplexer."
+        }
+      ]
+    },
+    {
+      "id": "control_opcode",
+      "title": "The Control Opcode",
+      "question": "What role does the opcode line play?",
+      "visual_test": "Where does the control signal terminate—at the registers or at the multiplexer?",
+      "sources": [
+        "tanenbaum"
+      ],
+      "clauses": [
+        "To choose between these results, the CPU sends a control opcode along dedicated select lines.",
+        "Here the control code specifies addition, directing its signal straight into the multiplexer.",
+        "Crucially, the control line does not alter the operand registers or turn off the logic gates."
+      ],
+      "roles": {
+        "opcode_reg": "Control register holding operation code [0, 0] for ADD.",
+        "control_bus": "Opcode select bus routed directly into the multiplexer select lines.",
+        "mux_select": "Multiplexer selector gating candidate lines without disabling unit inputs."
+      },
+      "start": 34.88,
+      "end": 50.92,
+      "narrationAt": 0.6,
+      "narration": "To choose between these results, the CPU sends a control opcode along dedicated select lines. Here the control code specifies addition, directing its signal straight into the multiplexer. Crucially, the control line does not alter the operand registers or turn off the logic gates.",
+      "cues": [
+        {
+          "at": 0.6,
+          "duration": 4.84,
+          "text": "To choose between these results, the CPU sends a control opcode along dedicated select lines."
+        },
+        {
+          "at": 5.69,
+          "duration": 4.19,
+          "text": "Here the control code specifies addition, directing its signal straight into the multiplexer."
+        },
+        {
+          "at": 10.13,
+          "duration": 5.16,
+          "text": "Crucially, the control line does not alter the operand registers or turn off the logic gates."
+        }
+      ]
+    },
+    {
+      "id": "multiplexer_routing",
+      "title": "Multiplexer Routing to Result Bus",
+      "question": "How is the final output determined?",
+      "visual_test": "Which unit's candidate value connects to the output register?",
+      "sources": [
+        "patterson"
+      ],
+      "clauses": [
+        "The multiplexer acts as a high-speed electronic switch steered by the opcode.",
+        "It connects the addition result to the output bus, delivering the sum of one to the destination register.",
+        "The other candidate outputs remain present at the multiplexer, but their paths are left ungated."
+      ],
+      "roles": {
+        "mux_body": "4-to-1 Multiplexer internal routing matrix.",
+        "active_add_path": "Active transmission path routing ADD candidate (1) through the multiplexer.",
+        "output_bus": "Main ALU output bus driven by the multiplexer output.",
+        "result_reg": "Result destination register latched to value 1."
+      },
+      "start": 50.92,
+      "end": 67.29,
+      "narrationAt": 0.6,
+      "narration": "The multiplexer acts as a high-speed electronic switch steered by the opcode. It connects the addition result to the output bus, delivering the sum of one to the destination register. The other candidate outputs remain present at the multiplexer, but their paths are left ungated.",
+      "cues": [
+        {
+          "at": 0.6,
+          "duration": 3.87,
+          "text": "The multiplexer acts as a high-speed electronic switch steered by the opcode."
+        },
+        {
+          "at": 4.72,
+          "duration": 5.81,
+          "text": "It connects the addition result to the output bus, delivering the sum of one to the destination register."
+        },
+        {
+          "at": 10.78,
+          "duration": 4.84,
+          "text": "The other candidate outputs remain present at the multiplexer, but their paths are left ungated."
+        }
+      ]
+    },
+    {
+      "id": "operation_switch",
+      "title": "Switching the Operation (ADD → AND)",
+      "question": "What happens when we change the instruction from ADD to AND?",
+      "visual_test": "Do the input operands change when the output updates from 1 to 0?",
+      "sources": [
+        "patterson",
+        "tanenbaum"
+      ],
+      "clauses": [
+        "Now observe what happens when the processor switches the opcode from ADD to AND.",
+        "Operands A and B remain exactly one and zero on the input bus.",
+        "Only the multiplexer selector changes, instantly routing the AND result of zero to the output."
+      ],
+      "roles": {
+        "opcode_and": "Opcode switched to [0, 1] for AND while operands A and B remain unchanged.",
+        "switched_and_path": "Multiplexer steering switches immediately from ADD candidate to AND candidate.",
+        "switched_result": "Result destination register updates to value 0."
+      },
+      "start": 67.29,
+      "end": 82.69,
+      "narrationAt": 0.6,
+      "narration": "Now observe what happens when the processor switches the opcode from ADD to AND. Operands A and B remain exactly one and zero on the input bus. Only the multiplexer selector changes, instantly routing the AND result of zero to the output.",
+      "cues": [
+        {
+          "at": 0.6,
+          "duration": 4.52,
+          "text": "Now observe what happens when the processor switches the opcode from ADD to AND."
+        },
+        {
+          "at": 5.37,
+          "duration": 4.19,
+          "text": "Operands A and B remain exactly one and zero on the input bus."
+        },
+        {
+          "at": 9.81,
+          "duration": 4.84,
+          "text": "Only the multiplexer selector changes, instantly routing the AND result of zero to the output."
+        }
+      ]
+    }
+  ],
+  "duration": 82.69,
+  "storyboard_sha256": "a453d74f544a9536437a0b37f950ed56d639373dc04c77d2ad017c184a19f0fb"
+}

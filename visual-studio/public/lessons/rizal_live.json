@@ -1,0 +1,318 @@
+{
+  "id": "rizal_live",
+  "title": "José Rizal · origins, journeys, writing and legacy",
+  "question": "How did a doctor and novelist become a national symbol?",
+  "visual_design": {
+    "family": "persistent spatial history with concrete objects, organizational comparison and aligned chronology",
+    "encodings": "Cyan: Rizal’s identity and work. Gold: writing and learning. Coral: colonial restriction and execution. Green: civic/community work. Spatial position connects scenes; timelines alone encode chronological order.",
+    "misreading": "Rizal founded the Katipunan or his execution began the 1896 revolution.",
+    "safeguard": "Separate labeled groups and aligned August/December tracks; influence is distinguished from leadership."
+  },
+  "sources": [
+    {
+      "id": "birth",
+      "title": "NCCA — Rizal birth and commemoration",
+      "url": "https://ncca.gov.ph/about-culture-and-arts/in-focus/nation-observes-142nd-birth-anniversary-of-jose-rizal/"
+    },
+    {
+      "id": "museum",
+      "title": "Intramuros Administration — Museo ni Rizal",
+      "url": "https://intramuros.gov.ph/mnr/"
+    },
+    {
+      "id": "liga",
+      "title": "NHCP — La Liga Filipina historical marker",
+      "url": "https://philhistoricsites.nhcp.gov.ph/registry_database/la-liga-filipina/"
+    },
+    {
+      "id": "dapitan",
+      "title": "City of Dapitan — Rizal Shrine",
+      "url": "https://dapitancity.gov.ph/rizal-shrine/"
+    },
+    {
+      "id": "revolution",
+      "title": "NCCA — Bonifacio and the 1896 Revolution",
+      "url": "https://ncca.gov.ph/about-culture-and-arts/in-focus/andres-bonifacio-and-the-1896-revolution/"
+    },
+    {
+      "id": "chronology",
+      "title": "Library of Congress — Philippines: a country study",
+      "url": "https://tile.loc.gov/storage-services/master/frd/frdcstdy/ph/philippinescount00dola_0/philippinescount00dola_0.pdf"
+    },
+    {
+      "id": "law",
+      "title": "Philippine Senate — Republic Act 1425, 1956",
+      "url": "https://ldr.senate.gov.ph/legislative%2Bissuances/Republic%20Act%20No.%201425"
+    },
+    {
+      "id": "gomburza",
+      "title": "NHCP — Gomburza execution site",
+      "url": "https://philhistoricsites.nhcp.gov.ph/registry_database/gomburza-execution-site/"
+    },
+    {
+      "id": "biography",
+      "title": "NHCP — José Protacio Rizal biographical marker",
+      "url": "https://philhistoricsites.nhcp.gov.ph/registry_database/jose-protacio-rizal-1861-1896/"
+    },
+    {
+      "id": "medical-history",
+      "title": "Philippine Journal of Ophthalmology — Rizal’s medical life",
+      "url": "https://paojournal.com/index.php/pjo/article/download/271/228/350"
+    }
+  ],
+  "notes": [
+    "Selected life history, not an exhaustive biography.",
+    "Original illustrative vectors, no borrowed 3b1b scene code or historical likeness claims.",
+    "Historical experiments change focus or comparison, never the documented dates."
+  ],
+  "duration": 218,
+  "audioPrepared": true,
+  "storyboard_sha256": "1b8ba63602438987d145ef6c0166e2dcca128fbd4820973f261e841c34c73070",
+  "chapters": [
+    {
+      "id": "formation",
+      "title": "Origins & the medical calling",
+      "years": "1861–1882",
+      "question": "What shaped the student before the national hero?",
+      "start": 0,
+      "end": 34,
+      "roles": {
+        "calamba": "Calamba, Laguna: birthplace and early education",
+        "gomburza": "Gómez, Burgos and Zamora, executed in 1872",
+        "medical-lens": "Ophthalmology: the medical specialty concerned with the eye"
+      },
+      "narration": "Begin with the person, not the monument. Rizal was born in Calamba in 1861, and his mother Teodora was his first teacher. The execution of Gómez, Burgos and Zamora in 1872 belongs to the colonial world in which he grew up. His mother’s failing eyesight helped motivate his interest in ophthalmology, the study and treatment of eye disease. He continued medical study in Europe.",
+      "narrationAt": 1.4,
+      "audio": "/lessons/rizal-live/formation-a776172f9a1d.mp3",
+      "cues": [
+        {
+          "at": 1,
+          "text": "Calamba, Laguna · 1861"
+        },
+        {
+          "at": 10,
+          "text": "Gomburza · three named priests, executed in 1872"
+        },
+        {
+          "at": 21,
+          "text": "Ophthalmology means the study and treatment of the eye."
+        }
+      ],
+      "sources": [
+        "museum",
+        "biography",
+        "gomburza",
+        "medical-history"
+      ],
+      "safeguard": "Sourced geography; illustrative objects; influence is not military command. No invented precise counts.",
+      "visual_test": "The descriptions identify the entities; the diagram shows the relevant relationship.",
+      "narrationDuration": 25.939,
+      "finishedAt": 29
+    },
+    {
+      "id": "journey",
+      "title": "The European journey",
+      "years": "1882–1887",
+      "question": "How did study abroad become a printed argument?",
+      "start": 34,
+      "end": 67,
+      "roles": {
+        "education-route": "Selected journey from Manila to Madrid and European medical training",
+        "madrid": "Medical study in Madrid from 1882",
+        "writing-pen": "Writing and political commentary",
+        "noli-printing": "Noli Me Tangere, printed in Berlin in 1887"
+      },
+      "narration": "In 1882, Rizal continued his medical studies in Madrid. His European years also included further medical training and writing. Follow two outcomes of the journey: the physician developed a specialist practice, while the writer prepared a novel about colonial society. Noli Me Tangere was published in Berlin in 1887. The route is orientation, not a complete travel log.",
+      "narrationAt": 1.4,
+      "audio": "/lessons/rizal-live/journey-0aa18a498e6a.mp3",
+      "cues": [
+        {
+          "at": 1,
+          "text": "Manila → Madrid · continued medical study"
+        },
+        {
+          "at": 12,
+          "text": "Further study and writing in Europe"
+        },
+        {
+          "at": 22,
+          "text": "Berlin · Noli Me Tangere published in 1887"
+        }
+      ],
+      "sources": [
+        "museum",
+        "biography"
+      ],
+      "safeguard": "Sourced geography; illustrative objects; influence is not military command. No invented precise counts.",
+      "visual_test": "The descriptions identify the entities; the diagram shows the relevant relationship.",
+      "narrationDuration": 23.745,
+      "finishedAt": 61
+    },
+    {
+      "id": "novels",
+      "title": "Two novels, a public argument",
+      "years": "1887–1891",
+      "question": "How can fiction make colonial abuses visible?",
+      "start": 67,
+      "end": 105,
+      "roles": {
+        "noli": "Noli Me Tangere: Berlin, 1887",
+        "fili": "El Filibusterismo: Ghent, 1891",
+        "colonial-abuses": "The novels dramatize colonial oppression; the scene is illustrative",
+        "readers": "Writing reaches readers and discussion, not a measured audience"
+      },
+      "narration": "Read these as novels with a political purpose. Noli Me Tangere appeared in Berlin in 1887; El Filibusterismo followed in Ghent in 1891. Both dramatized oppression under Spanish colonial rule. Their characters and situations gave readers concrete ways to recognize abuse. The books could influence reformists and revolutionaries without being a military chain of command.",
+      "narrationAt": 1.4,
+      "audio": "/lessons/rizal-live/novels-7795afd97c22.mp3",
+      "cues": [
+        {
+          "at": 1,
+          "text": "Noli Me Tangere · Berlin, 1887"
+        },
+        {
+          "at": 12,
+          "text": "El Filibusterismo · Ghent, 1891"
+        },
+        {
+          "at": 24,
+          "text": "Fiction → readers → discussion. Influence is distinct from military command."
+        }
+      ],
+      "sources": [
+        "museum",
+        "biography"
+      ],
+      "safeguard": "Sourced geography; illustrative objects; influence is not military command. No invented precise counts.",
+      "visual_test": "The descriptions identify the entities; the diagram shows the relevant relationship.",
+      "narrationDuration": 25.208,
+      "finishedAt": 101
+    },
+    {
+      "id": "dapitan",
+      "title": "La Liga & the Dapitan years",
+      "years": "1892–1896",
+      "question": "What did reform look like during exile?",
+      "start": 105,
+      "end": 145,
+      "roles": {
+        "la-liga": "La Liga Filipina: a civic association founded 3 July 1892",
+        "exile-route": "Manila to Dapitan, northwestern Mindanao, July 1892",
+        "dapitan": "Dapitan on northwestern Mindanao",
+        "clinic": "Rizal continued medical practice in Dapitan",
+        "school": "Education was part of his work in exile",
+        "waterworks": "A schematic water channel represents documented waterworks",
+        "katipunan": "A separate revolutionary organization, not founded by Rizal"
+      },
+      "narration": "Rizal founded La Liga Filipina in Manila in July 1892. Colonial authorities soon sent him into exile in Dapitan, on northwestern Mindanao. Exile restricted his movement, but it did not end his work. He practiced medicine, taught, studied nature and helped design waterworks. La Liga was a civic association; the Katipunan was a separate revolutionary organization.",
+      "narrationAt": 1.4,
+      "audio": "/lessons/rizal-live/dapitan-716563ed77b5.mp3",
+      "cues": [
+        {
+          "at": 1,
+          "text": "La Liga Filipina · civic association, July 1892"
+        },
+        {
+          "at": 9,
+          "text": "Dapitan · northwestern Mindanao"
+        },
+        {
+          "at": 16,
+          "text": "Medicine, teaching and waterworks: concrete work during exile"
+        }
+      ],
+      "sources": [
+        "museum",
+        "biography",
+        "liga"
+      ],
+      "safeguard": "Sourced geography; illustrative objects; influence is not military command. No invented precise counts.",
+      "visual_test": "The descriptions identify the entities; the diagram shows the relevant relationship.",
+      "narrationDuration": 24.424,
+      "finishedAt": 143
+    },
+    {
+      "id": "1896",
+      "title": "Trial, farewell & execution",
+      "years": "August–December 1896",
+      "question": "Why was he executed—and what did his death change?",
+      "start": 145,
+      "end": 186,
+      "roles": {
+        "revolution-august": "Philippine Revolution began in August 1896",
+        "execution-december": "A Spanish military court convicted Rizal; execution on 30 December 1896",
+        "chronology-test": "August precedes December: his death did not start the revolution",
+        "influence": "Inspirational influence is distinct from military initiation or command",
+        "farewell": "The untitled farewell poem later known as Mi Último Adiós"
+      },
+      "narration": "A Spanish military court convicted Rizal of forming an illicit organization and inciting rebellion. He was executed at Bagumbayan on 30 December 1896. His farewell poem, later known as Mi Último Adiós, survived. Now compare the dates: the Philippine Revolution had already begun in August. His death could inspire people, but it could not begin an uprising already underway.",
+      "narrationAt": 1.4,
+      "audio": "/lessons/rizal-live/1896-1a5f05c93c6b.mp3",
+      "cues": [
+        {
+          "at": 1,
+          "text": "August 1896 · revolution already underway"
+        },
+        {
+          "at": 12,
+          "text": "Military trial → execution, 30 December 1896"
+        },
+        {
+          "at": 26,
+          "text": "Mi Último Adiós · the farewell poem survives"
+        },
+        {
+          "at": 32,
+          "text": "Chronology distinguishes inspiration from starting an uprising."
+        }
+      ],
+      "sources": [
+        "museum",
+        "biography"
+      ],
+      "safeguard": "Sourced geography; illustrative objects; influence is not military command. No invented precise counts.",
+      "visual_test": "The descriptions identify the entities; the diagram shows the relevant relationship.",
+      "narrationDuration": 26.984,
+      "finishedAt": 183
+    },
+    {
+      "id": "memory",
+      "title": "From a life to public memory",
+      "years": "1896 → remembrance",
+      "question": "How does a life keep reaching new generations?",
+      "start": 186,
+      "end": 218,
+      "roles": {
+        "legacy-books": "Rizal’s writing remains available to new readers",
+        "monument": "Public commemoration, shown by an illustrative monument",
+        "rizal-law": "Republic Act 1425, enacted in 1956, requires study of Rizal",
+        "contributions": "New readers encounter his life and writings through education"
+      },
+      "narration": "Remembrance is more than a statue. Rizal left writing that later generations could read. Public commemoration made his life a shared symbol, and Republic Act 1425 made study of his life and works part of education. Keep the connections in view: the person produced work, historical events changed its meaning, and institutions carried that memory to new readers.",
+      "narrationAt": 1.4,
+      "audio": "/lessons/rizal-live/memory-cd08a98941e6.mp3",
+      "cues": [
+        {
+          "at": 1,
+          "text": "Books preserve the work; monuments mark public remembrance."
+        },
+        {
+          "at": 12,
+          "text": "Republic Act 1425 · 1956"
+        },
+        {
+          "at": 22,
+          "text": "Education brings the life and writing to new readers."
+        }
+      ],
+      "sources": [
+        "museum",
+        "biography",
+        "law"
+      ],
+      "safeguard": "Sourced geography; illustrative objects; influence is not military command. No invented precise counts.",
+      "visual_test": "The descriptions identify the entities; the diagram shows the relevant relationship.",
+      "narrationDuration": 22.988,
+      "finishedAt": 215
+    }
+  ]
+}

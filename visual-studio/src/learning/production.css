@@ -1,0 +1,17 @@
+.production-controls{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:12px 20px;border-top:1px solid #1d2d3b;background:#0a1018;color:#8ea7ba;font:11px/1.5 var(--font-sans)}
+.production-controls label{display:flex;flex-direction:column;gap:5px;min-width:140px}.production-controls select{background:#0d1c28;border:1px solid #2c4658;color:#c6dae7;padding:6px;border-radius:4px;max-width:230px}.production-controls input[type=range]{width:145px;accent-color:#58c4dd}.production-controls .production-check{flex-direction:row;align-items:center;min-width:auto;gap:7px}.production-controls input[type=checkbox]{accent-color:#58c4dd}.production-controls a{margin-left:auto;color:#70b4c9}
+
+.production-lesson .stage-caption{font:13px/1.5 var(--font-sans);padding:6px 24px;min-height:42px;max-height:58px}
+.production-lesson .transport{padding-top:8px;margin-bottom:3px}
+.production-lesson .chapter-strip{margin-bottom:6px;gap:3px}
+.production-lesson .chapter-strip button{font-size:10px;padding:4px 7px}
+.production-lesson .beat-label{margin-bottom:6px}
+.production-lesson .transport input[type=range]{margin:6px 0 10px}
+.production-lesson .stage-hints{padding:3px 12px 5px;font-size:9px}
+.production-lesson .cinema-question{padding:6px 12px;margin-bottom:4px}
+.production-controls{padding:7px 18px;gap:12px}
+.production-controls label{flex-direction:row;align-items:center;min-width:auto}
+.production-controls select{max-width:210px}
+@media(max-height:700px){.production-lesson .stage-hints{display:none}.production-lesson .chapter-strip button{font-size:9px}.production-lesson .lesson-header{height:60px}.production-lesson .stage-caption{font-size:12px;max-height:48px}}
+.native-production{position:absolute;inset:0;background:#05070b;touch-action:none}.native-production-frame{width:100%;height:100%;object-fit:contain;user-select:none;pointer-events:none}.native-loading{position:absolute;inset:0;display:grid;place-items:center;color:#90b8ca;font:13px var(--font-sans);background:#05070b}.native-error{padding:30px;color:#f0aa8a}.native-accessibility{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.native-region{position:absolute;border:1px solid #58c4dd;background:#58c4dd15;pointer-events:none}
+.native-region-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}

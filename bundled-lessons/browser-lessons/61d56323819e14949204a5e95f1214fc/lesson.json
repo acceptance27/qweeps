@@ -1,0 +1,2125 @@
+{
+  "title": "How Massless Light Materializes into Matter",
+  "question": "How does light which is massless become matter?",
+  "representation": "We track a head-on two-photon Breit-Wheeler collision (2 x 511 keV to e- + e+). The chain opens with mass-energy equivalence (E=mc^2), uses a geometric vector proof to show why a single photon cannot spontaneously decay due to momentum conservation, demonstrates how two colliding photons cancel net momentum while summing scalar energy to meet the threshold, visualizes quantum field excitation producing charged fermion pairs, and concludes with an aligned dossier comparing propagating radiative energy to localized inertial rest mass. Visual anchors: yellow vector arrows for photon momentum, cyan/magenta spheres for electron/positron particles, and balanced scales for conserved quantities.",
+  "example": {
+    "title": "Head-on collision of two 511 keV gamma photons",
+    "description": "Two 511 keV gamma rays collide head-on in vacuum, canceling net momentum and converting their combined 1.022 MeV radiant energy into an electron-positron pair at rest.",
+    "icon": "zap"
+  },
+  "chapters": [
+    {
+      "id": "mass-energy-foundation",
+      "title": "Light Carries Energy and Momentum",
+      "years": "",
+      "question": "If photons have zero rest mass, what physical ingredients do they carry to form matter?",
+      "insight": "Photons have zero rest mass (m_0=0) but carry non-zero energy (E=hv) and momentum (p=E/c). Mass is not a separate physical substance; it is energy localized and confined at rest.",
+      "sourcePages": [],
+      "sources": [],
+      "safeguard": "Prevent thinking photons have rest mass; emphasize that momentum arises purely from electromagnetic wave energy, not moving mass.",
+      "narration": "To understand how matter materializes from light, we must first examine what photons carry if not rest mass. While an individual photon has zero rest mass, it is far from empty. Each quantum carries radiant energy proportional to its frequency and forward momentum equal to energy divided by the speed of light. Relativistic mechanics reveals that mass is not a unique physical substance, but localized energy held at rest. Because light already possesses energy and momentum, it carries every fundamental ingredient needed to construct material particles.",
+      "narrationAt": 1.4,
+      "audio": "",
+      "start": 0.0,
+      "end": 42.09,
+      "finishedAt": 40.09,
+      "cues": [
+        {
+          "at": 0,
+          "text": "If photons have zero rest mass, what physical ingredients do they carry to form matter?"
+        },
+        {
+          "at": 10.5,
+          "text": "Mass is confined energy at rest: light carries the required energy and momentum, ready to materialize if trapped."
+        }
+      ],
+      "roles": {
+        "photon-radiation": "Propagating Photon: Light possesses zero rest mass but carries oscillating electromagnetic energy E = hν and directional momentum p = E/c.",
+        "energy-momentum-relation": "Relativistic Invariant: Einstein's invariant energy relation balances momentum and rest mass: E² = (pc)² + (m₀c²)² across all reference frames.",
+        "confined-rest-mass": "Confined Rest Mass: Mass is not a distinct material substance; it is radiant energy trapped and localized at rest with zero net momentum."
+      },
+      "visual": {
+        "layout": "diagram",
+        "nodes": [
+          {
+            "id": "photon-radiation",
+            "title": "Propagating Photon",
+            "body": "Light possesses zero rest mass but carries oscillating electromagnetic energy E = hν and directional momentum p = E/c.",
+            "icon": "zap",
+            "color": "gold",
+            "at": 1,
+            "tag": "m₀ = 0",
+            "position": {
+              "x": 80,
+              "y": 130,
+              "width": 380,
+              "height": 340
+            },
+            "artwork": [
+              {
+                "type": "path",
+                "d": "M 10 50 Q 22 25 35 50 T 60 50 T 85 50",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 2.2
+              },
+              {
+                "type": "line",
+                "x1": 15,
+                "y1": 78,
+                "x2": 80,
+                "y2": 78,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 2
+              },
+              {
+                "type": "path",
+                "d": "M 74 73 L 84 78 L 74 83 Z",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 92,
+                "size": 10,
+                "text": "p = E/c",
+                "stroke": "none",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 20,
+                "size": 11,
+                "text": "E = hν",
+                "stroke": "none",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 34,
+                "size": 9,
+                "text": "m₀ = 0",
+                "stroke": "none",
+                "fill": "muted",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "photon-radiation",
+                "dx": 10,
+                "dy": 0,
+                "scale": 1,
+                "opacity": 1,
+                "duration": 2.0,
+                "delay": 0
+              }
+            ]
+          },
+          {
+            "id": "energy-momentum-relation",
+            "title": "Relativistic Invariant",
+            "body": "Einstein's invariant energy relation balances momentum and rest mass: E² = (pc)² + (m₀c²)² across all reference frames.",
+            "icon": "scale",
+            "color": "blue",
+            "at": 4,
+            "tag": "E² = (pc)² + (m₀c²)²",
+            "position": {
+              "x": 530,
+              "y": 130,
+              "width": 380,
+              "height": 340
+            },
+            "artwork": [
+              {
+                "type": "text",
+                "x": 50,
+                "y": 22,
+                "size": 9,
+                "text": "E² = (pc)² + (m₀c²)²",
+                "stroke": "none",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 35,
+                "size": 8,
+                "text": "Invariant Relation",
+                "stroke": "none",
+                "fill": "muted",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M 20 90 L 80 90 L 80 58 Z",
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 2
+              },
+              {
+                "type": "path",
+                "d": "M 72 90 L 72 82 L 80 82",
+                "stroke": "muted",
+                "fill": "none",
+                "strokeWidth": 1.2
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 99,
+                "size": 9,
+                "text": "pc",
+                "stroke": "none",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 88,
+                "y": 75,
+                "size": 9,
+                "text": "m₀c²",
+                "stroke": "none",
+                "fill": "coral",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 44,
+                "y": 70,
+                "size": 11,
+                "text": "E",
+                "stroke": "none",
+                "fill": "white",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "energy-momentum-relation",
+                "dx": 0,
+                "dy": -5,
+                "scale": 1,
+                "opacity": 1,
+                "duration": 1.5,
+                "delay": 0
+              }
+            ]
+          },
+          {
+            "id": "confined-rest-mass",
+            "title": "Confined Rest Mass",
+            "body": "Mass is not a distinct material substance; it is radiant energy trapped and localized at rest with zero net momentum.",
+            "icon": "package",
+            "color": "coral",
+            "at": 7,
+            "tag": "p = 0 → E = mc²",
+            "position": {
+              "x": 980,
+              "y": 130,
+              "width": 380,
+              "height": 340
+            },
+            "artwork": [
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 50,
+                "r": 32,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 2
+              },
+              {
+                "type": "path",
+                "d": "M 32 50 C 32 38 68 38 68 50 C 68 62 32 62 32 50",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.6
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 53,
+                "size": 13,
+                "text": "m₀",
+                "stroke": "none",
+                "fill": "coral",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 13,
+                "size": 9,
+                "text": "p_net = 0",
+                "stroke": "none",
+                "fill": "muted",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 94,
+                "size": 11,
+                "text": "E = m₀c²",
+                "stroke": "none",
+                "fill": "white",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "confined-rest-mass",
+                "dx": 0,
+                "dy": 0,
+                "scale": 1.05,
+                "opacity": 1,
+                "duration": 1.8,
+                "delay": 0
+              }
+            ]
+          }
+        ],
+        "connections": [
+          {
+            "from": "photon-radiation",
+            "to": "energy-momentum-relation",
+            "label": "limits to m₀=0",
+            "at": 6.7
+          },
+          {
+            "from": "energy-momentum-relation",
+            "to": "confined-rest-mass",
+            "label": "confines at p=0",
+            "at": 9.7
+          }
+        ],
+        "columns": [],
+        "takeaway": "Mass is confined energy at rest: light carries the required energy and momentum, ready to materialize if trapped.",
+        "experiment": {
+          "prompt": "If light has no rest mass, what happens to its momentum when photon frequency doubles?",
+          "choices": [
+            {
+              "label": "Momentum doubles because p = hν/c",
+              "target": "photon-radiation",
+              "explanation": "Momentum scales directly with photon frequency and energy even with zero rest mass."
+            },
+            {
+              "label": "Momentum remains zero without mass",
+              "target": "energy-momentum-relation",
+              "explanation": "Incorrect; momentum does not require rest mass in relativistic field theory."
+            }
+          ]
+        },
+        "presentation": {
+          "method": "Annotated infographic",
+          "why": "Learners conflate mass with physical substance; clarifying E=mc^2 and p=E/c establishes energy as the universal currency.",
+          "visualEvidence": "A photon wave packet displays energy and momentum tags, linking via equation labels to an equivalent rest-energy mass box.",
+          "textMode": "descriptive"
+        }
+      },
+      "continuity": {
+        "from": null,
+        "bridge": "To understand how matter materializes from light, we must first examine what photons carry if not rest mass."
+      }
+    },
+    {
+      "id": "single-photon-barrier",
+      "title": "The Single-Photon Impossibility",
+      "years": "",
+      "question": "Why can't an isolated gamma ray simply turn into an electron and positron on its own?",
+      "insight": "A single photon cannot decay into massive particles in vacuum because energy and momentum cannot be simultaneously conserved in any reference frame.",
+      "sourcePages": [],
+      "sources": [],
+      "safeguard": "Address the misconception that higher photon energy alone triggers decay; show that momentum balance forbids isolated conversion.",
+      "narration": "Since photons carry both energy and momentum, we must test whether a single photon can spontaneously convert its energy into matter. If an isolated gamma ray decayed into an electron and positron, their center-of-mass frame would have zero total momentum. Because an isolated photon's momentum can never vanish in any inertial frame, it cannot balance the zero net momentum required in the pair's center-of-mass frame, so single-photon decay cannot conserve momentum and is strictly forbidden in empty space.",
+      "narrationAt": 1.4,
+      "audio": "",
+      "start": 42.09,
+      "end": 81.45,
+      "finishedAt": 79.45,
+      "cues": [
+        {
+          "at": 0,
+          "text": "Why can't an isolated gamma ray simply turn into an electron and positron on its own?"
+        },
+        {
+          "at": 15.5,
+          "text": "A single photon cannot create matter in vacuum because its non-zero momentum cannot balance a pair's rest frame."
+        }
+      ],
+      "roles": {
+        "isolated-photon": "Incident Photon Vector: An isolated photon in vacuum carries momentum p = E/c that cannot be transformed away in any inertial frame.",
+        "pair-center-of-mass": "Hypothetical Rest Frame: In the center-of-mass frame of the pair, net momentum must equal zero while rest mass equals 1.022 MeV.",
+        "conservation-mismatch": "Conservation Contradiction: A single photon vector cannot balance zero center-of-mass momentum, forbidding vacuum pair creation without a collision partner."
+      },
+      "visual": {
+        "layout": "diagram",
+        "nodes": [
+          {
+            "id": "isolated-photon",
+            "title": "Incident Photon Vector",
+            "body": "An isolated photon in vacuum carries momentum p = E/c that cannot be transformed away in any inertial frame.",
+            "icon": "zap",
+            "color": "gold",
+            "at": 1,
+            "tag": "p = E/c",
+            "position": {
+              "x": 70,
+              "y": 140,
+              "width": 380,
+              "height": 320
+            },
+            "artwork": [
+              {
+                "type": "path",
+                "d": "M 12 28 Q 22 18, 32 28 T 52 28 T 72 28 L 86 28",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 2
+              },
+              {
+                "type": "path",
+                "d": "M 80 23 L 88 28 L 80 33 Z",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 14,
+                "size": 9,
+                "text": "Photon Wave (v = c)",
+                "stroke": "gold",
+                "fill": "muted",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 22,
+                "y1": 72,
+                "x2": 78,
+                "y2": 72,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 2
+              },
+              {
+                "type": "path",
+                "d": "M 72 67 L 80 72 L 72 77 Z",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 88,
+                "size": 10,
+                "text": "p = E/c > 0",
+                "stroke": "gold",
+                "fill": "white",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "isolated-photon",
+                "dx": 15,
+                "dy": 0,
+                "scale": 1,
+                "opacity": 1,
+                "duration": 1.2,
+                "delay": 0
+              }
+            ]
+          },
+          {
+            "id": "pair-center-of-mass",
+            "title": "Hypothetical Rest Frame",
+            "body": "In the center-of-mass frame of the pair, net momentum must equal zero while rest mass equals 1.022 MeV.",
+            "icon": "atom",
+            "color": "purple",
+            "at": 6,
+            "tag": "p_net = 0",
+            "position": {
+              "x": 530,
+              "y": 140,
+              "width": 380,
+              "height": 320
+            },
+            "artwork": [
+              {
+                "type": "text",
+                "x": 50,
+                "y": 14,
+                "size": 9,
+                "text": "p_net = 0",
+                "stroke": "purple",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 42,
+                "y1": 26,
+                "x2": 20,
+                "y2": 26,
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 1.8
+              },
+              {
+                "type": "path",
+                "d": "M 24 22 L 18 26 L 24 30 Z",
+                "stroke": "blue",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 58,
+                "y1": 26,
+                "x2": 80,
+                "y2": 26,
+                "stroke": "purple",
+                "fill": "none",
+                "strokeWidth": 1.8
+              },
+              {
+                "type": "path",
+                "d": "M 76 22 L 82 26 L 76 30 Z",
+                "stroke": "purple",
+                "fill": "purple",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 26,
+                "r": 3,
+                "stroke": "purple",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 38,
+                "size": 9,
+                "text": "E_cm = 2 mₑ c²",
+                "stroke": "purple",
+                "fill": "muted",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 35,
+                "cy": 74,
+                "r": 12,
+                "stroke": "blue",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 35,
+                "y": 78,
+                "size": 11,
+                "text": "e⁻",
+                "stroke": "blue",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 65,
+                "cy": 74,
+                "r": 12,
+                "stroke": "purple",
+                "fill": "purple",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 65,
+                "y": 78,
+                "size": 11,
+                "text": "e⁺",
+                "stroke": "purple",
+                "fill": "white",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "pair-center-of-mass",
+                "dx": 0,
+                "dy": -5,
+                "scale": 1.05,
+                "opacity": 1,
+                "duration": 1,
+                "delay": 0.2
+              }
+            ]
+          },
+          {
+            "id": "conservation-mismatch",
+            "title": "Conservation Contradiction",
+            "body": "A single photon vector cannot balance zero center-of-mass momentum, forbidding vacuum pair creation without a collision partner.",
+            "icon": "cross",
+            "color": "coral",
+            "at": 12,
+            "tag": "Forbidden",
+            "position": {
+              "x": 990,
+              "y": 140,
+              "width": 380,
+              "height": 320
+            },
+            "artwork": [
+              {
+                "type": "line",
+                "x1": 42,
+                "y1": 14,
+                "x2": 42,
+                "y2": 86,
+                "stroke": "muted",
+                "fill": "none",
+                "strokeWidth": 1
+              },
+              {
+                "type": "text",
+                "x": 42,
+                "y": 10,
+                "size": 8,
+                "text": "p = 0 Axis",
+                "stroke": "muted",
+                "fill": "muted",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 42,
+                "y1": 28,
+                "x2": 84,
+                "y2": 28,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 2
+              },
+              {
+                "type": "path",
+                "d": "M 78 24 L 86 28 L 78 32 Z",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 64,
+                "y": 22,
+                "size": 8,
+                "text": "p_γ = E/c",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 42,
+                "cy": 50,
+                "r": 3.5,
+                "stroke": "purple",
+                "fill": "purple",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 42,
+                "y1": 50,
+                "x2": 24,
+                "y2": 50,
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 1.6
+              },
+              {
+                "type": "path",
+                "d": "M 28 46 L 22 50 L 28 54 Z",
+                "stroke": "blue",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 42,
+                "y1": 50,
+                "x2": 60,
+                "y2": 50,
+                "stroke": "purple",
+                "fill": "none",
+                "strokeWidth": 1.6
+              },
+              {
+                "type": "path",
+                "d": "M 56 46 L 62 50 L 56 54 Z",
+                "stroke": "purple",
+                "fill": "purple",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 42,
+                "y": 62,
+                "size": 8,
+                "text": "Σp_pair = 0",
+                "stroke": "purple",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 86,
+                "y1": 32,
+                "x2": 86,
+                "y2": 72,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1
+              },
+              {
+                "type": "line",
+                "x1": 42,
+                "y1": 76,
+                "x2": 84,
+                "y2": 76,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 2
+              },
+              {
+                "type": "path",
+                "d": "M 78 72 L 86 76 L 78 80 Z",
+                "stroke": "coral",
+                "fill": "coral",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 64,
+                "y": 88,
+                "size": 9,
+                "text": "Δp ≠ 0",
+                "stroke": "coral",
+                "fill": "coral",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 18,
+                "cy": 76,
+                "r": 7,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 14,
+                "y1": 72,
+                "x2": 22,
+                "y2": 80,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 22,
+                "y1": 72,
+                "x2": 14,
+                "y2": 80,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "conservation-mismatch",
+                "dx": 0,
+                "dy": -3,
+                "scale": 1.03,
+                "opacity": 1,
+                "duration": 0.8,
+                "delay": 0.1
+              }
+            ]
+          }
+        ],
+        "connections": [
+          {
+            "from": "isolated-photon",
+            "to": "pair-center-of-mass",
+            "label": "hypothetical decay",
+            "at": 8.7
+          },
+          {
+            "from": "pair-center-of-mass",
+            "to": "conservation-mismatch",
+            "label": "breaks balance",
+            "at": 14.7
+          }
+        ],
+        "columns": [],
+        "takeaway": "A single photon cannot create matter in vacuum because its non-zero momentum cannot balance a pair's rest frame.",
+        "experiment": {
+          "prompt": "What happens if we boost into an ultra-high energy reference frame where the photon has tera-electronvolt energy?",
+          "choices": [
+            {
+              "label": "It still cannot decay: its invariant mass remains identically zero.",
+              "target": "conservation-mismatch",
+              "explanation": "Lorentz invariance ensures E² - p²c² = 0 in all frames, so boosting energy can never generate invariant rest mass."
+            },
+            {
+              "label": "The photon gains sufficient momentum to produce particle pairs.",
+              "target": "isolated-photon",
+              "explanation": "Increasing photon energy also increases its momentum proportionally (p = E/c), maintaining the exact same conservation deficit."
+            }
+          ]
+        },
+        "presentation": {
+          "method": "Counterfactual comparison",
+          "why": "Proves mathematically why light needs an interaction partner or collision rather than spontaneously decaying.",
+          "visualEvidence": "A single photon vector p refuses to balance the zero-momentum center-of-mass frame of a hypothetically created particle pair.",
+          "textMode": "labels"
+        }
+      },
+      "continuity": {
+        "from": "mass-energy-foundation",
+        "bridge": "Since photons carry both energy and momentum, we must test whether a single photon can spontaneously convert its energy into matter."
+      }
+    },
+    {
+      "id": "colliding-photons-threshold",
+      "title": "Canceling Momentum at Threshold",
+      "years": "",
+      "question": "How does a two-photon collision overcome the momentum conservation barrier?",
+      "insight": "Two equal gamma photons colliding head-on have opposing momenta that sum to zero, leaving all 1.022 MeV available as rest mass energy.",
+      "sourcePages": [],
+      "sources": [],
+      "safeguard": "Ensure learners see that momentum vectors cancel by direction, but scalar energies add, avoiding the idea that energy is canceled.",
+      "narration": "Because a single photon cannot balance momentum alone, we introduce a second photon to cancel net momentum. When two 511 keV gamma photons meet head-on, their directional momentum vectors p1 and p2 point in exact opposition, summing cleanly to zero at the collision nexus. Crucially, scalar energies do not cancel: both photons contribute 511 keV, pooling into 1.022 MeV of invariant center-of-mass energy. With net momentum vanished and the mass-energy threshold satisfied, this radiant field energy can materialize an electron-positron pair at rest.",
+      "narrationAt": 1.4,
+      "audio": "",
+      "start": 81.45,
+      "end": 122.18,
+      "finishedAt": 120.18,
+      "cues": [
+        {
+          "at": 0,
+          "text": "How does a two-photon collision overcome the momentum conservation barrier?"
+        },
+        {
+          "at": 8.5,
+          "text": "Opposing photon momenta cancel to zero while scalar energies add to 1.022 MeV, enabling pair creation at rest."
+        }
+      ],
+      "roles": {
+        "photon-gamma-1": "Photon γ₁ (+511 keV/c): An incoming gamma photon carries positive relativistic momentum p₁ = +511 keV/c and scalar energy E₁ = 511 keV.",
+        "collision-nexus": "Collision Nexus (Σp = 0): At the collision nexus, opposing momentum vectors sum cleanly to zero, satisfying momentum conservation at rest.",
+        "photon-gamma-2": "Photon γ₂ (−511 keV/c): An opposing gamma photon arrives head-on with equal magnitude but opposite momentum p₂ = −511 keV/c and energy E₂ = 511 keV.",
+        "threshold-accumulator": "Total Rest Energy (1.022 MeV): Scalar energies sum to 1.022 MeV, exactly matching the invariant threshold 2m_ec² required to create an electron-positron pair."
+      },
+      "visual": {
+        "layout": "diagram",
+        "nodes": [
+          {
+            "id": "photon-gamma-1",
+            "title": "Photon γ₁ (+511 keV/c)",
+            "body": "An incoming gamma photon carries positive relativistic momentum p₁ = +511 keV/c and scalar energy E₁ = 511 keV.",
+            "icon": "zap",
+            "color": "gold",
+            "at": 1,
+            "tag": "+p vector",
+            "position": {
+              "x": 80,
+              "y": 110,
+              "width": 340,
+              "height": 140
+            },
+            "artwork": [
+              {
+                "type": "path",
+                "d": "M 10,50 Q 25,20 40,50 T 70,50",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 70,
+                "cy": 50,
+                "r": 4,
+                "stroke": "none",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 15,
+                "y1": 65,
+                "x2": 72,
+                "y2": 65,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M 66,60 L 76,65 L 66,70 Z",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 95,
+                "size": 8,
+                "text": "p₁ = +511 keV/c",
+                "stroke": "gold",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 20,
+                "size": 8,
+                "text": "E₁ = 511 keV",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "collision-nexus",
+                "dx": 140,
+                "dy": 0,
+                "scale": 0.95,
+                "opacity": 0.6,
+                "duration": 1.6,
+                "delay": 0.1
+              }
+            ]
+          },
+          {
+            "id": "collision-nexus",
+            "title": "Collision Nexus (Σp = 0)",
+            "body": "At the collision nexus, opposing momentum vectors sum cleanly to zero, satisfying momentum conservation at rest.",
+            "icon": "sparkles",
+            "color": "blue",
+            "at": 3,
+            "tag": "Σp = 0",
+            "position": {
+              "x": 550,
+              "y": 110,
+              "width": 340,
+              "height": 140
+            },
+            "artwork": [
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 50,
+                "r": 34,
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 50,
+                "r": 20,
+                "stroke": "purple",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 50,
+                "r": 5,
+                "stroke": "white",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 14,
+                "y1": 50,
+                "x2": 38,
+                "y2": 50,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M 32,46 L 40,50 L 32,54 Z",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 86,
+                "y1": 50,
+                "x2": 62,
+                "y2": 50,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M 68,46 L 60,50 L 68,54 Z",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 18,
+                "size": 9,
+                "text": "p₁ + p₂ = 0",
+                "stroke": "blue",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 90,
+                "size": 8,
+                "text": "Net p = 0",
+                "stroke": "blue",
+                "fill": "green",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "collision-nexus",
+                "dx": 0,
+                "dy": 0,
+                "scale": 1.12,
+                "opacity": 1,
+                "duration": 1.4,
+                "delay": 0.4
+              }
+            ]
+          },
+          {
+            "id": "photon-gamma-2",
+            "title": "Photon γ₂ (−511 keV/c)",
+            "body": "An opposing gamma photon arrives head-on with equal magnitude but opposite momentum p₂ = −511 keV/c and energy E₂ = 511 keV.",
+            "icon": "zap",
+            "color": "gold",
+            "at": 1,
+            "tag": "−p vector",
+            "position": {
+              "x": 1020,
+              "y": 110,
+              "width": 340,
+              "height": 140
+            },
+            "artwork": [
+              {
+                "type": "path",
+                "d": "M 90,50 Q 75,80 60,50 T 30,50",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 30,
+                "cy": 50,
+                "r": 4,
+                "stroke": "none",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 85,
+                "y1": 65,
+                "x2": 28,
+                "y2": 65,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M 34,60 L 24,65 L 34,70 Z",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 95,
+                "size": 8,
+                "text": "p₂ = −511 keV/c",
+                "stroke": "gold",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 20,
+                "size": 8,
+                "text": "E₂ = 511 keV",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "collision-nexus",
+                "dx": -140,
+                "dy": 0,
+                "scale": 0.95,
+                "opacity": 0.6,
+                "duration": 1.6,
+                "delay": 0.1
+              }
+            ]
+          },
+          {
+            "id": "threshold-accumulator",
+            "title": "Total Rest Energy (1.022 MeV)",
+            "body": "Scalar energies sum to 1.022 MeV, exactly matching the invariant threshold 2m_ec² required to create an electron-positron pair.",
+            "icon": "scale",
+            "color": "green",
+            "at": 5,
+            "tag": "1.022 MeV",
+            "position": {
+              "x": 480,
+              "y": 360,
+              "width": 480,
+              "height": 140
+            },
+            "artwork": [
+              {
+                "type": "rect",
+                "x": 25,
+                "y": 25,
+                "width": 50,
+                "height": 50,
+                "rx": 6,
+                "stroke": "green",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 28,
+                "y": 38,
+                "width": 44,
+                "height": 34,
+                "rx": 4,
+                "stroke": "none",
+                "fill": "green",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 18,
+                "size": 7,
+                "text": "E₁ + E₂ = 1.022 MeV",
+                "stroke": "green",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 56,
+                "size": 9,
+                "text": "1.022 MeV",
+                "stroke": "green",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 88,
+                "size": 7,
+                "text": "Threshold 2m_e c² Met",
+                "stroke": "green",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "threshold-accumulator",
+                "dx": 0,
+                "dy": -6,
+                "scale": 1.04,
+                "opacity": 1,
+                "duration": 1.5,
+                "delay": 0
+              }
+            ]
+          }
+        ],
+        "connections": [
+          {
+            "from": "photon-gamma-1",
+            "to": "collision-nexus",
+            "label": "Opposing p₁",
+            "at": 5.7
+          },
+          {
+            "from": "photon-gamma-2",
+            "to": "collision-nexus",
+            "label": "Opposing p₂",
+            "at": 5.7
+          },
+          {
+            "from": "collision-nexus",
+            "to": "threshold-accumulator",
+            "label": "Scalar sum",
+            "at": 7.7
+          }
+        ],
+        "columns": [],
+        "takeaway": "Opposing photon momenta cancel to zero while scalar energies add to 1.022 MeV, enabling pair creation at rest.",
+        "experiment": {
+          "prompt": "What happens to the available invariant mass if the two 511 keV photons collide at a glancing angle instead of head-on?",
+          "choices": [
+            {
+              "label": "Net momentum is non-zero, dropping invariant energy below threshold.",
+              "target": "collision-nexus",
+              "explanation": "Because vectors do not fully cancel, some energy remains locked in system motion, leaving insufficient center-of-mass energy to create the pair at rest."
+            },
+            {
+              "label": "The threshold remains 1.022 MeV regardless of collision angle.",
+              "target": "threshold-accumulator",
+              "explanation": "At glancing angles, total invariant energy s = (p1 + p2)^2 is strictly less than 4E^2, falling below the rest-mass creation barrier."
+            }
+          ]
+        },
+        "presentation": {
+          "method": "Geometric construction",
+          "why": "Shows how spatial vector cancellation resolves the relativistic momentum constraint while adding scalar energies.",
+          "visualEvidence": "Opposing 511 keV momentum arrows cancel to zero at the impact point while an energy accumulator scales to 1.022 MeV.",
+          "textMode": "labels"
+        }
+      },
+      "continuity": {
+        "from": "single-photon-barrier",
+        "bridge": "Because a single photon cannot balance momentum alone, we introduce a second photon to cancel net momentum."
+      }
+    },
+    {
+      "id": "quantum-field-pair-creation",
+      "title": "Materializing the Pair",
+      "years": "",
+      "question": "How does electromagnetic field energy physically transform into charged fermion particles?",
+      "insight": "At the 1.022 MeV threshold, colliding photon quanta annihilate to excite the quantum Dirac field, creating an electron-positron pair at rest with zero net charge.",
+      "sourcePages": [],
+      "sources": [],
+      "safeguard": "Antimatter creation is mandatory to conserve charge; photon annihilation cannot produce an isolated electron alone.",
+      "narration": "With total momentum zero and energy exactly meeting the 1.022 MeV threshold, colliding photon quanta can now excite the Dirac fermion field. Rather than tearing classical empty space, this quantum electrodynamic transition annihilates the two gamma photons and couples directly to electron field modes. Because the initial energy matches the two-electron rest mass exactly, the resulting electron and positron emerge at rest with zero kinetic energy. Electric charge and lepton number sum to zero, creating genuine matter from massless radiation.",
+      "narrationAt": 1.4,
+      "audio": "",
+      "start": 122.18,
+      "end": 161.54,
+      "finishedAt": 159.54,
+      "cues": [
+        {
+          "at": 0,
+          "text": "How does electromagnetic field energy physically transform into charged fermion particles?"
+        },
+        {
+          "at": 21.5,
+          "text": "At the 1.022 MeV threshold, two colliding photons annihilate to produce an electron-positron pair at rest."
+        }
+      ],
+      "roles": {
+        "em-field-overlap": "Two-Photon Collision: Two opposing 511 keV gamma photons collide head-on in vacuum, carrying equal and opposite momenta that sum to zero.",
+        "vacuum-coupling": "Dirac Field Excitation: The colliding photons annihilate through quantum electrodynamics, transferring their exact 1.022 MeV threshold energy to excite the Dirac fermion field.",
+        "fermion-separation": "Pair Creation at Rest: At the exact threshold energy, the excited Dirac field materializes an electron and positron at rest with zero kinetic energy and zero net charge."
+      },
+      "visual": {
+        "layout": "diagram",
+        "nodes": [
+          {
+            "id": "em-field-overlap",
+            "title": "Two-Photon Collision",
+            "body": "Two opposing 511 keV gamma photons collide head-on in vacuum, carrying equal and opposite momenta that sum to zero.",
+            "icon": "zap",
+            "color": "gold",
+            "at": 1,
+            "tag": "2γ at 1.022 MeV",
+            "position": {
+              "x": 60,
+              "y": 130,
+              "width": 380,
+              "height": 350
+            },
+            "artwork": [
+              {
+                "type": "line",
+                "x1": 10,
+                "y1": 50,
+                "x2": 90,
+                "y2": 50,
+                "stroke": "muted",
+                "fill": "none",
+                "strokeWidth": 1
+              },
+              {
+                "type": "path",
+                "d": "M 10 50 Q 18 35 25 50 T 40 50",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 2
+              },
+              {
+                "type": "line",
+                "x1": 15,
+                "y1": 30,
+                "x2": 35,
+                "y2": 30,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.5
+              },
+              {
+                "type": "path",
+                "d": "M 31 27 L 35 30 L 31 33",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.5
+              },
+              {
+                "type": "path",
+                "d": "M 90 50 Q 82 35 75 50 T 60 50",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 2
+              },
+              {
+                "type": "line",
+                "x1": 85,
+                "y1": 30,
+                "x2": 65,
+                "y2": 30,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.5
+              },
+              {
+                "type": "path",
+                "d": "M 69 27 L 65 30 L 69 33",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.5
+              },
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 50,
+                "r": 8,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.8
+              },
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 50,
+                "r": 3,
+                "stroke": "white",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 25,
+                "y": 18,
+                "size": 8,
+                "text": "γ₁ (511 keV)",
+                "stroke": "none",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 75,
+                "y": 18,
+                "size": 8,
+                "text": "γ₂ (511 keV)",
+                "stroke": "none",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 78,
+                "size": 9,
+                "text": "p_net = 0",
+                "stroke": "none",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 90,
+                "size": 8,
+                "text": "E_total = 1.022 MeV",
+                "stroke": "none",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "em-field-overlap",
+                "dx": 0,
+                "dy": -4,
+                "scale": 1.05,
+                "opacity": 1,
+                "duration": 1.5,
+                "delay": 0
+              }
+            ]
+          },
+          {
+            "id": "vacuum-coupling",
+            "title": "Dirac Field Excitation",
+            "body": "The colliding photons annihilate through quantum electrodynamics, transferring their exact 1.022 MeV threshold energy to excite the Dirac fermion field.",
+            "icon": "sparkles",
+            "color": "purple",
+            "at": 10,
+            "tag": "Threshold Transition",
+            "position": {
+              "x": 530,
+              "y": 130,
+              "width": 380,
+              "height": 350
+            },
+            "artwork": [
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 42,
+                "r": 30,
+                "stroke": "purple",
+                "fill": "none",
+                "strokeWidth": 1
+              },
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 42,
+                "r": 22,
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 1.2
+              },
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 42,
+                "r": 14,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.5
+              },
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 42,
+                "r": 6,
+                "stroke": "gold",
+                "fill": "purple",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 33,
+                "y1": 25,
+                "x2": 67,
+                "y2": 59,
+                "stroke": "white",
+                "fill": "none",
+                "strokeWidth": 1
+              },
+              {
+                "type": "line",
+                "x1": 33,
+                "y1": 59,
+                "x2": 67,
+                "y2": 25,
+                "stroke": "white",
+                "fill": "none",
+                "strokeWidth": 1
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 80,
+                "size": 9,
+                "text": "E = 2 m_e c²",
+                "stroke": "none",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 92,
+                "size": 8,
+                "text": "2γ → e⁺e⁻ Transition",
+                "stroke": "none",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "vacuum-coupling",
+                "dx": 0,
+                "dy": -5,
+                "scale": 1.08,
+                "opacity": 1,
+                "duration": 1.8,
+                "delay": 0
+              }
+            ]
+          },
+          {
+            "id": "fermion-separation",
+            "title": "Pair Creation at Rest",
+            "body": "At the exact threshold energy, the excited Dirac field materializes an electron and positron at rest with zero kinetic energy and zero net charge.",
+            "icon": "atom",
+            "color": "blue",
+            "at": 18,
+            "tag": "Pair at Rest (KE = 0)",
+            "position": {
+              "x": 1000,
+              "y": 130,
+              "width": 380,
+              "height": 350
+            },
+            "artwork": [
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 50,
+                "r": 3,
+                "stroke": "muted",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 30,
+                "y1": 50,
+                "x2": 70,
+                "y2": 50,
+                "stroke": "muted",
+                "fill": "none",
+                "strokeWidth": 1
+              },
+              {
+                "type": "circle",
+                "cx": 30,
+                "cy": 50,
+                "r": 12,
+                "stroke": "blue",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 30,
+                "y": 53,
+                "size": 10,
+                "text": "e⁻",
+                "stroke": "none",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 70,
+                "cy": 50,
+                "r": 12,
+                "stroke": "coral",
+                "fill": "coral",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 70,
+                "y": 53,
+                "size": 10,
+                "text": "e⁺",
+                "stroke": "none",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 30,
+                "y": 28,
+                "size": 8,
+                "text": "q = -1e",
+                "stroke": "none",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 70,
+                "y": 28,
+                "size": 8,
+                "text": "q = +1e",
+                "stroke": "none",
+                "fill": "coral",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 76,
+                "size": 8,
+                "text": "v = 0 · KE = 0",
+                "stroke": "none",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 90,
+                "size": 7,
+                "text": "m₀ = 511 keV/c² each",
+                "stroke": "none",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "fermion-separation",
+                "dx": 0,
+                "dy": -4,
+                "scale": 1.05,
+                "opacity": 1,
+                "duration": 1.6,
+                "delay": 0
+              }
+            ]
+          }
+        ],
+        "connections": [
+          {
+            "from": "em-field-overlap",
+            "to": "vacuum-coupling",
+            "label": "QED annihilation",
+            "at": 12.7
+          },
+          {
+            "from": "vacuum-coupling",
+            "to": "fermion-separation",
+            "label": "Pair materialization",
+            "at": 20.7
+          }
+        ],
+        "columns": [],
+        "takeaway": "At the 1.022 MeV threshold, two colliding photons annihilate to produce an electron-positron pair at rest.",
+        "experiment": {
+          "prompt": "Why are the electron and positron produced at rest with zero kinetic energy in this collision?",
+          "choices": [
+            {
+              "label": "Total photon energy exactly matches the 2m_e c² threshold",
+              "target": "vacuum-coupling",
+              "explanation": "Because the combined 1.022 MeV radiant energy equals the sum of the rest masses, no surplus energy remains for kinetic motion."
+            },
+            {
+              "label": "Conservation of electric charge",
+              "target": "fermion-separation",
+              "explanation": "Charge neutrality dictates that a positron must accompany the electron, but does not determine their kinetic energy."
+            },
+            {
+              "label": "Opposing momentum cancellation",
+              "target": "em-field-overlap",
+              "explanation": "Zero total momentum ensures the center-of-mass frame is stationary, but kinetic energy specifically requires energy above 2m_e c²."
+            }
+          ]
+        },
+        "presentation": {
+          "method": "Mechanism demonstration",
+          "why": "Explains how photon quanta excite the Dirac fermion field to create particles at rest without classical field-ripping analogies.",
+          "visualEvidence": "Two colliding 511 keV photon quanta annihilate at the nexus, exciting the Dirac field to form an electron-positron pair at rest with zero kinetic energy.",
+          "textMode": "descriptive"
+        }
+      },
+      "continuity": {
+        "from": "colliding-photons-threshold",
+        "bridge": "With total momentum zero and energy exactly meeting the 1.022 MeV threshold, colliding photon quanta can now excite the Dirac fermion field."
+      }
+    },
+    {
+      "id": "radiation-to-matter-comparison",
+      "title": "From Propagating Energy to Matter",
+      "years": "",
+      "question": "In what fundamental physical ways does the new matter differ from the light that formed it?",
+      "insight": "Light is delocalized gauge field energy moving perpetually at c; matter is localized rest energy possessing inertia, mass, and rest frames.",
+      "sourcePages": [],
+      "sources": [],
+      "safeguard": "Prevent the misconception that energy was destroyed or created; total mass-energy and net momentum remain strictly conserved across both states.",
+      "narration": "Now that the particle pair has emerged, we can compare this newly created matter directly to the original light. The incoming gamma photons traveled perpetually at lightspeed with zero rest mass and no valid rest frame. In contrast, the resulting electron and positron possess invariant rest mass, localized electric charge, and inertia that resists acceleration. Crucially, neither energy nor momentum was created or destroyed. The delocalized, propagating electromagnetic energy has simply reorganized into localized matter at rest.",
+      "narrationAt": 1.4,
+      "audio": "",
+      "start": 161.54,
+      "end": 199.54,
+      "finishedAt": 197.54,
+      "cues": [
+        {
+          "at": 0,
+          "text": "In what fundamental physical ways does the new matter differ from the light that formed it?"
+        },
+        {
+          "at": 18.5,
+          "text": "Mass is not new substance; it is radiative energy reorganized into localized rest inertia and invariant mass."
+        }
+      ],
+      "roles": {
+        "propagating-radiation": "Propagating Radiation (Photons): Zero rest mass moving perpetually at lightspeed with no rest frame, carrying pure kinetic gauge energy and zero electric charge.",
+        "localized-matter": "Confined Matter (e⁻ / e⁺ Pair): Possesses invariant rest mass of 1.022 MeV/c², travels sub-lightspeed, exhibits inertial resistance to acceleration, and bears opposite localized charges.",
+        "conserved-quantity": "Conserved Total Invariants: Total energy of 1.022 MeV and zero net momentum remain identical across both states, proving mass is simply confined localized energy."
+      },
+      "visual": {
+        "layout": "comparison",
+        "nodes": [
+          {
+            "id": "propagating-radiation",
+            "title": "Propagating Radiation (Photons)",
+            "body": "Zero rest mass moving perpetually at lightspeed with no rest frame, carrying pure kinetic gauge energy and zero electric charge.",
+            "icon": "zap",
+            "color": "gold",
+            "at": 2,
+            "tag": "v = c | m₀ = 0"
+          },
+          {
+            "id": "localized-matter",
+            "title": "Confined Matter (e⁻ / e⁺ Pair)",
+            "body": "Possesses invariant rest mass of 1.022 MeV/c², travels sub-lightspeed, exhibits inertial resistance to acceleration, and bears opposite localized charges.",
+            "icon": "atom",
+            "color": "blue",
+            "at": 8,
+            "tag": "v < c | m₀ > 0"
+          },
+          {
+            "id": "conserved-quantity",
+            "title": "Conserved Total Invariants",
+            "body": "Total energy of 1.022 MeV and zero net momentum remain identical across both states, proving mass is simply confined localized energy.",
+            "icon": "scale",
+            "color": "green",
+            "at": 15,
+            "tag": "ΔE = 0 | Δp = 0"
+          }
+        ],
+        "connections": [
+          {
+            "from": "propagating-radiation",
+            "to": "localized-matter",
+            "label": "Breit-Wheeler conversion",
+            "at": 10.7
+          },
+          {
+            "from": "localized-matter",
+            "to": "conserved-quantity",
+            "label": "conserves total energy",
+            "at": 17.7
+          }
+        ],
+        "columns": [],
+        "takeaway": "Mass is not new substance; it is radiative energy reorganized into localized rest inertia and invariant mass.",
+        "experiment": {
+          "prompt": "If an electron is accelerated to near lightspeed, why does it still fundamentally differ from a photon?",
+          "choices": [
+            {
+              "label": "It retains non-zero invariant rest mass and electric charge",
+              "target": "localized-matter",
+              "explanation": "Unlike photons, massive particles possess intrinsic invariant mass, non-zero electric charge, and an attainable rest frame where velocity is zero."
+            },
+            {
+              "label": "Its invariant rest mass converts entirely into pure radiation",
+              "target": "propagating-radiation",
+              "explanation": "Kinetic energy increases relativistically, but invariant rest mass is a Lorentz invariant that never vanishes through acceleration."
+            }
+          ]
+        },
+        "presentation": {
+          "method": "Aligned comparison",
+          "why": "Consolidates the conceptual transition between radiation and matter across velocity, mass, charge, and inertia.",
+          "visualEvidence": "Side-by-side dossiers show photon traits (v=c, m0=0, uncharged) versus electron-positron traits (v<c, m0>0, localized, charged).",
+          "textMode": "descriptive"
+        }
+      },
+      "continuity": {
+        "from": "quantum-field-pair-creation",
+        "bridge": "Now that the particle pair has emerged, we can compare this newly created matter directly to the original light."
+      }
+    }
+  ],
+  "duration": 199.54,
+  "documentId": null,
+  "documentTitle": null,
+  "sources": [],
+  "sourceReview": {
+    "approved": true,
+    "checks": [
+      {
+        "beat": "mass-energy-foundation",
+        "supported": true,
+        "sourcePages": [],
+        "evidence": "Accurately represents relativistic mechanics: for a photon with zero rest mass (m₀ = 0), energy and momentum satisfy E = hν and p = E/c. The invariant energy-momentum equation E² = (pc)² + (m₀c²)² and its zero-momentum limit E = m₀c² correctly identify rest mass with localized, confined energy. The worked relationships, vector properties, and experiment feedback regarding momentum scaling with frequency are physically sound."
+      },
+      {
+        "beat": "single-photon-barrier",
+        "supported": true,
+        "sourcePages": [],
+        "evidence": "Correctly evaluates the kinematic impossibility of single-photon pair production in vacuum. A single real photon possesses zero invariant mass (s = E² - p²c² = 0) and cannot be brought to rest in any inertial frame, whereas an electron-positron pair has invariant mass √s ≥ 2mₑc² ≈ 1.022 MeV with zero momentum in its center-of-mass frame. Simultaneous conservation of 4-momentum is therefore strictly forbidden without an external partner or nucleus. Energy values (511 keV per electron rest mass and 1.022 MeV pair threshold) are accurate."
+      },
+      {
+        "beat": "colliding-photons-threshold",
+        "supported": true,
+        "sourcePages": [],
+        "evidence": "Relativistic kinematics are strictly accurate: two 511 keV photons colliding head-on carry collinear, opposite momentum vectors (+511 keV/c and -511 keV/c) summing to zero in the center-of-mass frame, while their scalar energies add to 1.022 MeV. The Mandelstam variable s = (p1 + p2)^2 equals 4E^2 = (1.022 MeV)^2 head-on, exactly meeting the threshold 2m_e c^2 (~1.022 MeV) for electron-positron creation. The experiment correctly demonstrates that at any non-collinear/glancing angle, s = 2E^2(1 - cos theta) < 4E^2, falling below the pair-creation threshold."
+      },
+      {
+        "beat": "quantum-field-pair-creation",
+        "supported": true,
+        "sourcePages": [],
+        "evidence": "Quantum electrodynamic pair production (the linear Breit-Wheeler process) is accurately characterized at threshold. All conservation laws are rigorously upheld: total energy (1.022 MeV radiant energy -> 2 * 511 keV/c^2 rest energy), net momentum (zero initial -> zero final), electric charge (0 -> -1e + +1e = 0), and lepton number (0 -> +1 + -1 = 0). At exact threshold in the center-of-mass frame, all available energy converts to invariant rest mass, yielding a pair at rest with zero kinetic energy. The beat properly frames the transition as field coupling without misrepresenting virtual intermediate states as literal classical mechanics."
+      },
+      {
+        "beat": "radiation-to-matter-comparison",
+        "supported": true,
+        "sourcePages": [],
+        "evidence": "Kinematics and conservation laws for threshold linear Breit-Wheeler pair production (head-on collision of two 511 keV gamma photons producing an electron-positron pair with combined rest mass of 1.022 MeV/c² at rest with net momentum p = 0) are quantitatively and physically exact. Distinctions between individual photon properties (zero rest mass, perpetual propagation at c, uncharged, absence of a rest frame) and fermion pair properties (non-zero invariant rest mass, localized charges ±e, inertia, sub-lightspeed propagation with an attainable rest frame) are rigorously maintained. UI elements and the interactive experiment conform to static vector cues and prewritten conditional explanations without claiming unsupported continuous simulations."
+      }
+    ],
+    "findings": [],
+    "method": "model-factual-review-without-retrieved-sources"
+  },
+  "narrativeReview": {
+    "approved": true,
+    "links": [
+      {
+        "from": "mass-energy-foundation",
+        "to": "single-photon-barrier",
+        "connected": true,
+        "connection": "The previous beat established that photons carry energy and momentum as the essential ingredients of mass; this leaves open whether a single isolated photon can spontaneously convert into matter on its own, which the next beat tests using relativistic conservation laws.",
+        "quote": "Since photons carry both energy and momentum, we must test whether a single photon can spontaneously convert its energy into matter."
+      },
+      {
+        "from": "single-photon-barrier",
+        "to": "colliding-photons-threshold",
+        "connected": true,
+        "connection": "The previous beat established that single-photon decay cannot conserve energy and momentum simultaneously in any reference frame; this creates the need to eliminate net momentum, which the next beat resolves by colliding two opposing gamma photons.",
+        "quote": "Because a single photon cannot balance momentum alone, we introduce a second photon to cancel net momentum."
+      },
+      {
+        "from": "colliding-photons-threshold",
+        "to": "quantum-field-pair-creation",
+        "connected": true,
+        "connection": "The previous beat established that two opposing 511 keV photons cancel net momentum while supplying the 1.022 MeV threshold energy; this leaves unanswered how pure electromagnetic energy physically materializes into particles, which the next beat explains through quantum electrodynamic excitation of the Dirac fermion field.",
+        "quote": "With total momentum zero and energy exactly meeting the 1.022 MeV threshold, colliding photon quanta can now excite the Dirac fermion field."
+      },
+      {
+        "from": "quantum-field-pair-creation",
+        "to": "radiation-to-matter-comparison",
+        "connected": true,
+        "connection": "The previous beat established the physical creation of an electron-positron pair from field excitation; this leaves unanswered what fundamentally distinguishes this newly emerged matter from the light that formed it given that energy and momentum were conserved, which the next beat clarifies by contrasting rest mass, inertia, and locality against propagating radiation.",
+        "quote": "Now that the particle pair has emerged, we can compare this newly created matter directly to the original light."
+      }
+    ],
+    "findings": []
+  },
+  "id": "61d56323819e14949204a5e95f1214fc",
+  "kind": "live_generated",
+  "storyboard": {
+    "title": "How Massless Light Materializes into Matter",
+    "question": "How does light which is massless become matter?",
+    "representation": "We track a head-on two-photon Breit-Wheeler collision (2 x 511 keV to e- + e+). The chain opens with mass-energy equivalence (E=mc^2), uses a geometric vector proof to show why a single photon cannot spontaneously decay due to momentum conservation, demonstrates how two colliding photons cancel net momentum while summing scalar energy to meet the threshold, visualizes quantum field excitation producing charged fermion pairs, and concludes with an aligned dossier comparing propagating radiative energy to localized inertial rest mass. Visual anchors: yellow vector arrows for photon momentum, cyan/magenta spheres for electron/positron particles, and balanced scales for conserved quantities.",
+    "example": {
+      "title": "Head-on collision of two 511 keV gamma photons",
+      "description": "Two 511 keV gamma rays collide head-on in vacuum, canceling net momentum and converting their combined 1.022 MeV radiant energy into an electron-positron pair at rest.",
+      "icon": "zap"
+    },
+    "beats": [
+      {
+        "id": "mass-energy-foundation",
+        "title": "Light Carries Energy and Momentum",
+        "question": "If photons have zero rest mass, what physical ingredients do they carry to form matter?",
+        "layout": "diagram",
+        "insight": "Photons have zero rest mass (m_0=0) but carry non-zero energy (E=hv) and momentum (p=E/c). Mass is not a separate physical substance; it is energy localized and confined at rest.",
+        "presentation": {
+          "method": "Annotated infographic",
+          "why": "Learners conflate mass with physical substance; clarifying E=mc^2 and p=E/c establishes energy as the universal currency.",
+          "visualEvidence": "A photon wave packet displays energy and momentum tags, linking via equation labels to an equivalent rest-energy mass box.",
+          "textMode": "descriptive"
+        },
+        "continuity": {
+          "from": null,
+          "bridge": "To understand how matter materializes from light, we must first examine what photons carry if not rest mass."
+        },
+        "sourcePages": [],
+        "visibleOperation": "A propagating wave packet labeled with energy E and momentum p aligns with Einstein's invariant mass equation, showing rest mass m_0=0 while total energy remains non-zero. This establishes that energy, not tangible substance, is the fundamental ingredient needed to construct matter.",
+        "safeguard": "Prevent thinking photons have rest mass; emphasize that momentum arises purely from electromagnetic wave energy, not moving mass."
+      },
+      {
+        "id": "single-photon-barrier",
+        "title": "The Single-Photon Impossibility",
+        "question": "Why can't an isolated gamma ray simply turn into an electron and positron on its own?",
+        "layout": "diagram",
+        "insight": "A single photon cannot decay into massive particles in vacuum because energy and momentum cannot be simultaneously conserved in any reference frame.",
+        "presentation": {
+          "method": "Counterfactual comparison",
+          "why": "Proves mathematically why light needs an interaction partner or collision rather than spontaneously decaying.",
+          "visualEvidence": "A single photon vector p refuses to balance the zero-momentum center-of-mass frame of a hypothetically created particle pair.",
+          "textMode": "labels"
+        },
+        "continuity": {
+          "from": "mass-energy-foundation",
+          "bridge": "Since photons carry both energy and momentum, we must test whether a single photon can spontaneously convert its energy into matter."
+        },
+        "sourcePages": [],
+        "visibleOperation": "A single photon vector p=E/c is juxtaposed against a proposed electron-positron pair at rest. In the pair's center-of-mass frame, total momentum is zero, but the single photon's momentum cannot vanish in any inertial frame, revealing a fatal conservation contradiction.",
+        "safeguard": "Address the misconception that higher photon energy alone triggers decay; show that momentum balance forbids isolated conversion."
+      },
+      {
+        "id": "colliding-photons-threshold",
+        "title": "Canceling Momentum at the Threshold",
+        "question": "How does a two-photon collision overcome the momentum conservation barrier?",
+        "layout": "diagram",
+        "insight": "Two equal gamma photons colliding head-on have opposing momenta that sum to zero, leaving all 1.022 MeV available as rest mass energy.",
+        "presentation": {
+          "method": "Geometric construction",
+          "why": "Shows how spatial vector cancellation resolves the relativistic momentum constraint while adding scalar energies.",
+          "visualEvidence": "Opposing 511 keV momentum arrows cancel to zero at the impact point while an energy accumulator scales to 1.022 MeV.",
+          "textMode": "labels"
+        },
+        "continuity": {
+          "from": "single-photon-barrier",
+          "bridge": "Because a single photon cannot balance momentum alone, we introduce a second photon to cancel net momentum."
+        },
+        "sourcePages": [],
+        "visibleOperation": "Two 511 keV photons travel inward along one axis. Their momentum vectors p1 and p2 meet and sum to zero resultant vector, while their scalar energies add to exactly 1.022 MeV, matching the invariant rest mass threshold 2*m_e*c^2.",
+        "safeguard": "Ensure learners see that momentum vectors cancel by direction, but scalar energies add, avoiding the idea that energy is canceled."
+      },
+      {
+        "id": "quantum-field-pair-creation",
+        "title": "Materializing the Pair",
+        "question": "How does electromagnetic field energy physically transform into charged fermion particles?",
+        "layout": "diagram",
+        "insight": "Concentrated electromagnetic energy excites the quantum Dirac field, creating an electron and positron whose net electric charge remains zero.",
+        "presentation": {
+          "method": "Mechanism demonstration",
+          "why": "Explains the physical mechanism of pair production without treating particles as magically condensed solids.",
+          "visualEvidence": "Electromagnetic field ripple collapses at the nexus, resolving into two diverging charged particles with opposite tracks.",
+          "textMode": "descriptive"
+        },
+        "continuity": {
+          "from": "colliding-photons-threshold",
+          "bridge": "With total momentum zero and energy exceeding 1.022 MeV, the concentrated field can now excite the electron field."
+        },
+        "sourcePages": [],
+        "visibleOperation": "At the collision focal point, overlapping oscillatory electric fields couple to the vacuum Dirac field. Two localized spherical wavepackets separate: an electron (charge -e) and positron (charge +e), preserving net zero charge and lepton number.",
+        "safeguard": "Clarify that antimatter (positron) is a mandatory partner to conserve electric charge; light cannot produce a solitary electron."
+      },
+      {
+        "id": "radiation-to-matter-comparison",
+        "title": "From Propagating Energy to Inertial Matter",
+        "question": "In what fundamental physical ways does the new matter differ from the light that formed it?",
+        "layout": "comparison",
+        "insight": "Light is delocalized gauge field energy moving perpetually at c; matter is localized rest energy possessing inertia, mass, and rest frames.",
+        "presentation": {
+          "method": "Aligned comparison",
+          "why": "Consolidates the conceptual transition between radiation and matter across velocity, mass, charge, and inertia.",
+          "visualEvidence": "Side-by-side dossiers show photon traits (v=c, m0=0, uncharged) versus electron-positron traits (v<c, m0>0, localized, charged).",
+          "textMode": "descriptive"
+        },
+        "continuity": {
+          "from": "quantum-field-pair-creation",
+          "bridge": "Now that the particle pair has emerged, we can compare this newly created matter directly to the original light."
+        },
+        "sourcePages": [],
+        "visibleOperation": "Two structured dossiers contrast the initial two photons with the final electron-positron pair. The display highlights three transformed invariants: velocity shifts from c to sub-light speeds, rest mass shifts from zero to 1.022 MeV/c^2, and localized inertia now resists acceleration.",
+        "safeguard": "Prevent the idea that energy was destroyed or created; highlight that total energy is unchanged, only its configuration changed."
+      }
+    ]
+  },
+  "generation": {
+    "provider": "antigravity",
+    "model": "gemini-3.8-flash-high",
+    "visionModel": "gemini-3.8-flash-high"
+  },
+  "review": {
+    "approved": true,
+    "findings": [],
+    "observations": [
+      "In mass-energy-foundation, the propagating wave packet labeled with E = hν and p = E/c connects through the relativistic invariant triangle to a confined rest-mass circle with zero net momentum, supported by clear descriptive explanations.",
+      "In single-photon-barrier, the single incident photon vector is counterfactually contrasted with the balanced electron-positron rest frame on a shared p = 0 axis, explicitly demonstrating the nonzero momentum deficit Δp ≠ 0.",
+      "Opposing momentum vectors (+511 keV/c and −511 keV/c) converge cleanly at the central collision nexus to yield Net p = 0, connecting downward to an energy accumulator verifying that the scalar sum meets the invariant 1.022 MeV rest-mass threshold.",
+      "A three-stage mechanism progression clearly tracks two colliding 511 keV gamma photons undergoing QED annihilation to excite Dirac field modes, ultimately materializing an electron-positron pair at rest with zero kinetic energy and neutral net charge.",
+      "Three structured comparison cards progressively stagger into view to contrast propagating radiation (v=c, m₀=0) against confined matter (v<c, m₀>0), supported by a conserved invariants panel (ΔE=0, Δp=0) and a bottom takeaway banner."
+    ],
+    "presentationChecks": [
+      {
+        "beat": "mass-energy-foundation",
+        "methodFits": true,
+        "evidenceVisible": true,
+        "textSupports": true,
+        "observation": "Annotated infographic clearly links the propagating photon wave, relativistic invariant triangle relation, and confined rest mass, establishing that energy and momentum localized at rest constitute mass."
+      },
+      {
+        "beat": "single-photon-barrier",
+        "methodFits": true,
+        "evidenceVisible": true,
+        "textSupports": true,
+        "observation": "Counterfactual comparison geometrically juxtaposes the non-zero photon vector against the zero-momentum pair frame along the p = 0 axis, demonstrating the momentum conservation contradiction without unnecessary prose."
+      },
+      {
+        "beat": "colliding-photons-threshold",
+        "methodFits": true,
+        "evidenceVisible": true,
+        "textSupports": true,
+        "observation": "Geometric construction demonstrates spatial vector cancellation to zero net momentum at the collision nexus while scalar energies accumulate to 1.022 MeV, using uncluttered label-mode annotations optimal for viewing while listening."
+      },
+      {
+        "beat": "quantum-field-pair-creation",
+        "methodFits": true,
+        "evidenceVisible": true,
+        "textSupports": true,
+        "observation": "Mechanism demonstration visually establishes quantum electrodynamic conversion via Dirac vacuum coupling rather than classical field tearing, supported by descriptive cards that detail particle charges, zero kinetic velocity, and mass-energy equivalence."
+      },
+      {
+        "beat": "radiation-to-matter-comparison",
+        "methodFits": true,
+        "evidenceVisible": true,
+        "textSupports": true,
+        "observation": "Side-by-side dossiers systematically compare photon traits against electron-positron pair traits across velocity, mass, charge, and inertia while affirming energy-momentum conservation."
+      }
+    ],
+    "method": "actual-browser-svg-frames-and-vision-model",
+    "frames": [
+      {
+        "chapter": 0,
+        "position": "early",
+        "time": 3
+      },
+      {
+        "chapter": 0,
+        "position": "middle",
+        "time": 20.045
+      },
+      {
+        "chapter": 0,
+        "position": "finished",
+        "time": 40.09
+      },
+      {
+        "chapter": 1,
+        "position": "early",
+        "time": 45.09
+      },
+      {
+        "chapter": 1,
+        "position": "middle",
+        "time": 60.77
+      },
+      {
+        "chapter": 1,
+        "position": "finished",
+        "time": 79.45
+      },
+      {
+        "chapter": 2,
+        "position": "early",
+        "time": 84.45
+      },
+      {
+        "chapter": 2,
+        "position": "middle",
+        "time": 100.815
+      },
+      {
+        "chapter": 2,
+        "position": "finished",
+        "time": 120.18
+      },
+      {
+        "chapter": 3,
+        "position": "early",
+        "time": 125.18
+      },
+      {
+        "chapter": 3,
+        "position": "middle",
+        "time": 140.86
+      },
+      {
+        "chapter": 3,
+        "position": "finished",
+        "time": 159.54
+      },
+      {
+        "chapter": 4,
+        "position": "early",
+        "time": 164.54
+      },
+      {
+        "chapter": 4,
+        "position": "finished",
+        "time": 197.54
+      }
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+[project]
+name = "qweeps"
+version = "0.1.0"
+description = "AI-generated visual lessons with synchronized narration, interactive exploration, and contextual Q&A."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+visual-mcp = ["mcp>=1.12,<2"]
+
+[project.scripts]
+omarchy-assistant = "assistant.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"assistant.visual" = ["teaching_skill/qweeps-visual-teaching/SKILL.md", "teaching_skill/qweeps-visual-teaching/references/*.md", "teaching_skill/qweeps-visual-teaching/agents/*.yaml", "teaching_skill/qweeps-visual-teaching/scripts/*.py"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
