@@ -11,7 +11,10 @@ env/
 venv/
 *.sqlite3
 
-node_modules/
+**/node_modules/
+visual-studio/node_modules
+dist/lessons/
+**/dist/lessons/
 media/
 *.log
 
