@@ -308,7 +308,7 @@ class OpenRouterLLM:
         if finish_reason == "length":
             import logging
 
-            logging.getLogger("omarchy-assistant").warning(
+            logging.getLogger("qweeps").warning(
                 "llm answer hit max_tokens=%s and may be truncated", self.max_tokens
             )
 
@@ -905,7 +905,7 @@ class FallbackLLM:
 
             if self._should_disable(exc):
                 self._primary_disabled = True
-            logging.getLogger("omarchy-assistant").warning("llm primary failed (%s); fallback", exc)
+            logging.getLogger("qweeps").warning("llm primary failed (%s); fallback", exc)
             return self.fallback.answer(question, facts, history)
 
     def stream_answer(self, question: str, facts: str = "", history: list | None = None):
@@ -922,7 +922,7 @@ class FallbackLLM:
 
             if self._should_disable(exc):
                 self._primary_disabled = True
-            logging.getLogger("omarchy-assistant").warning("llm stream failed (%s); fallback", exc)
+            logging.getLogger("qweeps").warning("llm stream failed (%s); fallback", exc)
             yield from self.fallback.stream_answer(question, facts, history)
             return
         yield first
@@ -940,7 +940,7 @@ class FallbackLLM:
 
             if self._should_disable(exc):
                 self._primary_disabled = True
-            logging.getLogger("omarchy-assistant").warning("llm talk failed (%s); fallback", exc)
+            logging.getLogger("qweeps").warning("llm talk failed (%s); fallback", exc)
             if hasattr(self.fallback, "talk"):
                 return self.fallback.talk(question, facts, history)
             return "ROUTE: CHAT\nSAY: " + self.fallback.answer(question, facts, history)
@@ -966,7 +966,7 @@ class FallbackLLM:
 
             if self._should_disable(exc):
                 self._primary_disabled = True
-            logging.getLogger("omarchy-assistant").warning("llm talk stream failed (%s); fallback", exc)
+            logging.getLogger("qweeps").warning("llm talk stream failed (%s); fallback", exc)
             if hasattr(self.fallback, "stream_talk"):
                 yield from self.fallback.stream_talk(question, facts, history)
             else:

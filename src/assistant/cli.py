@@ -594,7 +594,7 @@ def cmd_logs(args) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="omarchy-assistant", description="Voice assistant for Omarchy")
+    parser = argparse.ArgumentParser(prog="qweeps", description="QWEEPS — Live Interactive Visual Teaching")
     parser.add_argument("-V", "--version", action="version", version=__version__)
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose logging to stderr")
     sub = parser.add_subparsers(dest="command", required=True)

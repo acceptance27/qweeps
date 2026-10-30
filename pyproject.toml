@@ -12,6 +12,7 @@ dev = ["pytest>=8"]
 visual-mcp = ["mcp>=1.12,<2"]
 
 [project.scripts]
+qweeps = "assistant.cli:main"
 omarchy-assistant = "assistant.cli:main"
 
 [build-system]

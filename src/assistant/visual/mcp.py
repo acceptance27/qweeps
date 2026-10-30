@@ -1,6 +1,6 @@
 """Optional MCP facade over the same studio state and controls as QWEEPS.
 
-Run: uv run --extra visual-mcp omarchy-assistant visual mcp
+Run: uv run --extra visual-mcp qweeps visual mcp
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ def main():
     try:
         from mcp.server.fastmcp import FastMCP
     except ImportError as exc:
-        raise SystemExit("Install the MCP extra: uv run --extra visual-mcp omarchy-assistant visual mcp") from exc
+        raise SystemExit("Install the MCP extra: uv run --extra visual-mcp qweeps visual mcp") from exc
     server = FastMCP("QWEEPS Visual Learning")
 
     @server.tool()

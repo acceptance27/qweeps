@@ -219,16 +219,16 @@ silently replaced by a generic flowchart.
 ## Start
 
 ```bash
-omarchy-assistant visual astar
-omarchy-assistant visual "Explain how an ALU works"
-omarchy-assistant visual "Compare old and new entrepreneurship methods"
-omarchy-assistant visual --no-speak astar
+qweeps visual astar
+qweeps visual "Explain how an ALU works"
+qweeps visual "Compare old and new entrepreneurship methods"
+qweeps visual --no-speak astar
 ```
 
 `visual serve` runs the server in the foreground. Normally the launcher starts
 it automatically and verifies its health. It uses the existing QWEEPS model
 configuration and credentials; provider keys never enter the frontend bundle.
-Server diagnostics: `~/.cache/omarchy-assistant/visual-server.log`.
+Server diagnostics: `~/.cache/qweeps/visual-server.log`.
 
 The desktop launcher uses a Chromium app window, requesting the `qweeps-visual`
 class. Wayland browsers can use an origin-based app class instead.
@@ -347,13 +347,13 @@ track. Existing legacy scenes remain available in `?mode=studio`.
 Manim CE is installed separately from the older ManimGL environment:
 
 ```bash
-uv venv ~/.local/share/omarchy-assistant/manim-ce
-uv pip install --python ~/.local/share/omarchy-assistant/manim-ce/bin/python manim
+uv venv ~/.local/share/qweeps/manim-ce
+uv pip install --python ~/.local/share/qweeps/manim-ce/bin/python manim
 ```
 
 The worker also checks its own Python environment, or the interpreter specified
 by `QWEEPS_MANIM_PYTHON`. Renders are serialized, have a three-minute timeout, and
-are stored under `~/.cache/omarchy-assistant/visual-renders/`. Restart the visual
+are stored under `~/.cache/qweeps/visual-renders/`. Restart the visual
 server after changing its environment or installing Manim.
 
 This first version creates diagrams and worked explanations. It does not yet
@@ -368,8 +368,8 @@ The optional MCP facade operates on the same active session as the browser and
 voice controls. It uses the official Python MCP SDK (v1 compatibility range).
 
 ```bash
-cd ~/Work/omarchy-assistant
-uv run --extra visual-mcp omarchy-assistant visual mcp
+cd ~/Work/qweeps
+uv run --extra visual-mcp qweeps visual mcp
 ```
 
 Client configuration example (add to the chosen MCP client's server settings):
@@ -379,7 +379,7 @@ Client configuration example (add to the chosen MCP client's server settings):
   "mcpServers": {
     "qweeps-visual": {
       "command": "uv",
-      "args": ["run", "--directory", "/path/to/qweeps", "--extra", "visual-mcp", "omarchy-assistant", "visual", "mcp"]
+      "args": ["run", "--directory", "/path/to/qweeps", "--extra", "visual-mcp", "qweeps", "visual", "mcp"]
     }
   }
 }
@@ -402,7 +402,7 @@ npm --prefix visual-studio test
 npm --prefix visual-studio run build
 ```
 
-For frontend development, run `omarchy-assistant visual serve` and `npm run dev`
+For frontend development, run `qweeps visual serve` and `npm run dev`
 in separate terminals. Vite's dev and preview servers proxy `/api`, `/narration` and `/renders`
 to the loopback host. `QWEEPS_STUDIO_DIR` overrides the studio directory.
 
@@ -456,7 +456,7 @@ the observed technical failures and specific checks rather than generic rules.
 
 The repository includes the studio in `visual-studio/`. The host prefers this copy;
 `QWEEPS_STUDIO_DIR` can override it. Native live rendering uses
-`~/.local/share/omarchy-assistant/visual-venv/bin/python`, or
+`~/.local/share/qweeps/visual-venv/bin/python`, or
 `QWEEPS_MANIMGL_PYTHON`; the reviewed machine has ManimGL and an OpenGL GPU context.
 The trusted worker receives only bounded time, camera, selection and experiment
 data. It renders into a private RAM directory, with at most three local workers.

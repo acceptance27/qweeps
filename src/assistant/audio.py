@@ -106,7 +106,7 @@ def record_wav(
 ) -> Path | None:
     stop_playback()
     if path is None:
-        fd, name = tempfile.mkstemp(suffix=".wav", prefix="omarchy-assistant-")
+        fd, name = tempfile.mkstemp(suffix=".wav", prefix="qweeps-")
         import os
 
         os.close(fd)

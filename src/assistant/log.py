@@ -4,13 +4,13 @@ import logging
 import os
 from pathlib import Path
 
-LOGGER_NAME = "omarchy-assistant"
+LOGGER_NAME = "qweeps"
 _configured = False
 
 
 def state_dir() -> Path:
     base = os.environ.get("XDG_STATE_HOME") or str(Path.home() / ".local" / "state")
-    return Path(base) / "omarchy-assistant"
+    return Path(base) / "qweeps" if not (Path(base) / "omarchy-assistant").is_dir() else Path(base) / "omarchy-assistant"
 
 
 def log_file() -> Path:

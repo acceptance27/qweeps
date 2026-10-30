@@ -7,7 +7,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-DEFAULT_CONFIG_DIR = Path.home() / ".config" / "omarchy-assistant"
+DEFAULT_CONFIG_DIR = Path.home() / ".config" / "qweeps"
+LEGACY_CONFIG_DIR = Path.home() / ".config" / "omarchy-assistant"
 
 DEFAULT_CONFIG_TOML = """\
 [llm]
@@ -321,15 +322,15 @@ class Config:
         value = os.environ.get(env_name)
         if value:
             return value
-        secrets_file = self.config_dir / "secrets.toml"
-        if secrets_file.exists():
-            with secrets_file.open("rb") as fh:
-                data = tomllib.load(fh)
-            for section in data.values():
-                if isinstance(section, dict):
-                    for key, val in section.items():
-                        if key.upper() == env_name.upper() and isinstance(val, str):
-                            return val
+        for secrets_file in (self.config_dir / "secrets.toml", LEGACY_CONFIG_DIR / "secrets.toml"):
+            if secrets_file.exists():
+                with secrets_file.open("rb") as fh:
+                    data = tomllib.load(fh)
+                for section in data.values():
+                    if isinstance(section, dict):
+                        for key, val in section.items():
+                            if key.upper() == env_name.upper() and isinstance(val, str):
+                                return val
         local_env = Path.cwd() / ".env"
         if local_env.is_file():
             try:
@@ -413,11 +414,25 @@ def load_config(
     config_dir: Path | None = None,
 ) -> Config:
     if config_dir is None:
-        env_dir = os.environ.get("OMARCHY_ASSISTANT_CONFIG_DIR")
-        config_dir = Path(env_dir) if env_dir else DEFAULT_CONFIG_DIR
+        env_dir = os.environ.get("QWEEPS_CONFIG_DIR") or os.environ.get("OMARCHY_ASSISTANT_CONFIG_DIR")
+        if env_dir:
+            config_dir = Path(env_dir)
+        elif DEFAULT_CONFIG_DIR.exists():
+            config_dir = DEFAULT_CONFIG_DIR
+        elif LEGACY_CONFIG_DIR.exists():
+            config_dir = LEGACY_CONFIG_DIR
+        else:
+            config_dir = DEFAULT_CONFIG_DIR
     if path is None:
-        env_path = os.environ.get("OMARCHY_ASSISTANT_CONFIG")
-        path = env_path or (config_dir / "config.toml")
+        env_path = os.environ.get("QWEEPS_CONFIG") or os.environ.get("OMARCHY_ASSISTANT_CONFIG")
+        if env_path:
+            path = env_path
+        elif (config_dir / "config.toml").is_file():
+            path = config_dir / "config.toml"
+        elif config_dir == DEFAULT_CONFIG_DIR and (LEGACY_CONFIG_DIR / "config.toml").is_file():
+            path = LEGACY_CONFIG_DIR / "config.toml"
+        else:
+            path = config_dir / "config.toml"
     path = Path(path)
     if not path.exists():
         return default_config(config_dir)

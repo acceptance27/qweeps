@@ -367,7 +367,9 @@ Return {"title":"...","question":"...","representation":"method rationale",
 class BrowserLessonStore:
     def __init__(self,llm,studio,folder=None,documents=None,narration=None):
         self.narration=narration
-        self.llm=llm;self.studio=Path(studio);self.folder=Path(folder or Path.home()/'.cache/omarchy-assistant/browser-lessons');self.folder.mkdir(parents=True,exist_ok=True)
+        self.llm=llm;self.studio=Path(studio)
+        default_folder=Path.home()/'.cache/qweeps/browser-lessons' if not (Path.home()/'.cache/omarchy-assistant/browser-lessons').is_dir() else Path.home()/'.cache/omarchy-assistant/browser-lessons'
+        self.folder=Path(folder or default_folder);self.folder.mkdir(parents=True,exist_ok=True)
         self.bundled_folder=Path(__file__).resolve().parents[3]/'bundled-lessons/browser-lessons'
         self.documents=documents or DocumentLibrary();self.icons=json.loads((self.studio/'public/live/catalog.json').read_text())['icons']
         self.jobs={};self.lock=threading.RLock()

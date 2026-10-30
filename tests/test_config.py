@@ -7,7 +7,7 @@ from assistant.config import config_from_toml, default_config
 
 class ConfigTests(unittest.TestCase):
     def test_defaults(self):
-        cfg = default_config(Path("/tmp/nonexistent-omarchy-assistant"))
+        cfg = default_config(Path("/tmp/nonexistent-qweeps"))
         self.assertEqual(cfg.llm.model, "nvidia/nemotron-3.5-super-vl:free")
         self.assertEqual(cfg.llm.api_key_env, "OPENROUTER_API_KEY")
         self.assertEqual(cfg.llm.fallback_models, [])

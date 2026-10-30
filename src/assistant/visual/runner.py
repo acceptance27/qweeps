@@ -20,8 +20,9 @@ from typing import Any, Callable
 
 from .ipc import DEFAULT_SOCKET_PATH, VisualIPCClient
 
-VISUAL_VENV_PYTHON = str(Path.home() / ".local/share/omarchy-assistant/visual-venv/bin/python")
-VISUAL_VENV_MANIM = str(Path.home() / ".local/share/omarchy-assistant/visual-venv/bin/manimgl")
+default_venv = Path.home() / ".local/share/qweeps/visual-venv" if not (Path.home() / ".local/share/omarchy-assistant/visual-venv").is_dir() else Path.home() / ".local/share/omarchy-assistant/visual-venv"
+VISUAL_VENV_PYTHON = str(default_venv / "bin/python")
+VISUAL_VENV_MANIM = str(default_venv / "bin/manimgl")
 
 
 def studio_request(path: str, payload: dict | None = None, timeout: int = 120) -> dict:
@@ -49,7 +50,7 @@ def ensure_studio_server() -> None:
     from .server import STUDIO_DIR
     if not (STUDIO_DIR / "dist/index.html").is_file():
         raise RuntimeError(f"Build the visual studio first: cd {STUDIO_DIR} && npm run build")
-    log_dir = Path.home() / ".cache/omarchy-assistant"
+    log_dir = Path.home() / ".cache/qweeps" if not (Path.home() / ".cache/omarchy-assistant").is_dir() else Path.home() / ".cache/omarchy-assistant"
     log_dir.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
     env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2]) + os.pathsep + env.get("PYTHONPATH", "")

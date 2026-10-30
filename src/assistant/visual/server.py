@@ -30,7 +30,10 @@ STUDIO_DIR = Path(os.environ.get("QWEEPS_STUDIO_DIR", str(
 
 def manim_python() -> str | None:
     configured = os.environ.get("QWEEPS_MANIM_PYTHON")
-    candidates = [configured] if configured else [sys.executable, str(Path.home() / ".local/share/omarchy-assistant/manim-ce/bin/python")]
+    qweeps_manim = Path.home() / ".local/share/qweeps/manim-ce/bin/python"
+    legacy_manim = Path.home() / ".local/share/omarchy-assistant/manim-ce/bin/python"
+    manim_default = str(qweeps_manim if qweeps_manim.is_file() else legacy_manim)
+    candidates = [configured] if configured else [sys.executable, manim_default]
     for candidate in candidates:
         if not candidate or not Path(candidate).is_file():
             continue
@@ -50,7 +53,8 @@ class VisualService:
         self.active_id: str | None = None
         self.lock = threading.RLock()
         self.render_lock = threading.Lock()
-        self.render_dir = render_dir or Path.home() / ".cache/omarchy-assistant/visual-renders"
+        default_renders = Path.home() / ".cache/qweeps/visual-renders" if not (Path.home() / ".cache/omarchy-assistant/visual-renders").is_dir() else Path.home() / ".cache/omarchy-assistant/visual-renders"
+        self.render_dir = render_dir or default_renders
         self.renderer = manim_python()
         from .narration import NarrationStore
         from .native_host import NativeHost

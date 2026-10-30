@@ -16,7 +16,8 @@ def words(text):
 
 class DocumentLibrary:
     def __init__(self,folder=None):
-        self.folder=Path(folder or Path.home()/'.local/share/omarchy-assistant/visual-documents')
+        default_folder=Path.home()/'.local/share/qweeps/visual-documents' if not (Path.home()/'.local/share/omarchy-assistant/visual-documents').is_dir() else Path.home()/'.local/share/omarchy-assistant/visual-documents'
+        self.folder=Path(folder or default_folder)
         self.folder.mkdir(parents=True,exist_ok=True)
     def get(self,doc_id):
         if not isinstance(doc_id,str) or not ID.fullmatch(doc_id):raise PlanError('Invalid document ID')

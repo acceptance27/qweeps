@@ -11,8 +11,6 @@ QWEEPS is an experimental local teaching system that turns a question or supplie
 
 Learners can pause, move through the explanation, inspect objects or a selected region, ask questions, and request a focused visual branch. The browser scenes use SVG, GSAP and a Hyperframes adapter. **Live playback does not require baking an MP4.** Native Manim export and rendering are separate, optional paths.
 
-The project also includes the Omarchy desktop assistant from which it developed. Its existing CLI and configuration directory retain the `omarchy-assistant` name.
-
 ## Project status
 
 This is a research and development prototype. Automated review can miss factual, visual and teaching errors; it is not independent expert review or evidence of improved learning outcomes. External providers can time out or become unavailable.
@@ -50,7 +48,7 @@ Open [the studio](http://127.0.0.1:4174), or [the bundled lesson](http://127.0.0
 
 The supplied build requires no npm command for playback. Provider construction happens at server startup, so the default configuration still requires `agy` even when opening a saved lesson.
 
-**Replay without provider access:** in `~/.config/omarchy-assistant/config.toml`, set `enabled = false` under `[llm]` and `provider = "none"` under `[tts]` before starting the server. Retain the other settings for later use. This disables new AI generation, AI answers and speech synthesis; the bundled lesson and its saved audio remain available. Re-enable the relevant providers for live questions or new lessons.
+**Replay without provider access:** in `~/.config/qweeps/config.toml` (or local `.env`), set `enabled = false` under `[llm]` and `provider = "none"` under `[tts]` before starting the server. Retain the other settings for later use. This disables new AI generation, AI answers and speech synthesis; the bundled lesson and its saved audio remain available. Re-enable the relevant providers for live questions or new lessons.
 
 ### Controls
 
@@ -99,7 +97,7 @@ Read the [technical report](docs/QWEEPS_Live_Visual_Teaching_Technical_Report.pd
 
 ## Models, narration and configuration
 
-Configuration is stored at `~/.config/omarchy-assistant/config.toml`. Roles are configurable; the inspected defaults separate ordinary chat from lesson work:
+Configuration is stored at `~/.config/qweeps/config.toml` (or via environment variables and local `.env`). Roles are configurable; the inspected defaults separate ordinary chat from lesson work:
 
 | Role | Default route |
 |---|---|
@@ -132,31 +130,18 @@ model = "fish-audio/s2.1-pro-free:free"
 voice = "33a2191b8fda440cae962137e9793985"
 ```
 
-Use `omarchy-assistant set-key` for the OpenRouter key, or configure the documented environment variable. Antigravity uses its own authentication. See the visual documentation for alternative provider adapters and alignment requirements.
+Use `qweeps set-key` for the OpenRouter key, or configure a local `.env` file (`OPENROUTER_API_KEY=...`). Antigravity uses its own local authentication (`agy`). See the visual documentation for alternative provider adapters and alignment requirements.
 
-## Optional desktop assistant
-
-The broader assistant includes timers, reminders, notes, desktop controls, knowledge tools and coding-agent delegation. Hyprland/Omarchy is needed for the relevant desktop integrations; it is not the browser renderer.
-
-Its Talker layer handles conversational responses and can route execution to configured agents such as OpenCode or Antigravity. Routing instructions reduce inappropriate handoffs or capability refusals; they do not guarantee model compliance. Repeatable actions may be promoted into skills according to the configured promotion policy.
-
-After installing from the checkout, the optional desktop installer links the launcher and enables the user timer/reminder service:
-
-```bash
-./packaging/install.sh
-omarchy-assistant doctor
-```
-
-The installer does not install or authenticate external model, audio or desktop dependencies. Audio tools such as `mpv` or `ffplay`, STT software and system integrations depend on the enabled features.
+## CLI commands
 
 | Command | Purpose |
 |---|---|
-| `omarchy-assistant text "..."` | Handle a text request |
-| `omarchy-assistant chat` | Open a terminal conversation |
-| `omarchy-assistant visual [topic]` | Open the visual interface |
-| `omarchy-assistant doctor` | Inspect configured dependencies |
-| `omarchy-assistant set-key` | Configure the OpenRouter key |
-| `omarchy-assistant --help` | List available CLI commands |
+| `qweeps visual [topic]` | Open the visual interface or generate a new topic |
+| `qweeps visual serve` | Start the local visual studio server |
+| `qweeps visual mcp` | Start the Model Context Protocol (MCP) tool server |
+| `qweeps doctor` | Inspect configured dependencies and providers |
+| `qweeps set-key` | Configure the OpenRouter API key |
+| `qweeps --help` | List available CLI commands and options |
 
 ## Development and checks
 

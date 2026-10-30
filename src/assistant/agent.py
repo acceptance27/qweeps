@@ -21,7 +21,7 @@ RECIPE_INSTRUCTION = (
     '"patterns": ["a regex matching how the user would ask for this", "..."], '
     '"command": ["executable", "arg", "..."], "kind": "action", "risk": "low"}\n'
     "(If you built a script or tool, save it somewhere stable - for example under "
-    "~/.local/share/omarchy-assistant/tools/ - and put its invocation in \"command\".)\n"
+    "~/.local/share/qweeps/tools/ - and put its invocation in \"command\".)\n"
     "- Otherwise, if you built something reusable that is not a single command:\n"
     'CAPABILITY: {"name": "short-kebab-name", "description": "one line"}\n'
     "State risk honestly as low, medium, or high. If nothing reusable was done, omit the line."

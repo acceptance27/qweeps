@@ -22,7 +22,7 @@ class HTTPError(RuntimeError):
 def _log():
     import logging
 
-    return logging.getLogger("omarchy-assistant")
+    return logging.getLogger("qweeps")
 
 
 def _request(req: urllib.request.Request, timeout: int, retries: int = MAX_RETRIES) -> bytes:
