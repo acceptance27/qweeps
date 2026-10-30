@@ -602,3 +602,17 @@ def test_targeted_beat_patching_only_re_reviews_flagged_beats(tmp_path,library):
  lesson=store.lesson(j['lessonId'])
  assert lesson['review']['approved']
  assert len(lesson['review']['presentationChecks'])==2
+
+def test_diagram_layout_clearance_auto_resolves_overlapping_node_positions(library):
+ lib,d=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib);raw=diagram_draft()
+ nodes=raw['chapters'][0]['nodes']
+ # Deliberately overlap the two nodes: node 0 right edge 500 overlaps node 1 left edge 450
+ nodes[0]['position']={'x':100,'y':150,'width':400,'height':300}
+ nodes[1]['position']={'x':450,'y':150,'width':400,'height':300}
+ out=validate_lesson(raw,d,store.icons,require_presentation=True)
+ p0=out['chapters'][0]['visual']['nodes'][0]['position']
+ p1=out['chapters'][0]['visual']['nodes'][1]['position']
+ assert p0['x']+p0['width']<=p1['x'] or p1['x']+p1['width']<=p0['x']
+ assert 45<=p0['x'] and p0['x']+p0['width']<=1395
+ assert 45<=p1['x'] and p1['x']+p1['width']<=1395
+

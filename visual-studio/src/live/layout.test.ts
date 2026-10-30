@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import opentype from 'opentype.js';
-import {fitCopy,nodeBoxes,nodeCopy,diagramCopy,conceptUsesGrid,gridRelationships} from './layout';
+import {fitCopy,nodeBoxes,nodeCopy,diagramCopy,diagramEdge,resolveDiagramBoxes,conceptUsesGrid,gridRelationships} from './layout';
 import type {LiveVisual} from './lessonTypes';
 import type {LiveNode} from './lessonTypes';
 
@@ -99,3 +99,37 @@ test('a construction uses labels and more artwork space, with prose retained for
  assert.deepEqual(diagramCopy(font,node,400,390),description,'legacy diagrams keep their descriptive presentation');
  assert.equal(construction.overflow,false);
 });
+
+test('resolveDiagramBoxes separates overlapping diagram node coordinates',()=>{
+ const nodes:LiveNode[]=[
+  {id:'left',title:'Left Box',body:'Left',icon:'app',color:'blue',at:1,tag:'',position:{x:200,y:150,width:400,height:250}},
+  {id:'right',title:'Right Box',body:'Right',icon:'app',color:'green',at:2,tag:'',position:{x:450,y:150,width:400,height:250}}
+ ];
+ const boxes=resolveDiagramBoxes(nodes,15);
+ assert.equal(boxes.length,2);
+ const a=boxes[0],b=boxes[1];
+ assert.ok(a.x+a.width<=b.x||b.x+b.width<=a.x||a.y+a.height<=b.y||b.y+b.height<=a.y,'boxes must not overlap');
+ for(const box of boxes){
+  assert.ok(box.x>=45&&box.x+box.width<=1395);
+  assert.ok(box.y>=110&&box.y+box.height<=505);
+ }
+});
+
+test('diagramEdge clamps connector endpoints to node boundaries with clearance',()=>{
+ const a={node:{id:'a',title:'Node A',body:'A',icon:'app',color:'blue',at:1,tag:''} as LiveNode,x:100,y:150,width:300,height:250};
+ const b={node:{id:'b',title:'Node B',body:'B',icon:'app',color:'green',at:2,tag:''} as LiveNode,x:700,y:150,width:300,height:250};
+ const edge=diagramEdge(a,b,[a,b],font);
+ assert.ok(edge.from.x>=a.x+a.width,'connector exits outside source perimeter');
+ assert.ok(edge.to.x<=b.x,'connector stops outside target perimeter');
+ assert.equal(edge.d,`M${edge.from.x} ${edge.from.y}L${edge.to.x} ${edge.to.y}`);
+ assert.ok(edge.pill.width>0&&edge.pill.height>0,'pill reserved for relationship label');
+});
+
+test('diagramEdge curves around intervening obstacle nodes',()=>{
+ const a={node:{id:'a',title:'Start',body:'A',icon:'app',color:'blue',at:1,tag:''} as LiveNode,x:100,y:150,width:200,height:200};
+ const obs={node:{id:'obs',title:'Obstacle',body:'O',icon:'app',color:'coral',at:2,tag:''} as LiveNode,x:400,y:150,width:200,height:200};
+ const b={node:{id:'b',title:'End',body:'B',icon:'app',color:'green',at:3,tag:''} as LiveNode,x:700,y:150,width:200,height:200};
+ const edge=diagramEdge(a,b,[a,obs,b],font);
+ assert.ok(edge.d.includes('Q'),'connector curves around intervening obstacle');
+});
+

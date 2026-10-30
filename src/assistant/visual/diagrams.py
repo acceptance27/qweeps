@@ -56,3 +56,104 @@ def validate_diagram(node):
         motions.append({'cue':move['cue'],**{k:number(move.get(k,default),f'motion {k}',low,high) for k,default,low,high in
             [('dx',0,-1000,1000),('dy',0,-350,350),('scale',1,0,3),('opacity',1,0,1),('duration',1.5,.2,6),('delay',0,0,6)]}})
     return {'position':position,'artwork':drawings,'motion':motions}
+
+
+def check_boxes_overlap(b1, b2, margin=15):
+    """Return True if two boxes violate margin clearance."""
+    return not (b1['x'] + b1['width'] + margin <= b2['x'] or
+                b2['x'] + b2['width'] + margin <= b1['x'] or
+                b1['y'] + b1['height'] + margin <= b2['y'] or
+                b2['y'] + b2['height'] + margin <= b1['y'])
+
+
+def resolve_diagram_clearance(nodes, min_margin=15):
+    """Resolve and validate diagram node clearance to prevent overlapping bounding boxes."""
+    if len(nodes) <= 1:
+        return nodes
+
+    positions = [dict(n['position']) for n in nodes]
+    canvas_min_x = 45.0
+    canvas_max_x = 1395.0
+    canvas_min_y = 110.0
+    canvas_max_y = 505.0
+    min_width = 100.0
+    min_height = 120.0
+
+    for iteration in range(25):
+        any_overlap = False
+        for i in range(len(positions)):
+            for j in range(i + 1, len(positions)):
+                a, b = positions[i], positions[j]
+                x1_a, x2_a = a['x'], a['x'] + a['width']
+                y1_a, y2_a = a['y'], a['y'] + a['height']
+                x1_b, x2_b = b['x'], b['x'] + b['width']
+                y1_b, y2_b = b['y'], b['y'] + b['height']
+
+                req_ox = min(x2_a, x2_b) - max(x1_a, x1_b) + min_margin
+                req_oy = min(y2_a, y2_b) - max(y1_a, y1_b) + min_margin
+
+                if req_ox > 0 and req_oy > 0:
+                    any_overlap = True
+                    center_a_x = x1_a + a['width'] / 2.0
+                    center_b_x = x1_b + b['width'] / 2.0
+                    center_a_y = y1_a + a['height'] / 2.0
+                    center_b_y = y1_b + b['height'] / 2.0
+
+                    if req_ox <= req_oy:
+                        shift = req_ox / 2.0
+                        if center_a_x < center_b_x:
+                            a['x'] -= shift
+                            b['x'] += shift
+                        elif center_a_x > center_b_x:
+                            a['x'] += shift
+                            b['x'] -= shift
+                        else:
+                            a['x'] -= shift
+                            b['x'] += shift + 1.0
+                    else:
+                        shift = req_oy / 2.0
+                        if center_a_y < center_b_y:
+                            a['y'] -= shift
+                            b['y'] += shift
+                        elif center_a_y > center_b_y:
+                            a['y'] += shift
+                            b['y'] -= shift
+                        else:
+                            a['y'] -= shift
+                            b['y'] += shift + 1.0
+
+        for p in positions:
+            p['x'] = max(canvas_min_x, min(canvas_max_x - p['width'], p['x']))
+            p['y'] = max(canvas_min_y, min(canvas_max_y - p['height'], p['y']))
+
+        if not any_overlap:
+            break
+
+        if iteration >= 10:
+            scale = 0.96
+            for p in positions:
+                if p['width'] * scale >= min_width:
+                    new_w = p['width'] * scale
+                    p['x'] += (p['width'] - new_w) / 2.0
+                    p['width'] = new_w
+                if p['height'] * scale >= min_height:
+                    new_h = p['height'] * scale
+                    p['y'] += (p['height'] - new_h) / 2.0
+                    p['height'] = new_h
+
+    for p in positions:
+        p['x'] = round(p['x'], 1)
+        p['y'] = round(p['y'], 1)
+        p['width'] = round(p['width'], 1)
+        p['height'] = round(p['height'], 1)
+
+    for i in range(len(positions)):
+        for j in range(i + 1, len(positions)):
+            if check_boxes_overlap(positions[i], positions[j], margin=0):
+                raise PlanError(f"Diagram objects '{nodes[i]['id']}' and '{nodes[j]['id']}' overlap; allocate distinct coordinates with at least {min_margin}px clearance.")
+
+    for node, p in zip(nodes, positions):
+        node['position'] = p
+
+    return nodes
+

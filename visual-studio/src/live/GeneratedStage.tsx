@@ -8,7 +8,7 @@ import {visualBeatIndex} from './navigation';
 import {createLessonAdapter} from './hyperframes';
 import {clamp,contains,progress,type LiveSnapshot} from './geometry';
 import type {StageProps,LiveLesson,LiveChapter} from './lessonTypes';
-import {nodeBoxes,fitCopy,nodeCopy,diagramCopy,conceptUsesGrid,gridRelationships,type NodeBox} from './layout';
+import {nodeBoxes,fitCopy,nodeCopy,diagramCopy,diagramEdge,conceptUsesGrid,gridRelationships,type NodeBox} from './layout';
 import {LiveAsset as Asset,palette} from './LiveAssets';
 import {DiagramArtwork} from './DiagramArtwork';
 import {diagramMotions} from './diagramMotion';
@@ -26,10 +26,6 @@ function edgePath(a:NodeBox,b:NodeBox){
  const left=a.x<b.x,from={x:a.x+(left?a.width:0),y:a.y+a.height*.8},to={x:b.x+(left?0:b.width),y:b.y+b.height*.8};
  return{d:`M${from.x} ${from.y}C${(from.x+to.x)/2} ${from.y} ${(from.x+to.x)/2} ${to.y} ${to.x} ${to.y}`,from,to};
 }
-function diagramEdge(a:NodeBox,b:NodeBox,font:Font|null,textMode:'labels'|'descriptive'){
- const from={x:a.x+a.width/2,y:a.y+diagramCopy(font,a.node,a.width,a.height,textMode).artHeight/2},to={x:b.x+b.width/2,y:b.y+diagramCopy(font,b.node,b.width,b.height,textMode).artHeight/2};
- return{d:`M${from.x} ${from.y}L${to.x} ${to.y}`,from,to};
-}
 function Chapter({lesson,c,index,font,time,snapshot,role}:{lesson:LiveLesson;c:LiveChapter;index:number;font:Font|null;time:number;snapshot:LiveSnapshot;role:(id:string)=>React.SVGProps<SVGGElement>}){
  const v=c.visual!,textMode=v.presentation?.textMode||'descriptive',boxes=useMemo(()=>nodeBoxes(v),[v]),copies=useMemo(()=>boxes.map(b=>nodeCopy(font,b.node,b.width,b.height,v.layout)),[boxes,font,v.layout]),active=time>=(c.visualStart??c.start)&&time<(c.visualEnd??c.end)||time>=lesson.duration&&index===lesson.chapters.length-1;
  const choice=c.visual?.experiment?.choices[snapshot.experiments?.[c.id]??-1];
@@ -41,7 +37,7 @@ function Chapter({lesson,c,index,font,time,snapshot,role}:{lesson:LiveLesson;c:L
   {v.layout==='concept'&&!conceptUsesGrid(v)&&boxes.map((box,i)=>{const right=box.x>720,x=right?900:540,y=320,bx=right?box.x:box.x+box.width,by=box.y+box.height*.5;return <path key={i} className="concept-link" data-from={box.node.id} data-link-at={box.node.at+2} d={`M${x} ${y}Q${(x+bx)/2} ${by} ${bx} ${by}`} fill="none" stroke={palette[box.node.color]} strokeWidth="1.6"/>;})}
   {gridRelationships(v).map(link=>{const box=boxes.find(b=>b.node.id===link.id)!;return <g key={link.id} className="generated-edge" data-from={link.from} data-to={link.to} data-link-at={link.at}><TextBlock font={font} text={link.text} x={box.x+4} y={box.y-7} width={box.width-8} height={5} size={18} minSize={14}/></g>;})}
   {v.layout==='process'&&v.connections.map((link,i)=>{const a=boxes.find(b=>b.node.id===link.from)!,b=boxes.find(b=>b.node.id===link.to)!,p=edgePath(a,b),gap=Math.abs(p.from.x-p.to.x);return <g key={i} className="generated-edge" data-from={link.from} data-to={link.to} data-link-at={link.at}><path d={p.d} fill="none" stroke="#b5cdd3" strokeWidth="1.8" markerEnd="url(#generated-arrow)"/><TextBlock font={font} text={link.label} x={Math.min(p.from.x,p.to.x)+7} y={p.from.y-126} width={gap-14} height={110} size={18} minSize={14}/></g>;})}
-  {v.layout==='diagram'&&v.connections.map((link,i)=>{const a=boxes.find(b=>b.node.id===link.from)!,b=boxes.find(b=>b.node.id===link.to)!,p=diagramEdge(a,b,font,textMode);return <g key={i} className="generated-edge" data-from={link.from} data-to={link.to} data-link-at={link.at}><path d={p.d} fill="none" stroke="#7899a5" strokeWidth="1.4" markerEnd="url(#generated-arrow)"/><TextBlock font={font} text={link.label} x={(p.from.x+p.to.x)/2-100} y={(p.from.y+p.to.y)/2-14} width={200} height={40} size={18}/></g>;})}
+  {v.layout==='diagram'&&v.connections.map((link,i)=>{const a=boxes.find(b=>b.node.id===link.from)!,b=boxes.find(b=>b.node.id===link.to)!,p=diagramEdge(a,b,boxes,font,textMode);return <g key={i} className="generated-edge" data-from={link.from} data-to={link.to} data-link-at={link.at}><path d={p.d} fill="none" stroke="#7899a5" strokeWidth="1.4" markerEnd="url(#generated-arrow)"/>{link.label&&<g className="generated-edge-label"><rect x={p.pill.x} y={p.pill.y} width={p.pill.width} height={p.pill.height} rx={5} fill="#071117" stroke="#20353f" strokeWidth="1" fillOpacity={.92}/><TextBlock font={font} text={link.label} x={p.label.x} y={p.label.y} width={p.label.width} height={p.label.height} size={18} minSize={14}/></g>}</g>;})}
   {boxes.map(({node:n,x,y,width:w,height:h},i)=>{
    const color=palette[n.color],isTable=v.layout==='matrix',isConcept=v.layout==='concept',isDiagram=v.layout==='diagram',chosen=choice?.target===n.id,copy=copies[i],diagram=isDiagram?diagramCopy(font,n,w,h,textMode):null;
    return <g key={n.id} {...role(n.id)} className="generated-object" data-at={n.at} data-narrating={narratingObjects.includes(n.id)?'true':undefined} data-chosen={chosen?'true':undefined} transform={`translate(${x} ${y})`}>

@@ -170,6 +170,9 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
             if layout=='matrix':
                 n['cells']=[_text(v,'matrix cell',155) for v in _list(node.get('cells'),'matrix cells',len(columns)-1,len(columns)-1)]
             nodes.append(n)
+        if layout=='diagram':
+            from .diagrams import resolve_diagram_clearance
+            nodes=resolve_diagram_clearance(nodes)
         if layout=='diagram' and any(m['cue'] not in node_ids for n in nodes for m in n['motion']):
             raise PlanError('Diagram motion cues must name objects in this beat')
         if layout in {'comparison','process','timeline'} and len(nodes)>4:raise PlanError('Use at most four objects for this layout, or choose a matrix/concept layout')
@@ -612,7 +615,8 @@ class BrowserLessonStore:
                         'colors':sorted(COLORS),'titleMaxCharacters':65,'bodyMaxCharacters':250,'bodyTargetCharacters':160,
                         'diagramRequired':['position','artwork','motion'],
                         'position':{'requiredNumericFields':['x','y','width','height'],'xRange':[45,1300],'yRange':[110,430],
-                            'widthRange':[100,1000],'heightRange':[120,390],'rightAtMost':1395,'bottomAtMost':505},
+                            'widthRange':[100,1000],'heightRange':[120,390],'rightAtMost':1395,'bottomAtMost':505,
+                            'clearance':'Maintain at least 15px clearance between diagram objects without overlap.'},
                         'artwork':'Array of SVG primitive objects, not markup or a description. Empty array uses a catalog icon.',
                         'motion':'Array of cue-driven motion objects; use [] when no motion is needed.'},
                      'instruction':'Direct ONLY these one or two beats. Use the shared worked example. Return compact JSON; do not repeat the entire module.'}
