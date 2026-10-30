@@ -1,5 +1,9 @@
 # QWEEPS — Live Interactive Visual Teaching
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23791785.svg)](https://doi.org/10.5281/zenodo.23791785)
+[![ORCID](https://img.shields.io/badge/ORCID-0009--0003--2325--7968-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0009-0003-2325-7968)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 > AI-generated visual lessons with synchronized narration, interactive exploration, and contextual Q&A.
 
 ---
@@ -203,3 +207,23 @@ Run the test suite using `pytest`:
 uv run --with pytest pytest tests/
 ```
 Tests cover routing, voice, visual model validation, scene context, session isolation, and the local API.
+
+---
+
+## Citation & Prior Art
+
+If you reference or build upon QWEEPS in research, publications, or benchmarks:
+
+```bibtex
+@software{pahignalo_qweeps_2026,
+  author       = {Pahignalo, Rayven},
+  title        = {QWEEPS — Live Interactive Visual Teaching},
+  year         = 2026,
+  publisher    = {Zenodo},
+  doi          = {10.5281/zenodo.23791785},
+  url          = {https://doi.org/10.5281/zenodo.23791785}
+}
+```
+- **Zenodo DOI**: [10.5281/zenodo.23791785](https://doi.org/10.5281/zenodo.23791785)
+- **Author ORCID**: [0009-0003-2325-7968](https://orcid.org/0009-0003-2325-7968)
+
