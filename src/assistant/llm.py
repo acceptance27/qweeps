@@ -1022,6 +1022,9 @@ def build_visual_llm(cfg: Config) -> LLM:
             raise ModelProviderError("The visual service requires the configured Antigravity CLI.")
         return AntigravityLLM(cfg,visual_model=cfg.llm.visual_model,
                               vision_model=cfg.llm.visual_vision_model)
+    if cfg.llm.visual_provider in ("opencode", "opencode-go"):
+        from .opencode_llm import OpenCodeLLM
+        return OpenCodeLLM(cfg, provider=cfg.llm.visual_provider)
     if cfg.llm.visual_provider == "opencode-free":
         from .opencode_llm import OpenCodeFreeLLM
         return OpenCodeFreeLLM(cfg)
@@ -1049,6 +1052,9 @@ def build_llm(cfg: Config) -> LLM:
     fallback = antigravity_llm or OfflineLLM()
 
     if cfg.llm.enabled:
+        if cfg.llm.auth_provider in ("opencode", "opencode-go"):
+            from .opencode_llm import OpenCodeLLM
+            return FallbackLLM(OpenCodeLLM(cfg, provider=cfg.llm.auth_provider), fallback=fallback)
         key = cfg.llm_key()
         if key:
             return FallbackLLM(OpenRouterLLM(cfg, key), fallback=fallback)

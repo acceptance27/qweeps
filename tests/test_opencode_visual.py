@@ -111,3 +111,28 @@ def test_lesson_store_does_not_retry_exhausted_quota(tmp_path):
     request=Mock(side_effect=OpenCodeLimitError('quota'))
     with pytest.raises(OpenCodeLimitError):store._request({'stage':'Planning'},request)
     assert request.call_count==1
+
+
+def test_opencode_go_provider_with_deepseek_v4_1_flash():
+    from assistant.opencode_llm import OpenCodeLLM
+    cfg = Config()
+    cfg.llm.visual_provider = "opencode-go"
+    cfg.llm.visual_model = "opencode-go/deepseek-v4.1-flash"
+    cfg.llm.visual_vision_model = "opencode-go/deepseek-v4.1-flash"
+    with patch("assistant.opencode_llm.shutil.which", return_value="/bin/opencode"):
+        llm = build_visual_llm(cfg)
+    assert isinstance(llm, OpenCodeLLM)
+    assert llm.model == "opencode-go/deepseek-v4.1-flash"
+    assert llm.vision_model == "opencode-go/deepseek-v4.1-flash"
+    assert llm.provider == "opencode-go"
+
+    p = process(success('{"topic": "deepseek"}'))
+    def launch(cmd, **kwargs):
+        assert "--model" in cmd
+        assert cmd[cmd.index("--model") + 1] == "opencode-go/deepseek-v4.1-flash"
+        return p
+
+    with patch("assistant.opencode_llm.subprocess.Popen", side_effect=launch):
+        res = llm.compose("Explain something", "System prompt")
+        assert res == '{"topic": "deepseek"}'
+

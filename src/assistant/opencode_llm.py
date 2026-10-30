@@ -1,4 +1,4 @@
-"""Use OpenCode's real client for its free tier, with no paid fallback."""
+"""OpenCode client support for visual teaching and multimodal generation."""
 from __future__ import annotations
 
 import json
@@ -17,25 +17,17 @@ class OpenCodeLimitError(ModelProviderError):
     retryable = False
 
 
-class OpenCodeFreeLLM:
-    provider = "opencode-free"
-    free_only = True
-    # Explicit IDs avoid routing to the similarly named subscription models.
-    models = frozenset({
-        "opencode/deepseek-v4.1-flash-free", "opencode/mimo-v2.6-flash-free",
-        "opencode/glm-5.3-flash-free", "opencode/flint-40b-free",
-        "opencode/beam-free", "opencode/big-pickle",
-        "opencode/nemotron-3.5-lightning-free", "opencode/nemotron-3.5-super-vl-free",
-    })
+class OpenCodeLLM:
+    provider = "opencode"
+    free_only = False
 
-    def __init__(self, cfg):
-        self.model = cfg.llm.visual_model
-        self.vision_model = cfg.llm.visual_vision_model
-        if self.model not in self.models or self.vision_model not in self.models:
-            raise ModelProviderError("The free visual provider requires explicit supported opencode/ free model IDs.")
+    def __init__(self, cfg, provider: str = "opencode-go"):
+        self.provider = provider
+        self.model = getattr(cfg.llm, "visual_model", None) or cfg.llm.model
+        self.vision_model = getattr(cfg.llm, "visual_vision_model", None) or self.model
         self.command = shutil.which("opencode")
         if not self.command:
-            raise ModelProviderError("Install and connect the OpenCode CLI to use free visual models.")
+            raise ModelProviderError("Install and connect the OpenCode CLI to use opencode visual models.")
         self.timeout = max(60, cfg.llm.timeout, 300)
         self._limits = {}
         self._lock = threading.Lock()
@@ -44,8 +36,8 @@ class OpenCodeFreeLLM:
         with self._lock:
             until = self._limits.get(model, 0)
         if until > time.monotonic():
-            minutes = math.ceil((until-time.monotonic()) / 60)
-            raise OpenCodeLimitError(f"OpenCode free usage limit reached for {model}. Retry in about {minutes} minutes. No paid fallback was used.")
+            minutes = math.ceil((until - time.monotonic()) / 60)
+            raise OpenCodeLimitError(f"OpenCode usage limit reached for {model}. Retry in about {minutes} minutes.")
 
     def _error(self, model, error):
         error = error if isinstance(error, dict) else {}
@@ -55,8 +47,8 @@ class OpenCodeFreeLLM:
             with self._lock:
                 self._limits[model] = time.monotonic() + delay / 1000
             self._check_limit(model)
-        # Provider bodies can include credentials and arbitrary content.
-        raise ModelProviderError(f"OpenCode could not complete the request for {model}. No paid fallback was used.")
+        suffix = " No paid fallback was used." if self.free_only else ""
+        raise ModelProviderError(f"OpenCode could not complete the request for {model}.{suffix}")
 
     def _run(self, instruction, system="", frames=()):
         model = self.vision_model if frames else self.model
@@ -65,8 +57,6 @@ class OpenCodeFreeLLM:
         agent = {"model": model, "permissions": permissions}
         with tempfile.TemporaryDirectory(prefix="qweeps-opencode-") as folder:
             root = Path(folder)
-            # Maintenance agents inherit the selected free model too. Instructions
-            # and source data arrive in the prompt; no filesystem/tool task needed.
             config = {"$schema": "https://opencode.ai/config.json", "model": model,
                       "permissions": permissions,
                       "agents": {name: dict(agent) for name in ("plan", "title", "summary", "compaction")}}
@@ -123,7 +113,8 @@ class OpenCodeFreeLLM:
                     proc.wait(timeout=2)
             text = "".join(chunks).strip()
             if not completed or not text:
-                raise ModelProviderError("OpenCode returned no complete response. No paid fallback was used.")
+                msg = "OpenCode returned no complete response. No paid fallback was used." if self.free_only else f"OpenCode returned no complete response for {model}."
+                raise ModelProviderError(msg)
             return text
 
     def compose(self, instruction, system=""):
@@ -154,3 +145,39 @@ class OpenCodeFreeLLM:
         if not 1 <= len(frames) <= 24 or any(not f.startswith((b"\x89PNG\r\n\x1a\n", b"\xff\xd8\xff")) for f in frames):
             raise ModelProviderError("Visual review requires 1–24 PNG or JPEG frames.")
         return self._run(instruction, "Inspect every attached image in order. Return only the requested review JSON.", frames)
+
+
+class OpenCodeFreeLLM(OpenCodeLLM):
+    provider = "opencode-free"
+    free_only = True
+    # Explicit IDs avoid routing to the similarly named subscription models.
+    models = frozenset({
+        "opencode/deepseek-v4.1-flash-free", "opencode/mimo-v2.6-flash-free",
+        "opencode/glm-5.3-flash-free", "opencode/flint-40b-free",
+        "opencode/beam-free", "opencode/big-pickle",
+        "opencode/nemotron-3.5-lightning-free", "opencode/nemotron-3.5-super-vl-free",
+    })
+
+    def __init__(self, cfg):
+        super().__init__(cfg, provider="opencode-free")
+        if self.model not in self.models or self.vision_model not in self.models:
+            raise ModelProviderError("The free visual provider requires explicit supported opencode/ free model IDs.")
+
+    def _check_limit(self, model):
+        with self._lock:
+            until = self._limits.get(model, 0)
+        if until > time.monotonic():
+            minutes = math.ceil((until-time.monotonic()) / 60)
+            raise OpenCodeLimitError(f"OpenCode free usage limit reached for {model}. Retry in about {minutes} minutes. No paid fallback was used.")
+
+    def _error(self, model, error):
+        error = error if isinstance(error, dict) else {}
+        if error.get("type") == "provider.free-limit" or error.get("status") == 429:
+            delay = error.get("retryAfterMs", 60_000)
+            delay = delay if isinstance(delay, (int, float)) and math.isfinite(delay) and delay > 0 else 60_000
+            with self._lock:
+                self._limits[model] = time.monotonic() + delay / 1000
+            self._check_limit(model)
+        raise ModelProviderError(f"OpenCode could not complete the request for {model}. No paid fallback was used.")
+
+

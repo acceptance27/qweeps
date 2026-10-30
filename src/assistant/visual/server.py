@@ -477,7 +477,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=PORT)
     parser.add_argument("--studio-dir", type=Path, default=STUDIO_DIR)
-    parser.add_argument("--visual-provider",choices=('antigravity','opencode-free','openrouter-free'))
+    parser.add_argument("--visual-provider",choices=('antigravity','opencode-go','opencode','opencode-free','openrouter-free'))
     parser.add_argument("--visual-model")
     parser.add_argument("--visual-vision-model")
     args = parser.parse_args()

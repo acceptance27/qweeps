@@ -26,9 +26,9 @@ reasoning_effort = "none"
 max_tokens = 2048
 timeout = 60
 fallback_provider = "offline"
-visual_provider = "antigravity"  # empty inherits the main provider
-visual_model = "gemini-3.8-flash-high"
-visual_vision_model = "gemini-3.8-flash-high"
+visual_provider = "opencode-go"  # empty inherits the main provider
+visual_model = "opencode-go/deepseek-v4.1-flash"
+visual_vision_model = "opencode-go/deepseek-v4.1-flash"
 
 [tts]
 provider = "espeak"          # none | openrouter | piper | espeak
@@ -138,9 +138,9 @@ class LLMConfig:
     max_tokens: int = 2048
     timeout: int = 60
     fallback_provider: str = "offline"
-    visual_provider: str = "antigravity"
-    visual_model: str = "gemini-3.8-flash-high"
-    visual_vision_model: str = "gemini-3.8-flash-high"
+    visual_provider: str = "opencode-go"
+    visual_model: str = "opencode-go/deepseek-v4.1-flash"
+    visual_vision_model: str = "opencode-go/deepseek-v4.1-flash"
 
 
 @dataclass
