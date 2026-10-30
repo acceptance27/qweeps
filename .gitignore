@@ -14,3 +14,17 @@ venv/
 node_modules/
 media/
 *.log
+
+# Local secrets, environment variables, and agent workspaces
+.env
+.env.*
+*.env
+*.local
+secrets.toml
+.secrets
+*.key
+*.pem
+.gemini/
+.agy/
+.vscode/
+.idea/
