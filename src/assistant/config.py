@@ -321,6 +321,15 @@ class Config:
         value = os.environ.get(env_name)
         if value:
             return value
+        secrets_file = self.config_dir / "secrets.toml"
+        if secrets_file.exists():
+            with secrets_file.open("rb") as fh:
+                data = tomllib.load(fh)
+            for section in data.values():
+                if isinstance(section, dict):
+                    for key, val in section.items():
+                        if key.upper() == env_name.upper() and isinstance(val, str):
+                            return val
         local_env = Path.cwd() / ".env"
         if local_env.is_file():
             try:
@@ -332,15 +341,6 @@ class Config:
                             return v.strip().strip("'\"")
             except Exception:
                 pass
-        for secrets_file in (Path.cwd() / "secrets.toml", self.config_dir / "secrets.toml"):
-            if secrets_file.exists():
-                with secrets_file.open("rb") as fh:
-                    data = tomllib.load(fh)
-                for section in data.values():
-                    if isinstance(section, dict):
-                        for key, val in section.items():
-                            if key.upper() == env_name.upper() and isinstance(val, str):
-                                return val
         return None
 
     def opencode_auth_key(self, provider: str, path: Path | None = None) -> str | None:

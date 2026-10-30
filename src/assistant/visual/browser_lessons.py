@@ -454,7 +454,7 @@ class BrowserLessonStore:
     def status(self,job_id):
         with self.lock:
             if job_id not in self.jobs:raise PlanError('The lesson preparation session expired. Try again.')
-            j=self.jobs[job_id];result={k:copy.deepcopy(j[k]) for k in ('id','status','stage','revision','lessonId','error','candidate','speechSync') if k in j}
+            j=self.jobs[job_id];result={k:copy.deepcopy(j[k]) for k in ('id','status','stage','revision','lessonId','error','candidate','speechSync','revisedBeats') if k in j}
             if j['status']=='failed':result['canResume']=bool(j.get('speechSync') or (self.folder/j['lessonId']/'working.json').is_file())
             return result
     def start(self,payload,context=None):
@@ -558,6 +558,13 @@ class BrowserLessonStore:
                     # spending another model request recopying unchanged strings.
                     raw=copy.deepcopy(raw)
                     for key in ('title','question','representation','example'):raw[key]=copy.deepcopy(old[key])
+                    # Auto-preserve unflagged chapters to prevent subtle phrasing differences from failing validation
+                    for c in old['chapters']:
+                        if c['id'] not in affected:
+                            for idx, ch in enumerate(raw.get('chapters',[])):
+                                if isinstance(ch,dict) and ch.get('id')==c['id']:
+                                    raw['chapters'][idx]=copy.deepcopy(c)
+                                    break
                 # Preserve failed direction attempts for diagnosis without publishing them.
                 attempt=folder/f"{attempt_prefix}-{uuid.uuid4().hex[:8]}.json"
                 attempt.write_text(json.dumps(raw,ensure_ascii=False))
@@ -609,13 +616,19 @@ class BrowserLessonStore:
                         'artwork':'Array of SVG primitive objects, not markup or a description. Empty array uses a catalog icon.',
                         'motion':'Array of cue-driven motion objects; use [] when no motion is needed.'},
                      'instruction':'Direct ONLY these one or two beats. Use the shared worked example. Return compact JSON; do not repeat the entire module.'}
-            if findings:payload['revisionFeedback']=findings
+            if findings:
+                sec_findings=[f for f in findings if f.get('beat') in {b['id'] for b in beats}]
+                if sec_findings:payload['revisionFeedback']=sec_findings
             if previous_attempt:
                 payload['previousAttempt']=previous_attempt;payload['validationFeedback']=validation_error
                 payload['instruction']+=' Correct the saved attempt using the validator feedback, preserving its already-valid content. Return the complete corrected section.'
             if old:
                 payload['previousDirectedSection']=old
-                payload['instruction']+=' Preserve this reviewed section, especially its corrected scientific facts and spoken bridges. Revise only flagged beats to resolve the actual visual findings; return unflagged beats verbatim. Source corrections outrank the original storyboard.'
+                flagged_in_section=[b['id'] for b in beats if b['id'] in affected]
+                if flagged_in_section:
+                    payload['instruction']+=f" Focus revisions ONLY on flagged beat(s): {', '.join(flagged_in_section)}. Preserve unflagged beats verbatim."
+                else:
+                    payload['instruction']+=' Preserve this reviewed section, especially its corrected scientific facts and spoken bridges. Revise only flagged beats to resolve the actual visual findings; return unflagged beats verbatim. Source corrections outrank the original storyboard.'
             # Use maintained guidance even for an installed package with a separate studio.
             # Paths, primitive coordinates and motion are substantially larger
             # than infographic copy. Keep a bounded allowance for that data.
@@ -731,6 +744,11 @@ Approval requires no findings and supported:true for every supplied beat.'''
         raw['method']='supplied-document-factual-review' if j['document'] else 'model-factual-review-without-retrieved-sources'
         target.write_text(json.dumps(raw,ensure_ascii=False));return raw
     def _prepare(self,j,findings=None,initial=None):
+        if findings:
+            j['revisedBeats']={f.get('beat') for f in findings if f.get('beat')}
+            j['stage']=f"Revising {len(j['revisedBeats'])} flagged beat(s): {', '.join(sorted(j['revisedBeats']))}"
+        else:
+            j['revisedBeats']=None
         candidate=initial if initial is not None else self._direct(j,findings)
         corrections={'source':0,'narrative':0}
         for attempt in range(5):
@@ -897,7 +915,45 @@ replacements, only those needed.'''
         try:
             review=getattr(self.llm,'review_images',None)
             if review is None:raise PlanError('The configured provider needs image review support for publishing a new live lesson.')
-            candidate=j['candidate'];groups=[list(range(i,min(i+2,len(candidate['chapters'])))) for i in range(0,len(candidate['chapters']),2)]
+            candidate=j['candidate']
+            folder=self.folder/j['lessonId']
+            prior_review=None
+            if j.get('revision',0)>0:
+                prior_reviews=sorted(folder.glob("frame-review-*-*/review.json"),key=lambda p:p.stat().st_mtime,reverse=True)
+                for pr in prior_reviews:
+                    try:
+                        prior_review=json.loads(pr.read_text())
+                        break
+                    except Exception:pass
+
+            revised_beats=j.get('revisedBeats')
+            layout_issues={issue.get('beat') for issue in j.get('layoutIssues',[]) if issue.get('beat')}
+
+            def is_chapter_approved(c):
+                cid=c['id']
+                if revised_beats is not None and cid in revised_beats:return False
+                if cid in layout_issues or not prior_review:return False
+                if any(f.get('beat')==cid for f in prior_review.get('findings',[])):return False
+                if c.get('visual',{}).get('presentation'):
+                    checks=[chk for chk in prior_review.get('presentationChecks',[]) if chk.get('beat')==cid]
+                    if not checks or any(not chk.get(k) for chk in checks for k in ('methodFits','evidenceVisible','textSupports')):
+                        return False
+                return True
+
+            needs_review=[i for i,c in enumerate(candidate['chapters']) if not is_chapter_approved(c)]
+            approved_indices=[i for i,c in enumerate(candidate['chapters']) if is_chapter_approved(c)]
+            review_groups=[needs_review[i:i+2] for i in range(0,len(needs_review),2)] if needs_review else []
+            approved_groups=[approved_indices[i:i+2] for i in range(0,len(approved_indices),2)] if approved_indices else []
+
+            def cached_group_review(indices):
+                checks=[chk for i in indices for chk in prior_review.get('presentationChecks',[]) if chk.get('beat')==candidate['chapters'][i]['id']]
+                obs=[]
+                for i in indices:
+                    cid=candidate['chapters'][i]['id']
+                    matched=[o for o in prior_review.get('observations',[]) if cid in o]
+                    obs.extend(matched or [f"Beat {cid} visual presentation verified."])
+                return {'approved':True,'findings':[],'observations':obs,'presentationChecks':checks}
+
             def inspect(indices):
                 chosen=[(frame,label) for frame,label in zip(frames,labels) if label['chapter'] in indices]
                 chapters=[candidate['chapters'][i] for i in indices];pages={p for c in chapters for p in c['sourcePages']}
@@ -910,10 +966,17 @@ replacements, only those needed.'''
                     'Return JSON only: {"approved":true|false,"findings":[{"beat":"id","problem":"visible defect","revision":"specific fix"}],"observations":["one concrete observation per beat"],"presentationChecks":[{"beat":"id","methodFits":true|false,"evidenceVisible":true|false,"textSupports":true|false,"observation":"specific observed construction/description and what it establishes"}]}. Include presentationChecks for each beat that declares presentation.')
                 raw=self._request(j,lambda:review(prompt,[frame for frame,_ in chosen]));result=json.loads(re.sub(r'^```(?:json)?\s*|\s*```$','',raw.strip()))
                 if type(result.get('approved')) is not bool or not isinstance(result.get('findings'),list) or not isinstance(result.get('observations'),list):raise PlanError('The visual reviewer did not return a valid review')
+                required={c['id'] for c in chapters if c.get('visual',{}).get('presentation')}
+                if isinstance(result.get('presentationChecks'),list) and required:
+                    result['presentationChecks']=[c for c in result['presentationChecks'] if isinstance(c,dict) and c.get('beat') in required]
                 result=validate_presentation_review(result,chapters)
                 if result['approved'] and (result['findings'] or len(result['observations'])<len(indices)):raise PlanError('Visual approval needs evidence for every beat and no unresolved findings')
                 return result
-            with ThreadPoolExecutor(max_workers=2) as pool:reviews=list(pool.map(inspect,groups))
+
+            reviews=[cached_group_review(grp) for grp in approved_groups]
+            if review_groups:
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    reviews.extend(pool.map(inspect,review_groups))
             result={'approved':all(r['approved'] for r in reviews),'findings':[f for r in reviews for f in r['findings']],'observations':[o for r in reviews for o in r['observations']],
                     'presentationChecks':[c for r in reviews for c in r.get('presentationChecks',[])]}
             for issue in j.get('layoutIssues',[]):

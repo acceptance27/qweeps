@@ -562,3 +562,43 @@ def test_revision_attempt_cache_is_scoped_to_feedback_and_starting_scene(tmp_pat
  j['candidate']=copy.deepcopy(candidate);j['candidate']['chapters'][0]['visual']['nodes'][0]['body']='A fact corrected after the earlier revision.'
  store._direct(j,second)
  assert len(model.calls)==3, 'the same finding on a corrected starting scene needs a new revision input'
+
+def test_targeted_beat_patching_only_re_reviews_flagged_beats(tmp_path,library):
+ lib,d=library
+ class TargetedModel(Model):
+  def __init__(self):
+   super().__init__()
+   self.revision_turn=0
+  def review_images(self,instruction,frames):
+   self.image_calls.append(frames)
+   if self.revision_turn==0:
+    self.revision_turn+=1
+    return json.dumps({
+     'approved':False,
+     'findings':[{'beat':'audit','problem':'Text overlap in audit node.','revision':'Adjust audit coordinates.'}],
+     'observations':['The assets are compared with descriptions.','The audit has a labeled relationship.'],
+     'presentationChecks':[{'beat':id,'methodFits':True,'evidenceVisible':True,'textSupports':True,'observation':'Presentation check.'} for id in ['protection','audit']]
+    })
+   return json.dumps({
+    'approved':True,
+    'findings':[],
+    'observations':['The audit has been corrected.'],
+    'presentationChecks':[{'beat':'audit','methodFits':True,'evidenceVisible':True,'textSupports':True,'observation':'Presentation check audit.'}]
+   })
+ model=TargetedModel()
+ store=BrowserLessonStore(model,STUDIO,tmp_path/'lessons',lib)
+ j=store.start({'question':'Teach me Module 12'})
+ j=await_state(store,j['id'],{'awaiting_review'})
+ store.review(j['id'],{'revision':0,'frames':frames(j['candidate'])})
+ j=await_state(store,j['id'],{'awaiting_review'})
+ assert j['revision']==1
+ assert j.get('revisedBeats')=={'audit'}
+ assert len(model.image_calls)==1 and len(model.image_calls[0])==4
+ store.review(j['id'],{'revision':1,'frames':frames(j['candidate'])})
+ j=await_state(store,j['id'],{'ready'})
+ assert j['status']=='ready'
+ assert len(model.image_calls)==2
+ assert len(model.image_calls[1])==2
+ lesson=store.lesson(j['lessonId'])
+ assert lesson['review']['approved']
+ assert len(lesson['review']['presentationChecks'])==2
