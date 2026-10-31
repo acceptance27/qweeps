@@ -73,18 +73,20 @@ export function fitCopy(font:Font|null,text:string,width:number,height:number,pr
 
 export function diagramCopy(font:Font|null,node:LiveNode,width:number,height:number,textMode:'labels'|'descriptive'='descriptive'){
  const ascent=font?font.ascender/font.unitsPerEm:1,descent=font?Math.max(0,-font.descender/font.unitsPerEm):.3;
+ // Reserve explicit bands. A short card may carry geometry or prose, not both.
+ const artMin=textMode==='labels'?100:120,gap=12;
  const title=fitCopy(font,node.title,width-16,45,23),titleHeight=(title.lines.length-1)*title.size*1.36+title.size*(ascent+descent);
  if(textMode==='labels'){
   const artHeight=height-titleHeight-16;
   return{artHeight,title:{x:8,y:artHeight+8+title.size*ascent,width:width-16,height:45,size:title.size},
-   body:{x:0,y:0,width:0,height:0,size:0},showBody:false,overflow:title.overflow||artHeight<60};
+   body:{x:0,y:0,width:0,height:0,size:0},showBody:false,overflow:title.overflow||artHeight<artMin};
  }
- const body=fitCopy(font,node.body,width-16,Math.max(20,height-60-titleHeight-24-19*ascent),19);
+ const body=fitCopy(font,node.body,width-16,Math.max(20,height-60-titleHeight-28-19*ascent),19);
  const bodyHeight=(body.lines.length-1)*body.size*1.36+body.size*(ascent+descent);
- const artHeight=height-titleHeight-bodyHeight-24;
- return{artHeight,title:{x:8,y:artHeight+8+title.size*ascent,width:width-16,height:45,size:title.size},
-  body:{x:8,y:artHeight+16+titleHeight+body.size*ascent,width:width-16,height:Math.max(0,bodyHeight-body.size*ascent),size:body.size},
-  showBody:true,overflow:title.overflow||body.overflow||artHeight<60};
+ const artHeight=height-titleHeight-bodyHeight-2*gap;
+ return{artHeight,title:{x:8,y:artHeight+gap+title.size*ascent,width:width-16,height:45,size:title.size},
+  body:{x:8,y:artHeight+gap+titleHeight+gap+body.size*ascent,width:width-16,height:Math.max(0,bodyHeight-body.size*ascent),size:body.size},
+  showBody:true,overflow:title.overflow||body.overflow||artHeight<artMin};
 }
 
 export function nodeCopy(font:Font|null,node:LiveNode,width:number,height:number,layout:LiveVisual['layout']){

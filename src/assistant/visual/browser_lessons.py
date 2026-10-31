@@ -181,6 +181,15 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
             nodes=resolve_diagram_clearance(nodes)
         if layout=='diagram' and any(m['cue'] not in node_ids for n in nodes for m in n['motion']):
             raise PlanError('Diagram motion cues must name objects in this beat')
+        if layout=='diagram' and presentation and presentation['textMode']=='descriptive':
+            if len(nodes)>3:
+                raise PlanError('A descriptive diagram carries artwork and prose: use at most three objects, or split the beat. Use labels mode for a denser geometry-only stage')
+            for n in nodes:
+                position=n.get('position') or {}
+                if position.get('width',0)<300 or position.get('height',0)<260:
+                    raise PlanError('Each descriptive diagram object needs at least 300x260 pixels so its artwork band and readable prose do not collide')
+                if len(n['body'])>100:
+                    raise PlanError('Keep a descriptive diagram body to 100 characters; move supporting detail into the narration or a separate beat')
         if layout in {'comparison','process','timeline','fanin'} and len(nodes)>4:raise PlanError('Use at most four objects for this layout, or choose a matrix/concept layout')
         links=[]
         for link in _list(c.get('connections',[]),'connections',0,10):
@@ -284,8 +293,9 @@ Available live layouts: comparison (2–4 illustrated dossiers), process (2–4 
 matrix (up to 6 rows, 2–5 columns), concept (2–6 related objects around a worked case),
 timeline (2–4 dated events; clarify non-proportional spacing), loci (stable illustrated landmarks),
 diagram (2–6 freely positioned semantic groups, custom paths/circles/vectors/equation labels,
-and cue-driven translation/scale/opacity). Choose diagram for mechanisms, geometric arguments,
-quantities and transformations that need an actual spatial construction. Do not substitute
+and cue-driven translation/scale/opacity; descriptive diagrams carry prose, so use at most
+three objects with room for both artwork and text). Choose diagram for mechanisms, geometric
+arguments, quantities and transformations that need an actual spatial construction. Do not substitute
 an icon catalogue or process cards for the mechanism. Other layouts remain useful for comparisons.
 The experiment UI offers choice buttons that highlight objects and explain consequences, NOT
 sliders, draggable simulation parameters, detector data, or computed numeric outputs. Plan only
@@ -370,6 +380,9 @@ For a diagram layout, each node additionally supplies position {x,y,width,height
 renderer reserves measured space below artwork for its title/body. In labels mode
 only a short title is drawn below the artwork; the body is available on inspection.
 Avoid overlapping boxes and keep labels legible.
+A descriptive diagram carries prose: use at most three objects, each at least
+300x260, body <=100 characters. Labels mode hides the body and can carry more
+geometry.
 artwork is a list of <=24 primitives in a local 100x100 viewBox: {type:'path',d:'M...'},
 {type:'circle',cx,cy,r}, {type:'ellipse',cx,cy,rx,ry}, {type:'rect',x,y,width,height,rx},
 {type:'line',x1,y1,x2,y2}, or {type:'text',x,y,text,size:6..24}. Paint fields stroke/fill

@@ -645,3 +645,22 @@ def test_live_process_is_a_chain_and_fanin_needs_a_hub(library):
  raw['chapters'][1]['connections']=[{'from':'inventory','to':'notice','label':'inspect terms'}]
  with pytest.raises(PlanError,match='fanin layout needs a hub'):
   validate_lesson(raw,d,store.icons)
+
+
+def test_descriptive_diagram_reserves_artwork_and_text_space(library):
+ lib,d=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib);raw=diagram_draft();c=raw['chapters'][0]
+ c['presentation']['textMode']='descriptive'
+ assert validate_lesson(raw,d,store.icons)['chapters'][0]['visual']['layout']=='diagram'
+ c['nodes'][0]['body']='x'*120
+ with pytest.raises(PlanError,match='100 characters'):
+  validate_lesson(raw,d,store.icons)
+ c['nodes'][0]['body']='A short explanation of the relationship.'
+ c['nodes'][0]['position']['height']=220
+ with pytest.raises(PlanError,match='300x260'):
+  validate_lesson(raw,d,store.icons)
+ c['nodes'][0]['position']['height']=300
+ for i in (2,3):
+  clone=copy.deepcopy(c['nodes'][i%2]);clone['id']=f'extra{i}';clone['position']={'x':45+i*315,'y':110,'width':300,'height':260}
+  c['nodes'].append(clone)
+ with pytest.raises(PlanError,match='at most three objects'):
+  validate_lesson(raw,d,store.icons)

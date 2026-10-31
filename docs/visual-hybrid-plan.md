@@ -134,7 +134,13 @@ shared by `hybrid.py` and `browser_lessons.py`). The live validator rejects:
 The field is preserved through working drafts, revisions, and the published
 lesson, so the renderer selects the grammar for model-generated lessons too.
 
-Full suite: **416 tests passing**.
+Descriptive diagram cards now have a measured budget: at most three objects,
+each at least 300x260, body text at most 100 characters, and a reserved
+120 px artwork band. The renderer flags any card where title + body leaves less
+than that band. This is the deterministic fix for Muse's four-card diagram whose
+body prose collided with the artwork labels.
+
+Full suite: **417 tests passing**.
 
 ## 1. Goal
 

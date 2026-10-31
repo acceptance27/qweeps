@@ -280,6 +280,12 @@ shared `teaching.py` map. The live validator also rejects branching `process`
 graphs and `fanin` without a real hub, so the showcase's grammar rules apply to
 model-generated lessons instead of only the curated fixture.
 
+A live Muse run then failed review on a real defect: four descriptive diagram
+cards put labelled artwork and full sentences in 184 px. Descriptive diagrams
+are now capped at three objects, each at least 300x260 with a 100-character
+body and a reserved 120 px artwork band. Cards that cannot fit both are rejected
+before rendering.
+
 ## 8. Ideas attempted and rejected
 
 - **Raise the element cap.** Tried 20 → 28 → 36 → 40. It let beats compile; it
