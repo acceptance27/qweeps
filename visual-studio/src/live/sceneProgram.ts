@@ -1,8 +1,8 @@
 import {lineLoop,pathD,measurePacing} from './morph';
 import type {Scene,SceneAction,SceneObject} from './scene';
 import {
- PAINT,glyph,textWidth,wrapText,layoutCompound,compoundBox,
- type Compound,type CompoundKind,type Role,type Slots,
+ PAINT,textWidth,wrapText,layoutCompound,compoundBox,
+ type Compound,type CompoundKind,type Role,
 } from './compounds';
 
 export type ProgramLine={id:string;kind:'line';from:[number,number];to:[number,number];role?:Role;strokeWidth?:number;opacity?:number};
@@ -372,4 +372,3 @@ function posterDensity(layouts:{compound:Compound;layout:ReturnType<typeof layou
  return Math.round(slots/layouts.length*10)/10;
 }
 
-export function validateTextFit():void{void textWidth;void wrapText;void glyph;}
