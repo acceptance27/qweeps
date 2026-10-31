@@ -21,6 +21,7 @@ from ..config import load_config
 from ..llm import build_visual_llm, OfflineLLM, AntigravityLLM, ModelProviderError
 from ..http import HTTPError
 from .plan import PlanError, _text, generate_reply, manim_source, validate_plan
+from .browser_gate import check_svg
 
 PORT = 4174
 _BUNDLED_STUDIO = Path(__file__).resolve().parents[3] / "visual-studio"
@@ -384,7 +385,7 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             route = urlsplit(self.path).path
             length = int(self.headers.get("Content-Length", "0"))
-            limit=36_000_000 if route=='/api/visual/documents' else 24_000_000 if route=='/api/visual/live/review' else 250_000
+            limit=36_000_000 if route=='/api/visual/documents' else 24_000_000 if route=='/api/visual/live/review' else 2_000_000 if route=='/api/visual/live/check' else 250_000
             if not 0 < length <= limit:
                 raise PlanError(f"Request must be 1–{limit} bytes")
             payload = json.loads(self.rfile.read(length))
@@ -400,6 +401,10 @@ class Handler(SimpleHTTPRequestHandler):
                 result=self.service.live.start(payload)
             elif route == '/api/visual/live/stream':
                 result=self.service.live.start_stream(payload)
+            elif route == '/api/visual/live/check':
+                try:timeout=min(120,max(20,int(payload.get('timeout',90))))
+                except (TypeError,ValueError):raise PlanError('The browser gate timeout must be a number')
+                result=check_svg(payload.get('svg'),timeout=timeout)
             elif route == '/api/visual/live/synchronize':
                 result=self.service.live.start_synchronization(payload)
             elif route == '/api/visual/live/review':

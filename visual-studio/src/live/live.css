@@ -48,3 +48,19 @@
 .stream-caption p{font-size:17px;margin:0;color:#e6eceb;flex:1}
 .stream-caption small{font:10px monospace;color:#718e9d}
 @media(max-width:900px){.stream-body{flex-direction:column}.stream-side{width:100%;border-right:0;border-bottom:1px solid #20343e;max-height:34vh}.stream-main{padding:14px}.stream-header{padding:14px 18px}.stream-header h1{font-size:20px}.stream-meta{display:none}}
+
+.stream-meta i.blocked{background:#e39a84;animation:none}
+.stream-side button em.ready{color:#8dbda5}
+.stream-side button em.checking{color:#edca82}
+.stream-side button em.blocked,.stream-side button em.error{color:#e39a84}
+.stream-side button em.authored{color:#718e9d}
+.stream-findings{margin-top:10px;border:1px solid #6b3e2f;background:#211411;border-radius:8px;padding:11px 13px;max-height:150px;overflow:auto;flex-shrink:0}
+.stream-findings strong{font:11px Arial,sans-serif;color:#f0b79f}
+.stream-findings p{font:11px/1.5 Arial,sans-serif;color:#d7b6aa;margin:6px 0 0}
+.stream-findings ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:5px}
+.stream-findings li{font:10px/1.45 Arial,sans-serif;color:#d7c3b8}
+.stream-findings li span{color:#edca82;text-transform:uppercase;font-size:8px;letter-spacing:.1em}
+.stream-findings code{color:#f0b79f;font-size:10px}
+
+.stream-gate-surface{position:fixed;left:-12000px;top:0;width:1440px;height:600px;pointer-events:none;overflow:hidden}
+.stream-gate-surface .live-stage-surface{width:1440px;height:600px}

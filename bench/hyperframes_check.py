@@ -16,22 +16,14 @@ The studio server must be running with the lesson published.
 from __future__ import annotations
 
 import argparse
-import base64
 import json
 from pathlib import Path
 import re
-import shutil
 import subprocess
-import tempfile
 import time
 import urllib.request
 
-ROOT = Path(__file__).resolve().parents[1]
-STUDIO = ROOT / "visual-studio"
-FONT = STUDIO / "public/live/teaching-serif.ttf"
-GSAP = STUDIO / "node_modules/gsap/dist/gsap.min.js"
-HYPERFRAMES = "hyperframes@0.8.223"
-SECTIONS = ("lint", "runtime", "layout", "contrast", "motion", "craft", "audio")
+from assistant.visual.browser_gate import check_svg
 
 
 def get_json(url: str):
@@ -67,68 +59,6 @@ def snapshot_svg(base_url: str, lesson: str, at: float, chrome: str, timeout: in
     return extract_svg(run.stdout)
 
 
-def composition(svg: str) -> str:
-    font = base64.b64encode(FONT.read_bytes()).decode()
-    svg = svg.replace('src:url("/live/teaching-serif.ttf")', f'src:url("data:font/ttf;base64,{font}")')
-    opening = re.match(r"<svg\b[^>]*>", svg)
-    if not opening:
-        raise RuntimeError("Invalid SVG snapshot")
-    tag = re.sub(r'\s(?:width|height)="[^"]*"', "", opening.group(0))
-    tag = tag.replace("<svg", '<svg width="1440" height="600"', 1)
-    svg = tag + svg[opening.end():]
-    gsap = GSAP.read_text()
-    return f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
-<style>
-html,body{{margin:0;width:1440px;height:600px;overflow:hidden;background:#071117}}
-#root{{width:1440px;height:600px;overflow:hidden}}
-svg{{display:block;width:1440px;height:600px}}
-</style></head>
-<body><div id="root" data-composition-id="lesson-check" data-start="0"
- data-duration="10" data-width="1440" data-height="600" data-no-timeline data-hold="true">
-{svg}
-</div>
-<script>{gsap}</script>
-<script>
-const tl=gsap.timeline({{paused:true}});
-window.__timelines['lesson-check']=tl;
-tl.seek(0);
-</script></body></html>
-"""
-
-
-def run_check(project: Path, timeout: int) -> dict:
-    command = ["npx", "--yes", HYPERFRAMES, "check", str(project), "--json"]
-    run = subprocess.run(command, cwd=project, capture_output=True, text=True, timeout=timeout)
-    output = run.stdout.strip()
-    start = output.find("{")
-    if start < 0:
-        raise RuntimeError(f"hyperframes check returned no JSON: {(run.stderr or output)[-500:]}")
-    report = json.loads(output[start:])
-    if not report.get("ok") and run.returncode not in (0, 1):
-        raise RuntimeError(f"hyperframes check failed ({run.returncode}): {run.stderr[-500:]}")
-    return report
-
-
-def findings(report: dict):
-    rows = []
-    for section in SECTIONS:
-        block = report.get(section) or {}
-        for finding in block.get("findings", []) or []:
-            if finding.get("code") in {"audio_none", "audio_check_unavailable"}:
-                continue
-            rows.append({
-                "section": section,
-                "code": finding.get("code"),
-                "severity": finding.get("severity"),
-                "message": finding.get("message"),
-                "selector": finding.get("selector"),
-                "bbox": finding.get("bbox"),
-                "time": finding.get("time"),
-            })
-    return rows
-
-
 def chapter_times(lesson: dict, selected: set[int] | None, times: list[float] | None):
     if times:
         return [(None, value) for value in times]
@@ -160,7 +90,6 @@ def main():
     lesson = get_json(f"{args.base_url.rstrip('/')}/api/visual/live/lessons/{args.lesson}")
     selected = set(args.chapter) if args.chapter else None
     times = [float(value) for value in args.times.split(",") if value.strip()] if args.times else None
-    work = Path(tempfile.mkdtemp(prefix="qweeps-hf-check-"))
     rows = []
     try:
         for index, at in chapter_times(lesson, selected, times):
@@ -169,30 +98,20 @@ def main():
             started = time.monotonic()
             try:
                 svg = snapshot_svg(args.base_url, args.lesson, at, args.chrome, args.timeout)
-                project = work / f"{index if index is not None else 'time'}-{name}"
-                project.mkdir()
-                (project / "index.html").write_text(composition(svg))
-                (project / "hyperframes.json").write_text(json.dumps({
-                    "$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
-                    "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry",
-                    "paths": {"blocks": "compositions",
-                              "components": "compositions/components", "assets": "assets"},
-                    "media": {"autoProxy": True},
-                }))
-                report = run_check(project, max(90, args.timeout * 4))
+                gate = check_svg(svg, timeout=max(90, args.timeout * 4), keep=args.keep)
                 rows.append({
                     "index": index,
                     "chapter": name,
                     "time": round(at, 3),
-                    "ok": report.get("ok"),
-                    "browserSkipped": report.get("browserSkipped"),
-                    "findings": findings(report),
+                    "ok": gate["ok"],
+                    "findings": gate["findings"],
                     "seconds": round(time.monotonic() - started, 1),
                 })
                 found = rows[-1]["findings"]
-                print(f"{name:24s} t={at:7.2f} {'ok' if report.get('ok') else 'FAIL'}  "
-                      f"{sum(1 for f in found if f['severity']=='error')} errors  "
-                      f"{sum(1 for f in found if f['severity']=='warning')} warnings", flush=True)
+                if args.keep:
+                    print(f"  project: {gate['project']}", flush=True)
+                print(f"{name:24s} t={at:7.2f} {'ok' if gate['ok'] else 'FAIL'}  "
+                      f"{gate['errors']} errors  {gate['warnings']} warnings", flush=True)
                 for finding in found:
                     print(f"  {finding['severity']:7s} {finding['code']:24s} {finding['message'][:140]}", flush=True)
             except Exception as exc:
@@ -210,10 +129,7 @@ def main():
         if failed and not args.no_fail:
             raise SystemExit(1)
     finally:
-        if args.keep:
-            print(f"projects: {work}")
-        else:
-            shutil.rmtree(work, ignore_errors=True)
+        pass
 
 
 if __name__ == "__main__":

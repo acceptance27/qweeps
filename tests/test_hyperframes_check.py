@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 
+from assistant.visual.browser_gate import composition, validate_svg
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("hyperframes_check", ROOT / "bench/hyperframes_check.py")
 module = importlib.util.module_from_spec(spec)
@@ -22,9 +24,18 @@ def test_extract_svg_keeps_nested_artwork():
 
 
 def test_composition_is_a_static_hyperframes_document():
-    html = module.composition('<svg class="live-stage-svg"><style>@font-face{font-family:QweepsTeachingSerif;src:url("/live/teaching-serif.ttf") format("truetype")}</style><text>x</text></svg>')
+    html = composition('<svg class="live-stage-svg"><style>@font-face{font-family:QweepsTeachingSerif;src:url("/live/teaching-serif.ttf") format("truetype")}</style><text>x</text></svg>')
     assert 'data-composition-id="lesson-check"' in html
     assert 'data-no-timeline' in html
     assert 'data-width="1440"' in html
     assert 'data:font/ttf;base64,' in html
     assert 'width="1440" height="600"' in html
+
+
+def test_browser_gate_rejects_executable_markup():
+    import pytest
+    from assistant.visual.plan import PlanError
+    with pytest.raises(PlanError, match="executable|event handlers"):
+        composition('<svg class="live-stage-svg"><script>alert(1)</script></svg>')
+    with pytest.raises(PlanError, match="executable|event handlers"):
+        composition('<svg class="live-stage-svg" onload="x()"></svg>')

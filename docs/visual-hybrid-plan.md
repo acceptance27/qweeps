@@ -155,7 +155,13 @@ so the gate is exercising real failures, not passing vacuously. Static frames
 skip motion; a full-timeline check would require exposing the live GSAP
 timeline.
 
-Full suite: **419 tests passing**.
+In the chapter stream, the gate runs per chapter on a hidden render surface and
+queues one chapter at a time. A chapter is marked **ready** only after `check`
+passes; a blocked chapter keeps its findings visible and does not count toward
+the ready total. The check endpoint is `POST /api/visual/live/check` with the
+rendered SVG.
+
+Full suite: **420 tests passing**.
 
 ## 1. Goal
 

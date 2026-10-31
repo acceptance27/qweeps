@@ -51,3 +51,7 @@ occlusion, runtime and craft findings with selectors and boxes.
 Use `--times 12.5,40` for specific absolute seconds, or `--chapter 0` for one
 chapter. Static frames intentionally skip motion; a full-timeline check would
 need the live GSAP timeline exposed.
+
+The chapter stream uses the same gate through `POST /api/visual/live/check`:
+each chapter is rendered on a hidden surface, checked once, and marked ready
+only when it passes.
