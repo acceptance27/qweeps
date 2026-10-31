@@ -1,4 +1,4 @@
-import React,{useLayoutEffect,useRef} from 'react';
+import React,{useEffect,useLayoutEffect,useRef} from 'react';
 import gsap from 'gsap';
 import type {Scene,SceneAction,SceneObject} from './scene';
 
@@ -9,12 +9,13 @@ function arrowHead(from:[number,number],to:[number,number]){
  return`${to[0]},${to[1]} ${p1[0]},${p1[1]} ${p2[0]},${p2[1]}`;
 }
 
-export default function SceneStage({scene,onComplete,playing=true}:{scene:Scene;onComplete:()=>void;playing?:boolean}){
+export default function SceneStage({scene,onComplete,playing=true,time,onSelect,selected}:{scene:Scene;onComplete:()=>void;playing?:boolean;time?:number;onSelect?:(id:string)=>void;selected?:string[]}){
  const refs=useRef<Record<string,SVGElement>>({});
  const timeline=useRef<gsap.core.Timeline|null>(null);
  const timelineCurrent=()=>timeline.current;
  const done=useRef(onComplete);done.current=onComplete;
  const playRef=useRef(playing);playRef.current=playing;
+ const timeRef=useRef(time);timeRef.current=time;
 
  useLayoutEffect(()=>{
   const tl=gsap.timeline({paused:true});
@@ -49,28 +50,31 @@ export default function SceneStage({scene,onComplete,playing=true}:{scene:Scene;
   timeline.current=tl;
   tl.eventCallback('onComplete',()=>done.current());
   (window as Window&{__sceneStage?:{scene:Scene;timeline:gsap.core.Timeline}}).__sceneStage={scene,timeline:tl};
-  if(playRef.current)tl.play();
+  if(timeRef.current!=null){tl.pause();tl.seek(Math.max(0,Math.min(timeRef.current,tl.duration())));}
+  else if(playRef.current)tl.play();
   return()=>{tl.kill();timeline.current=null;delete (window as Window&{__sceneStage?:unknown}).__sceneStage;};
  },[scene]);
 
+ useEffect(()=>{const tl=timeline.current;if(!tl||time==null)return;tl.pause();tl.seek(Math.max(0,Math.min(time,tl.duration())));},[time]);
+ const select=(event:React.MouseEvent)=>{if(!onSelect)return;const target=(event.target as Element).closest<HTMLElement>('[data-scene-id]');if(target?.dataset.sceneId)onSelect(target.dataset.sceneId);};
  const render=(object:SceneObject):React.ReactNode=>{
   const ref=(el:SVGElement|null)=>{if(el)refs.current[object.id]=el;else delete refs.current[object.id];};
-  if(object.kind==='group')return <g key={object.id} ref={ref} opacity={object.opacity??1}>{object.children.map(render)}</g>;
-  if(object.kind==='circle')return <g key={object.id} ref={ref} opacity={object.opacity??1}>
+  if(object.kind==='group')return <g key={object.id} ref={ref} opacity={object.opacity??1} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined}>{object.children.map(render)}</g>;
+  if(object.kind==='circle')return <g key={object.id} ref={ref} opacity={object.opacity??1} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined}>
    <circle cx={object.cx} cy={object.cy} r={object.r} fill={object.fill??'none'} fillOpacity={object.fillOpacity??1} stroke={object.stroke??'#8bd0df'} strokeWidth={object.strokeWidth??2}/>
    {object.label&&<text x={object.cx} y={object.cy+(object.labelSize??18)*.35} textAnchor="middle" fill={object.labelFill??object.stroke??'#e6ecef'} fontSize={object.labelSize??18} fontFamily="Arial">{object.label}</text>}
   </g>;
-  if(object.kind==='rect')return <rect key={object.id} ref={ref} x={object.x} y={object.y} width={object.width} height={object.height} rx={object.rx??4} fill={object.fill??'none'} fillOpacity={object.fillOpacity??1} stroke={object.stroke??'#8bd0df'} strokeWidth={object.strokeWidth??2} opacity={object.opacity??1}/>;
-  if(object.kind==='path')return <path key={object.id} ref={ref} d={object.d} fill={object.fill??'none'} fillOpacity={object.fillOpacity??1} stroke={object.stroke??'#8bd0df'} strokeWidth={object.strokeWidth??2} opacity={object.opacity??1} strokeDasharray={object.dash}/>;
-  if(object.kind==='text')return <text key={object.id} ref={ref} x={object.x} y={object.y} fill={object.fill??'#e6ecef'} fontSize={object.size} textAnchor={object.anchor??'start'} opacity={object.opacity??1} fontFamily="Arial">{object.text}</text>;
-  if(object.kind==='arrow')return <g key={object.id} ref={ref} opacity={object.opacity??1}>
+  if(object.kind==='rect')return <rect key={object.id} ref={ref} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined} x={object.x} y={object.y} width={object.width} height={object.height} rx={object.rx??4} fill={object.fill??'none'} fillOpacity={object.fillOpacity??1} stroke={object.stroke??'#8bd0df'} strokeWidth={object.strokeWidth??2} opacity={object.opacity??1}/>;
+  if(object.kind==='path')return <path key={object.id} ref={ref} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined} d={object.d} fill={object.fill??'none'} fillOpacity={object.fillOpacity??1} stroke={object.stroke??'#8bd0df'} strokeWidth={object.strokeWidth??2} opacity={object.opacity??1} strokeDasharray={object.dash}/>;
+  if(object.kind==='text')return <text key={object.id} ref={ref} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined} x={object.x} y={object.y} fill={object.fill??'#e6ecef'} fontSize={object.size} textAnchor={object.anchor??'start'} opacity={object.opacity??1} fontFamily="Arial">{object.text}</text>;
+  if(object.kind==='arrow')return <g key={object.id} ref={ref} opacity={object.opacity??1} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined}>
    <path d={`M${object.from[0]} ${object.from[1]}L${object.to[0]} ${object.to[1]}`} fill="none" stroke={object.stroke??'#8bd0df'} strokeWidth={object.strokeWidth??2}/>
    <polygon points={arrowHead(object.from,object.to)} fill={object.stroke??'#8bd0df'}/>
   </g>;
   return null;
  };
 
- return <svg viewBox="0 0 1440 600" className="scene-stage live-stage-svg" aria-label={scene.title}>
+ return <svg viewBox="0 0 1440 600" className="scene-stage live-stage-svg" aria-label={scene.title} onClick={onSelect?select:undefined}>
   <rect width="1440" height="600" fill="#071117"/>
   {scene.objects.map(render)}
  </svg>;

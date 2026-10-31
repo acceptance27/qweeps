@@ -414,9 +414,10 @@ Evidence:
 - a bare rect, an empty compound, a criteria mismatch, a missing dock, a
   short settle hold and prose-stuffed slots are rejected before rendering.
 
-The model still needs prompt/examples rather than free coordinates, and P2–P4
-(live integration, shared compiler worker, motion gate) are not done. Beats
-4–8 remain blocked on P2–P4, not on the comparison gate.
+The model still needs prompt/examples rather than free coordinates. P2 (shared
+compiler worker) and P4 (full motion gate) are not done. P3 now has a working
+vertical slice. Beats 4–8 remain blocked on P2/P4 and on production scene
+payloads, not on the comparison gate.
 
 ### P2 — Shared compiler worker
 
@@ -451,6 +452,33 @@ Acceptance:
 - audio and visuals stay aligned;
 - scene objects are inspectable;
 - no per-chapter video seam.
+
+### P3 status — vertical slice implemented
+
+- `LiveChapter.scene?: SceneProgram` carries a model-facing scene payload;
+- `SceneChapterStage` compiles it through the same gate and seeks the scene
+  timeline from the lesson clock;
+- `SceneStage` now accepts `time`, `selected` and `onSelect`, so it can be
+  driven by the player instead of its own autoplay;
+- `?sceneDemo=1&muted=1` is a two-chapter lesson: a construction scene, then a
+  card beat, in the real `LiveLessonPlayer`;
+- clock sync measured: head `6.000 → 8.167 → 10.684`, scene timeline
+  `6.000 → 8.166 →` chapter switch; the card beat then takes over;
+- clicking the scene's `inputs` node sets the player selection to `inputs`;
+- `bench/live_scene_check.py` passed the live scene at mid-morph (`t=2.2`) and
+  settled (`t=8.4`), and the card chapter at `t=16.8`, all with **0 errors and
+  0 warnings**.
+
+Still open for P3 production:
+
+- the normal lesson pipeline must emit `scene` payloads and stream/gate them;
+- the demo runs muted, so narrated scene audio sync still needs a real audio
+  track;
+- focus/zoom on scene objects is disabled; selection and ask-context work, but
+  the camera focus path is still card-only;
+- retained groups across beats and scene/card transition polish are not
+  authored beyond this two-chapter slice;
+- P4 still needs mid-morph/settle sampling in the live chapter gate.
 
 ### P4 — Motion and settled-poster gate
 

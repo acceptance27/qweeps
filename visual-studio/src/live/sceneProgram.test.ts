@@ -84,3 +84,20 @@ test('the captured model-authored program compiles through the same gate',()=>{
  const cards=captured.objects.filter((object:{kind:string})=>object.kind==='comparison-card');
  assert.ok(cards.every((card:{slots:{criteria?:unknown[]}})=>Array.isArray(card.slots.criteria)&&card.slots.criteria.length>=2));
 });
+
+import {SCENE_DEMO_LESSON} from './sceneDemoLesson';
+import {visualBeatIndex} from './navigation';
+
+test('the live demo mixes one scene chapter and one card chapter on one clock',()=>{
+ const sceneChapter=SCENE_DEMO_LESSON.chapters.find(chapter=>chapter.scene);
+ const cardChapter=SCENE_DEMO_LESSON.chapters.find(chapter=>!chapter.scene&&chapter.visual);
+ assert.ok(sceneChapter?.scene);
+ assert.ok(cardChapter?.visual);
+ const result=compileSceneProgram(sceneChapter.scene);
+ assert.equal(result.ok,true);
+ assert.ok(result.scene);
+ assert.equal(result.scene.duration,sceneChapter.end-sceneChapter.start);
+ assert.ok((cardChapter.visual.nodes?.length??0)>=3);
+ assert.equal(visualBeatIndex(SCENE_DEMO_LESSON.chapters,8.4),0);
+ assert.equal(visualBeatIndex(SCENE_DEMO_LESSON.chapters,10),1);
+});
