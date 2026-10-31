@@ -91,6 +91,9 @@ of retention.
 - The browser gate samples finished frames, not action boundaries or
   mid-morph states.
 - The scene grammar is not integrated into the live lesson schema/player.
+- The eight scene chapters are hand-authored and schematic.
+- Compound objects, hull/settle morphs, and the settled-poster density gate do
+  not exist yet; this is why the final frames are primitive.
 
 ## 4. Architecture
 
@@ -153,6 +156,82 @@ Rules:
 - IDs are semantic and stable across beats;
 - no arbitrary code, no HTML, no LaTeX, no 3D, no updaters.
 
+### 4.2.1 Compound objects: hull + inner slots
+
+The model must not place a compound object's inner elements. It selects a
+template and fills semantic slots:
+
+```json
+{"kind":"step-card","slots":{"title":"Scale","value":"2 × 0.7 = 1.4","caption":"positive product","icon":"tools"}}
+```
+
+The compiler expands that into:
+
+- **hull** — one canonical clockwise cubic loop: rounded rect, ring, capsule,
+  axis baseline, or lane;
+- **inner_slots** — icon-chip, title, value-pill, caption, bars, and other
+  structured content, placed by the compound's own measured micro-layout.
+
+A primitive is simply a compound with a hull and zero slots. This keeps
+`line → step-card` a normal hull morph rather than a special case.
+
+v1 compound templates:
+
+`sum-node`, `step-card`, `value-pill`, `icon-chip`, `axis`, `number-line`,
+`bars`, `callout`, `brace`, `comparison-column`, `trace-row`, `station`, `dock`.
+
+### 4.2.2 Hull + settle morph contract
+
+Morphing a simple route into two rich step-cards must not morph fifteen inner
+elements at once. Use a two-tier timeline:
+
+| window | behavior |
+|---|---|
+| 0–80% of D | source hull → target hull via `attr:{d}` |
+| 15–80% | shared semantic children (ship/icon) move into target slots |
+| 65–100% | **new** target slots settle: opacity 0→1, translate y +6→0 |
+| after D | settled-poster hold: **≥1.5 s, target 2 s** |
+
+Rules:
+
+- `morph(replace)` morphs the source hull and removes it after settle;
+- `morph(copy)` clones the hull and shared children, preserves the source;
+- the hull is behind the slots; text crossfades; icons transform, never morph;
+- new slots appear only when the hull is nearly locked;
+- the model supplies slot content, never inner x/y;
+- the final settled state is part of the animation, not an afterthought.
+
+### 4.2.3 Final-state contract and density gate
+
+The compiler validates the **settled poster**, not just the moving geometry.
+Grammar-specific final shapes:
+
+| grammar | settled poster |
+|---|---|
+| construction/mechanism | hero + 2–4 parts + explicit relations + conclusion |
+| quantitative | plot/axis/number-line + 2–3 annotations + conclusion |
+| comparison | 2–4 columns + shared criteria rows + conclusion |
+| procedure | 3–4 step cards + rail + result |
+| algorithm | trace rows + state column + conclusion |
+| narrative | axis + dated markers + captions + conclusion |
+| recall | route + 3 stations + mnemonic conclusion |
+
+Object-level “no naked boxes” rule:
+
+- a hero or supporting node may not be a bare `rect`/`circle` with one label;
+- it must carry a title plus at least one of: icon-chip, value-pill, or
+  quantitative atom;
+- title ≤ 28 chars, value ≤ 18, caption ≤ 65; these are early warnings, but
+  **measured bbox is the truth**;
+- no compound may have an empty required slot;
+- a caption is an annotation, not a paragraph;
+- one conclusion callout or brace must close the poster;
+- docked context is required only when the beat actually references the prior
+  result, not on every later beat.
+
+A model-authored scene with six empty rectangles and a paragraph must fail at
+this gate, not at review.
+
 ### 4.3 Canonical geometry and morph
 
 Every morphable primitive lowers to a **clockwise closed cubic loop** with a
@@ -174,7 +253,9 @@ Morph rules:
   local transform resets to identity at morph start;
 - groups match sub-objects by **ID/role**, not family order;
 - geometry morphs; labels crossfade; never morph text glyphs into boxes;
-- sample the morph midpoint for overlap/contrast, not only endpoints.
+- sample the morph midpoint for overlap/contrast, not only endpoints;
+- compound objects use the hull + settle contract in 4.2.2; primitives remain
+  hull-only.
 
 ### 4.4 Retained groups and docking
 
@@ -220,7 +301,12 @@ Targets for process/scene beats:
 - continuous motion may run 4 s; it is not a dead hold;
 - a 4–5 beat process must retain at least two groups across beats and dock at
   least one understood group;
-- descriptive/card beats are exempt from the density target.
+- descriptive/card beats are exempt from the density target;
+- the settled-poster hold is intentional and does not count as a dead hold;
+  require ≥1.5 s, target 2 s, after the last action.
+
+The compiler must time both the choreography and the settle. A scene that ends
+with the hull morph but never holds the finished poster fails pacing.
 
 Failures return structured findings, not a silent hold.
 
@@ -238,10 +324,16 @@ For scene beats, sample:
 - finished frames;
 - action starts/ends;
 - at least one mid-morph frame;
+- the settle start and the settled-poster hold;
 - docked states and retained thumbnails.
 
+The browser gate must also run on the **settled poster**, where compound
+density, contrast, clipping and occlusion are judged. The compiler density gate
+checks empty slots and text-role budgets before rendering.
+
 Do not let the gate pass on endpoints alone. A morph can be clean at both ends
-and unreadable in the middle.
+and unreadable in the middle, and a scene can animate well but settle into six
+empty boxes.
 
 ## 5. Phases
 
@@ -252,10 +344,15 @@ and unreadable in the middle.
 - Route split, retained dock, click test.
 - Pacing readout: 6.00 starts / 10 s, 1.50 s max hold.
 - Static browser gate.
+- Eight hand-authored scene-grammar chapters (`?scenes=1`): construction split,
+  mechanism fan-in, quantitative line/bar/ring, comparison split, procedure
+  rail, algorithm trace, narrative timeline, recall route.
 - Findings: labels need real centering; model is not yet authoring IR; motion
-  must be enforced, not decorative.
+  must be enforced, not decorative. The eight scene proofs animate well but
+  settle into sparse posters because the fixtures use bare primitives and no
+  compound/final-state contract. That is the P1 evidence.
 
-### P1 — Scene IR v1 and canonical morph (next)
+### P1 — Scene IR v1, compound posters, and canonical morph (next)
 
 Deliver:
 
@@ -263,17 +360,29 @@ Deliver:
 - text bbox/centering with `text-anchor`; label fit inside/outside;
 - arrow endpoint and label-lane rules;
 - canonical path builder for line/rect/circle/arc;
+- **compound templates** with hull + inner slots: sum-node, step-card,
+  value-pill, icon-chip, axis, number-line, bars, callout, brace,
+  comparison-column, trace-row, station, dock;
+- **hull + settle** morph: hull 0–80%, shared children 15–80%, new slots
+  65–100%, settle hold ≥1.5 s;
+- **final-state contract and density gate**: grammar-specific poster shape, no
+  naked boxes, required slots, measured text-role budgets, conclusion callout;
+- one reference settled poster per teaching grammar;
 - `morph replace|copy`, `dock`, `move`, `scale`, `indicate`;
 - transform baking and semantic group matching;
 - collision pass and overflow findings;
-- compiler tests: same segment count, no twist, endpoints, text floor, pacing.
+- compiler tests: same segment count, no twist, endpoints, text floor, pacing,
+  empty-slot rejection, no-naked-box rejection, settle hold.
 
 Acceptance:
 
-- route line → two rect lanes with no self-intersection;
+- route line → two compound step-cards with hull morphs and settled slots;
 - labels remain readable at the final viewport;
 - copy/replace semantics pass visual and structural tests;
 - docked group remains clickable;
+- a scene with two empty boxes and a label is rejected before rendering;
+- a 40-word caption is rejected;
+- the settled poster holds long enough to read;
 - pacing validator rejects dead holds and too-few play starts.
 
 ### P2 — Shared compiler worker
@@ -310,12 +419,13 @@ Acceptance:
 - scene objects are inspectable;
 - no per-chapter video seam.
 
-### P4 — Motion gate and auto-revision
+### P4 — Motion and settled-poster gate
 
 Deliver:
 
-- pacing gate in the compiler;
-- action-boundary/mid-morph sampling;
+- pacing gate in the compiler, including settle hold;
+- action-boundary, mid-morph, settle-start and final-poster sampling;
+- density gate at the compiler boundary and browser gate;
 - extend `hyperframes_check` to sample specified times;
 - merge compiler, browser and reviewer findings into one revision request;
 - capped revision loop.
@@ -324,25 +434,34 @@ Acceptance:
 
 - a dead 5 s hold is rejected before rendering;
 - a mid-morph label collision is caught;
+- an empty compound or naked hero box is rejected before rendering;
+- a settled poster holds ≥1.5 s and passes contrast/overflow;
 - a blocked chapter is revised and re-gated;
 - no unreviewed scene is published.
 
-### P5 — Model-authored IR
+### P5 — Model-authored scene IR
 
 Deliver:
 
-- planner prompt for scene IR (10 objects, 7 ops);
-- few-shot route→comparison and thumbnail examples;
+- planner prompt for compound scene IR: choose template + slots + relations,
+  not inner coordinates;
+- few-shot route→comparison with hull morph, settle and retained dock;
 - model output validation and repair hints;
-- benchmark on the same three beats (construction, mechanism, quantitative);
-- compare model IR against model primitive chapters and curated IR.
+- controlled test on **one** scene: route → two comparison cards;
+- compare against the hand-authored pilot and the primitive chapters;
+- benchmark on construction, mechanism, quantitative.
 
 Acceptance:
 
 - the model emits valid IR for the pilot scene without hand edits;
-- first-pass gate/review approval improves over raw coordinates;
-- the model chooses `morph copy` for a split and `dock` for retention;
+- it chooses `morph copy`/`replace` and `dock` correctly;
+- it fills title/value/caption slots with evidence, not paragraphs;
+- the settled poster passes the density gate;
+- first-pass gate/review improves over raw coordinates;
 - no regression in card beats.
+
+If the model fills boxes with prose or leaves slots empty, add examples and
+repair hints, not more primitives.
 
 ### P6 — Rollout and cleanup
 
@@ -373,18 +492,24 @@ Acceptance:
 | Gate only sees endpoints | action-boundary and mid-morph sampling |
 | Pacing validator forces motion for its own sake | apply density only to process/scene beats |
 | Model picks wrong ops | typed IR, pairing rules, compiler findings, revision loop |
+| Model fills compound slots with prose | title/value/caption caps, measured bbox, density gate |
+| Model places inner coordinates and drifts | compound owns micro-layout; model supplies slots only |
+| Density gate rewards decoration | require semantic slots and a conclusion, not icon count |
+| Forced thumbnails on every beat | dock only when the current beat references the prior result |
+| Final poster looks empty after a good morph | hull + settle + final-state contract, hold ≥1.5 s |
 | Scope creep into a second renderer | compile to the existing SVG/GSAP primitives; no IR runtime |
 
 ## 8. Immediate next actions
 
-1. Freeze the IR v1 schema and limits.
-2. Fix text centering and label-fit rules in `ir.ts`.
-3. Add `morph`, `dock`, `indicate` to the scene IR and compiler.
-4. Move the pilot's route→comparison into the compiler as a fixture, not a
-   standalone hand-built SVG.
-5. Add the pacing gate to compilation.
-6. Run the browser gate at `mid-morph` and action boundaries.
-7. Only then give the model the IR and benchmark it.
+1. Freeze the IR v1 schema: primitives, compound templates, required slots.
+2. Implement hull + settle: hull 0–80%, shared children 15–80%, slots
+   65–100%, hold ≥1.5 s.
+3. Implement the final-state contract and density gate.
+4. Fix text centering and label-fit rules; measured bbox is the truth.
+5. Add one reference settled poster per grammar.
+6. Add the pacing gate and settle hold.
+7. Run the browser gate at mid-morph, settle start and final poster.
+8. Only then give the model the route→comparison IR and benchmark it.
 
 ## 9. File map
 
@@ -392,6 +517,10 @@ Acceptance:
 - `visual-studio/src/live/ir.fixtures.ts` — scene fixtures.
 - `visual-studio/src/live/morph.ts` — canonical loops and pacing.
 - `visual-studio/src/live/MorphPilot.tsx` — standalone morph proof.
+- `visual-studio/src/live/scene.ts` — scene IR types.
+- `visual-studio/src/live/SceneStage.tsx` — scene timeline renderer.
+- `visual-studio/src/live/methodsScenes.ts` — eight hand-authored scene beats.
+- `visual-studio/src/live/MethodsScenes.tsx` — eight-beat scene player.
 - `visual-studio/scripts/ir_lesson.ts` — IR lesson builder.
 - `bench/hyperframes_check.py` — static browser gate.
 - `src/assistant/visual/browser_gate.py` — server gate.
@@ -405,9 +534,12 @@ Acceptance:
 The plan is complete when a live lesson can:
 
 - choose scene vs card per chapter from `teaching`;
-- compile a model-authored scene IR with measured text and relational layout;
+- compile a model-authored scene IR with measured text, compound objects and
+  relational layout;
 - split an object with a real cubic morph and retain a docked, clickable group;
-- pass pacing, geometry, contrast and mid-morph gates;
+- settle into a dense, readable poster with no naked boxes or prose-stuffed
+  containers;
+- pass pacing, density, geometry, contrast, mid-morph and settled-poster gates;
 - keep audio, navigation and interaction aligned across both grammars;
 - prove this on one scene construction beat plus one descriptive card beat,
   without an MP4 seam or a second renderer.

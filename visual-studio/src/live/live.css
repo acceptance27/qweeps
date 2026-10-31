@@ -83,3 +83,22 @@
 .morph-controls span{font:11px monospace;color:#a8bdc3}
 .morph-pacing{color:#718e9d!important;font-family:Arial,sans-serif!important}
 @media(max-width:900px){.morph-pilot header{padding:12px 18px;align-items:flex-start}.morph-law{display:none}.morph-pilot h1{font-size:19px}.morph-controls{padding:8px 18px 12px}.morph-pacing{display:none}}
+
+.scene-shell{height:100dvh;background:#071117;color:#e6ecef;display:flex;flex-direction:column;font-family:Georgia,serif;overflow:hidden}
+.scene-header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:18px 30px 14px;border-bottom:1px solid #20343e;flex-shrink:0}
+.scene-header>div>span{font:10px Arial,sans-serif;letter-spacing:.16em;color:#88bdc9}
+.scene-header h1{font-size:26px;font-weight:400;margin:7px 0 3px}
+.scene-header p{font-size:13px;color:#9bb5ba;margin:0;font-family:Arial,sans-serif}
+.scene-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font:11px Arial,sans-serif;color:#9bb5ba;white-space:nowrap}
+.scene-meta strong{font:20px monospace;color:#edca82}
+.scene-meta em{font-style:normal;color:#8dbda5}
+.scene-stage-wrap{flex:1;min-height:0;display:grid;place-items:center;padding:8px 24px}
+.scene-stage{width:100%;max-height:calc(100dvh - 205px);height:auto;display:block;border:1px solid #20343e;border-radius:10px}
+.scene-footer{display:flex;align-items:center;gap:12px;padding:9px 30px 15px;border-top:1px solid #20343e;flex-shrink:0;min-width:0}
+.scene-footer>button{background:#d6be81;color:#11212a;border:0;border-radius:5px;padding:8px 16px;cursor:pointer}
+.scene-footer>button:nth-child(2){background:#16303c;color:#bdd0d6}
+.scene-rail{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;white-space:nowrap;flex:1;min-width:0}
+.scene-rail button{display:flex;align-items:center;gap:6px;padding:7px 9px;border-bottom:1px solid transparent;color:#7b96a3;font:10px Arial,sans-serif;white-space:nowrap}
+.scene-rail button span{font:9px monospace;color:#5a7583}
+.scene-rail button.active{color:#e4d4ac;border-color:#edca82;background:#b8994d0a}
+@media(max-width:900px){.scene-header{padding:12px 18px}.scene-header h1{font-size:20px}.scene-meta{display:none}.scene-footer{padding:8px 18px 12px}.scene-rail{display:none}.scene-stage{max-height:calc(100dvh - 160px)}}
