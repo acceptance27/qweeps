@@ -292,6 +292,13 @@ clipping, overflow, occlusion, runtime and craft findings. The methods showcase
 passes 8/8 frames with no errors or warnings; a control composition correctly
 failed at 1.74:1 contrast and for a clipped card.
 
+The live stream uses the same gate with two priority slots (active chapter
+first), one sample per static frame, and blocks `ready` on failure. Its first
+model-directed chapter arrived at 54.1 s, passed the gate by 61 s, but was
+blocked for 1.34:1 contrast: the model drew a purple sum circle with gold
+`1.2` text. The gate caught a real model-authored defect that the curated
+showcase did not contain.
+
 ## 8. Ideas attempted and rejected
 
 - **Raise the element cap.** Tried 20 → 28 → 36 → 40. It let beats compile; it

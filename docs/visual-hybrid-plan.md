@@ -161,6 +161,13 @@ passes; a blocked chapter keeps its findings visible and does not count toward
 the ready total. The check endpoint is `POST /api/visual/live/check` with the
 rendered SVG.
 
+The gate now has two priority slots: the active chapter first, then lesson
+order. Static snapshots use one check sample and skip the whole-timeline craft
+sweep (`--samples 1 --range 0,0.1`), so a real chapter check is around 5–8 s
+instead of 20–30 s. In the first model-directed eight-beat run, chapter 1
+arrived at 54.1 s and was checked by 61 s, but was blocked by a real 1.34:1
+contrast failure in the model's nested artwork (gold `1.2` on a purple fill).
+
 Full suite: **420 tests passing**.
 
 ## 1. Goal

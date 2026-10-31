@@ -39,3 +39,17 @@ def test_browser_gate_rejects_executable_markup():
         composition('<svg class="live-stage-svg"><script>alert(1)</script></svg>')
     with pytest.raises(PlanError, match="executable|event handlers"):
         composition('<svg class="live-stage-svg" onload="x()"></svg>')
+
+
+def test_static_gate_checks_one_sample_and_skips_the_craft_sweep(monkeypatch, tmp_path):
+    from assistant.visual import browser_gate
+    calls = []
+    class Result:
+        returncode = 0
+        stdout = '{"ok": true, "lint": {"findings": []}}'
+        stderr = ''
+    monkeypatch.setattr(browser_gate.subprocess, 'run', lambda *args, **kwargs: calls.append(args[0]) or Result())
+    assert browser_gate.run_check(tmp_path)['ok'] is True
+    command = calls[0]
+    assert command[command.index('--samples') + 1] == '1'
+    assert command[command.index('--range') + 1] == '0,0.1'

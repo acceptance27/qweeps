@@ -54,4 +54,6 @@ need the live GSAP timeline exposed.
 
 The chapter stream uses the same gate through `POST /api/visual/live/check`:
 each chapter is rendered on a hidden surface, checked once, and marked ready
-only when it passes.
+only when it passes. Static frames use one sample and skip the craft sweep
+(`--samples 1 --range 0,0.1`); up to two chapters are checked concurrently,
+active chapter first.

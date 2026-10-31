@@ -64,3 +64,5 @@
 
 .stream-gate-surface{position:fixed;left:-12000px;top:0;width:1440px;height:600px;pointer-events:none;overflow:hidden}
 .stream-gate-surface .live-stage-surface{width:1440px;height:600px}
+
+.stream-arrival{color:#6f8a96!important;font-size:8px!important;display:block;margin-top:2px}

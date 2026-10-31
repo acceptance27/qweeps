@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import React,{memo,useEffect,useMemo,useRef,useState} from 'react';
 import {api} from '../learning/types';
 import {initialLiveSnapshot} from './geometry';
 import GeneratedStage from './GeneratedStage';
@@ -8,7 +8,7 @@ import './live.css';
 type Beat={id:string;title:string;teaching?:string;layout:string};
 type Plan={title:string;question:string;representation:string;example:{title:string;description:string;icon:string};beats:Beat[]};
 type GateFinding={code?:string;severity?:string;message?:string;selector?:string;section?:string};
-type Check={status:'checking'|'ready'|'blocked'|'error';findings:GateFinding[];message?:string};
+type Check={status:'checking'|'ready'|'blocked'|'error';findings:GateFinding[];message?:string;at?:number};
 type StreamEvent={
  type:'stage'|'plan'|'chapter'|'done'|'error'|'ping';
  stage?:string;title?:string;question?:string;representation?:string;example?:Plan['example'];beats?:Beat[];
@@ -16,8 +16,22 @@ type StreamEvent={
 };
 
 const DEFAULT_TOPIC='Teach me in three beats how one artificial neuron computes its output from weighted inputs.';
+const MAX_GATES=2;
 
-export default function ChapterStream({topic,replay}:{topic?:string;replay?:string}){
+const GateSurface=memo(function GateSurface({target,plan,onReady}:{
+ target:LiveChapter;plan:Plan;onReady:(ready:boolean)=>void;
+}){
+ const lesson=useMemo<LiveLesson>(()=>({id:`stream-gate-${target.id}`,kind:'live_generated',
+  title:plan.title,question:plan.question,representation:plan.representation,duration:target.end,
+  example:plan.example,chapters:[target],sources:[]}),[target,plan]);
+ const snapshot=useMemo(()=>({...initialLiveSnapshot(),time:target.finishedAt}),[target]);
+ return <div data-gate={target.id} className="stream-gate-surface" aria-hidden="true">
+  <GeneratedStage lesson={lesson} snapshot={snapshot} focusRequest={0} update={()=>{}}
+   pause={()=>{}} onReady={onReady} interactive={false}/>
+ </div>;
+});
+
+export default function ChapterStream({topic,replay,methods=false}:{topic?:string;replay?:string;methods?:boolean}){
  const[plan,setPlan]=useState<Plan|null>(null);
  const[chapters,setChapters]=useState<LiveChapter[]>([]);
  const[active,setActive]=useState(0);
@@ -28,11 +42,14 @@ export default function ChapterStream({topic,replay}:{topic?:string;replay?:stri
  const[elapsed,setElapsed]=useState(0);
  const[snapshot,setSnapshot]=useState(initialLiveSnapshot());
  const[checks,setChecks]=useState<Record<string,Check>>({});
+ const[arrivals,setArrivals]=useState<Record<string,number>>({});
  const[gateQueue,setGateQueue]=useState<LiveChapter[]>([]);
- const[gateTarget,setGateTarget]=useState<LiveChapter|null>(null);
- const[gateDrawing,setGateDrawing]=useState(false);
+ const[gateTargets,setGateTargets]=useState<LiveChapter[]>([]);
+ const[gateReady,setGateReady]=useState<Record<string,boolean>>({});
+ const gateStarted=useRef<Set<string>>(new Set());
+ const clock=()=>Math.round((Date.now()-started)/1000);
 
- useEffect(()=>{const timer=setInterval(()=>setElapsed(Math.round((Date.now()-started)/1000)),1000);return()=>clearInterval(timer)},[started]);
+ useEffect(()=>{const timer=setInterval(()=>setElapsed(clock()),1000);return()=>clearInterval(timer)},[started]);
  useEffect(()=>{
   let source:EventSource|null=null,cancelled=false;
   if(replay){
@@ -48,7 +65,7 @@ export default function ChapterStream({topic,replay}:{topic?:string;replay?:stri
    }).catch((err:Error)=>setError(err.message));
    return()=>{cancelled=true};
   }
-  void api<{id:string}>('live/stream',{question:topic||DEFAULT_TOPIC}).then(job=>{
+  void api<{id:string}>('live/stream',{question:topic||DEFAULT_TOPIC,methods}).then(job=>{
    if(cancelled)return;
    source=new EventSource(`/api/visual/live/stream/${job.id}`);
    source.onmessage=event=>{
@@ -63,6 +80,7 @@ export default function ChapterStream({topic,replay}:{topic?:string;replay?:stri
     }
     if(payload.type==='chapter'&&payload.chapter){
      setChapters(previous=>[...previous,payload.chapter!]);
+     setArrivals(previous=>({...previous,[payload.chapter!.id]:payload.elapsed??clock()}));
      setGateQueue(previous=>[...previous,payload.chapter!]);
      setStatus(`Chapter ${(payload.index||0)+1} authored in ${payload.elapsed??elapsed}s · checking frame`);
     }
@@ -73,45 +91,52 @@ export default function ChapterStream({topic,replay}:{topic?:string;replay?:stri
   }).catch((err:Error)=>setError(err.message));
   return()=>{cancelled=true;source?.close()};
  // eslint-disable-next-line react-hooks/exhaustive-deps
- }, [replay]);
+ }, [replay,methods]);
  useEffect(()=>{if(chapters.length)setActive(chapters.length-1)},[chapters.length]);
 
  const current=chapters[active]||null;
  const currentCheck=current?checks[current.id]:undefined;
  useEffect(()=>{if(current)setSnapshot({...initialLiveSnapshot(),time:current.finishedAt})},[current]);
 
- // Gate one chapter at a time on a hidden surface, so switching the visible
- // chapter cannot invalidate the SVG being checked.
+ // Fill two gate slots, active chapter first, then lesson order. A check does
+ // not block the stream; later chapters are authored while these run.
  useEffect(()=>{
-  if(gateTarget||!gateQueue.length)return;
-  setGateTarget(gateQueue[0]);
-  setGateQueue(previous=>previous.slice(1));
-  setGateDrawing(false);
- },[gateTarget,gateQueue]);
- useEffect(()=>{setGateDrawing(false)},[gateTarget?.id]);
+  const slots=MAX_GATES-gateTargets.length;
+  if(slots<=0||!gateQueue.length)return;
+  const order=new Map(chapters.map((chapter,index)=>[chapter.id,index]));
+  const rank=(chapter:LiveChapter)=>chapter.id===current?.id?0:1+(order.get(chapter.id)??99);
+  const take=[...gateQueue].sort((a,b)=>rank(a)-rank(b)).slice(0,slots);
+  setGateTargets(previous=>[...previous,...take]);
+  setGateQueue(previous=>previous.filter(chapter=>!take.some(target=>target.id===chapter.id)));
+ },[gateTargets,gateQueue,chapters,current?.id]);
+
+ // Each target gets its own hidden surface. Start its check only after that
+ // surface has mounted and sought to the finished frame.
  useEffect(()=>{
-  if(!gateTarget||!gateDrawing)return;
-  let alive=true;
-  const run=async()=>{
-   setChecks(previous=>({...previous,[gateTarget.id]:{status:'checking',findings:[]}}));
-   await new Promise(resolve=>setTimeout(resolve,300));
-   const svg=document.querySelector<SVGSVGElement>('.stream-gate-surface svg.live-stage-svg');
-   if(!svg){
-    if(alive)setChecks(previous=>({...previous,[gateTarget.id]:{status:'error',findings:[],message:'The gate surface did not mount.'}}));
-    if(alive){setGateTarget(null);setGateDrawing(false);}
-    return;
-   }
-   try{
-    const result=await api<{ok:boolean;findings:GateFinding[];errors?:number;warnings?:number}>('live/check',{svg:svg.outerHTML,chapter:gateTarget.id});
-    if(alive)setChecks(previous=>({...previous,[gateTarget.id]:{status:result.ok?'ready':'blocked',findings:result.findings||[]}}));
-   }catch(err){
-    if(alive)setChecks(previous=>({...previous,[gateTarget.id]:{status:'error',findings:[],message:(err as Error).message}}));
-   }
-   if(alive){setGateTarget(null);setGateDrawing(false);}
-  };
-  void run();
-  return()=>{alive=false};
- },[gateTarget?.id,gateDrawing]);
+  for(const target of gateTargets){
+   if(checks[target.id]||gateStarted.current.has(target.id)||!gateReady[target.id])continue;
+   gateStarted.current.add(target.id);
+   void (async()=>{
+    setChecks(previous=>({...previous,[target.id]:{status:'checking',findings:[]}}));
+    await new Promise(resolve=>setTimeout(resolve,250));
+    const svg=document.querySelector<SVGSVGElement>(`[data-gate="${target.id}"] svg.live-stage-svg`);
+    if(!svg){
+     setChecks(previous=>({...previous,[target.id]:{status:'error',findings:[],message:'The gate surface did not mount.',at:clock()}}));
+    }else{
+     try{
+      const result=await api<{ok:boolean;findings:GateFinding[]}>(`live/check`,{svg:svg.outerHTML,chapter:target.id});
+      setChecks(previous=>({...previous,[target.id]:{status:result.ok?'ready':'blocked',findings:result.findings||[],at:clock()}}));
+     }catch(err){
+      setChecks(previous=>({...previous,[target.id]:{status:'error',findings:[],message:(err as Error).message,at:clock()}}));
+     }
+    }
+    gateStarted.current.delete(target.id);
+    setGateTargets(previous=>previous.filter(chapter=>chapter.id!==target.id));
+    setGateReady(previous=>{const next={...previous};delete next[target.id];return next});
+   })();
+  }
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[gateTargets,gateReady,checks]);
 
  const lesson:LiveLesson|null=useMemo(()=>{
   if(!plan||!current)return null;
@@ -119,26 +144,21 @@ export default function ChapterStream({topic,replay}:{topic?:string;replay?:stri
    representation:plan.representation,duration:current.end,example:plan.example,
    chapters:[current],sources:[]};
  },[plan,current]);
- const gateLesson:LiveLesson|null=useMemo(()=>{
-  if(!plan||!gateTarget)return null;
-  return{id:'stream-gate',kind:'live_generated',title:plan.title,question:plan.question,
-   representation:plan.representation,duration:gateTarget.end,example:plan.example,
-   chapters:[gateTarget],sources:[]};
- },[plan,gateTarget]);
+
 
  const readyCount=chapters.filter(chapter=>checks[chapter.id]?.status==='ready').length;
  const blockedCount=chapters.filter(chapter=>checks[chapter.id]?.status==='blocked'||checks[chapter.id]?.status==='error').length;
  const checkingCount=chapters.filter(chapter=>checks[chapter.id]?.status==='checking').length;
  const pendingCount=chapters.length-readyCount-blockedCount-checkingCount;
  const headline=!plan?'Preparing a lesson stream':blockedCount?`${blockedCount} chapter${blockedCount===1?'':'s'} blocked`:
-  checkingCount||gateTarget||gateQueue.length?`Checking chapter frames`:
+  checkingCount||gateTargets.length||gateQueue.length?`Checking chapter frames`:
   done&&readyCount===chapters.length?'Stream complete':`${readyCount} of ${chapters.length} passed`;
  const chapterState=(index:number)=>{
   if(index>=chapters.length)return 'waiting';
   return checks[chapters[index].id]?.status||'authored';
  };
  const stateLabel=(state:string)=>state==='checking'?'checking':state==='ready'?'ready':state==='blocked'?'blocked':state==='error'?'error':state==='authored'?'pending':'waiting';
- const note=error||(done&&!blockedCount&&!checkingCount&&!gateTarget&&!gateQueue.length&&readyCount===chapters.length
+ const note=error||(done&&!blockedCount&&!checkingCount&&!gateTargets.length&&!gateQueue.length&&readyCount===chapters.length
   ?'All chapters passed the browser gate.'
   :status);
 
@@ -149,7 +169,7 @@ export default function ChapterStream({topic,replay}:{topic?:string;replay?:stri
     <h1>{plan?.title||'Preparing a lesson stream'}</h1>
    </div>
    <div className="stream-meta">
-    <i className={blockedCount?'blocked':done&&!checkingCount&&!gateTarget&&!gateQueue.length?'done':''}/>
+    <i className={blockedCount?'blocked':done&&!checkingCount&&!gateTargets.length&&!gateQueue.length?'done':''}/>
     <span>{headline}</span>
     <strong>{elapsed}s</strong>
    </div>
@@ -160,17 +180,20 @@ export default function ChapterStream({topic,replay}:{topic?:string;replay?:stri
     <h2>Chapters</h2>
     {plan?.beats.map((beat,index)=>{
      const state=chapterState(index),available=index<chapters.length;
+     const arrived=arrivals[beat.id],checked=checks[beat.id]?.at;
      return <button key={beat.id} className={index===active&&available?'active':''} disabled={!available}
       onClick={()=>setActive(index)}>
       <span>{String(index+1).padStart(2,'0')}</span>
-      <div><strong>{beat.title}</strong><small>{beat.teaching||'teaching'} · {beat.layout}</small></div>
+      <div><strong>{beat.title}</strong><small>{beat.teaching||'teaching'} · {beat.layout}</small>
+       {available&&<small className="stream-arrival">arrived {arrived??'…'}s{checked!==undefined?` · ready ${checked}s`:''}</small>}
+      </div>
       <em className={state}>{stateLabel(state)}</em>
      </button>;
     })}
     {!plan&&<p className="stream-note">{note}</p>}
     {plan&&<p className="stream-note">{note}</p>}
     {chapters.length>0&&<p className="stream-note stream-count">
-      {readyCount} passed · {blockedCount} blocked · {pendingCount+checkingCount+(gateTarget?1:0)} pending
+      {readyCount} passed · {blockedCount} blocked · {pendingCount+checkingCount} pending
     </p>}
    </aside>
    <main className="stream-main">
@@ -199,9 +222,7 @@ export default function ChapterStream({topic,replay}:{topic?:string;replay?:stri
      </div>}
    </main>
   </div>
-  {gateLesson&&<div className="stream-gate-surface" aria-hidden="true">
-   <GeneratedStage lesson={gateLesson} snapshot={{...initialLiveSnapshot(),time:gateTarget!.finishedAt}}
-    focusRequest={0} update={()=>{}} pause={()=>{}} onReady={setGateDrawing} interactive={false}/>
-  </div>}
+  {plan&&gateTargets.map(target=><GateSurface key={target.id} target={target} plan={plan}
+   onReady={ready=>setGateReady(previous=>previous[target.id]===ready?previous:{...previous,[target.id]:ready})}/>)}
  </div>;
 }

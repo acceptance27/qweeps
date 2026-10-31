@@ -23,6 +23,9 @@ GSAP = STUDIO / "node_modules/gsap/dist/gsap.min.js"
 HYPERFRAMES = "hyperframes@0.8.223"
 MAX_SVG = 2_000_000
 SECTIONS = ("lint", "runtime", "layout", "contrast", "motion", "craft", "audio")
+# A snapshot is one frame, not a film: one sample is enough, and --range skips
+# the whole-timeline craft/motion sweep that made a real chapter check slow.
+STATIC_ARGS = ("--samples", "1", "--range", "0,0.1")
 PROJECT = {
     "$schema": "https://hyperframes.heygen.com/schema/hyperframes.json",
     "registry": "https://raw.githubusercontent.com/heygen-com/hyperframes/main/registry",
@@ -80,7 +83,7 @@ tl.seek(0);
 
 
 def run_check(project: Path, timeout: int = 120) -> dict:
-    command = ["npx", "--yes", HYPERFRAMES, "check", str(project), "--json"]
+    command = ["npx", "--yes", HYPERFRAMES, "check", str(project), "--json", *STATIC_ARGS]
     run = subprocess.run(command, cwd=project, capture_output=True, text=True, timeout=timeout)
     output = run.stdout.strip()
     start = output.find("{")

@@ -18,6 +18,26 @@ from .pedagogy import _model_json
 from .teaching import TEACHING_LAYOUTS,validate_teaching
 
 LAYOUTS={'comparison','process','matrix','concept','timeline','loci','diagram','fanin'}
+METHODS_PLAN=Path(__file__).with_name('methods_plan.json')
+
+
+def methods_storyboard():
+    plan=json.loads(METHODS_PLAN.read_text())
+    beats=[]
+    for index,chapter in enumerate(plan['chapters']):
+        bridge=re.split(r'(?<=[.!?])\s+',chapter['narration'].strip())[0]
+        if not bridge.endswith(('.','!','?')):
+            bridge+='.'
+        beats.append({
+            'id':chapter['id'],'title':chapter['title'],'question':chapter['question'],
+            'layout':chapter['layout'],'teaching':chapter['teaching'],'insight':chapter['insight'],
+            'presentation':chapter['presentation'],
+            'continuity':{'from':None if index==0 else plan['chapters'][index-1]['id'],'bridge':bridge[:240]},
+            'sourcePages':[],'visibleOperation':chapter['presentation']['visualEvidence'],
+            'safeguard':chapter['safeguard'],
+        })
+    return {'title':plan['title'],'question':plan['question'],'representation':plan['representation'],
+            'example':plan['example'],'beats':beats}
 COLORS={'blue','gold','green','coral','purple'}
 MAX_VISUAL_REVISIONS=3
 ICON_ALIASES={
@@ -567,10 +587,14 @@ class BrowserLessonStore:
                 job.update(status='ready',stage='Reviewed live lesson ready');return self.status(job_id)
         threading.Thread(target=self._generate,args=(job_id,),daemon=True).start();return self.status(job_id)
     def start_stream(self,payload):
-        question=_text(payload.get('question') or payload.get('topic'),'lesson request',4000)
+        methods=bool(payload.get('methods'))
+        storyboard=methods_storyboard() if methods else None
+        question=_text(payload.get('question') or payload.get('topic') or (storyboard['question'] if storyboard else None),'lesson request',4000)
         document=self.documents.resolve(question,payload.get('documentId'))
         context=copy.deepcopy(payload.get('context') or {})
-        signature=json.dumps({'stream':True,'engine':7,'question':question,
+        signature=json.dumps({'stream':True,'engine':7,'methods':methods,
+            'plan':hashlib.sha256(json.dumps(storyboard,sort_keys=True).encode()).hexdigest() if storyboard else None,
+            'question':question,
             'document':document['id'] if document else None,'context':context,
             'model':{'provider':getattr(self.llm,'provider',type(self.llm).__name__),
                      'generation':getattr(self.llm,'visual_model',None) or getattr(self.llm,'model',None),
@@ -582,7 +606,7 @@ class BrowserLessonStore:
                  'pausedContext':context,'assets':self.icons,'branch':False}
         j={'id':job_id,'lessonId':key,'status':'preparing','stage':'Planning the teaching method',
            'revision':0,'question':question,'document':document,'context':context,
-           'request':request,'stream':True}
+           'request':request,'stream':True,'storyboard':storyboard}
         with self.lock:
             self.jobs[job_id]=j;self.streams[job_id]=queue.Queue()
         folder=self.folder/key;folder.mkdir(parents=True,exist_ok=True)
@@ -623,9 +647,14 @@ class BrowserLessonStore:
         def emit(kind,**data):
             q.put({'type':kind,**data})
         try:
-            emit('stage',stage='Planning the teaching method')
-            story=self._request(j,lambda:_model_json(self.llm,PLAN+'\n\n'+browser_guidance('planner'),
-                j['request'],lambda raw:self._check_story(raw,j['document']),tokens=5000))
+            story=j.get('storyboard')
+            if story is None:
+                emit('stage',stage='Planning the teaching method')
+                story=self._request(j,lambda:_model_json(self.llm,PLAN+'\n\n'+browser_guidance('planner'),
+                    j['request'],lambda raw:self._check_story(raw,j['document']),tokens=5000))
+            else:
+                emit('stage',stage='Using the eight-method storyboard')
+                story=self._check_story(story,j['document'])
             j['storyboard']=story
             emit('plan',title=story['title'],question=story['question'],
                  representation=story['representation'],example=story['example'],

@@ -183,7 +183,7 @@ def test_labels_mode_flags_hidden_body_and_tag_values():
 
 
 def test_the_methods_showcase_compiles_with_all_eight_teachings():
-    methods = json.loads((ROOT / "tests/fixtures/hybrid_methods_plan.json").read_text())
+    methods = json.loads((ROOT / "src/assistant/visual/methods_plan.json").read_text())
     lesson = compile_hybrid_lesson(methods, ICONS)
     assert len(lesson["chapters"]) == 8
     assert {c["teaching"] for c in lesson["chapters"]} == {
@@ -192,3 +192,16 @@ def test_the_methods_showcase_compiles_with_all_eight_teachings():
     assert {c["visual"]["layout"] for c in lesson["chapters"]} == {
         "diagram", "fanin", "comparison", "process", "timeline", "loci"}
     assert check_lesson_geometry(lesson)["approved"]
+
+
+def test_methods_storyboard_has_the_same_eight_beats_for_live_streaming():
+    from assistant.visual.browser_lessons import methods_storyboard
+    story = methods_storyboard()
+    assert len(story["beats"]) == 8
+    assert {beat["teaching"] for beat in story["beats"]} == {
+        "construction", "mechanism", "quantitative", "comparison",
+        "procedure", "algorithm", "narrative", "recall"}
+    assert [beat["continuity"]["from"] for beat in story["beats"]] == [
+        None, "construction", "mechanism", "quantity", "comparison",
+        "procedure", "algorithm", "narrative"]
+    assert all(beat["visibleOperation"] for beat in story["beats"])
