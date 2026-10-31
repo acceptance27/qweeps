@@ -1260,9 +1260,15 @@ const LiveLessonLoader = React.lazy(() => import('./live/LiveLessonLoader'));
 const ChapterStream = React.lazy(() => import('./live/ChapterStream'));
 const MorphPilot = React.lazy(() => import('./live/MorphPilot'));
 const MethodsScenes = React.lazy(() => import('./live/MethodsScenes'));
+const ReferenceScene = React.lazy(() => import('./live/ReferenceScene'));
+const ModelScenePreview = React.lazy(() => import('./live/ModelScenePreview'));
+const ReferencePosters = React.lazy(() => import('./live/ReferencePosters'));
 export default function App() {
   const params = new URLSearchParams(location.search);
   if (params.get('scene') === 'rizal_live') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the live lesson…</div>}><LiveLessonPlayer /></React.Suspense>;
+  if (params.get('model') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the model scene…</div>}><ModelScenePreview/></React.Suspense>;
+  if (params.get('posters') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the reference posters…</div>}><ReferencePosters/></React.Suspense>;
+  if (params.get('reference') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the reference poster…</div>}><ReferenceScene/></React.Suspense>;
   if (params.get('scenes') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the eight scenes…</div>}><MethodsScenes/></React.Suspense>;
   if (params.get('pilot') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the morph pilot…</div>}><MorphPilot/></React.Suspense>;
   if (params.get('stream') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the chapter stream…</div>}><ChapterStream topic={params.get('topic')||''} replay={params.get('streamLesson')||''} methods={params.get('methods')==='1'}/></React.Suspense>;

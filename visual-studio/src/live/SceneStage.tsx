@@ -28,6 +28,7 @@ export default function SceneStage({scene,onComplete,playing=true}:{scene:Scene;
    else if(action.kind==='draw'){
     const path=el as unknown as SVGPathElement;
     const length=path.getTotalLength?path.getTotalLength():1;
+    tl.set(el,{opacity:1},action.at);
     tl.fromTo(el,{strokeDasharray:length,strokeDashoffset:length},{strokeDashoffset:0,duration:action.duration,ease:'power2.inOut'},action.at);
    }else if(action.kind==='morph'){
     const source=el as unknown as SVGPathElement;
@@ -69,7 +70,7 @@ export default function SceneStage({scene,onComplete,playing=true}:{scene:Scene;
   return null;
  };
 
- return <svg viewBox="0 0 1440 600" className="scene-stage" aria-label={scene.title}>
+ return <svg viewBox="0 0 1440 600" className="scene-stage live-stage-svg" aria-label={scene.title}>
   <rect width="1440" height="600" fill="#071117"/>
   {scene.objects.map(render)}
  </svg>;

@@ -178,7 +178,7 @@ A primitive is simply a compound with a hull and zero slots. This keeps
 v1 compound templates:
 
 `sum-node`, `step-card`, `value-pill`, `icon-chip`, `axis`, `number-line`,
-`bars`, `callout`, `brace`, `comparison-column`, `trace-row`, `station`, `dock`.
+`bars`, `callout`, `brace`, `comparison-card`, `trace-row`, `station`, `dock`.
 
 ### 4.2.2 Hull + settle morph contract
 
@@ -352,7 +352,7 @@ empty boxes.
   settle into sparse posters because the fixtures use bare primitives and no
   compound/final-state contract. That is the P1 evidence.
 
-### P1 — Scene IR v1, compound posters, and canonical morph (next)
+### P1 — Scene IR v1, compound posters, and canonical morph (done)
 
 Deliver:
 
@@ -362,7 +362,7 @@ Deliver:
 - canonical path builder for line/rect/circle/arc;
 - **compound templates** with hull + inner slots: sum-node, step-card,
   value-pill, icon-chip, axis, number-line, bars, callout, brace,
-  comparison-column, trace-row, station, dock;
+  comparison-card, trace-row, station, dock;
 - **hull + settle** morph: hull 0–80%, shared children 15–80%, new slots
   65–100%, settle hold ≥1.5 s;
 - **final-state contract and density gate**: grammar-specific poster shape, no
@@ -384,6 +384,38 @@ Acceptance:
 - a 40-word caption is rejected;
 - the settled poster holds long enough to read;
 - pacing validator rejects dead holds and too-few play starts.
+
+### P1 status — implemented
+
+The P1 layer is now in the tree and gated:
+
+- `visual-studio/src/live/compounds.ts` — hull + inner-slot layout for
+  comparison-card, step-card, sum-node, value-pill, icon-chip, axis,
+  number-line, bars, callout, brace, trace-row and station;
+- `visual-studio/src/live/sceneProgram.ts` — model-facing IR, compound
+  expansion, poster placement, hull/settle timing, measured text budgets,
+  criteria sharing, naked-box/empty-slot rejection, settle hold and pacing;
+- eight reference settled posters at `?posters=1` (comparison, procedure,
+  algorithm, narrative, recall, quantitative, construction, mechanism);
+- reference comparison at `?reference=1`, captured model output at `?model=1`;
+- `bench/model_scene_test.py` — repeated route → comparison test, no hand
+  edits, same compiler and gate;
+- `bench/settled_poster_check.py` — browser gate on the settled poster.
+
+Evidence:
+
+- Muse and DeepSeek each passed the model-authored comparison gate **3/3**;
+  both filled shared criteria rows, used replace + copy, docked the retained
+  context, and settled into a readable poster;
+- all eight reference posters compile and pass the settled-poster browser gate
+  with **0 errors and 0 warnings**;
+- 61 TypeScript tests and 422 Python tests pass;
+- a bare rect, an empty compound, a criteria mismatch, a missing dock, a
+  short settle hold and prose-stuffed slots are rejected before rendering.
+
+The model still needs prompt/examples rather than free coordinates, and P2–P4
+(live integration, shared compiler worker, motion gate) are not done. Beats
+4–8 remain blocked on P2–P4, not on the comparison gate.
 
 ### P2 — Shared compiler worker
 
@@ -474,7 +506,7 @@ Do these in order; each one has a test before the next:
    - object/op/text limits.
 2. **Compound expansion.**
    - `step-card`, `sum-node`, `value-pill`, `icon-chip`, `axis`,
-     `number-line`, `bars`, `callout`, `brace`, `comparison-column`,
+     `number-line`, `bars`, `callout`, `brace`, `comparison-card`,
      `trace-row`, `station`, `dock`;
    - hull + measured inner slots;
    - the model never supplies inner x/y.

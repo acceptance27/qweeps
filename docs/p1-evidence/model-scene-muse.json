@@ -1,0 +1,440 @@
+[
+ {
+  "attempt": 1,
+  "model": "opencode-go/muse-spark-1.3-contributor",
+  "seconds": 25.0,
+  "raw": "{\"title\": \"Same route, new risk\", \"teaching\": \"comparison\", \"duration\": 8, \"objects\": [{\"id\": \"route\", \"kind\": \"line\", \"from\": [260, 300], \"to\": [1180, 300], \"role\": \"blue\", \"strokeWidth\": 2, \"opacity\": 0}, {\"id\": \"ship\", \"kind\": \"circle\", \"cx\": 340, \"cy\": 300, \"r\": 9, \"stroke\": \"#8bd0df\", \"opacity\": 0}, {\"id\": \"left\", \"kind\": \"comparison-card\", \"role\": \"blue\", \"slots\": {\"title\": \"1916: warned attacks\", \"value\": \"warning required\", \"caption\": \"restrictions kept crews safe\", \"icon\": \"shield\", \"criteria\": [{\"label\": \"warning required\", \"value\": \"yes\"}, {\"label\": \"crew safety\", \"value\": \"required\"}, {\"label\": \"route risk\", \"value\": \"lower\"}]}}, {\"id\": \"right\", \"kind\": \"comparison-card\", \"role\": \"coral\", \"slots\": {\"title\": \"Feb 1917: no warning\", \"value\": \"no warning given\", \"caption\": \"same neutral route, new rule\", \"icon\": \"warning\", \"criteria\": [{\"label\": \"warning required\", \"value\": \"no\"}, {\"label\": \"crew safety\", \"value\": \"at risk\"}, {\"label\": \"route risk\", \"value\": \"higher\"}]}}], \"actions\": [{\"at\": 0.2, \"duration\": 0.4, \"kind\": \"show\", \"id\": \"route\"}, {\"at\": 0.3, \"duration\": 0.4, \"kind\": \"show\", \"id\": \"ship\"}, {\"at\": 1.0, \"duration\": 1.4, \"kind\": \"morph\", \"id\": \"route\", \"to\": \"left\", \"mode\": \"replace\"}, {\"at\": 1.0, \"duration\": 1.4, \"kind\": \"morph\", \"id\": \"route\", \"to\": \"right\", \"mode\": \"copy\"}, {\"at\": 2.7, \"duration\": 0.4, \"kind\": \"fade\", \"id\": \"ship\", \"opacity\": 0}, {\"at\": 3.8, \"duration\": 0.8, \"kind\": \"dock\", \"ids\": [\"left\", \"right\"], \"y\": 60, \"scale\": 0.8}], \"conclusion\": {\"text\": \"Same route, new risk; not war.\", \"x\": 720, \"y\": 545}}",
+  "json": true,
+  "ok": true,
+  "cards": null,
+  "slots": 28,
+  "actions": 37,
+  "findings": [],
+  "program": {
+   "title": "Same route, new risk",
+   "teaching": "comparison",
+   "duration": 8,
+   "objects": [
+    {
+     "id": "route",
+     "kind": "line",
+     "from": [
+      260,
+      300
+     ],
+     "to": [
+      1180,
+      300
+     ],
+     "role": "blue",
+     "strokeWidth": 2,
+     "opacity": 0
+    },
+    {
+     "id": "ship",
+     "kind": "circle",
+     "cx": 340,
+     "cy": 300,
+     "r": 9,
+     "stroke": "#8bd0df",
+     "opacity": 0
+    },
+    {
+     "id": "left",
+     "kind": "comparison-card",
+     "role": "blue",
+     "slots": {
+      "title": "1916: warned attacks",
+      "value": "warning required",
+      "caption": "restrictions kept crews safe",
+      "icon": "shield",
+      "criteria": [
+       {
+        "label": "warning required",
+        "value": "yes"
+       },
+       {
+        "label": "crew safety",
+        "value": "required"
+       },
+       {
+        "label": "route risk",
+        "value": "lower"
+       }
+      ]
+     }
+    },
+    {
+     "id": "right",
+     "kind": "comparison-card",
+     "role": "coral",
+     "slots": {
+      "title": "Feb 1917: no warning",
+      "value": "no warning given",
+      "caption": "same neutral route, new rule",
+      "icon": "warning",
+      "criteria": [
+       {
+        "label": "warning required",
+        "value": "no"
+       },
+       {
+        "label": "crew safety",
+        "value": "at risk"
+       },
+       {
+        "label": "route risk",
+        "value": "higher"
+       }
+      ]
+     }
+    }
+   ],
+   "actions": [
+    {
+     "at": 0.2,
+     "duration": 0.4,
+     "kind": "show",
+     "id": "route"
+    },
+    {
+     "at": 0.3,
+     "duration": 0.4,
+     "kind": "show",
+     "id": "ship"
+    },
+    {
+     "at": 1.0,
+     "duration": 1.4,
+     "kind": "morph",
+     "id": "route",
+     "to": "left",
+     "mode": "replace"
+    },
+    {
+     "at": 1.0,
+     "duration": 1.4,
+     "kind": "morph",
+     "id": "route",
+     "to": "right",
+     "mode": "copy"
+    },
+    {
+     "at": 2.7,
+     "duration": 0.4,
+     "kind": "fade",
+     "id": "ship",
+     "opacity": 0
+    },
+    {
+     "at": 3.8,
+     "duration": 0.8,
+     "kind": "dock",
+     "ids": [
+      "left",
+      "right"
+     ],
+     "y": 60,
+     "scale": 0.8
+    }
+   ],
+   "conclusion": {
+    "text": "Same route, new risk; not war.",
+    "x": 720,
+    "y": 545
+   }
+  }
+ },
+ {
+  "attempt": 2,
+  "model": "opencode-go/muse-spark-1.3-contributor",
+  "seconds": 17.8,
+  "raw": "{\"title\": \"Same route, new risk rule\", \"teaching\": \"comparison\", \"duration\": 8, \"objects\": [{\"id\": \"route\", \"kind\": \"line\", \"from\": [260, 300], \"to\": [1180, 300], \"role\": \"blue\", \"strokeWidth\": 2, \"opacity\": 0}, {\"id\": \"ship\", \"kind\": \"circle\", \"cx\": 340, \"cy\": 300, \"r\": 9, \"stroke\": \"#8bd0df\", \"opacity\": 0}, {\"id\": \"left\", \"kind\": \"comparison-card\", \"role\": \"blue\", \"slots\": {\"title\": \"1916: restricted rule\", \"value\": \"warning required\", \"caption\": \"neutral route with warning rule\", \"icon\": \"shield\", \"criteria\": [{\"label\": \"warning required\", \"value\": \"yes\"}, {\"label\": \"crew safety\", \"value\": \"required\"}, {\"label\": \"route risk\", \"value\": \"lower\"}]}}, {\"id\": \"right\", \"kind\": \"comparison-card\", \"role\": \"coral\", \"slots\": {\"title\": \"Feb 1917: unrestricted\", \"value\": \"without warning\", \"caption\": \"same neutral route, no warning\", \"icon\": \"warning\", \"criteria\": [{\"label\": \"warning required\", \"value\": \"no\"}, {\"label\": \"crew safety\", \"value\": \"not required\"}, {\"label\": \"route risk\", \"value\": \"higher\"}]}}], \"actions\": [{\"at\": 0.2, \"duration\": 0.4, \"kind\": \"show\", \"id\": \"route\"}, {\"at\": 0.3, \"duration\": 0.4, \"kind\": \"show\", \"id\": \"ship\"}, {\"at\": 1.0, \"duration\": 1.4, \"kind\": \"morph\", \"id\": \"route\", \"to\": \"left\", \"mode\": \"replace\"}, {\"at\": 1.0, \"duration\": 1.4, \"kind\": \"morph\", \"id\": \"route\", \"to\": \"right\", \"mode\": \"copy\"}, {\"at\": 2.7, \"duration\": 0.4, \"kind\": \"fade\", \"id\": \"ship\", \"opacity\": 0}, {\"at\": 3.8, \"duration\": 0.8, \"kind\": \"dock\", \"ids\": [\"left\", \"right\"], \"y\": 60, \"scale\": 0.8}], \"conclusion\": {\"text\": \"Same route, new risk; not a war declaration.\", \"x\": 720, \"y\": 545}}",
+  "json": true,
+  "ok": true,
+  "cards": null,
+  "slots": 28,
+  "actions": 37,
+  "findings": [],
+  "program": {
+   "title": "Same route, new risk rule",
+   "teaching": "comparison",
+   "duration": 8,
+   "objects": [
+    {
+     "id": "route",
+     "kind": "line",
+     "from": [
+      260,
+      300
+     ],
+     "to": [
+      1180,
+      300
+     ],
+     "role": "blue",
+     "strokeWidth": 2,
+     "opacity": 0
+    },
+    {
+     "id": "ship",
+     "kind": "circle",
+     "cx": 340,
+     "cy": 300,
+     "r": 9,
+     "stroke": "#8bd0df",
+     "opacity": 0
+    },
+    {
+     "id": "left",
+     "kind": "comparison-card",
+     "role": "blue",
+     "slots": {
+      "title": "1916: restricted rule",
+      "value": "warning required",
+      "caption": "neutral route with warning rule",
+      "icon": "shield",
+      "criteria": [
+       {
+        "label": "warning required",
+        "value": "yes"
+       },
+       {
+        "label": "crew safety",
+        "value": "required"
+       },
+       {
+        "label": "route risk",
+        "value": "lower"
+       }
+      ]
+     }
+    },
+    {
+     "id": "right",
+     "kind": "comparison-card",
+     "role": "coral",
+     "slots": {
+      "title": "Feb 1917: unrestricted",
+      "value": "without warning",
+      "caption": "same neutral route, no warning",
+      "icon": "warning",
+      "criteria": [
+       {
+        "label": "warning required",
+        "value": "no"
+       },
+       {
+        "label": "crew safety",
+        "value": "not required"
+       },
+       {
+        "label": "route risk",
+        "value": "higher"
+       }
+      ]
+     }
+    }
+   ],
+   "actions": [
+    {
+     "at": 0.2,
+     "duration": 0.4,
+     "kind": "show",
+     "id": "route"
+    },
+    {
+     "at": 0.3,
+     "duration": 0.4,
+     "kind": "show",
+     "id": "ship"
+    },
+    {
+     "at": 1.0,
+     "duration": 1.4,
+     "kind": "morph",
+     "id": "route",
+     "to": "left",
+     "mode": "replace"
+    },
+    {
+     "at": 1.0,
+     "duration": 1.4,
+     "kind": "morph",
+     "id": "route",
+     "to": "right",
+     "mode": "copy"
+    },
+    {
+     "at": 2.7,
+     "duration": 0.4,
+     "kind": "fade",
+     "id": "ship",
+     "opacity": 0
+    },
+    {
+     "at": 3.8,
+     "duration": 0.8,
+     "kind": "dock",
+     "ids": [
+      "left",
+      "right"
+     ],
+     "y": 60,
+     "scale": 0.8
+    }
+   ],
+   "conclusion": {
+    "text": "Same route, new risk; not a war declaration.",
+    "x": 720,
+    "y": 545
+   }
+  }
+ },
+ {
+  "attempt": 3,
+  "model": "opencode-go/muse-spark-1.3-contributor",
+  "seconds": 5.6,
+  "raw": "{\"title\": \"Same route, new risk rule\", \"teaching\": \"comparison\", \"duration\": 8, \"objects\": [{\"id\": \"route\", \"kind\": \"line\", \"from\": [260, 300], \"to\": [1180, 300], \"role\": \"blue\", \"strokeWidth\": 2, \"opacity\": 0}, {\"id\": \"ship\", \"kind\": \"circle\", \"cx\": 340, \"cy\": 300, \"r\": 9, \"stroke\": \"#8bd0df\", \"opacity\": 0}, {\"id\": \"left\", \"kind\": \"comparison-card\", \"role\": \"blue\", \"slots\": {\"title\": \"1916: warn and protect\", \"value\": \"warning required\", \"caption\": \"neutral route under restricted rules\", \"icon\": \"shield\", \"criteria\": [{\"label\": \"warning required\", \"value\": \"yes\"}, {\"label\": \"crew safety\", \"value\": \"safe\"}, {\"label\": \"route risk\", \"value\": \"lower\"}]}}, {\"id\": \"right\", \"kind\": \"comparison-card\", \"role\": \"coral\", \"slots\": {\"title\": \"Feb 1917: no warning\", \"value\": \"no warning\", \"caption\": \"same neutral route rule changed\", \"icon\": \"warning\", \"criteria\": [{\"label\": \"warning required\", \"value\": \"no\"}, {\"label\": \"crew safety\", \"value\": \"at risk\"}, {\"label\": \"route risk\", \"value\": \"higher\"}]}}], \"actions\": [{\"at\": 0.2, \"duration\": 0.4, \"kind\": \"show\", \"id\": \"route\"}, {\"at\": 0.3, \"duration\": 0.4, \"kind\": \"show\", \"id\": \"ship\"}, {\"at\": 1.0, \"duration\": 1.4, \"kind\": \"morph\", \"id\": \"route\", \"to\": \"left\", \"mode\": \"replace\"}, {\"at\": 1.0, \"duration\": 1.4, \"kind\": \"morph\", \"id\": \"route\", \"to\": \"right\", \"mode\": \"copy\"}, {\"at\": 2.7, \"duration\": 0.4, \"kind\": \"fade\", \"id\": \"ship\", \"opacity\": 0}, {\"at\": 3.8, \"duration\": 0.8, \"kind\": \"dock\", \"ids\": [\"left\", \"right\"], \"y\": 60, \"scale\": 0.8}], \"conclusion\": {\"text\": \"Same route, new risk; no war declared.\", \"x\": 720, \"y\": 545}}",
+  "json": true,
+  "ok": true,
+  "cards": null,
+  "slots": 28,
+  "actions": 37,
+  "findings": [],
+  "program": {
+   "title": "Same route, new risk rule",
+   "teaching": "comparison",
+   "duration": 8,
+   "objects": [
+    {
+     "id": "route",
+     "kind": "line",
+     "from": [
+      260,
+      300
+     ],
+     "to": [
+      1180,
+      300
+     ],
+     "role": "blue",
+     "strokeWidth": 2,
+     "opacity": 0
+    },
+    {
+     "id": "ship",
+     "kind": "circle",
+     "cx": 340,
+     "cy": 300,
+     "r": 9,
+     "stroke": "#8bd0df",
+     "opacity": 0
+    },
+    {
+     "id": "left",
+     "kind": "comparison-card",
+     "role": "blue",
+     "slots": {
+      "title": "1916: warn and protect",
+      "value": "warning required",
+      "caption": "neutral route under restricted rules",
+      "icon": "shield",
+      "criteria": [
+       {
+        "label": "warning required",
+        "value": "yes"
+       },
+       {
+        "label": "crew safety",
+        "value": "safe"
+       },
+       {
+        "label": "route risk",
+        "value": "lower"
+       }
+      ]
+     }
+    },
+    {
+     "id": "right",
+     "kind": "comparison-card",
+     "role": "coral",
+     "slots": {
+      "title": "Feb 1917: no warning",
+      "value": "no warning",
+      "caption": "same neutral route rule changed",
+      "icon": "warning",
+      "criteria": [
+       {
+        "label": "warning required",
+        "value": "no"
+       },
+       {
+        "label": "crew safety",
+        "value": "at risk"
+       },
+       {
+        "label": "route risk",
+        "value": "higher"
+       }
+      ]
+     }
+    }
+   ],
+   "actions": [
+    {
+     "at": 0.2,
+     "duration": 0.4,
+     "kind": "show",
+     "id": "route"
+    },
+    {
+     "at": 0.3,
+     "duration": 0.4,
+     "kind": "show",
+     "id": "ship"
+    },
+    {
+     "at": 1.0,
+     "duration": 1.4,
+     "kind": "morph",
+     "id": "route",
+     "to": "left",
+     "mode": "replace"
+    },
+    {
+     "at": 1.0,
+     "duration": 1.4,
+     "kind": "morph",
+     "id": "route",
+     "to": "right",
+     "mode": "copy"
+    },
+    {
+     "at": 2.7,
+     "duration": 0.4,
+     "kind": "fade",
+     "id": "ship",
+     "opacity": 0
+    },
+    {
+     "at": 3.8,
+     "duration": 0.8,
+     "kind": "dock",
+     "ids": [
+      "left",
+      "right"
+     ],
+     "y": 60,
+     "scale": 0.8
+    }
+   ],
+   "conclusion": {
+    "text": "Same route, new risk; no war declared.",
+    "x": 720,
+    "y": 545
+   }
+  }
+ }
+]

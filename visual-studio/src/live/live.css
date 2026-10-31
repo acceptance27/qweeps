@@ -102,3 +102,11 @@
 .scene-rail button span{font:9px monospace;color:#5a7583}
 .scene-rail button.active{color:#e4d4ac;border-color:#edca82;background:#b8994d0a}
 @media(max-width:900px){.scene-header{padding:12px 18px}.scene-header h1{font-size:20px}.scene-meta{display:none}.scene-footer{padding:8px 18px 12px}.scene-rail{display:none}.scene-stage{max-height:calc(100dvh - 160px)}}
+
+.poster-tabs{display:flex;gap:6px;padding:10px 30px;border-bottom:1px solid #20343e;flex-wrap:wrap;flex-shrink:0}
+.poster-tabs button{background:#0d2029;color:#9bb5ba;border:1px solid #25424e;border-radius:999px;padding:6px 13px;font:11px Arial,sans-serif;cursor:pointer}
+.poster-tabs button.active{background:#d6be81;color:#11212a;border-color:#d6be81}
+.poster-tabs + .scene-stage-wrap .scene-stage{max-height:calc(100dvh - 258px)}
+.poster-action{background:#16303c;color:#bdd0d6;border:1px solid #2a4b58;border-radius:5px;padding:7px 13px;font:11px Arial,sans-serif;cursor:pointer}
+.poster-action:first-child{background:#d6be81;color:#11212a;border-color:#d6be81}
+@media(max-width:900px){.poster-tabs{padding:8px 18px}.poster-tabs + .scene-stage-wrap .scene-stage{max-height:calc(100dvh - 218px)}}

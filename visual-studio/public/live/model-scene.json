@@ -1,0 +1,134 @@
+{
+ "title": "Same route, new risk",
+ "teaching": "comparison",
+ "duration": 8,
+ "objects": [
+  {
+   "id": "route",
+   "kind": "line",
+   "from": [
+    260,
+    300
+   ],
+   "to": [
+    1180,
+    300
+   ],
+   "role": "blue",
+   "strokeWidth": 2,
+   "opacity": 0
+  },
+  {
+   "id": "ship",
+   "kind": "circle",
+   "cx": 340,
+   "cy": 300,
+   "r": 9,
+   "stroke": "#8bd0df",
+   "opacity": 0
+  },
+  {
+   "id": "left",
+   "kind": "comparison-card",
+   "role": "blue",
+   "slots": {
+    "title": "1916: warned attacks",
+    "value": "warning required",
+    "caption": "restrictions kept crews safe",
+    "icon": "shield",
+    "criteria": [
+     {
+      "label": "warning required",
+      "value": "yes"
+     },
+     {
+      "label": "crew safety",
+      "value": "required"
+     },
+     {
+      "label": "route risk",
+      "value": "lower"
+     }
+    ]
+   }
+  },
+  {
+   "id": "right",
+   "kind": "comparison-card",
+   "role": "coral",
+   "slots": {
+    "title": "Feb 1917: no warning",
+    "value": "no warning given",
+    "caption": "same neutral route, new rule",
+    "icon": "warning",
+    "criteria": [
+     {
+      "label": "warning required",
+      "value": "no"
+     },
+     {
+      "label": "crew safety",
+      "value": "at risk"
+     },
+     {
+      "label": "route risk",
+      "value": "higher"
+     }
+    ]
+   }
+  }
+ ],
+ "actions": [
+  {
+   "at": 0.2,
+   "duration": 0.4,
+   "kind": "show",
+   "id": "route"
+  },
+  {
+   "at": 0.3,
+   "duration": 0.4,
+   "kind": "show",
+   "id": "ship"
+  },
+  {
+   "at": 1.0,
+   "duration": 1.4,
+   "kind": "morph",
+   "id": "route",
+   "to": "left",
+   "mode": "replace"
+  },
+  {
+   "at": 1.0,
+   "duration": 1.4,
+   "kind": "morph",
+   "id": "route",
+   "to": "right",
+   "mode": "copy"
+  },
+  {
+   "at": 2.7,
+   "duration": 0.4,
+   "kind": "fade",
+   "id": "ship",
+   "opacity": 0
+  },
+  {
+   "at": 3.8,
+   "duration": 0.8,
+   "kind": "dock",
+   "ids": [
+    "left",
+    "right"
+   ],
+   "y": 60,
+   "scale": 0.8
+  }
+ ],
+ "conclusion": {
+  "text": "Same route, new risk; not war.",
+  "x": 720,
+  "y": 545
+ }
+}

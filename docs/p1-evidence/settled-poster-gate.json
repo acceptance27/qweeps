@@ -1,0 +1,66 @@
+[
+ {
+  "grammar": "comparison",
+  "ok": true,
+  "errors": 0,
+  "warnings": 0,
+  "findings": [],
+  "seconds": 7.2
+ },
+ {
+  "grammar": "procedure",
+  "ok": true,
+  "errors": 0,
+  "warnings": 0,
+  "findings": [],
+  "seconds": 6.7
+ },
+ {
+  "grammar": "algorithm",
+  "ok": true,
+  "errors": 0,
+  "warnings": 0,
+  "findings": [],
+  "seconds": 6.8
+ },
+ {
+  "grammar": "narrative",
+  "ok": true,
+  "errors": 0,
+  "warnings": 0,
+  "findings": [],
+  "seconds": 6.8
+ },
+ {
+  "grammar": "recall",
+  "ok": true,
+  "errors": 0,
+  "warnings": 0,
+  "findings": [],
+  "seconds": 7.7
+ },
+ {
+  "grammar": "quantitative",
+  "ok": true,
+  "errors": 0,
+  "warnings": 0,
+  "findings": [],
+  "seconds": 6.7
+ },
+ {
+  "grammar": "construction",
+  "ok": true,
+  "errors": 0,
+  "warnings": 0,
+  "findings": [],
+  "seconds": 6.6
+ },
+ {
+  "grammar": "mechanism",
+  "ok": true,
+  "errors": 0,
+  "warnings": 0,
+  "findings": [],
+  "seconds": 6.7
+ }
+]
