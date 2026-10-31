@@ -12,7 +12,7 @@ export type SceneAction=
  | {at:number;duration:number;kind:'show'|'fade';id:string;opacity?:number}
  | {at:number;duration:number;kind:'move';id:string;x:number;y:number}
  | {at:number;duration:number;kind:'scale';id:string;scale:number}
- | {at:number;duration:number;kind:'morph';id:string;d:string;mode:'replace'|'copy';fill?:string;fillOpacity?:number;stroke?:string}
+ | {at:number;duration:number;kind:'morph';id:string;d:string;mode:'replace'|'copy';fill?:string;fillOpacity?:number;stroke?:string;target?:string}
  | {at:number;duration:number;kind:'indicate';id:string}
  | {at:number;duration:number;kind:'draw';id:string}
  | {at:number;duration:number;kind:'dock';id:string;x:number;y:number;scale:number};

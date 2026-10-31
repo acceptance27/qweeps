@@ -20,6 +20,6 @@ export default function SceneChapterStage({chapter,time,interactive=true,pause,u
   pause();update(s=>({...s,selected:[role],focus:role,region:null}));
  };
  return <div className="live-stage-surface scene-chapter-surface">
-  <SceneStage scene={scene} time={local} playing={false} onComplete={()=>{}} onSelect={select} selected={selected}/>
+  <SceneStage key={chapter.id} scene={scene} time={local} playing={false} onComplete={()=>{}} onSelect={select} selected={selected}/>
  </div>;
 }

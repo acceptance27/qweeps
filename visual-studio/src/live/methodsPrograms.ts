@@ -1,0 +1,95 @@
+import type {SceneProgram} from './sceneProgram';
+
+const comparison:SceneProgram={
+ title:'Three activation choices',
+ teaching:'comparison',
+ duration:8,
+ objects:[
+  {id:'route',kind:'line',from:[260,300],to:[1180,300],role:'blue',strokeWidth:2,opacity:0},
+  {id:'ship',kind:'circle',cx:340,cy:300,r:9,stroke:'#8bd0df',opacity:0},
+  {id:'sigmoid',kind:'comparison-card',role:'blue',slots:{
+   title:'Sigmoid',value:'0 to 1',caption:'smooth, bounded',icon:'scale',
+   criteria:[{label:'range',value:'0 → 1'},{label:'shape',value:'S-curve'},{label:'common use',value:'probabilities'}]}},
+  {id:'relu',kind:'comparison-card',role:'green',slots:{
+   title:'ReLU',value:'0 to ∞',caption:'zero below, linear above',icon:'zap',
+   criteria:[{label:'range',value:'0 → ∞'},{label:'shape',value:'hinge'},{label:'common use',value:'hidden layers'}]}},
+  {id:'linear',kind:'comparison-card',role:'gold',slots:{
+   title:'Linear',value:'−∞ to ∞',caption:'returns the raw score',icon:'arrow',
+   criteria:[{label:'range',value:'unbounded'},{label:'shape',value:'straight line'},{label:'common use',value:'regression'}]}},
+ ],
+ actions:[
+  {at:.2,duration:.4,kind:'show',id:'route'},
+  {at:.3,duration:.4,kind:'show',id:'ship'},
+  {at:1.0,duration:1.4,kind:'morph',id:'route',to:'sigmoid',mode:'replace'},
+  {at:1.0,duration:1.4,kind:'morph',id:'route',to:'relu',mode:'copy'},
+  {at:1.0,duration:1.4,kind:'morph',id:'route',to:'linear',mode:'copy'},
+  {at:2.8,duration:.4,kind:'fade',id:'ship',opacity:0},
+  {at:3.8,duration:.8,kind:'dock',ids:['sigmoid','relu','linear'],y:60,scale:.8},
+ ],
+ conclusion:{text:'The activation decides the shape of the output, not the input.',x:720,y:545},
+ context:{label:'shared input z'},
+};
+
+const procedure:SceneProgram={
+ title:'Compute one example',
+ teaching:'procedure',
+ duration:9,
+ objects:[
+  {id:'scale',kind:'step-card',role:'blue',slots:{title:'Scale',value:'1.4',caption:'2 × 0.7',icon:'scale'}},
+  {id:'add',kind:'step-card',role:'gold',slots:{title:'Add bias',value:'1.2',caption:'1.4 − 0.5 + 0.3',icon:'zap'}},
+  {id:'squash',kind:'step-card',role:'green',slots:{title:'Squash',value:'0.77',caption:'σ(1.2)',icon:'eye'}},
+ ],
+ actions:[],
+ conclusion:{text:'Scale, add the bias, squash: that is one forward pass.',x:720,y:470},
+};
+
+const algorithm:SceneProgram={
+ title:'The forward pass',
+ teaching:'algorithm',
+ duration:9,
+ objects:[
+  {id:'read',kind:'trace-row',role:'purple',slots:{title:'Read inputs',value:'x, w, b'}},
+  {id:'compute',kind:'trace-row',role:'gold',slots:{title:'Compute z',value:'z = 1.2'}},
+  {id:'return',kind:'trace-row',role:'green',slots:{title:'Return y',value:'y = 0.77'}},
+ ],
+ actions:[],
+ conclusion:{text:'One forward pass: no weights change.',x:720,y:555},
+};
+
+const narrative:SceneProgram={
+ title:'How the idea evolved',
+ teaching:'narrative',
+ duration:10,
+ objects:[
+  {id:'axis',kind:'axis',role:'muted',slots:{ticks:[{label:'1958'},{label:'1986'},{label:'Today'}]}},
+  {id:'perceptron',kind:'station',role:'blue',slots:{title:'Perceptron',value:'1958',caption:'first trainable unit'}},
+  {id:'backprop',kind:'station',role:'purple',slots:{title:'Backpropagation',value:'1986',caption:'credit assignment'}},
+  {id:'scale',kind:'station',role:'green',slots:{title:'Scale',value:'Today',caption:'deep networks'}},
+ ],
+ actions:[],
+ conclusion:{text:'The idea moved from one unit to a trainable network.',x:720,y:470},
+};
+
+const recall:SceneProgram={
+ title:'Remember the three moves',
+ teaching:'recall',
+ duration:9,
+ objects:[
+  {id:'route',kind:'line',from:[180,300],to:[1260,300],role:'blue',strokeWidth:2,opacity:0},
+  {id:'weight',kind:'station',role:'blue',slots:{title:'Weight',value:'1',caption:'w · x'}},
+  {id:'sum',kind:'station',role:'purple',slots:{title:'Sum',value:'2',caption:'add bias'}},
+  {id:'activate',kind:'station',role:'green',slots:{title:'Activate',value:'3',caption:'σ(z)'}},
+ ],
+ actions:[],
+ conclusion:{text:'Weight, sum, activate: the three moves of a neuron.',x:720,y:470},
+};
+
+export const METHOD_PROGRAMS:Record<string,SceneProgram>={
+ comparison,procedure,algorithm,narrative,recall,
+};
+
+export const METHOD_LABELS:Record<string,string>={
+ comparison:'Comparison',procedure:'Procedure',algorithm:'Algorithm',narrative:'Narrative',recall:'Recall',
+};
+
+export const METHOD_ORDER=['comparison','procedure','algorithm','narrative','recall'];

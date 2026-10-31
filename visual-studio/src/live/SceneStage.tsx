@@ -12,12 +12,15 @@ function arrowHead(from:[number,number],to:[number,number]){
 export default function SceneStage({scene,onComplete,playing=true,time,onSelect,selected}:{scene:Scene;onComplete:()=>void;playing?:boolean;time?:number;onSelect?:(id:string)=>void;selected?:string[]}){
  const refs=useRef<Record<string,SVGElement>>({});
  const timeline=useRef<gsap.core.Timeline|null>(null);
+ const clones=useRef<SVGElement[]>([]);
  const timelineCurrent=()=>timeline.current;
  const done=useRef(onComplete);done.current=onComplete;
  const playRef=useRef(playing);playRef.current=playing;
  const timeRef=useRef(time);timeRef.current=time;
 
  useLayoutEffect(()=>{
+  for(const clone of clones.current)clone.remove();
+  clones.current=[];
   const tl=gsap.timeline({paused:true});
   const at=(action:SceneAction,el:SVGElement)=>{
    if(action.kind==='show')tl.fromTo(el,{opacity:0},{opacity:1,duration:action.duration,ease:'power1.out'},action.at);
@@ -35,12 +38,16 @@ export default function SceneStage({scene,onComplete,playing=true,time,onSelect,
     const source=el as unknown as SVGPathElement;
     if(action.mode==='copy'){
      const clone=source.cloneNode(true) as SVGPathElement;
+     clones.current.push(clone);
+     clone.removeAttribute('id');
+     clone.setAttribute('data-scene-id',action.target??`${action.id}-copy`);
      source.parentNode?.insertBefore(clone, source.nextSibling);
      gsap.set(clone,{opacity:1,attr:{d:source.getAttribute('d')??'',fill:action.fill??'none','fill-opacity':0,stroke:action.stroke??source.getAttribute('stroke')??'#8bd0df'}});
      tl.to(clone,{attr:{d:action.d,'fill-opacity':action.fillOpacity??1},duration:action.duration,ease:'power2.inOut'},action.at);
     }else{
      if(action.fill)gsap.set(source,{attr:{fill:action.fill,'fill-opacity':0}});
      if(action.stroke)gsap.set(source,{attr:{stroke:action.stroke}});
+     if(action.target)source.setAttribute('data-scene-id',action.target);
      tl.to(source,{attr:{d:action.d,'fill-opacity':action.fillOpacity??1},duration:action.duration,ease:'power2.inOut'},action.at);
     }
    }
@@ -52,7 +59,7 @@ export default function SceneStage({scene,onComplete,playing=true,time,onSelect,
   (window as Window&{__sceneStage?:{scene:Scene;timeline:gsap.core.Timeline}}).__sceneStage={scene,timeline:tl};
   if(timeRef.current!=null){tl.pause();tl.seek(Math.max(0,Math.min(timeRef.current,tl.duration())));}
   else if(playRef.current)tl.play();
-  return()=>{tl.kill();timeline.current=null;delete (window as Window&{__sceneStage?:unknown}).__sceneStage;};
+  return()=>{for(const clone of clones.current)clone.remove();clones.current=[];tl.kill();timeline.current=null;delete (window as Window&{__sceneStage?:unknown}).__sceneStage;};
  },[scene]);
 
  useEffect(()=>{const tl=timeline.current;if(!tl||time==null)return;tl.pause();tl.seek(Math.max(0,Math.min(time,tl.duration())));},[time]);

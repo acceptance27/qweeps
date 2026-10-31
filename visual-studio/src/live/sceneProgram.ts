@@ -14,6 +14,7 @@ export type ProgramAction=
 export type SceneProgram={
  title:string;teaching:string;duration:number;objects:ProgramObject[];actions:ProgramAction[];
  conclusion?:{text:string;x:number;y:number};
+ context?:{label?:string};
 };
 
 export type ProgramFinding={code:string;severity:'error'|'warning';message:string;id?:string};
@@ -308,7 +309,7 @@ function grammarExtras(program:SceneProgram,boxes:ReturnType<typeof layoutBoxes>
    const minX=Math.min(route.from[0],route.to[0]),maxX=Math.max(route.from[0],route.to[0]);
    const contextY=86;
    objects.push({id:'context',kind:'path',d:pathD(lineLoop([minX,contextY],[maxX,contextY])),stroke:PAINT.blue,strokeWidth:2,opacity:0});
-   objects.push({id:'context-label',kind:'text',x:(minX+maxX)/2,y:contextY-14,text:'the same route',size:12,fill:'#7899a5',anchor:'middle',opacity:0});
+   objects.push({id:'context-label',kind:'text',x:(minX+maxX)/2,y:contextY-14,text:program.context?.label??'the same route',size:12,fill:'#7899a5',anchor:'middle',opacity:0});
    actions.push({at:.2,duration:.5,kind:'show',id:'context'},{at:.35,duration:.4,kind:'show',id:'context-label'});
   }
  }
@@ -324,13 +325,15 @@ function comparisonTimeline(program:SceneProgram,compounds:Compound[],layouts:{c
    if(!target||!cardIds.has(action.to))continue;
    const paint=PAINT[target.compound.role??'blue'];
    const hullD=target.layout.hull.kind==='path'?target.layout.hull.d:'';
-   actions.push({at:action.at,duration:action.duration,kind:'morph',id:action.id,d:hullD,mode:action.mode,fill:paint,fillOpacity:.07,stroke:paint});
+   actions.push({at:action.at,duration:action.duration,kind:'morph',id:action.id,d:hullD,mode:action.mode,fill:paint,fillOpacity:.07,stroke:paint,target:target.compound.id});
    target.layout.slots.forEach((slot,index)=>actions.push({at:action.at+action.duration*.65+index*.045,duration:.35,kind:'show',id:slot.id}));
   }else if(action.kind==='dock'){
    const scale=Math.min(1,Math.max(.7,action.scale??.8));
    const route=program.objects.find(isLine);
    const minX=route?Math.min(route.from[0],route.to[0]):260;
-   actions.push({at:action.at,duration:action.duration,kind:'dock',id:'context',x:40-minX*scale,y:60-86*scale,scale});
+   const maxX=route?Math.max(route.from[0],route.to[0]):1180;
+   const dockX=(1440-(maxX-minX)*scale)/2-minX*scale;
+   actions.push({at:action.at,duration:action.duration,kind:'dock',id:'context',x:dockX,y:60-86*scale,scale});
   }else{
    actions.push(action as SceneAction);
   }

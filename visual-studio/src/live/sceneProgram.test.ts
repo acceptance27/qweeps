@@ -101,3 +101,37 @@ test('the live demo mixes one scene chapter and one card chapter on one clock',(
  assert.equal(visualBeatIndex(SCENE_DEMO_LESSON.chapters,8.4),0);
  assert.equal(visualBeatIndex(SCENE_DEMO_LESSON.chapters,10),1);
 });
+
+import {METHOD_ORDER,METHOD_PROGRAMS} from './methodsPrograms';
+import {METHODS_DEMO_LESSON} from './methodsDemoLesson';
+
+test('beats 4-8 compile to dense settled posters',()=>{
+ const expected:Record<string,{compounds:number;slots:number}>={
+  comparison:{compounds:3,slots:42},procedure:{compounds:3,slots:18},algorithm:{compounds:3,slots:9},
+  narrative:{compounds:4,slots:12},recall:{compounds:3,slots:9},
+ };
+ for(const name of METHOD_ORDER){
+  const result=compileSceneProgram(METHOD_PROGRAMS[name]);
+  assert.equal(result.ok,true,`${name}: ${result.findings.map(f=>f.code).join(',')}`);
+  assert.equal(result.stats.compounds,expected[name].compounds);
+  assert.ok(result.stats.slots>=expected[name].slots);
+  assert.ok(result.stats.hold>=1.5);
+  assert.ok(result.scene?.actions.some(action=>action.id==='conclusion'));
+ }
+});
+
+test('the live methods demo runs five scene chapters on one clock',()=>{
+ assert.equal(METHODS_DEMO_LESSON.chapters.length,5);
+ let previous=0;
+ for(const chapter of METHODS_DEMO_LESSON.chapters){
+  assert.ok(chapter.scene);
+  const result=compileSceneProgram(chapter.scene);
+  assert.equal(result.ok,true,`${chapter.id}: ${result.findings.map(f=>f.code).join(',')}`);
+  assert.ok(result.scene);
+  assert.equal(chapter.start,previous);
+  assert.ok(chapter.end-chapter.start>=result.scene.duration);
+  previous=chapter.end;
+ }
+ assert.equal(previous,METHODS_DEMO_LESSON.duration);
+ for(let index=0;index<5;index++)assert.equal(visualBeatIndex(METHODS_DEMO_LESSON.chapters,METHODS_DEMO_LESSON.chapters[index].start+.2),index);
+});

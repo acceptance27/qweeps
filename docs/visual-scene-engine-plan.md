@@ -410,14 +410,14 @@ Evidence:
   context, and settled into a readable poster;
 - all eight reference posters compile and pass the settled-poster browser gate
   with **0 errors and 0 warnings**;
-- 61 TypeScript tests and 422 Python tests pass;
+- 64 TypeScript tests and 422 Python tests pass;
 - a bare rect, an empty compound, a criteria mismatch, a missing dock, a
   short settle hold and prose-stuffed slots are rejected before rendering.
 
 The model still needs prompt/examples rather than free coordinates. P2 (shared
-compiler worker) and P4 (full motion gate) are not done. P3 now has a working
-vertical slice. Beats 4–8 remain blocked on P2/P4 and on production scene
-payloads, not on the comparison gate.
+compiler worker) and P4 (full motion gate) are not done. P3 has a working live
+slice and beats 4–8 now exist as scene programs in that player. Production
+payload generation, narrated audio and rollout remain.
 
 ### P2 — Shared compiler worker
 
@@ -468,10 +468,20 @@ Acceptance:
   starts at `9.6`, so the boundary is not a blank frame;
 - scene chapters are excluded from `GeneratedStage`, so they cannot ghost
   through the next card chapter's cross-fade;
+- morph-copy clones are tracked and removed on chapter change, and
+  `SceneStage` is keyed by chapter id, so a copied card cannot leak into a
+  later beat;
 - clicking the scene's `inputs` node sets the player selection to `inputs`;
+- `?methodsDemo=1&muted=1` runs **five scene chapters** — comparison,
+  procedure, algorithm, narrative and recall — as beats 4–8 on one clock;
+- `?beats=1` is the standalone gallery for those five programs;
+- playback crossed comparison → procedure at `7.5 → 10.58` with exactly one
+  scene stage mounted at a time;
 - `bench/live_scene_check.py` passed the live scene at mid-morph (`t=2.2`) and
   settled (`t=8.4`), and the card chapter at `t=16.8`, all with **0 errors and
-  0 warnings**.
+  0 warnings**;
+- all five beats 4–8 pass the live browser gate at mid-morph and settled state
+  (**10/10 frames, 0 errors, 0 warnings**).
 
 Still open for P3 production:
 
@@ -481,8 +491,9 @@ Still open for P3 production:
 - focus/zoom on scene objects is disabled; selection and ask-context work, but
   the camera focus path is still card-only;
 - retained groups across beats and scene/card transition polish are not
-  authored beyond this two-chapter slice;
-- P4 still needs mid-morph/settle sampling in the live chapter gate.
+  authored beyond the demo;
+- P4 still needs the automated merge/revision loop and action-boundary
+  sampling; the manual mid-morph and settled checks now exist.
 
 ### P4 — Motion and settled-poster gate
 
@@ -503,6 +514,20 @@ Acceptance:
 - a settled poster holds ≥1.5 s and passes contrast/overflow;
 - a blocked chapter is revised and re-gated;
 - no unreviewed scene is published.
+
+### P4 status — partial
+
+- the compiler rejects dead holds, short settle holds, empty slots, naked
+  boxes, criteria mismatches and prose-stuffed slots;
+- `bench/live_scene_check.py` samples a chosen live frame through the
+  HyperFrames contrast/layout gate;
+- beats 4–8 were sampled at mid-morph and settled state in `?methodsDemo=1`:
+  **10/10 frames, 0 errors, 0 warnings**;
+- the demo's scene→card boundary was checked at `9.1` and the card at `16.8`.
+
+Still open: one command that merges compiler, browser and reviewer findings
+into a revision request, a capped revision loop, action-boundary sampling for
+every beat, and wiring the live gate into chapter streaming.
 
 ### P5 — Model-authored scene IR
 
@@ -684,8 +709,12 @@ poster does not count.
 - `visual-studio/src/live/MorphPilot.tsx` — standalone morph proof.
 - `visual-studio/src/live/scene.ts` — scene IR types.
 - `visual-studio/src/live/SceneStage.tsx` — scene timeline renderer.
-- `visual-studio/src/live/methodsScenes.ts` — eight hand-authored scene beats.
-- `visual-studio/src/live/MethodsScenes.tsx` — eight-beat scene player.
+- `visual-studio/src/live/methodsScenes.ts` — eight hand-authored primitive scenes.
+- `visual-studio/src/live/methodsPrograms.ts` — beats 4–8 as compound programs.
+- `visual-studio/src/live/methodsDemoLesson.ts` — five scene chapters at `?methodsDemo=1`.
+- `visual-studio/src/live/SceneChapterStage.tsx` — scene chapter in the live player.
+- `visual-studio/src/live/MethodsPrograms.tsx` — beat gallery at `?beats=1`.
+- `bench/live_scene_check.py` — browser gate for a live scene frame.
 - `visual-studio/scripts/ir_lesson.ts` — IR lesson builder.
 - `bench/hyperframes_check.py` — static browser gate.
 - `src/assistant/visual/browser_gate.py` — server gate.
