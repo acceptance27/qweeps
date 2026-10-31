@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 618.4,
+ "model": "opencode-go/deepseek-v4.1-flash",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "Element 'contribution_exclaim' has kind 'line' but is missing required 'from' or 'to' node ID. Arrows and lines must connect two existing nodes; for standalone geometry use path or svg."
+}

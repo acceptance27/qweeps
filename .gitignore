@@ -31,3 +31,6 @@ secrets.toml
 .agy/
 .vscode/
 .idea/
+
+# Local agent browser captures
+.playwright-mcp/

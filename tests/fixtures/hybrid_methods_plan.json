@@ -1,0 +1,520 @@
+{
+  "title": "One Neuron, Eight Lenses",
+  "question": "How can eight different teaching methods explain one artificial neuron?",
+  "representation": "A methods showcase: each chapter teaches the same neuron with a different operation — construction, mechanism, quantity, comparison, procedure, algorithm, narrative and recall.",
+  "example": {
+    "title": "The same tiny neuron",
+    "description": "Inputs 2 and 1, weights 0.7 and -0.5, bias 0.3: z = 1.2, sigmoid output 0.77.",
+    "icon": "cpu"
+  },
+  "chapters": [
+    {
+      "id": "construction",
+      "teaching": "construction",
+      "title": "Build the weighted inputs",
+      "question": "How do weights turn raw inputs into signed products?",
+      "insight": "Each input is scaled by its own weight before anything is combined.",
+      "safeguard": "The weight is not another input; it multiplies the input it sits on.",
+      "narration": "Start with two raw inputs. The first, two, is scaled by plus zero point seven to make plus one point four. The second, one, is scaled by minus zero point five to make minus zero point five. Those signed products are the evidence the neuron will combine.",
+      "layout": "diagram",
+      "slots": [
+        {
+          "slot": "x1",
+          "title": "Input x1 = 2",
+          "body": "Scaled by weight 0.7.",
+          "icon": "search",
+          "color": "blue",
+          "tag": "1.4",
+          "at": 1,
+          "template": "weight-dial",
+          "data": {
+            "weight": 0.7,
+            "input": 2,
+            "product": 1.4
+          }
+        },
+        {
+          "slot": "x2",
+          "title": "Input x2 = 1",
+          "body": "Scaled by weight -0.5.",
+          "icon": "shield",
+          "color": "coral",
+          "tag": "-0.5",
+          "at": 2,
+          "template": "weight-dial",
+          "data": {
+            "weight": -0.5,
+            "input": 1,
+            "product": -0.5
+          }
+        },
+        {
+          "slot": "sum",
+          "title": "Products",
+          "body": "The two signed products meet at the neuron.",
+          "icon": "cpu",
+          "color": "purple",
+          "tag": "0.9",
+          "at": 6,
+          "template": "sum-node",
+          "data": {
+            "terms": [
+              1.4,
+              -0.5
+            ],
+            "total": 0.9
+          }
+        }
+      ],
+      "connections": [
+        {
+          "from": "x1",
+          "to": "sum",
+          "label": "scales"
+        },
+        {
+          "from": "x2",
+          "to": "sum",
+          "label": "flips"
+        }
+      ],
+      "takeaway": "Weights scale each input independently before combining.",
+      "presentation": {
+        "method": "Geometric construction",
+        "why": "Show each multiplication before the sum.",
+        "visualEvidence": "Two dials produce +1.4 and -0.5; both point at the sum.",
+        "textMode": "labels"
+      }
+    },
+    {
+      "id": "mechanism",
+      "teaching": "mechanism",
+      "title": "How the parts feed the score",
+      "question": "What are the working parts of this neuron?",
+      "insight": "Two weighted inputs and a bias converge on one sum.",
+      "safeguard": "The bias is an offset, not a third input feature.",
+      "narration": "Here is the same neuron as a mechanism. Two weighted inputs arrive from the left, each carrying its own signed product. A bias enters as a separate constant. All three converge on the sum, which produces the net score.",
+      "layout": "fanin",
+      "slots": [
+        {
+          "slot": "input-a",
+          "title": "Input x1",
+          "body": "Weight 0.7 gives +1.4.",
+          "icon": "search",
+          "color": "blue",
+          "tag": "+1.4",
+          "at": 1,
+          "template": "weight-dial",
+          "data": {
+            "weight": 0.7,
+            "input": 2,
+            "product": 1.4
+          }
+        },
+        {
+          "slot": "input-b",
+          "title": "Input x2",
+          "body": "Weight -0.5 gives -0.5.",
+          "icon": "shield",
+          "color": "coral",
+          "tag": "-0.5",
+          "at": 2,
+          "template": "weight-dial",
+          "data": {
+            "weight": -0.5,
+            "input": 1,
+            "product": -0.5
+          }
+        },
+        {
+          "slot": "bias",
+          "title": "Bias",
+          "body": "A constant offset of +0.3.",
+          "icon": "scale",
+          "color": "gold",
+          "tag": "+0.3",
+          "at": 4,
+          "template": "number-line",
+          "data": {
+            "min": -1,
+            "max": 2,
+            "value": 0.3
+          }
+        },
+        {
+          "slot": "hub",
+          "title": "Sum z",
+          "body": "Adds the two products and the bias.",
+          "icon": "cpu",
+          "color": "purple",
+          "tag": "1.2",
+          "at": 7,
+          "template": "sum-node",
+          "data": {
+            "terms": [
+              1.4,
+              -0.5,
+              0.3
+            ],
+            "total": 1.2
+          }
+        }
+      ],
+      "connections": [
+        {
+          "from": "input-a",
+          "to": "hub",
+          "label": "adds"
+        },
+        {
+          "from": "input-b",
+          "to": "hub",
+          "label": "adds"
+        },
+        {
+          "from": "bias",
+          "to": "hub",
+          "label": "offsets"
+        }
+      ],
+      "takeaway": "Two weighted inputs and a bias converge on one score.",
+      "presentation": {
+        "method": "Mechanism map",
+        "why": "Show the parts and how they feed the sum.",
+        "visualEvidence": "Three source cards point into one sum card reading 1.2.",
+        "textMode": "labels"
+      }
+    },
+    {
+      "id": "quantity",
+      "teaching": "quantitative",
+      "title": "Where the score sits",
+      "question": "How does the score become a value between 0 and 1?",
+      "insight": "The sigmoid maps the score 1.2 to the output 0.77.",
+      "safeguard": "The curve does not change the score; it maps it.",
+      "narration": "The score is one point two. On a number line it sits just above one. A sigmoid maps that score onto a zero-to-one scale, producing zero point seven seven. The mapping is what creates the bounded output.",
+      "layout": "diagram",
+      "slots": [
+        {
+          "slot": "score",
+          "title": "Score z = 1.2",
+          "body": "The net score before activation.",
+          "icon": "route",
+          "color": "purple",
+          "tag": "1.2",
+          "at": 1,
+          "template": "number-line",
+          "data": {
+            "min": -1,
+            "max": 2,
+            "value": 1.2
+          }
+        },
+        {
+          "slot": "curve",
+          "title": "Sigmoid",
+          "body": "Maps any real score into 0–1.",
+          "icon": "zap",
+          "color": "blue",
+          "tag": "σ(1.2)=0.77",
+          "at": 4,
+          "template": "sigmoid-plot",
+          "data": {
+            "input": 1.2,
+            "output": 0.77
+          }
+        },
+        {
+          "slot": "output",
+          "title": "Output 0.77",
+          "body": "The bounded result.",
+          "icon": "check",
+          "color": "green",
+          "tag": "0.77",
+          "at": 8,
+          "template": "output-ring",
+          "data": {
+            "value": 0.77,
+            "label": "output"
+          }
+        }
+      ],
+      "connections": [
+        {
+          "from": "score",
+          "to": "curve",
+          "label": "maps"
+        },
+        {
+          "from": "curve",
+          "to": "output",
+          "label": "squashes"
+        }
+      ],
+      "takeaway": "The sigmoid maps z = 1.2 to y = 0.77 on a 0–1 scale.",
+      "presentation": {
+        "method": "Scale and curve projection",
+        "why": "Show where the score sits and where it lands.",
+        "visualEvidence": "A number line, an S-curve and an output ring all show 1.2 → 0.77.",
+        "textMode": "labels"
+      }
+    },
+    {
+      "id": "comparison",
+      "teaching": "comparison",
+      "title": "Three activation choices",
+      "question": "How do sigmoid, ReLU and linear activations differ?",
+      "insight": "Different activations bound or preserve the score in different ways.",
+      "safeguard": "Linear activation does not add non-linearity.",
+      "narration": "Compare three choices. Sigmoid squashes the score into zero to one. ReLU keeps zero below the origin and grows linearly above it. A linear activation keeps the raw score, so stacking linear layers adds no new shape.",
+      "layout": "comparison",
+      "slots": [
+        {
+          "slot": "sigmoid",
+          "title": "Sigmoid",
+          "body": "Smooth, bounded 0–1; good for probabilities.",
+          "icon": "zap",
+          "color": "blue",
+          "tag": "0–1",
+          "at": 1
+        },
+        {
+          "slot": "relu",
+          "title": "ReLU",
+          "body": "Zero below the origin, linear above; sparse and cheap.",
+          "icon": "route",
+          "color": "green",
+          "tag": "max(0,z)",
+          "at": 2
+        },
+        {
+          "slot": "linear",
+          "title": "Linear",
+          "body": "Returns the raw score; no non-linearity.",
+          "icon": "route",
+          "color": "gold",
+          "tag": "y=z",
+          "at": 3
+        }
+      ],
+      "connections": [],
+      "takeaway": "The activation choice decides whether the score is bounded, clipped or preserved.",
+      "presentation": {
+        "method": "Aligned comparison",
+        "why": "Put three activation behaviours side by side.",
+        "visualEvidence": "Three equal cards name the shape, range and trade-off of each activation.",
+        "textMode": "descriptive"
+      }
+    },
+    {
+      "id": "procedure",
+      "teaching": "procedure",
+      "title": "Compute one example",
+      "question": "What are the exact steps for these numbers?",
+      "insight": "Scale, add, then squash, in that order.",
+      "safeguard": "Do not squash before adding the bias.",
+      "narration": "Follow the procedure. First scale each input by its weight: plus one point four and minus zero point five. Second add the bias plus zero point three to get one point two. Third apply the sigmoid to get zero point seven seven.",
+      "layout": "process",
+      "slots": [
+        {
+          "slot": "step-scale",
+          "title": "Scale",
+          "body": "2×0.7=1.4 and 1×(-0.5)=-0.5.",
+          "icon": "tools",
+          "color": "blue",
+          "tag": "1.4, -0.5",
+          "at": 1
+        },
+        {
+          "slot": "step-add",
+          "title": "Add bias",
+          "body": "1.4 + (-0.5) + 0.3 = 1.2.",
+          "icon": "scale",
+          "color": "gold",
+          "tag": "z=1.2",
+          "at": 5
+        },
+        {
+          "slot": "step-squash",
+          "title": "Squash",
+          "body": "σ(1.2) = 0.77.",
+          "icon": "zap",
+          "color": "green",
+          "tag": "y=0.77",
+          "at": 9
+        }
+      ],
+      "connections": [
+        {
+          "from": "step-scale",
+          "to": "step-add",
+          "label": "then"
+        },
+        {
+          "from": "step-add",
+          "to": "step-squash",
+          "label": "then"
+        }
+      ],
+      "takeaway": "Scale, add the bias, then squash: 1.4, -0.5, 0.3 → 1.2 → 0.77.",
+      "presentation": {
+        "method": "Annotated procedure",
+        "why": "The learner can reproduce the arithmetic in order.",
+        "visualEvidence": "Three steps carry the numbers and the result of each operation.",
+        "textMode": "descriptive"
+      }
+    },
+    {
+      "id": "algorithm",
+      "teaching": "algorithm",
+      "title": "The forward pass",
+      "question": "What does the neuron do as an algorithm?",
+      "insight": "A forward pass reads inputs, computes the score, then returns the output.",
+      "safeguard": "This is one forward pass, not learning.",
+      "narration": "As an algorithm the neuron is a short forward pass. Read the inputs and weights. Compute the weighted sum and add the bias. Apply the activation and return the output. Nothing in this pass changes the weights.",
+      "layout": "timeline",
+      "slots": [
+        {
+          "slot": "read",
+          "title": "Read inputs",
+          "body": "Load x1, x2, w1, w2 and b.",
+          "icon": "database",
+          "color": "blue",
+          "tag": "x, w, b",
+          "at": 1
+        },
+        {
+          "slot": "compute",
+          "title": "Compute z",
+          "body": "z = Σwᵢxᵢ + b = 1.2.",
+          "icon": "cpu",
+          "color": "purple",
+          "tag": "z=1.2",
+          "at": 4
+        },
+        {
+          "slot": "return",
+          "title": "Return y",
+          "body": "y = σ(z) = 0.77.",
+          "icon": "check",
+          "color": "green",
+          "tag": "y=0.77",
+          "at": 8
+        }
+      ],
+      "connections": [
+        {
+          "from": "read",
+          "to": "compute",
+          "label": "then"
+        },
+        {
+          "from": "compute",
+          "to": "return",
+          "label": "then"
+        }
+      ],
+      "takeaway": "Forward pass: read → compute z → return σ(z).",
+      "presentation": {
+        "method": "Worked execution",
+        "why": "Show the algorithm as an ordered state change.",
+        "visualEvidence": "Three ordered stages read the inputs, compute 1.2 and return 0.77.",
+        "textMode": "descriptive"
+      }
+    },
+    {
+      "id": "narrative",
+      "teaching": "narrative",
+      "title": "How the idea evolved",
+      "question": "Where did this model come from?",
+      "insight": "The neuron model moved from a simple threshold unit to layered learning.",
+      "safeguard": "The history is context, not a derivation of the arithmetic.",
+      "narration": "The idea has a history. In nineteen fifty-eight the perceptron turned weighted inputs into a threshold decision. Later work added layers and backpropagation, letting networks learn weights from error. Today the same scale-add-squash unit sits inside much larger models.",
+      "layout": "timeline",
+      "slots": [
+        {
+          "slot": "perceptron",
+          "title": "1958 · Perceptron",
+          "body": "Weighted inputs plus a threshold.",
+          "icon": "bulb",
+          "color": "gold",
+          "tag": "threshold",
+          "at": 1
+        },
+        {
+          "slot": "backprop",
+          "title": "1986 · Backpropagation",
+          "body": "Layers learn weights from error.",
+          "icon": "network",
+          "color": "purple",
+          "tag": "learning",
+          "at": 4
+        },
+        {
+          "slot": "today",
+          "title": "Today · Scale",
+          "body": "The same unit, repeated at scale.",
+          "icon": "cpu",
+          "color": "green",
+          "tag": "scale",
+          "at": 8
+        }
+      ],
+      "connections": [],
+      "takeaway": "The same scale-add-squash unit moved from one perceptron to large networks.",
+      "presentation": {
+        "method": "Illustrated chronology",
+        "why": "Place the model in a short historical sequence.",
+        "visualEvidence": "Three dated stages show the threshold unit, learning and scale.",
+        "textMode": "descriptive"
+      }
+    },
+    {
+      "id": "recall",
+      "teaching": "recall",
+      "title": "Remember the three moves",
+      "question": "How can I remember what a neuron does?",
+      "insight": "Weight, sum, activate: W-S-A.",
+      "safeguard": "The mnemonic names the operations, not a biological claim.",
+      "narration": "To remember the neuron, use three moves: W, S, A. W is weight: scale each input. S is sum: add the products and the bias. A is activate: squash the score into the output range. Weight, sum, activate.",
+      "layout": "loci",
+      "slots": [
+        {
+          "slot": "w",
+          "title": "W · Weight",
+          "body": "Scale each input by its own weight.",
+          "icon": "tools",
+          "color": "blue",
+          "tag": "scale",
+          "at": 1
+        },
+        {
+          "slot": "s",
+          "title": "S · Sum",
+          "body": "Add the products and the bias.",
+          "icon": "cpu",
+          "color": "purple",
+          "tag": "add",
+          "at": 4
+        },
+        {
+          "slot": "a",
+          "title": "A · Activate",
+          "body": "Squash the score into 0–1.",
+          "icon": "zap",
+          "color": "green",
+          "tag": "squash",
+          "at": 7
+        }
+      ],
+      "connections": [],
+      "takeaway": "Remember W-S-A: Weight, Sum, Activate.",
+      "presentation": {
+        "method": "Spatial mnemonic route",
+        "why": "A stable three-stop route makes the operations easy to recall.",
+        "visualEvidence": "Three spatial stops spell W-S-A with the operation and its job.",
+        "textMode": "descriptive"
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+ "label": "mimo-run3",
+ "question": "How do LLMs work?",
+ "sessionId": "00c8729826654e64a486358540c3329c",
+ "http": 502,
+ "wallSeconds": 1512.77,
+ "started": 1793363354.6525,
+ "result": {
+  "error": "OpenCode could not complete the request for opencode-go/mimo-v2.6-flash."
+ }
+}

@@ -12,6 +12,7 @@ import time
 from typing import Any
 
 from .plan import PLAN_PROMPT, PlanError, _text, validate_plan
+from .dsl import generated_for
 
 SKILL_DIR = Path(__file__).with_name("teaching_skill") / "qweeps-visual-teaching"
 REFERENCE_IDS = {"pdf_explainer", "math_01", "astar_heuristics", "bayes_sample",
@@ -28,8 +29,8 @@ CAPABILITIES = {
 def teaching_material(stage: str | None = None, references: list[str] | None = None) -> str:
     """Read maintained guidance, selecting the material relevant to each stage."""
     files = {
-        'planner':['SKILL.md','references/presentation-selection.md','references/memory-and-motion.md','references/method.md','references/visual-reasoning.md','references/assets-and-strokes.md'],
-        'director':['SKILL.md','references/presentation-selection.md','references/examples.md','references/rendering-repertoire.md','references/assets-and-strokes.md'],
+        'planner':['SKILL.md','references/presentation-selection.md','references/memory-and-motion.md','references/method.md','references/visual-reasoning.md','references/lesson-continuity.md'],
+        'director':['SKILL.md','references/examples.md','references/rendering-repertoire.md','references/assets-and-strokes.md'],
         'reviewer':['SKILL.md','references/presentation-selection.md','references/failure-prevention.md','references/visual-reasoning.md','references/contract.md','references/assets-and-strokes.md'],
     }
     names = list(files[stage]) if stage is not None else list(dict.fromkeys(sum(files.values(), [])))
@@ -98,9 +99,293 @@ def validate_storyboard(raw: Any, *, require_visual_design: bool = False) -> dic
     return out
 
 
-def _model_json(llm: Any, system: str, request: dict, validator, tokens: int = 6500, max_attempts: int = 3):
+def _extract_json(raw: str) -> dict | None:
+    """Find the JSON object even when the model wraps it in prose or fences."""
+    text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())
+    try:
+        value = json.loads(text)
+        if isinstance(value, dict):
+            return value
+    except ValueError:
+        pass
+    start = text.find("{")
+    while start >= 0:
+        depth, in_string, escaped = 0, False, False
+        for i in range(start, len(text)):
+            ch = text[i]
+            if in_string:
+                if escaped:
+                    escaped = False
+                elif ch == "\\":
+                    escaped = True
+                elif ch == '"':
+                    in_string = False
+                continue
+            if ch == '"':
+                in_string = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        value = json.loads(text[start:i + 1])
+                        if isinstance(value, dict):
+                            return value
+                    except ValueError:
+                        pass
+                    break
+        start = text.find("{", start + 1)
+    return None
+
+
+TRANSIENT = ("timeout", "timed out", "did not finish", "deadline",
+             "connection reset", "temporarily unavailable", "rate limit")
+
+
+def _call_model(llm: Any, system: str, prompt: str, tokens: int) -> str:
+    def once() -> str:
+        if hasattr(llm, "_chat"):
+            return llm._chat([{"role": "system", "content": system},
+                              {"role": "user", "content": prompt}], max_tokens=tokens)
+        return llm.compose(prompt, system=system)
+
+    try:
+        return once()
+    except Exception as exc:  # provider hiccups are worth one retry
+        if not any(marker in str(exc).lower() for marker in TRANSIENT):
+            raise
+        return once()
+
+
+def _json_recovery(llm: Any, prompt: str, raw: str) -> dict | None:
+    """Cheaply convert a prose/fenced reply into the requested JSON, without re-sending the skill."""
+    base = prompt.split("\n\n--- ", 1)[0].strip()
+    try:
+        request_body = json.loads(base)
+    except ValueError:
+        request_body = base[:20000]
+    instruction = {
+        "instruction": ("Your previous reply was not a JSON object. Return the single JSON object "
+                        "requested below. Preserve the intended content. Return JSON only, with no "
+                        "prose, headings, markdown fences or commentary."),
+        "request": request_body,
+        "previous_reply": raw[:20000],
+    }
+    try:
+        repaired = _call_model(llm, "You convert a reply into one strict JSON object. Return JSON only.",
+                               json.dumps(instruction, ensure_ascii=False), 8000)
+    except Exception:
+        return None
+    return _extract_json(repaired or "")
+
+
+def _compact_scene(scene: dict) -> dict:
+    """Review payload without SVG markup or repeated boilerplate."""
+    fields = ("id", "kind", "label", "description", "x", "y", "width", "height", "color",
+              "revealAt", "drawDuration", "opacity", "entrance", "emphasizeAt", "from", "to")
+    beats = []
+    for beat in scene.get("beats", []):
+        elements = []
+        for element in beat.get("elements", []):
+            item = {k: element[k] for k in fields if element.get(k) is not None}
+            if "svg" in element:
+                item["svg"] = f"<svg asset, {len(element['svg'])} chars>"
+            elements.append(item)
+        beats.append({"title": beat.get("title"), "narration": beat.get("narration"),
+                      "duration": beat.get("duration"), "camera": beat.get("camera"),
+                      "transitionDuration": beat.get("transitionDuration"),
+                      "teaching": beat.get("teaching"), "elements": elements})
+    return {"title": scene.get("title"), "summary": scene.get("summary"), "beats": beats}
+
+
+def _svg_gaps(scene: Any) -> list[dict]:
+    gaps = []
+    if not isinstance(scene, dict):
+        return gaps
+    for bi, beat in enumerate(scene.get("beats", [])):
+        for element in beat.get("elements", []):
+            if (isinstance(element, dict) and element.get("kind") == "svg"
+                    and not element.get("svg") and not element.get("svgRef")
+                    and not element.get("bars")):
+                gaps.append({"beat": bi, "id": element.get("id", ""),
+                             "label": element.get("label", ""),
+                             "description": element.get("description", "")})
+    return gaps
+
+
+def _repair_direction(llm: Any, parsed: dict, request: dict, storyboard: dict) -> dict | None:
+    """Ask only for the fields that failed validation instead of regenerating the scene."""
+    if not isinstance(parsed, dict):
+        return None
+    scene = parsed.get("scene")
+    if not isinstance(scene, dict) or not isinstance(scene.get("beats"), list):
+        return None
+    beats = scene["beats"]
+    expected = [b["id"] for b in storyboard["beats"]]
+    missing: dict[str, Any] = {}
+
+    answer = parsed.get("answer")
+    if not isinstance(answer, str) or not answer.strip():
+        missing["answer"] = "nonempty answer to the original question"
+
+    evidence = parsed.get("evidence")
+    valid_evidence = isinstance(evidence, list) and len(evidence) == len(expected)
+    if valid_evidence:
+        by_beat = {e.get("beat"): e.get("objects") for e in evidence if isinstance(e, dict)}
+        for index, beat_id in enumerate(expected):
+            objects = by_beat.get(beat_id)
+            ids = {e.get("id") for e in beats[index].get("elements", []) if isinstance(e, dict)}
+            if not isinstance(objects, list) or not objects or not set(objects) <= ids:
+                valid_evidence = False
+                break
+    if not valid_evidence:
+        missing["evidence"] = {"beats": expected, "rule": "name element ids that exist in that beat"}
+
+    gaps = _svg_gaps(scene)
+    if gaps:
+        missing["svg"] = gaps
+
+    if not missing:
+        return None
+
+    payload = {
+        "instruction": ("Supply only the missing fields. Return one JSON object: "
+                        '{"answer":"...", "evidence":[{"beat":"id","objects":["element id"]}], '
+                        '"elements":[{"beat":0,"id":"element id","bars":[{"label":"word","value":0.62}], '
+                        'OR "svg":"<svg ...>"}]}. '
+                        "For any chart that compares probabilities, scores or candidates, return \"bars\" "
+                        "instead of svg markup. Omit fields that are not missing."),
+        "question": request.get("question"),
+        "storyboard": [{"id": b["id"], "question": b["question"], "insight": b["insight"]}
+                       for b in storyboard["beats"]],
+        "scene_beats": [{"beat": i, "elements": [e.get("id") for e in beat.get("elements", [])],
+                         "svg_labels": {e.get("id"): e.get("label") for e in beat.get("elements", [])
+                                        if e.get("kind") == "svg"}}
+                        for i, beat in enumerate(beats)],
+        "missing": missing,
+    }
+    system = ("You complete missing structured fields for a visual lesson. Return one JSON object only. "
+              "Evidence must name element ids that exist in that beat. Prefer bars data for charts. "
+              "When SVG is unavoidable it must be self-contained geometry with a viewBox, no text, and only "
+              "these elements: svg, g, path, rect, circle, ellipse, line, polyline, polygon. Allowed attributes: "
+              "viewBox, width, height, d, x, y, x1, y1, x2, y2, cx, cy, r, rx, ry, points, transform, fill, "
+              "fill-opacity, fill-rule, stroke, stroke-width, stroke-opacity, stroke-linecap, stroke-linejoin, "
+              "stroke-dasharray, stroke-dashoffset, stroke-miterlimit, opacity. Never use styles, scripts, classes, external references or null values.")
+    try:
+        raw = _call_model(llm, system, json.dumps(payload, ensure_ascii=False), 5000)
+    except Exception:
+        return None
+    patch = _extract_json(raw or "")
+    if not patch:
+        return None
+
+    if isinstance(patch.get("answer"), str) and patch["answer"].strip():
+        parsed["answer"] = patch["answer"]
+    supplied = patch.get("evidence")
+    if isinstance(supplied, list):
+        by_beat = {e.get("beat"): e for e in supplied if isinstance(e, dict)}
+        merged = []
+        for item in parsed.get("evidence") or []:
+            if isinstance(item, dict):
+                merged.append(by_beat.pop(item.get("beat"), item))
+        merged.extend(by_beat.values())
+        parsed["evidence"] = merged
+    for item in patch.get("elements") or []:
+        if not isinstance(item, dict):
+            continue
+        try:
+            beat = beats[int(item.get("beat", -1))]
+        except (ValueError, IndexError, TypeError):
+            continue
+        for element in beat.get("elements", []):
+            if element.get("id") == item.get("id"):
+                if isinstance(item.get("bars"), list):
+                    element["bars"] = item["bars"]
+                    element.pop("svg", None)
+                elif isinstance(item.get("svg"), str):
+                    element["svg"] = item["svg"]
+    return parsed
+
+
+def _strip_teaching(scene: dict) -> dict:
+    clean = json.loads(json.dumps(scene))
+    for beat in clean.get("beats", []):
+        beat.pop("teaching", None)
+    return clean
+
+
+def _revision_result(raw: Any, current: dict, storyboard: dict) -> dict:
+    """Accept a corrected-beat patch, or a full scene replacement, and revalidate everything."""
+    if isinstance(raw, dict) and isinstance(raw.get("scene"), dict):
+        return validate_direction(raw, storyboard)
+    beats = raw.get("beats") if isinstance(raw, dict) else None
+    if not isinstance(beats, list) or not beats:
+        raise PlanError("revision must return corrected scene beats")
+    merged = _strip_teaching(current["scene"])
+    index_by_plan = {beat.get("teaching", {}).get("planBeat"): i
+                     for i, beat in enumerate(current["scene"]["beats"])}
+    for item in beats:
+        if not isinstance(item, dict) or item.get("planBeat") not in index_by_plan:
+            raise PlanError("revision returned a beat that is not in this lesson")
+        merged["beats"][index_by_plan[item["planBeat"]]] = {
+            k: v for k, v in item.items() if k != "planBeat"}
+    evidence = []
+    for beat in current["scene"]["beats"]:
+        evidence.append({"beat": beat.get("teaching", {}).get("planBeat"),
+                         "objects": list(beat.get("teaching", {}).get("evidence") or [])})
+    supplied = raw.get("evidence")
+    if isinstance(supplied, list):
+        by_beat = {e.get("beat"): e.get("objects") for e in supplied if isinstance(e, dict)}
+        for item in evidence:
+            if isinstance(by_beat.get(item["beat"]), list):
+                item["objects"] = by_beat[item["beat"]]
+    return validate_direction({"answer": current["answer"], "scene": merged, "evidence": evidence}, storyboard)
+
+
+def _targeted_revision(llm: Any, result: dict, storyboard: dict, review: dict, request: dict) -> dict | None:
+    """Regenerate only the beats the review flagged; return None to fall back to a full revision."""
+    ids = {b["id"] for b in storyboard["beats"]}
+    flagged = {f["beat"] for f in review.get("findings", []) if f.get("beat") in ids}
+    if not flagged or len(flagged) >= len(ids):
+        return None
+    keep = [f for f in review.get("findings", []) if f.get("beat") in flagged]
+    current = []
+    for beat_index, beat in enumerate(result["scene"]["beats"]):
+        plan_beat = beat.get("teaching", {}).get("planBeat")
+        if plan_beat not in flagged:
+            continue
+        charts = {e.get("id") for e in beat.get("elements", []) if e.get("bars")}
+        elements = [e for e in beat.get("elements", [])
+                    if not any(generated_for(beat_index, str(chart), e.get("id")) for chart in charts)]
+        current.append({"planBeat": plan_beat,
+                        **{k: v for k, v in beat.items() if k not in ("teaching", "elements")},
+                        "elements": elements})
+    payload = {
+        "question": request.get("question"),
+        "mode": request.get("mode"),
+        "context": request.get("context"),
+        "storyboard": [b for b in storyboard["beats"] if b["id"] in flagged],
+        "current_beats": current,
+        "review_findings": keep,
+        "instruction": ("Correct only these storyboard beats. Preserve stable element IDs, retained anchors "
+                        "and the storyboard's teaching intent. Return one JSON object: "
+                        '{"beats":[{"planBeat":"storyboard id", ...one complete scene beat...}], '
+                        '"evidence":[{"beat":"storyboard id","objects":["actual element id"]}]}.'),
+    }
+    try:
+        return _model_json(llm, DIRECTOR + "\n\n" + PLAN_PROMPT, payload,
+                           lambda raw: _revision_result(raw, result, storyboard), tokens=5000)
+    except PlanError:
+        return None
+
+
+def _model_json(llm: Any, system: str, request: dict, validator, tokens: int = 6500,
+                max_attempts: int = 3, repair=None):
     feedback = ""
     last_cleaned = ""
+    system = system + ("\n\nReturn ONLY one JSON object matching the requested shape. "
+                       "No prose, headings, or markdown fences.")
     for attempt in range(max_attempts):
         prompt = json.dumps(request, ensure_ascii=False)
         if feedback:
@@ -108,27 +393,38 @@ def _model_json(llm: Any, system: str, request: dict, validator, tokens: int = 6
             if last_cleaned:
                 prompt += f"\n--- PRIOR RESPONSE TO CORRECT IN-PLACE ---\n```json\n{last_cleaned}\n```\nMake the necessary correction for the validation error above and return the complete corrected JSON directly."
         try:
-            if hasattr(llm, "_chat"):
-                raw = llm._chat([{"role": "system", "content": system}, {"role": "user", "content": prompt}], max_tokens=tokens)
-            else:
-                raw = llm.compose(prompt, system=system)
+            raw = _call_model(llm, system, prompt, tokens)
         except Exception:
             # Schema corrections may retry; provider failures belong to the
             # transport's bounded retry policy, never three whole timeouts here.
             raise
         if not isinstance(raw, str) or not raw.strip():
             raise PlanError("The teaching model returned no result. Check QWEEPS model access.")
-        try:
-            cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())
-            last_cleaned = cleaned
-            return validator(json.loads(cleaned))
-        except (ValueError, KeyError, TypeError, AttributeError) as exc:
-            if attempt == max_attempts - 1:
-                try:
-                    return validator(json.loads(cleaned), fallback_icons=True)
-                except (ValueError, KeyError, TypeError, AttributeError):
-                    pass
-            feedback = str(exc)[:1500]
+        parsed = _extract_json(raw)
+        if parsed is None:
+            parsed = _json_recovery(llm, prompt, raw)
+        if parsed is not None:
+            last_cleaned = json.dumps(parsed, ensure_ascii=False)
+            try:
+                return validator(parsed)
+            except (ValueError, KeyError, TypeError, AttributeError) as exc:
+                if repair is not None and attempt < max_attempts - 1:
+                    patched = repair(llm, parsed)
+                    if patched is not None:
+                        try:
+                            return validator(patched)
+                        except (ValueError, KeyError, TypeError, AttributeError):
+                            pass
+                if attempt == max_attempts - 1:
+                    try:
+                        return validator(parsed, fallback_icons=True)
+                    except (ValueError, KeyError, TypeError, AttributeError):
+                        pass
+                feedback = str(exc)[:1500]
+        else:
+            feedback = ("The previous reply was not a JSON object. Return only the requested JSON object, "
+                        "with no prose, headings or markdown fences.")
+            last_cleaned = raw.strip()[:20000]
     raise PlanError("Teaching harness could not validate a model response: " + feedback)
 
 
@@ -182,6 +478,9 @@ DIRECTOR = """Compile the supplied storyboard into an animated lesson. Preserve 
 teaching questions, insights and anchors. One storyboard beat maps to one scene beat;
 repeated execution may animate inside that beat. Name the actual evidence objects that
 visibly support each insight. Every beat must include all semantic object IDs listed in that beat's 'retain' array, preserving them with the same IDs as in the previous beat.
+Any chart that compares probabilities, scores or candidate likelihoods MUST be emitted as
+kind "svg" with "bars":[{"label":"word","value":0.62}, ...]; never hand-write bar rectangles
+and never emit an svg element without "svg", "svgRef" or "bars".
 Preserve semantic identity: never repurpose an object ID to mean something different in later beats (e.g. do not turn an ID for a whole molecule into a single atom).
 To animate motion or dissociation across beats: keep the EXACT SAME element ID across beats. The engine automatically smoothly moves, rescales, and fades elements sharing the same ID from their previous position (x, y) to their new position over transitionDuration! Never replace an existing entity with a new ID at the new position (doing so creates an instant jump-cut).
 Parallel bonds: to show double or triple bonds, create 2 or 3 distinct 'line' elements connecting the same two nodes; the renderer automatically spaces multiple connections into clean parallel lines.
@@ -341,20 +640,29 @@ def teach_visual(llm: Any, question: str, context: dict, history: list, mode: st
     last_problem = ""
     revisions = 0
     schema_attempts = 0
-    while revisions <= 1:
-        if last_problem:
-            direction_request["revision_feedback"] = last_problem
-        try:
-            result = _model_json(llm, DIRECTOR + "\n\n" + PLAN_PROMPT + "\n\n" + teaching_material('director',storyboard['references']),
-                                 direction_request, lambda raw: validate_direction(raw, storyboard))
-        except PlanError as exc:
-            schema_attempts += 1
-            last_problem = str(exc)
-            if schema_attempts > 2:
-                break
-            continue
+    full_revisions = 0
+    result = None
+    need_direction = True
+    while revisions <= 2:
+        if need_direction:
+            if last_problem:
+                if full_revisions >= 1:
+                    break
+                full_revisions += 1
+                direction_request["revision_feedback"] = last_problem
+            try:
+                result = _model_json(llm, DIRECTOR + "\n\n" + PLAN_PROMPT + "\n\n" + teaching_material('director',storyboard['references']),
+                                     direction_request, lambda raw: validate_direction(raw, storyboard),
+                                     repair=lambda l, obj: _repair_direction(l, obj, direction_request, storyboard))
+            except PlanError as exc:
+                schema_attempts += 1
+                last_problem = str(exc)
+                if schema_attempts > 2:
+                    break
+                continue
+            need_direction = False
         review = _model_json(llm, REVIEWER + "\n\n" + teaching_material('reviewer'),
-                             {**request, "storyboard": storyboard, "scene": result["scene"]},
+                             {**request, "storyboard": storyboard, "scene": _compact_scene(result["scene"])},
                              lambda raw: validate_review(raw, storyboard), tokens=3500)
         if review["approved"]:
             if rendered_review is not None:
@@ -362,6 +670,13 @@ def teach_visual(llm: Any, question: str, context: dict, history: list, mode: st
                 if not visual_review['approved']:
                     revisions += 1
                     last_problem = json.dumps(visual_review['findings'], ensure_ascii=False)
+                    if revisions > 2:
+                        break
+                    patched = _targeted_revision(llm, result, storyboard, visual_review, request)
+                    if patched is not None:
+                        result = patched
+                        continue
+                    need_direction = True
                     continue
             result["scene"]["teaching"] = {"method": "qweeps-visual-teaching", "version": 2,
                                            "storyboard": storyboard, "review": review}
@@ -371,4 +686,11 @@ def teach_visual(llm: Any, question: str, context: dict, history: list, mode: st
             return result
         revisions += 1
         last_problem = json.dumps(review["findings"], ensure_ascii=False)
-    raise PlanError("The visual lesson did not pass the teaching review after one revision. " + last_problem[:1500])
+        if revisions > 2:
+            break
+        patched = _targeted_revision(llm, result, storyboard, review, request)
+        if patched is not None:
+            result = patched
+            continue
+        need_direction = True
+    raise PlanError("The visual lesson did not pass the teaching review after two revisions. " + last_problem[:1500])

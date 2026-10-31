@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 613.4,
+ "model": "opencode-go/deepseek-v4.1-flash",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "element 'contribution_bars' bar value must be between 0 and 1000000"
+}

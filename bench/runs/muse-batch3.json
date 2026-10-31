@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 322.0,
+ "model": "opencode-go/muse-spark-1.3-contributor",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "beat neuron_retest lost retained ids ['probability_dist']"
+}

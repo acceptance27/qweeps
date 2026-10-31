@@ -1,0 +1,11 @@
+{
+ "label": "deepseek-run3",
+ "question": "How do LLMs work?",
+ "sessionId": "bd2adddd6a5043ff8dc0d15c047878fb",
+ "http": 400,
+ "wallSeconds": 2085.08,
+ "started": 1793361201.105308,
+ "result": {
+  "error": "The visual lesson did not pass the teaching review after two revisions. [{\"beat\": \"predict-distribution\", \"problem\": \"The bar-length encoding does not use a single scale: 'tired 0.62' is 3.4 wide while 'wide 0.18' is 1.8 wide (about 5.5 vs 10.0 units per probability). The short bar is also narrower than its own label, so the box cannot both encode probability and display its text.\", \"revision\": \"Separate a fixed label gutter from a variable-length bar; compute every bar from one scale (for example 4.8 x p) on a common baseline, and keep candidate labels outside the bars.\"}, {\"beat\": \"attention-context\", \"problem\": \"The same scale defect recurs: 'tired 0.78' is 4.2 wide while 'wide 0.09' is 0.9 wide (about 5.4 vs 10.0 units per probability), and the 0.9-wide 'wide' bar is narrower than its label. Changing widths cannot be compared with the prior beat's bars.\", \"revision\": \"Reuse the one bar scale established in the first beat, keep both old (0.62/0.18) and new (0.78/0.09) values on the same axis with a common baseline, and place labels in a fixed gutter.\"}, {\"beat\": \"embed-vectors\", \"problem\": \"The text-to-vector-to-score chain is not visible as a chain. Token chips stay in place with no chip-to-point connector; the only incoming 'combine' arrow to 'context-vector' starts at 'vec_animal', so the prompt vector appears to be 'animal' alone; there is no arrow from 'context-vector' to 'probability-panel'. Every token, vector and context circle is #58C4DD, so identity is label-only.\", \"revision\": \"Align or animate each chip to its plotted point, merge "
+ }
+}

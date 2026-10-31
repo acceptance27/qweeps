@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 0.0,
+ "model": "opencode-go/muse-spark-1.3-contributor",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "deterministic gate: [{\"beat\": \"beat_3\", \"compiledId\": \"input_nodes\", \"problem\": \"input_nodes overlaps full_equation by 25%\", \"errorClass\": \"TEXT_OCCLUSION\"}, {\"beat\": \"beat_3\", \"compiledId\": \"weight_lines\", \"problem\": \"weight_lines overlaps full_equation by 36%\", \"errorClass\": \"TEXT_OCCLUSION\"}]"
+}

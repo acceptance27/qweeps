@@ -39,7 +39,7 @@ export function resolveDiagramBoxes(nodes:LiveNode[],minMargin=15):NodeBox[]{
 
 export function nodeBoxes(v:LiveVisual):NodeBox[]{
  const n=v.nodes.length;
- if(v.layout==='diagram')return resolveDiagramBoxes(v.nodes);
+ if(v.layout==='diagram'||v.layout==='fanin')return resolveDiagramBoxes(v.nodes);
  if(v.layout==='matrix')return v.nodes.map((node,i)=>({node,x:45,y:148+i*(350/n),width:1350,height:350/n}));
  if(v.layout==='concept'&&conceptUsesGrid(v)&&n<=4){
   const cols=n===4?2:n,rows=Math.ceil(n/cols),width=(1350-25*(cols-1))/cols;
@@ -133,6 +133,9 @@ export type DiagramEdgePath={
 export function diagramEdge(a:NodeBox,b:NodeBox,obstacles:NodeBox[]=[],font:Font|null=null,textMode:'labels'|'descriptive'='descriptive'):DiagramEdgePath{
  const artA=diagramCopy(font,a.node,a.width,a.height,textMode).artHeight;
  const artB=diagramCopy(font,b.node,b.width,b.height,textMode).artHeight;
+ // Artwork is a square centred inside the box's art region, not the whole box.
+ // Anchor edges to that square or arrows stop in empty canvas.
+ const sizeA=Math.min(a.width,artA),sizeB=Math.min(b.width,artB);
  const cA={x:a.x+a.width/2,y:a.y+artA/2};
  const cB={x:b.x+b.width/2,y:b.y+artB/2};
  const dx=cB.x-cA.x,dy=cB.y-cA.y;
@@ -146,13 +149,13 @@ export function diagramEdge(a:NodeBox,b:NodeBox,obstacles:NodeBox[]=[],font:Font
  }
 
  const padA=6;
- const scaleXA=dx!==0?(a.width/2+padA)/Math.abs(dx):Infinity;
- const scaleYA=dy!==0?(artA/2+padA)/Math.abs(dy):Infinity;
+ const scaleXA=dx!==0?(sizeA/2+padA)/Math.abs(dx):Infinity;
+ const scaleYA=dy!==0?(sizeA/2+padA)/Math.abs(dy):Infinity;
  const tA=Math.min(scaleXA,scaleYA);
 
  const padB=11;
- const scaleXB=dx!==0?(b.width/2+padB)/Math.abs(dx):Infinity;
- const scaleYB=dy!==0?(artB/2+padB)/Math.abs(dy):Infinity;
+ const scaleXB=dx!==0?(sizeB/2+padB)/Math.abs(dx):Infinity;
+ const scaleYB=dy!==0?(sizeB/2+padB)/Math.abs(dy):Infinity;
  const tB=Math.min(scaleXB,scaleYB);
 
  let from:{x:number;y:number};
@@ -201,10 +204,14 @@ export function diagramEdge(a:NodeBox,b:NodeBox,obstacles:NodeBox[]=[],font:Font
   d=`M${from.x} ${from.y}L${to.x} ${to.y}`;
  }
 
+ const length=Math.hypot(to.x-from.x,to.y-from.y)||1;
+ let nx=-(to.y-from.y)/length,ny=(to.x-from.x)/length;
+ if(ny>0){nx=-nx;ny=-ny;}
+ const off=34;
  return{
   d,from,to,
-  label:{x:midX-90,y:midY-14,width:180,height:35},
-  pill:{x:midX-95,y:midY-28,width:190,height:26}
+  label:{x:midX+nx*off-70,y:midY+ny*off-14,width:140,height:26},
+  pill:{x:midX+nx*off-75,y:midY+ny*off-28,width:150,height:26}
  };
 }
 

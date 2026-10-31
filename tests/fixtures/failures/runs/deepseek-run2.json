@@ -1,0 +1,11 @@
+{
+ "label": "deepseek-run2",
+ "question": "How do LLMs work?",
+ "sessionId": "0a998703c99d4c13a87eac39fa544f3a",
+ "http": 400,
+ "wallSeconds": 1779.51,
+ "started": 1793359216.0326195,
+ "result": {
+  "error": "The visual lesson did not pass the teaching review after one revision. [{\"beat\": \"next-token\", \"problem\": \"The final state is already present before the action: `sentence-strip` reads 'the cat sat on the mat' and `token-row` reads '6 tokens · pos 1–6' from 0.0 s, while `tok-mat` appears at 7.5 s before `select-arrow` at 8.2 s. The five earlier token tiles are absent from this beat, so the loop returns to a count label instead of visibly appending a token to the input sequence.\", \"revision\": \"Start with 'the cat sat on the' and a five-token strip. Reveal `tok-mat` only at the decoding choice, then append it to the existing token strip and update `sentence-strip` and `token-row` to six tokens. Route `generation-loop` back to the updated strip, not to a count label.\"}, {\"beat\": \"next-token\", \"problem\": \"Only four candidate bars are shown, with no 'top candidates', 'other vocabulary' or remainder marker, and no visible qualifier that the bar lengths and attention weights are illustrative. The viewer can read a four-word lookup or exact probabilities, not a distribution over a large vocabulary. `attn-note` also states 'width = attention weight' without a schematic qualifier.\", \"revision\": \"Label the chart 'top next-token probabilities (illustrative)' and add an 'other vocabulary' remainder or ellipsis. Add a visible 'schematic attention weights' qualifier beside the links, and keep an illustrative/probability qualifier visible near the bars.\"}, {\"beat\": \"attention\", \"problem\": \"`vec-the-2` is already at (0.4,-1.0) from revealAt 0.0 while `vec-the-1` "
+ }
+}

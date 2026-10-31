@@ -6,6 +6,7 @@ import {traceGeometry} from './stroke';
 import {generatedPacing,speechTarget,speechTargets} from './pacing';
 import {visualBeatIndex} from './navigation';
 import {createLessonAdapter} from './hyperframes';
+import {chapterGrammar,grammarBoxes,GrammarDecor,GrammarNode} from './grammars';
 import {clamp,contains,progress,type LiveSnapshot} from './geometry';
 import type {StageProps,LiveLesson,LiveChapter} from './lessonTypes';
 import {nodeBoxes,fitCopy,nodeCopy,diagramCopy,diagramEdge,conceptUsesGrid,gridRelationships,type NodeBox} from './layout';
@@ -14,9 +15,9 @@ import {DiagramArtwork} from './DiagramArtwork';
 import {diagramMotions} from './diagramMotion';
 const LiveAsset=memo(Asset);
 
-const TextBlock=memo(function TextBlock({font,text,x,y,width,height,size=23,minSize=18,className='node-copy'}:{font:Font|null;text:string;x:number;y:number;width:number;height:number;size?:number;minSize?:number;className?:string}){
+const TextBlock=memo(function TextBlock({font,text,x,y,width,height,size=23,minSize=18,className='node-copy',center=false,halo=false}:{font:Font|null;text:string;x:number;y:number;width:number;height:number;size?:number;minSize?:number;className?:string;center?:boolean;halo?:boolean}){
  const fit=fitCopy(font,text,width,height,size,minSize);
- return <g className={className} data-layout-issue={fit.overflow?`Text needs more space: ${text.slice(0,80)}`:undefined}>{fit.lines.map((line,i)=><text key={i} x={x} y={y+i*fit.size*1.36} fontSize={fit.size} style={{fontFamily:"QweepsTeachingSerif,serif"}} fill="#c9d9dd">{line}</text>)}</g>;
+ return <g className={className} data-layout-issue={fit.overflow?`Text needs more space: ${text.slice(0,80)}`:undefined}>{fit.lines.map((line,i)=><text key={i} x={center?x+width/2:x} y={y+i*fit.size*1.36} textAnchor={center?'middle':undefined} fontSize={fit.size} style={{fontFamily:"QweepsTeachingSerif,serif"}} fill="#c9d9dd" stroke={halo?'#071117':undefined} strokeWidth={halo?4:undefined} paintOrder={halo?'stroke':undefined}>{line}</text>)}</g>;
 });
 function WorkedTitle({font,text,time}:{font:Font|null;text:string;time:number}){
  const fit=useMemo(()=>fitCopy(font,text,530,38,29),[font,text]);
@@ -26,26 +27,37 @@ function edgePath(a:NodeBox,b:NodeBox){
  const left=a.x<b.x,from={x:a.x+(left?a.width:0),y:a.y+a.height*.8},to={x:b.x+(left?0:b.width),y:b.y+b.height*.8};
  return{d:`M${from.x} ${from.y}C${(from.x+to.x)/2} ${from.y} ${(from.x+to.x)/2} ${to.y} ${to.x} ${to.y}`,from,to};
 }
+function edgeLabelPoint(p:{from:{x:number;y:number};to:{x:number;y:number}},offset:number,t=.32){
+ const length=Math.hypot(p.to.x-p.from.x,p.to.y-p.from.y)||1;
+ let nx=-(p.to.y-p.from.y)/length,ny=(p.to.x-p.from.x)/length;
+ if(ny>0){nx=-nx;ny=-ny;}
+ const cx=(p.from.x+p.to.x)/2,u=1-t;
+ const x=u*u*u*p.from.x+3*u*u*t*cx+3*u*t*t*cx+t*t*t*p.to.x;
+ const y=u*u*u*p.from.y+3*u*u*t*p.from.y+3*u*t*t*p.to.y+t*t*t*p.to.y;
+ return{x:x+nx*offset,y:y+ny*offset};
+}
 function Chapter({lesson,c,index,font,time,snapshot,role}:{lesson:LiveLesson;c:LiveChapter;index:number;font:Font|null;time:number;snapshot:LiveSnapshot;role:(id:string)=>React.SVGProps<SVGGElement>}){
- const v=c.visual!,textMode=v.presentation?.textMode||'descriptive',boxes=useMemo(()=>nodeBoxes(v),[v]),copies=useMemo(()=>boxes.map(b=>nodeCopy(font,b.node,b.width,b.height,v.layout)),[boxes,font,v.layout]),active=time>=(c.visualStart??c.start)&&time<(c.visualEnd??c.end)||time>=lesson.duration&&index===lesson.chapters.length-1;
+ const v=c.visual!,textMode=v.presentation?.textMode||'descriptive',grammar=chapterGrammar(c),boxes=useMemo(()=>grammar==='cards'?nodeBoxes(v):grammarBoxes(v,grammar),[v,grammar]),copies=useMemo(()=>boxes.map(b=>nodeCopy(font,b.node,b.width,b.height,v.layout)),[boxes,font,v.layout]),active=time>=(c.visualStart??c.start)&&time<(c.visualEnd??c.end)||time>=lesson.duration&&index===lesson.chapters.length-1;
  const choice=c.visual?.experiment?.choices[snapshot.experiments?.[c.id]??-1];
  const narrating=speechTarget(c,time),narratingObjects=speechTargets(c,time);
  return <g className={`generated-beat generated-beat-${index}`} data-chapter={c.id} data-beat={index} data-teaching-method={v.presentation?.method} data-text-mode={textMode} data-narration-target={active?narrating:undefined} aria-hidden={!active} style={{pointerEvents:active?'auto':'none'}}>
   {v.layout==='matrix'&&<g className="table-heading"><path d="M45 136H1395" stroke="#6e94a3" strokeWidth="1.4"/>{v.columns.map((col,i)=><TextBlock key={i} font={font} text={col} x={i===0?65:45+290+(i-1)*(1060/(v.columns.length-1))+18} y={120} width={i===0?250:1060/(v.columns.length-1)-35} height={11} size={22}/>)}</g>}
   {v.layout==='concept'&&!conceptUsesGrid(v)&&<g className="concept-center"><rect x="540" y="215" width="360" height="210" rx="16" fill="#182d36" stroke="#d3bd82" strokeWidth="1.5"/><LiveAsset name={lesson.example?.icon||'app'} x={685} y={235} size={70}/><TextBlock font={font} text={lesson.example?.title||'Worked example'} x={565} y={340} width={310} height={75} size={27}/></g>}
-  {v.layout==='timeline'&&<g className="timeline-axis"><path d="M75 177H1365" stroke="#648795" strokeWidth="1.4"/><text x="1365" y="150" textAnchor="end" fill="#91a9b5" fontSize="18">Ordered events · spacing is schematic</text></g>}
+  {v.layout==='timeline'&&grammar==='cards'&&<g className="timeline-axis"><path d="M75 177H1365" stroke="#648795" strokeWidth="1.4"/><text x="1365" y="150" textAnchor="end" fill="#91a9b5" fontSize="18">Ordered events · spacing is schematic</text></g>}
+  {grammar!=='cards'&&<GrammarDecor v={v} g={grammar} font={font}/>}
   {v.layout==='concept'&&!conceptUsesGrid(v)&&boxes.map((box,i)=>{const right=box.x>720,x=right?900:540,y=320,bx=right?box.x:box.x+box.width,by=box.y+box.height*.5;return <path key={i} className="concept-link" data-from={box.node.id} data-link-at={box.node.at+2} d={`M${x} ${y}Q${(x+bx)/2} ${by} ${bx} ${by}`} fill="none" stroke={palette[box.node.color]} strokeWidth="1.6"/>;})}
   {gridRelationships(v).map(link=>{const box=boxes.find(b=>b.node.id===link.id)!;return <g key={link.id} className="generated-edge" data-from={link.from} data-to={link.to} data-link-at={link.at}><TextBlock font={font} text={link.text} x={box.x+4} y={box.y-7} width={box.width-8} height={5} size={18} minSize={14}/></g>;})}
-  {v.layout==='process'&&v.connections.map((link,i)=>{const a=boxes.find(b=>b.node.id===link.from)!,b=boxes.find(b=>b.node.id===link.to)!,p=edgePath(a,b),gap=Math.abs(p.from.x-p.to.x);return <g key={i} className="generated-edge" data-from={link.from} data-to={link.to} data-link-at={link.at}><path d={p.d} fill="none" stroke="#b5cdd3" strokeWidth="1.8" markerEnd="url(#generated-arrow)"/><TextBlock font={font} text={link.label} x={Math.min(p.from.x,p.to.x)+7} y={p.from.y-126} width={gap-14} height={110} size={18} minSize={14}/></g>;})}
-  {v.layout==='diagram'&&v.connections.map((link,i)=>{const a=boxes.find(b=>b.node.id===link.from)!,b=boxes.find(b=>b.node.id===link.to)!,p=diagramEdge(a,b,boxes,font,textMode);return <g key={i} className="generated-edge" data-from={link.from} data-to={link.to} data-link-at={link.at}><path d={p.d} fill="none" stroke="#7899a5" strokeWidth="1.4" markerEnd="url(#generated-arrow)"/>{link.label&&<g className="generated-edge-label"><rect x={p.pill.x} y={p.pill.y} width={p.pill.width} height={p.pill.height} rx={5} fill="#071117" stroke="#20353f" strokeWidth="1" fillOpacity={.92}/><TextBlock font={font} text={link.label} x={p.label.x} y={p.label.y} width={p.label.width} height={p.label.height} size={18} minSize={14}/></g>}</g>;})}
+  { (v.layout==='process'||v.layout==='fanin')&&grammar!=='procedure'&&v.connections.map((link,i)=>{const a=boxes.find(b=>b.node.id===link.from)!,b=boxes.find(b=>b.node.id===link.to)!,p=edgePath(a,b),gap=Math.abs(p.from.x-p.to.x),lp=edgeLabelPoint(p,24);return <g key={i} className="generated-edge" data-from={link.from} data-to={link.to} data-link-at={link.at}><path d={p.d} fill="none" stroke="#b5cdd3" strokeWidth="1.8" markerEnd="url(#generated-arrow)"/>{v.layout==='fanin'?<g className="generated-edge-label"><TextBlock font={font} text={link.label} x={lp.x-60} y={lp.y+6} width={120} height={24} size={16} minSize={12} center halo/></g>:<TextBlock font={font} text={link.label} x={Math.min(p.from.x,p.to.x)+7} y={p.from.y-126} width={gap-14} height={110} size={18} minSize={14}/>}</g>;})}
+  {v.layout==='diagram'&&v.connections.map((link,i)=>{const a=boxes.find(b=>b.node.id===link.from)!,b=boxes.find(b=>b.node.id===link.to)!,p=diagramEdge(a,b,boxes,font,textMode);return <g key={i} className="generated-edge" data-from={link.from} data-to={link.to} data-link-at={link.at}><path d={p.d} fill="none" stroke="#7899a5" strokeWidth="1.4" markerEnd="url(#generated-arrow)"/>{link.label&&<g className="generated-edge-label"><TextBlock font={font} text={link.label} x={p.label.x+15} y={p.label.y+18} width={110} height={24} size={15} minSize={11} center halo/></g>}</g>;})}
   {boxes.map(({node:n,x,y,width:w,height:h},i)=>{
    const color=palette[n.color],isTable=v.layout==='matrix',isConcept=v.layout==='concept',isDiagram=v.layout==='diagram',chosen=choice?.target===n.id,copy=copies[i],diagram=isDiagram?diagramCopy(font,n,w,h,textMode):null;
    return <g key={n.id} {...role(n.id)} className="generated-object" data-at={n.at} data-narrating={narratingObjects.includes(n.id)?'true':undefined} data-chosen={chosen?'true':undefined} transform={`translate(${x} ${y})`}>
     {narratingObjects.includes(n.id)&&<rect data-no-trace="true" x="-3" y="-3" width={w+6} height={h+6} rx={isTable?4:14} stroke="#f1d697" strokeWidth="2" fill="none"/>}
+    {grammar!=='cards'&&grammar!=='procedure'?<GrammarNode v={v} g={grammar} node={n} box={{node:n,x,y,width:w,height:h}} index={i} font={font} chosen={chosen}/>:<>
     <rect className={isDiagram?'diagram-hit':'object-frame'} data-no-trace={isDiagram?'true':undefined} width={w} height={h} rx={isTable?3:12} fill={isDiagram?'transparent':chosen?'#2c3a2a':'#10222c'} fillOpacity={.78} stroke={chosen?'#f1d697':isDiagram?'none':color} strokeWidth={chosen?3:1.5}/>
     {isDiagram?<>
      <g data-layout-issue={diagram!.overflow?`Diagram copy leaves insufficient space for its geometry: ${n.title}`:undefined}><DiagramArtwork node={n} width={w} height={diagram!.artHeight}/></g>
-     <TextBlock font={font} text={n.title} {...diagram!.title}/>
+     <TextBlock font={font} text={n.title} {...diagram!.title} center={textMode==='labels'}/>
      {diagram!.showBody&&<TextBlock font={font} text={n.body} {...diagram!.body}/>}
     </>:isTable?<>
      <g className="object-art"><LiveAsset name={n.icon} x={14} y={Math.max(7,(h-34)/2)} size={34} color={color}/></g>
@@ -54,11 +66,12 @@ function Chapter({lesson,c,index,font,time,snapshot,role}:{lesson:LiveLesson;c:L
     </>:<>
      <g className="object-art"><LiveAsset name={n.icon} x={22} y={24} size={isConcept||v.layout==='loci'?45:62} color={color}/></g>
      <TextBlock font={font} text={n.title} {...copy.title}/>
-     <TextBlock font={font} text={n.body} {...copy.body}/>
+     {!(v.layout==='fanin'&&textMode==='labels')&&<TextBlock font={font} text={n.body} {...copy.body}/>}
      {n.tag&&(isConcept||v.layout==='loci'?<text x={82} y={17} fontSize={14} fill={color}>{n.tag}</text>:<TextBlock font={font} text={n.tag} x={23} y={h-22} width={w-46} height={28} size={18}/>)}
     </>}
     {v.layout==='timeline'&&<g className="object-art"><path d={`M${w/2} -23V0`} stroke={color} strokeWidth="1.5"/><circle cx={w/2} cy={-23} r="6" fill={color} stroke={color}/></g>}
     {v.layout==='loci'&&<text x={w-20} y="34" textAnchor="end" fill={color} fontSize="20">{i+1}</text>}
+    </>}
    </g>;
   })}
   <g className="generated-conclusion"><path d="M70 516H1370" stroke="#496776" strokeWidth="1"/><TextBlock font={font} text={v.takeaway} x={70} y={548} width={1300} height={50} size={textMode==='labels'?30:25}/></g>
@@ -79,8 +92,9 @@ export default function GeneratedStage({lesson,snapshot:s,focusRequest,update,pa
     const visualStart=c.visualStart??c.start;
     t.fromTo(selector,{opacity:0},{opacity:1,duration:.35},visualStart);
     if(i<lesson.chapters.length-1){if(c.visualEnd!==undefined)t.to(selector,{opacity:0,duration:.35},c.visualEnd);else{const fade=c.transitionOut??.4;t.to(selector,{opacity:0,duration:fade},c.end-fade);}}
-    traceGeometry(t,element,`${selector} .table-heading,${selector} .concept-center,${selector} .timeline-axis`,visualStart+.3,2.5,.5);
-    t.fromTo(`${selector} .table-heading text,${selector} .concept-center text,${selector} .timeline-axis text`,{opacity:0},{opacity:1,duration:.45,stagger:.12},visualStart+1);
+    traceGeometry(t,element,`${selector} .table-heading,${selector} .concept-center,${selector} .timeline-axis,${selector} .comparison-table,${selector} .trace-table,${selector} .procedure-rail`,visualStart+.3,2.5,.5);
+    t.fromTo(`${selector} .table-heading text,${selector} .concept-center text,${selector} .timeline-axis text,${selector} .comparison-table text,${selector} .trace-table text,${selector} .procedure-rail text`,{opacity:0},{opacity:1,duration:.45,stagger:.12},visualStart+1);
+    t.fromTo(`${selector} .route-path`,{opacity:0},{opacity:1,duration:.9},visualStart+.45);
     c.visual!.nodes.forEach(n=>{const at=c.start+pacing.nodeAt(n.id),duration=pacing.nodeDuration(n.id),target=`${selector} [data-role="${CSS.escape(n.id)}"]`;traceGeometry(t,element,`${target} .object-frame,${target} .object-art`,at,duration,Math.min(.65,duration*.2));
      t.fromTo(`${target} .node-copy text,${target}>text,${target} .object-art text`,{opacity:0},{opacity:1,duration:.35,stagger:.08},at+.15);
      const drawing=element.querySelector<SVGGElement>(`${target} .diagram-motion`);

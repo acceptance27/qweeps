@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 288.8,
+ "model": "opencode-go/muse-spark-1.3-contributor",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "beat b4 lost retained ids ['relu_x_axis', 'relu_y_axis', 'relu_curve']"
+}

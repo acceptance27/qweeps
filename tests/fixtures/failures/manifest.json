@@ -1,0 +1,123 @@
+{
+  "source": "Frozen from the 2026-10-30 \"How do LLMs work?\" benchmark runs",
+  "question": "How do LLMs work?",
+  "judge": "opencode-go/deepseek-v4.1-flash (contender; self-judged for DeepSeek runs)",
+  "runs": {
+    "deepseek-run2": {
+      "label": "deepseek-run2",
+      "question": "How do LLMs work?",
+      "http": 400,
+      "wallSeconds": 1779.51,
+      "error": "The visual lesson did not pass the teaching review after one revision. [{\"beat\": \"next-token\", \"problem\": \"The final state is already present before the action: `sentence-strip` reads 'the cat sat on the mat' and `token-row` reads '6 tokens · pos 1–6' from 0.0 s, while `tok-mat` appears at 7.5 s before `select-arrow` at 8.2 s. The five earlier token tiles are absent from this beat, so the loop returns to a count label instead of visibly appending a token to the input sequence.\", \"revision\": \"Start with 'the cat sat on the' and a five-token strip. Reveal `tok-mat` only at the decoding choice, t",
+      "artifact": "runs/deepseek-run2.json",
+      "classes": [
+        "C",
+        "D"
+      ],
+      "note": "Rejected after one revision; 724 s full revision; self-review."
+    },
+    "deepseek-run3": {
+      "label": "deepseek-run3",
+      "question": "How do LLMs work?",
+      "http": 400,
+      "wallSeconds": 2085.08,
+      "error": "The visual lesson did not pass the teaching review after two revisions. [{\"beat\": \"predict-distribution\", \"problem\": \"The bar-length encoding does not use a single scale: 'tired 0.62' is 3.4 wide while 'wide 0.18' is 1.8 wide (about 5.5 vs 10.0 units per probability). The short bar is also narrower than its own label, so the box cannot both encode probability and display its text.\", \"revision\": \"Separate a fixed label gutter from a variable-length bar; compute every bar from one scale (for example 4.8 x p) on a common baseline, and keep candidate labels outside the bars.\"}, {\"beat\": \"attention",
+      "artifact": "runs/deepseek-run3.json",
+      "classes": [
+        "C",
+        "D",
+        "E"
+      ],
+      "note": "14 findings across all six beats; review JSON retry; full rewrite."
+    },
+    "deepseek-run4": {
+      "label": "deepseek-run4",
+      "question": "How do LLMs work?",
+      "http": 400,
+      "wallSeconds": 1895.84,
+      "error": "The visual lesson did not pass the teaching review after two revisions. [{\"beat\": \"predict_distribution\", \"problem\": \"The sampled 'mat' token reveals at 4.6s, before the sample_arrow labeled 'draw one' at 5.4s. The selection result appears before the selection cue, reversing the order the narration describes and weakening the claim that one token is drawn from the distribution.\", \"revision\": \"Reveal the sample arrow first or at the same time as the token, and animate the arrow reaching the selected candidate before 'mat' appears; alternatively use a moving selection marker that settles on the ",
+      "artifact": "runs/deepseek-run4.json",
+      "classes": [
+        "A",
+        "C",
+        "D",
+        "E"
+      ],
+      "note": "Field repair, targeted revision, duplicate generated label IDs, dasharray rejection; 13 calls."
+    },
+    "mimo-run1": {
+      "label": "mimo-run1",
+      "question": "How do LLMs work?",
+      "http": 502,
+      "wallSeconds": 1049.86,
+      "error": "OpenCode did not finish within 900 seconds.",
+      "artifact": "runs/mimo-run1.json",
+      "classes": [
+        "A",
+        "B"
+      ],
+      "note": "Markdown instead of JSON; 900 s zero-output retry on 65k."
+    },
+    "mimo-run2": {
+      "label": "mimo-run2",
+      "question": "How do LLMs work?",
+      "http": 502,
+      "wallSeconds": 1569.1,
+      "error": "OpenCode did not finish within 900 seconds.",
+      "artifact": "runs/mimo-run2.json",
+      "classes": [
+        "A",
+        "B"
+      ],
+      "note": "Empty answer; 900 s zero-output retry on 65k."
+    },
+    "mimo-run3": {
+      "label": "mimo-run3",
+      "question": "How do LLMs work?",
+      "http": 502,
+      "wallSeconds": 1512.77,
+      "error": "OpenCode could not complete the request for opencode-go/mimo-v2.6-flash.",
+      "artifact": "runs/mimo-run3.json",
+      "classes": [
+        "A",
+        "B"
+      ],
+      "note": "Six calls; provider error with zero output on a 51k prompt."
+    }
+  },
+  "historical": [
+    {
+      "label": "deepseek-adapter-v1",
+      "http": 502,
+      "wallSeconds": 63.8,
+      "error": "OpenCode returned no complete response for opencode-go/deepseek-v4.1-flash.",
+      "classes": [
+        "E"
+      ],
+      "note": "Adapter required a v1 step_finish event; fixed."
+    },
+    {
+      "label": "deepseek-300s-cap",
+      "http": 502,
+      "wallSeconds": 514.9,
+      "error": "OpenCode did not finish within 300 seconds.",
+      "classes": [
+        "E"
+      ],
+      "note": "Per-call cap below real director latency; raised to 900 s."
+    },
+    {
+      "label": "gemini-3.8-flash-high-baseline",
+      "http": 200,
+      "wallSeconds": 2100,
+      "error": "",
+      "classes": [],
+      "note": "User-reported success (~35 min) on the pre-optimization pipeline; no artifact captured."
+    }
+  ],
+  "calls": [
+    "calls/pilot1.jsonl",
+    "calls/pilot2.jsonl",
+    "calls/pilot3.jsonl"
+  ]
+}

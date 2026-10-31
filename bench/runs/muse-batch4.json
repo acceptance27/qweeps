@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 428.8,
+ "model": "opencode-go/muse-spark-1.3-contributor",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "beat n4_use lost retained ids ['actCurve']"
+}

@@ -1,0 +1,11 @@
+{
+ "label": "deepseek-run4",
+ "question": "How do LLMs work?",
+ "sessionId": "b5f79b97143544ad8fe53a230e770d08",
+ "http": 400,
+ "wallSeconds": 1895.84,
+ "started": 1793365095.8867881,
+ "result": {
+  "error": "The visual lesson did not pass the teaching review after two revisions. [{\"beat\": \"predict_distribution\", \"problem\": \"The sampled 'mat' token reveals at 4.6s, before the sample_arrow labeled 'draw one' at 5.4s. The selection result appears before the selection cue, reversing the order the narration describes and weakening the claim that one token is drawn from the distribution.\", \"revision\": \"Reveal the sample arrow first or at the same time as the token, and animate the arrow reaching the selected candidate before 'mat' appears; alternatively use a moving selection marker that settles on the chosen bar before the token is shown.\"}, {\"beat\": \"tokenize_text\", \"problem\": \"The scene shows three green boxes 'un','believ','able' but never displays the source word 'unbelievable', and the prompt line does not visibly split into token chips. split_note asserts 'learned boundaries cut across words' while the cross-word split is not observable, so a viewer can read the boxes as unrelated tokens.\", \"revision\": \"Show 'unbelievable' as a single word first, then visibly break or bracket it into 'un|believ|able' with their IDs, and connect the prompt/token row to the ID line. Keep split_note attached to the demonstrated split.\"}, {\"beat\": \"tokenize_text\", \"problem\": \"Yellow (#FFFF00) is used for the sampled 'mat' in beat 1, the 'the' token chip, the attention box, the generation loop, and generated link arrows. Because token-chip color is declared to preserve token identity, using the same yellow for 'the' and the sampled/output role makes color ambiguous; in b"
+ }
+}

@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 225.6,
+ "model": "opencode-go/muse-spark-1.3-contributor",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "derived element 'body' shows before its parent 'in1' has been readable for 0.8s"
+}

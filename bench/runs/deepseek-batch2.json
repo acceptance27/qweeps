@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 609.3,
+ "model": "opencode-go/deepseek-v4.1-flash",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "beat sum_and_bias lost retained ids ['zero_baseline']"
+}

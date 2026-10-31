@@ -1,0 +1,262 @@
+{
+  "title": "How a Single Neuron Computes Its Output",
+  "question": "How does a single artificial neuron compute its output?",
+  "representation": "A three-chapter mechanism trace: weighted inputs, signed sum with bias, then a sigmoid activation.",
+  "example": {
+    "title": "Tiny spam-score neuron",
+    "description": "Inputs x1=2 and x2=1 are scaled by weights 0.7 and -0.5, summed with bias -0.4 to z=0.5, then squashed by a sigmoid to y≈0.62.",
+    "icon": "cpu"
+  },
+  "chapters": [
+    {
+      "id": "inputs-weights",
+      "title": "Inputs and weights",
+      "question": "What does the neuron receive, and what do weights do?",
+      "insight": "Each input is multiplied by its own weight before anything is added.",
+      "safeguard": "The weight is not another input; it scales the input it sits on.",
+      "narration": "A neuron receives numbers, not opinions. Here x1 equals two and x2 equals one. The first weight, plus zero point seven, turns x1 into plus one point four. The second weight, minus zero point five, turns x2 into minus zero point five.",
+      "layout": "diagram",
+      "slots": [
+        {
+          "slot": "input-x1",
+          "title": "Input x1 = 2",
+          "body": "Raw feature value. The weight 0.7 scales it to +1.4.",
+          "icon": "search",
+          "color": "blue",
+          "tag": "raw fact",
+          "at": 1,
+          "template": "weight-dial",
+          "data": {
+            "weight": 0.7,
+            "input": 2,
+            "product": 1.4
+          }
+        },
+        {
+          "slot": "input-x2",
+          "title": "Input x2 = 1",
+          "body": "Second raw feature. The weight -0.5 flips its contribution to -0.5.",
+          "icon": "shield",
+          "color": "coral",
+          "tag": "raw fact",
+          "at": 2,
+          "template": "weight-dial",
+          "data": {
+            "weight": -0.5,
+            "input": 1,
+            "product": -0.5
+          }
+        },
+        {
+          "slot": "neuron",
+          "title": "Weighted inputs",
+          "body": "The neuron receives the two signed products, +1.4 and -0.5, before adding them.",
+          "icon": "cpu",
+          "color": "purple",
+          "tag": "w · x",
+          "at": 6,
+          "template": "sum-node",
+          "data": {
+            "terms": [
+              1.4,
+              -0.5
+            ],
+            "total": 0.9
+          }
+        }
+      ],
+      "connections": [
+        {
+          "from": "input-x1",
+          "to": "neuron",
+          "label": "scales"
+        },
+        {
+          "from": "input-x2",
+          "to": "neuron",
+          "label": "flips"
+        }
+      ],
+      "takeaway": "Weights scale each input independently; the neuron receives signed products.",
+      "presentation": {
+        "method": "Annotated weighted inputs",
+        "why": "Shows each raw value with its own weight and product before any addition.",
+        "visualEvidence": "Two input nodes carry weight labels and signed product readouts.",
+        "textMode": "labels"
+      },
+      "duration": 30,
+      "teaching": "construction"
+    },
+    {
+      "id": "sum-bias",
+      "title": "Sum and bias",
+      "question": "How are the scaled inputs combined into one score?",
+      "insight": "The neuron adds the signed products, then shifts the total with a bias.",
+      "safeguard": "The bias is an added offset, not another weighted input.",
+      "narration": "The products are added: plus one point four and minus zero point five give plus zero point nine. A bias of minus zero point four then shifts that total down to plus zero point five. The bias changes the threshold without changing any input.",
+      "layout": "fanin",
+      "slots": [
+        {
+          "slot": "vote-pos",
+          "title": "+1.4 vote",
+          "body": "The positive product pushes the sum up.",
+          "icon": "check",
+          "color": "blue",
+          "tag": "+1.4",
+          "at": 1,
+          "template": "vote-bar",
+          "data": {
+            "value": 1.4
+          }
+        },
+        {
+          "slot": "vote-neg",
+          "title": "-0.5 vote",
+          "body": "The negative product pushes the sum down.",
+          "icon": "cross",
+          "color": "coral",
+          "tag": "-0.5",
+          "at": 2,
+          "template": "vote-bar",
+          "data": {
+            "value": -0.5
+          }
+        },
+        {
+          "slot": "bias",
+          "title": "Bias -0.4",
+          "body": "A constant offset applied after the weighted sum.",
+          "icon": "scale",
+          "color": "gold",
+          "tag": "b = -0.4",
+          "at": 4,
+          "template": "number-line",
+          "data": {
+            "min": -1,
+            "max": 2,
+            "value": -0.4
+          }
+        },
+        {
+          "slot": "sum",
+          "title": "Sum z = 0.5",
+          "body": "The signed votes and the bias combine into one net score.",
+          "icon": "cpu",
+          "color": "purple",
+          "tag": "z = 0.5",
+          "at": 8,
+          "template": "sum-node",
+          "data": {
+            "terms": [
+              1.4,
+              -0.5,
+              -0.4
+            ],
+            "total": 0.5
+          }
+        }
+      ],
+      "connections": [
+        {
+          "from": "vote-pos",
+          "to": "sum",
+          "label": "adds +1.4"
+        },
+        {
+          "from": "vote-neg",
+          "to": "sum",
+          "label": "adds -0.5"
+        },
+        {
+          "from": "bias",
+          "to": "sum",
+          "label": "shifts -0.4"
+        }
+      ],
+      "takeaway": "Sum first, then shift: z = 1.4 - 0.5 - 0.4 = 0.5.",
+      "presentation": {
+        "method": "Signed accumulation with an offset",
+        "why": "Keeps the two signed contributions visible while the bias shifts the total.",
+        "visualEvidence": "Two signed bars and a bias line feed a sum node reading z = 0.5.",
+        "textMode": "descriptive"
+      },
+      "duration": 30,
+      "teaching": "mechanism"
+    },
+    {
+      "id": "activation",
+      "title": "Activation",
+      "question": "How does the score become the final output?",
+      "insight": "A sigmoid squashes the unbounded score into a bounded output.",
+      "safeguard": "The output is a probability-like value, not a new raw score.",
+      "narration": "The net score is plus zero point five. Passing it through a sigmoid gives about zero point six two. The curve maps any real score into the interval between zero and one, so the neuron now has an output it can compare with a threshold.",
+      "layout": "diagram",
+      "slots": [
+        {
+          "slot": "z-line",
+          "title": "Net score z = 0.5",
+          "body": "The unbounded value produced by the weighted sum and bias.",
+          "icon": "route",
+          "color": "purple",
+          "tag": "z = 0.5",
+          "at": 1,
+          "template": "number-line",
+          "data": {
+            "min": -1,
+            "max": 2,
+            "value": 0.5
+          }
+        },
+        {
+          "slot": "sigmoid",
+          "title": "Sigmoid curve",
+          "body": "The S-curve maps a real score to a value between zero and one.",
+          "icon": "zap",
+          "color": "blue",
+          "tag": "σ(z)",
+          "at": 4,
+          "template": "sigmoid-plot",
+          "data": {
+            "input": 0.5,
+            "output": 0.62
+          }
+        },
+        {
+          "slot": "output",
+          "title": "Output y ≈ 0.62",
+          "body": "The bounded result the neuron passes on.",
+          "icon": "check",
+          "color": "green",
+          "tag": "y ≈ 0.62",
+          "at": 8,
+          "template": "output-ring",
+          "data": {
+            "value": 0.62,
+            "label": "output"
+          }
+        }
+      ],
+      "connections": [
+        {
+          "from": "z-line",
+          "to": "sigmoid",
+          "label": "evaluates"
+        },
+        {
+          "from": "sigmoid",
+          "to": "output",
+          "label": "squashes"
+        }
+      ],
+      "takeaway": "The sigmoid turns the net score 0.5 into the bounded output 0.62.",
+      "presentation": {
+        "method": "Curve projection",
+        "why": "Shows the score entering the curve and the bounded output leaving it.",
+        "visualEvidence": "A number line, an S-curve and an output ring all show 0.5 → 0.62.",
+        "textMode": "labels"
+      },
+      "duration": 30,
+      "teaching": "quantitative"
+    }
+  ]
+}

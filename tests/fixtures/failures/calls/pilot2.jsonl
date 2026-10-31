@@ -1,0 +1,15 @@
+{"time": "2026-10-30T11:55:29Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 128.62, "inputChars": 34874, "outputChars": 10932, "images": 0, "ok": true}
+{"time": "2026-10-30T12:02:50Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 440.82, "inputChars": 49613, "outputChars": 22545, "images": 0, "ok": true}
+{"time": "2026-10-30T12:04:00Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 70.12, "inputChars": 73752, "outputChars": 22847, "images": 0, "ok": true}
+{"time": "2026-10-30T12:06:39Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 159.07, "inputChars": 82424, "outputChars": 16338, "images": 0, "ok": true}
+{"time": "2026-10-30T12:07:24Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 44.75, "inputChars": 99223, "outputChars": 16998, "images": 0, "ok": true}
+{"time": "2026-10-30T12:19:04Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 699.89, "inputChars": 58017, "outputChars": 27473, "images": 0, "ok": true}
+{"time": "2026-10-30T12:19:12Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 7.64, "inputChars": 4181, "outputChars": 1092, "images": 0, "ok": true}
+{"time": "2026-10-30T12:27:43Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 510.94, "inputChars": 85801, "outputChars": 15128, "images": 0, "ok": true}
+{"time": "2026-10-30T12:28:06Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 23.17, "inputChars": 100508, "outputChars": 15084, "images": 0, "ok": true}
+{"time": "2026-10-30T12:31:21Z", "provider": "opencode-go", "model": "opencode-go/mimo-v2.6-flash", "seconds": 127.01, "inputChars": 34874, "outputChars": 12179, "images": 0, "ok": true}
+{"time": "2026-10-30T12:39:55Z", "provider": "opencode-go", "model": "opencode-go/mimo-v2.6-flash", "seconds": 513.58, "inputChars": 50887, "outputChars": 7555, "images": 0, "ok": true}
+{"time": "2026-10-30T12:41:10Z", "provider": "opencode-go", "model": "opencode-go/mimo-v2.6-flash", "seconds": 75.27, "inputChars": 21092, "outputChars": 10799, "images": 0, "ok": true}
+{"time": "2026-10-30T12:44:00Z", "provider": "opencode-go", "model": "opencode-go/mimo-v2.6-flash", "seconds": 170.19, "inputChars": 60795, "outputChars": 27493, "images": 0, "ok": true}
+{"time": "2026-10-30T12:49:24Z", "provider": "opencode-go", "model": "opencode-go/mimo-v2.6-flash", "seconds": 323.41, "inputChars": 53215, "outputChars": 21434, "images": 0, "ok": true}
+{"time": "2026-10-30T12:54:27Z", "provider": "opencode-go", "model": "opencode-go/mimo-v2.6-flash", "seconds": 303.29, "inputChars": 50994, "outputChars": 0, "images": 0, "ok": false, "error": "OpenCode could not complete the request for opencode-go/mimo-v2.6-flash."}

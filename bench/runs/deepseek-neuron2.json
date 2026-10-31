@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 772.2,
+ "model": "opencode-go/deepseek-v4.1-flash",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "element 'outA' drawDuration must be positive"
+}

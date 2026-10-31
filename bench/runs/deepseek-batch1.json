@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 750.0,
+ "model": "opencode-go/deepseek-v4.1-flash",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "duplicate element id 'zero_line'"
+}

@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 275.9,
+ "model": "opencode-go/muse-spark-1.3-contributor",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "derived parent 'w2_arrow' is outside the camera view"
+}

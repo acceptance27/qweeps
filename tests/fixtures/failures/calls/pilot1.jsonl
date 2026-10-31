@@ -1,0 +1,11 @@
+{"time": "2026-10-30T11:22:51Z", "provider": "opencode-go", "model": "opencode-go/mimo-v2.6-flash", "seconds": 85.49, "inputChars": 34874, "outputChars": 4008, "images": 0, "ok": true}
+{"time": "2026-10-30T11:23:21Z", "provider": "opencode-go", "model": "opencode-go/mimo-v2.6-flash", "seconds": 30.09, "inputChars": 5100, "outputChars": 4765, "images": 0, "ok": true}
+{"time": "2026-10-30T11:23:31Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 194.98, "inputChars": 34874, "outputChars": 11313, "images": 0, "ok": true}
+{"time": "2026-10-30T11:24:55Z", "provider": "opencode-go", "model": "opencode-go/mimo-v2.6-flash", "seconds": 93.53, "inputChars": 39483, "outputChars": 12858, "images": 0, "ok": true}
+{"time": "2026-10-30T11:27:53Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 262.15, "inputChars": 49982, "outputChars": 19668, "images": 0, "ok": true}
+{"time": "2026-10-30T11:29:00Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 67.49, "inputChars": 71464, "outputChars": 22777, "images": 0, "ok": true}
+{"time": "2026-10-30T11:32:35Z", "provider": "opencode-go", "model": "opencode-go/mimo-v2.6-flash", "seconds": 459.81, "inputChars": 51527, "outputChars": 24317, "images": 0, "ok": true}
+{"time": "2026-10-30T11:34:32Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 331.42, "inputChars": 80691, "outputChars": 9726, "images": 0, "ok": true}
+{"time": "2026-10-30T11:46:36Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 724.38, "inputChars": 53689, "outputChars": 23161, "images": 0, "ok": true}
+{"time": "2026-10-30T11:47:35Z", "provider": "opencode-go", "model": "opencode-go/mimo-v2.6-flash", "seconds": 900.17, "inputChars": 65263, "outputChars": 0, "images": 0, "ok": false, "error": "OpenCode did not finish within 900 seconds."}
+{"time": "2026-10-30T11:49:55Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 199.07, "inputChars": 82052, "outputChars": 8994, "images": 0, "ok": true}

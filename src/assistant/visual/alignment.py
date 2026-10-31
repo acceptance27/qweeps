@@ -18,10 +18,28 @@ from .plan import PlanError
 
 ENGINE='faster-whisper-small-int8-word-timestamps-v1'
 
+_NUMBERS={
+    'zero':'0','one':'1','two':'2','three':'3','four':'4','five':'5','six':'6',
+    'seven':'7','eight':'8','nine':'9','ten':'10','eleven':'11','twelve':'12',
+    'thirteen':'13','fourteen':'14','fifteen':'15','sixteen':'16','seventeen':'17',
+    'eighteen':'18','nineteen':'19','twenty':'20','thirty':'30','forty':'40',
+    'fifty':'50','sixty':'60','seventy':'70','eighty':'80','ninety':'90',
+    'hundred':'100','thousand':'1000',
+}
+
 def tokens(text):
     text=''.join(c for c in unicodedata.normalize('NFKD',text.casefold()) if not unicodedata.combining(c))
     words=re.findall(r'[^\W_]+',text.replace("'",'').replace('’',''),re.UNICODE)
-    return [{'license':'licence','licenses':'licences','ordinance':'ordnance'}.get(word,word) for word in words]
+    words=[{'license':'licence','licenses':'licences','ordinance':'ordnance'}.get(word,word) for word in words]
+    out=[]
+    for index,word in enumerate(words):
+        # Speech recognisers write "0.7"; narration often says "zero point seven".
+        if word=='point' and 0<index<len(words)-1 and (
+                words[index-1] in _NUMBERS or words[index-1].isdigit()) and (
+                words[index+1] in _NUMBERS or words[index+1].isdigit()):
+            continue
+        out.append(_NUMBERS.get(word,word))
+    return out
 
 def phrase_range(script,phrase,occurrence=1):
     words,needle=tokens(script),tokens(phrase)

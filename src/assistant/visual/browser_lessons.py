@@ -15,7 +15,7 @@ from .documents import DocumentLibrary,ID
 from .plan import PlanError,_text as _required_text
 from .pedagogy import _model_json
 
-LAYOUTS={'comparison','process','matrix','concept','timeline','loci','diagram'}
+LAYOUTS={'comparison','process','matrix','concept','timeline','loci','diagram','fanin'}
 COLORS={'blue','gold','green','coral','purple'}
 MAX_VISUAL_REVISIONS=3
 ICON_ALIASES={
@@ -52,7 +52,7 @@ def validate_presentation(value,layout=None):
     result={k:_text(value.get(k),'beat presentation '+k,n) for k,n in [('method',100),('why',450),('visualEvidence',600)]}
     mode=value.get('textMode')
     if mode not in {'labels','descriptive'}:raise PlanError('Choose labels or descriptive text for this beat')
-    if mode=='labels' and layout is not None and layout!='diagram':
+    if mode=='labels' and layout is not None and layout not in {'diagram','fanin'}:
         raise PlanError('Use the diagram layout for a geometry-led beat with labels; descriptive layouts retain their explanations')
     result['textMode']=mode
     return result
@@ -164,18 +164,18 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
             tag=_text(tag,'object tag',70) if tag.strip() else ''
             n={'id':nid,'title':_text(node.get('title'),'object title',65),'body':_text(node.get('body'),'useful object description',250),
                'icon':icon,'color':color,'at':round(at,2),'tag':tag}
-            if layout=='diagram':
+            if layout in {'diagram','fanin'}:
                 from .diagrams import validate_diagram
                 n.update(validate_diagram(node))
             if layout=='matrix':
                 n['cells']=[_text(v,'matrix cell',155) for v in _list(node.get('cells'),'matrix cells',len(columns)-1,len(columns)-1)]
             nodes.append(n)
-        if layout=='diagram':
+        if layout in {'diagram','fanin'}:
             from .diagrams import resolve_diagram_clearance
             nodes=resolve_diagram_clearance(nodes)
         if layout=='diagram' and any(m['cue'] not in node_ids for n in nodes for m in n['motion']):
             raise PlanError('Diagram motion cues must name objects in this beat')
-        if layout in {'comparison','process','timeline'} and len(nodes)>4:raise PlanError('Use at most four objects for this layout, or choose a matrix/concept layout')
+        if layout in {'comparison','process','timeline','fanin'} and len(nodes)>4:raise PlanError('Use at most four objects for this layout, or choose a matrix/concept layout')
         links=[]
         for link in _list(c.get('connections',[]),'connections',0,10):
             if link.get('from') not in node_ids or link.get('to') not in node_ids:raise PlanError('Connections must reference objects in this beat')

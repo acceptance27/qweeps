@@ -1,0 +1,13 @@
+{"time": "2026-10-30T13:00:10Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 114.26, "inputChars": 34874, "outputChars": 11012, "images": 0, "ok": true}
+{"time": "2026-10-30T13:04:04Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 234.21, "inputChars": 50281, "outputChars": 28022, "images": 0, "ok": true}
+{"time": "2026-10-30T13:05:50Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 105.67, "inputChars": 5563, "outputChars": 7638, "images": 0, "ok": true}
+{"time": "2026-10-30T13:06:41Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 51.72, "inputChars": 80162, "outputChars": 26460, "images": 0, "ok": true}
+{"time": "2026-10-30T13:09:13Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 151.66, "inputChars": 88038, "outputChars": 9284, "images": 0, "ok": true}
+{"time": "2026-10-30T13:12:01Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 168.5, "inputChars": 53138, "outputChars": 23492, "images": 0, "ok": true}
+{"time": "2026-10-30T13:13:07Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 65.08, "inputChars": 78451, "outputChars": 23406, "images": 0, "ok": true}
+{"time": "2026-10-30T13:14:26Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 79.02, "inputChars": 78316, "outputChars": 23210, "images": 0, "ok": true}
+{"time": "2026-10-30T13:17:46Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 200.49, "inputChars": 53207, "outputChars": 26553, "images": 0, "ok": true}
+{"time": "2026-10-30T13:20:07Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 140.55, "inputChars": 93749, "outputChars": 9807, "images": 0, "ok": true}
+{"time": "2026-10-30T13:24:32Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 265.29, "inputChars": 57799, "outputChars": 24745, "images": 0, "ok": true}
+{"time": "2026-10-30T13:27:23Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 170.73, "inputChars": 85092, "outputChars": 21347, "images": 0, "ok": true}
+{"time": "2026-10-30T13:29:51Z", "provider": "opencode-go", "model": "opencode-go/deepseek-v4.1-flash", "seconds": 148.6, "inputChars": 81064, "outputChars": 23977, "images": 0, "ok": true}

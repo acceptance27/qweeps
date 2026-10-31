@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 493.5,
+ "model": "opencode-go/deepseek-v4.1-flash",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "unsupported timing expression: with:inputs.row"
+}

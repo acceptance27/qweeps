@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 581.5,
+ "model": "opencode-go/muse-spark-1.3-contributor",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "link 'flow_x1' duplicates connector 'weight_w1' between 'input_x1' and 'product_p1'; two straight connectors overlap. Label or restyle the existing connector instead."
+}

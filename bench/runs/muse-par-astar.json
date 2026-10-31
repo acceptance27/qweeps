@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 0.0,
+ "model": "opencode-go/muse-spark-1.3-contributor",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "deterministic gate: [{\"beat\": \"beat_1\", \"compiledId\": \"goal-node\", \"problem\": \"goal-node overlaps h-values by 58%\", \"errorClass\": \"TEXT_OCCLUSION\"}, {\"beat\": \"beat_2\", \"compiledId\": \"start-node\", \"problem\": \"start-node overlaps f-labels by 25%\", \"errorClass\": \"TEXT_OCCLUSION\"}, {\"beat\": \"beat_2\", \"compiledId\": \"goal-node\", \"problem\": \"goal-node overlaps h-values by 58%\", \"errorClass\": \"TEXT_OCCLUSION\"}, {\"beat\": \"beat_3\", \"compiledId\": \"start-node\", \"problem\": \"start-node overlaps f-labels by 25%\", \"errorClass\": \"TEXT_OCCLUSION\"}, {\"beat\": \"beat_3\", \"compiledId\": \"goal-node\", \"problem\": \"goal-node overlaps h-values by 58%\", \"errorClass\": \"TEXT_OCCLUSION\"}]"
+}

@@ -1,0 +1,281 @@
+{
+ "prompt_version": 1,
+ "models": [
+  {
+   "model": "opencode-go/muse-spark-1.3-contributor",
+   "results": [
+    {
+     "attempt": 1,
+     "seconds": 18.1,
+     "raw": "beat 3\nretain token_row, context_vec\ncamera frame=[token_row, context_vec, dist_chart, sampled_mat] min_zoom=0.80\n@cue:project\n  chart dist_chart type=bars data=[mat:0.62, rug:0.15, hat:0.08, cat:0.05] dock=right-of:context_vec\n  link proj_arrow from=context_vec to=dist_chart\n@cue:top_prob\n  focus dist_chart item=mat\n@cue:sample_draw\n  show sampled_mat label=\"mat\" dock=below:dist_chart\n@cue:append_tok\n  move sampled_mat to=inside:token_row",
+     "score": {
+      "criteria_1_no_prose": true,
+      "criteria_2_cue_order": true,
+      "criteria_3_link": true,
+      "criteria_4_sample_under_cue": true,
+      "criteria_5_normalizations": true,
+      "criteria_6_cues_present": true,
+      "criteria_7_no_forbidden": true,
+      "details": {
+       "cues": [
+        "project",
+        "top_prob",
+        "sample_draw",
+        "append_tok"
+       ],
+       "sample_cue": "sample_draw",
+       "prose_lines": [],
+       "normalizations": [],
+       "forbidden": []
+      }
+     }
+    },
+    {
+     "attempt": 2,
+     "seconds": 22.8,
+     "raw": "beat 3\nretain token_row, context_vec\ncamera frame=[token_row, context_vec, dist_chart] min_zoom=0.80\n@cue:project\n  chart dist_chart type=bars data=[mat:0.62] dock=right-of:context_vec\n  link proj_arrow from=context_vec to=dist_chart\n@cue:top_prob\n  focus dist_chart item=mat\n@cue:sample_draw\n  show sampled_mat label=\"mat\" dock=below:dist_chart\n@cue:append_tok\n  move sampled_mat to=inside:token_row",
+     "score": {
+      "criteria_1_no_prose": true,
+      "criteria_2_cue_order": true,
+      "criteria_3_link": true,
+      "criteria_4_sample_under_cue": true,
+      "criteria_5_normalizations": true,
+      "criteria_6_cues_present": true,
+      "criteria_7_no_forbidden": true,
+      "details": {
+       "cues": [
+        "project",
+        "top_prob",
+        "sample_draw",
+        "append_tok"
+       ],
+       "sample_cue": "sample_draw",
+       "prose_lines": [],
+       "normalizations": [
+        "list_commas"
+       ],
+       "forbidden": []
+      }
+     }
+    },
+    {
+     "attempt": 3,
+     "seconds": 22.5,
+     "raw": "beat 3\nretain token_row, context_vec\ngroup token_row contains=[tok_the, tok_cat, tok_sat, tok_on, tok_the2] zone=left_mid\ncamera frame=[token_row, context_vec, dist_chart] min_zoom=0.80\n@cue:project\nchart dist_chart type=bars data=[mat:0.62] dock=right-of:context_vec\nlink proj_arrow from=context_vec to=dist_chart style=solid\n@cue:top_prob\nfocus dist_chart item=mat\n@cue:sample_draw\nshow sampled_mat label=\"mat\" dock=below:dist_chart\n@cue:append_tok\nmove sampled_mat to=inside:token_row",
+     "score": {
+      "criteria_1_no_prose": true,
+      "criteria_2_cue_order": true,
+      "criteria_3_link": true,
+      "criteria_4_sample_under_cue": true,
+      "criteria_5_normalizations": true,
+      "criteria_6_cues_present": true,
+      "criteria_7_no_forbidden": true,
+      "details": {
+       "cues": [
+        "project",
+        "top_prob",
+        "sample_draw",
+        "append_tok"
+       ],
+       "sample_cue": "sample_draw",
+       "prose_lines": [],
+       "normalizations": [
+        "list_commas"
+       ],
+       "forbidden": []
+      }
+     }
+    },
+    {
+     "attempt": 4,
+     "seconds": 19.9,
+     "raw": "beat 3\nretain token_row, context_vec\ncamera frame=[token_row, context_vec, dist_chart] min_zoom=0.80\n@cue:project\n  chart dist_chart type=bars data=[mat:0.62] dock=right-of:context_vec\n  link proj_arrow from=context_vec to=dist_chart\n@cue:top_prob\n  focus dist_chart item=mat\n@cue:sample_draw\n  show sampled_mat label=\"mat\" dock=below:dist_chart\n@cue:append_tok\n  move sampled_mat to=right-of:token_row",
+     "score": {
+      "criteria_1_no_prose": true,
+      "criteria_2_cue_order": true,
+      "criteria_3_link": true,
+      "criteria_4_sample_under_cue": true,
+      "criteria_5_normalizations": true,
+      "criteria_6_cues_present": true,
+      "criteria_7_no_forbidden": true,
+      "details": {
+       "cues": [
+        "project",
+        "top_prob",
+        "sample_draw",
+        "append_tok"
+       ],
+       "sample_cue": "sample_draw",
+       "prose_lines": [],
+       "normalizations": [
+        "list_commas"
+       ],
+       "forbidden": []
+      }
+     }
+    },
+    {
+     "attempt": 5,
+     "seconds": 23.2,
+     "raw": "beat 3\nretain token_row, context_vec\ncamera frame=[token_row, context_vec, dist_chart, sampled_mat] min_zoom=0.80\n@cue:project\nchart dist_chart type=bars data=[mat:0.62, rug:0.14, floor:0.09, chair:0.08, cat:0.07] dock=right-of:context_vec\nlink proj_arrow from=context_vec to=dist_chart\n@cue:top_prob\nfocus dist_chart item=mat\n@cue:sample_draw\nshow sampled_mat label=\"mat\" dock=below:dist_chart\n@cue:append_tok\nmove sampled_mat to=inside:token_row",
+     "score": {
+      "criteria_1_no_prose": true,
+      "criteria_2_cue_order": true,
+      "criteria_3_link": true,
+      "criteria_4_sample_under_cue": true,
+      "criteria_5_normalizations": true,
+      "criteria_6_cues_present": true,
+      "criteria_7_no_forbidden": true,
+      "details": {
+       "cues": [
+        "project",
+        "top_prob",
+        "sample_draw",
+        "append_tok"
+       ],
+       "sample_cue": "sample_draw",
+       "prose_lines": [],
+       "normalizations": [],
+       "forbidden": []
+      }
+     }
+    }
+   ]
+  },
+  {
+   "model": "opencode-go/deepseek-v4.1-flash",
+   "results": [
+    {
+     "attempt": 1,
+     "seconds": 11.6,
+     "raw": "beat 3\nretain token_row, context_vec\ncamera frame=[token_row, context_vec, dist_chart] min_zoom=0.80\n@start\n@cue:project\nchart dist_chart type=bars data=[mat:0.62, sat:0.12, on:0.09, the:0.07, cat:0.05, other:0.05] dock=right-of:context_vec\nlink proj_arrow from=context_vec to=dist_chart style=flow\n@cue:top_prob\nfocus dist_chart item=mat\n@cue:sample_draw\nshow sampled_mat label=\"mat\" dock=right-of:dist_chart z=front\nfocus sampled_mat\n@cue:append_tok\nmove sampled_mat to=right-of:token_row duration=0.8\nfocus token_row",
+     "score": {
+      "criteria_1_no_prose": true,
+      "criteria_2_cue_order": true,
+      "criteria_3_link": true,
+      "criteria_4_sample_under_cue": true,
+      "criteria_5_normalizations": true,
+      "criteria_6_cues_present": true,
+      "criteria_7_no_forbidden": true,
+      "details": {
+       "cues": [
+        "project",
+        "top_prob",
+        "sample_draw",
+        "append_tok"
+       ],
+       "sample_cue": "sample_draw",
+       "prose_lines": [],
+       "normalizations": [],
+       "forbidden": []
+      }
+     }
+    },
+    {
+     "attempt": 2,
+     "seconds": 8.0,
+     "raw": "beat 3\nretain token_row, context_vec\ncamera frame=[token_row, context_vec, dist_chart, sampled_mat] min_zoom=0.80\n@cue:project\nchart dist_chart type=bars data=[mat:0.62, sat:0.14, on:0.10, the:0.08, cat:0.06] dock=right-of:context_vec\nlink proj_arrow from=context_vec to=dist_chart style=flow\n@cue:top_prob\nfocus dist_chart item=mat\n@cue:sample_draw\nshow sampled_mat dock=right-of:dist_chart z=front\n@cue:append_tok\nmove sampled_mat to=inside:token_row duration=0.6",
+     "score": {
+      "criteria_1_no_prose": true,
+      "criteria_2_cue_order": true,
+      "criteria_3_link": true,
+      "criteria_4_sample_under_cue": true,
+      "criteria_5_normalizations": true,
+      "criteria_6_cues_present": true,
+      "criteria_7_no_forbidden": true,
+      "details": {
+       "cues": [
+        "project",
+        "top_prob",
+        "sample_draw",
+        "append_tok"
+       ],
+       "sample_cue": "sample_draw",
+       "prose_lines": [],
+       "normalizations": [],
+       "forbidden": []
+      }
+     }
+    },
+    {
+     "attempt": 3,
+     "seconds": 19.0,
+     "raw": "beat 3\nretain token_row, context_vec\ncamera frame=[token_row, context_vec, dist_chart, sampled_mat] min_zoom=0.80\n@cue:project\nfocus context_vec\nchart dist_chart type=bars data=[the:0.08, cat:0.18, sat:0.09, on:0.03, mat:0.62] dock=right-of:context_vec\nlink proj_arrow from=context_vec to=dist_chart style=flow\n@cue:top_prob\nfocus dist_chart item=mat\n@cue:sample_draw\nshow sampled_mat label=\"mat\" dock=below:dist_chart z=front\nfocus sampled_mat\n@cue:append_tok\nmove sampled_mat to=right-of:tok_the2 duration=0.6",
+     "score": {
+      "criteria_1_no_prose": true,
+      "criteria_2_cue_order": true,
+      "criteria_3_link": true,
+      "criteria_4_sample_under_cue": true,
+      "criteria_5_normalizations": true,
+      "criteria_6_cues_present": true,
+      "criteria_7_no_forbidden": true,
+      "details": {
+       "cues": [
+        "project",
+        "top_prob",
+        "sample_draw",
+        "append_tok"
+       ],
+       "sample_cue": "sample_draw",
+       "prose_lines": [],
+       "normalizations": [],
+       "forbidden": []
+      }
+     }
+    },
+    {
+     "attempt": 4,
+     "seconds": 6.1,
+     "raw": "beat 3\nretain token_row, context_vec\ncamera frame=[token_row, context_vec, proj_arrow, dist_chart, sampled_mat] min_zoom=0.80\n@cue:project\nlink proj_arrow from=context_vec to=dist_chart style=flow\nchart dist_chart type=bars data=[mat:0.62, sat:0.14, the:0.09, on:0.07, other:0.08] dock=right-of:context_vec\n@cue:top_prob\nfocus dist_chart item=mat\n@cue:sample_draw\nshow sampled_mat label=\"mat\" dock=right-of:dist_chart z=front\nfocus sampled_mat\n@cue:append_tok\nmove sampled_mat to=right-of:tok_the2 duration=0.8",
+     "score": {
+      "criteria_1_no_prose": true,
+      "criteria_2_cue_order": true,
+      "criteria_3_link": true,
+      "criteria_4_sample_under_cue": true,
+      "criteria_5_normalizations": true,
+      "criteria_6_cues_present": true,
+      "criteria_7_no_forbidden": true,
+      "details": {
+       "cues": [
+        "project",
+        "top_prob",
+        "sample_draw",
+        "append_tok"
+       ],
+       "sample_cue": "sample_draw",
+       "prose_lines": [],
+       "normalizations": [],
+       "forbidden": []
+      }
+     }
+    },
+    {
+     "attempt": 5,
+     "seconds": 6.8,
+     "raw": "beat 3\nretain token_row, context_vec\ncamera frame=[token_row, context_vec, dist_chart, sampled_mat] min_zoom=0.80\n@cue:project\nchart dist_chart type=bars data=[mat:0.62, sat:0.18, on:0.09, the:0.07, cat:0.04] dock=right-of:context_vec\nlink proj_arrow from=context_vec to=dist_chart style=flow\n@cue:top_prob\nfocus dist_chart item=mat\n@cue:sample_draw\nshow sampled_mat dock=right-of:dist_chart z=front\n@cue:append_tok\nmove sampled_mat to=inside:token_row duration=0.8",
+     "score": {
+      "criteria_1_no_prose": true,
+      "criteria_2_cue_order": true,
+      "criteria_3_link": true,
+      "criteria_4_sample_under_cue": true,
+      "criteria_5_normalizations": true,
+      "criteria_6_cues_present": true,
+      "criteria_7_no_forbidden": true,
+      "details": {
+       "cues": [
+        "project",
+        "top_prob",
+        "sample_draw",
+        "append_tok"
+       ],
+       "sample_cue": "sample_draw",
+       "prose_lines": [],
+       "normalizations": [],
+       "forbidden": []
+      }
+     }
+    }
+   ]
+  }
+ ]
+}

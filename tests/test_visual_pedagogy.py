@@ -97,12 +97,16 @@ def model_with(*responses):
     return model
 
 
+def request_body(call):
+    return json.loads(call.args[0].split("\n\nReturn ONLY one JSON object")[0])
+
+
 def test_visual_lessons_go_through_storyboard_direction_and_review(storyboard, direction, approval):
     model = model_with(storyboard, direction, approval)
     context = {"selection": ["result"], "time": 12.5, "camera": {"x": 1}, "sourceContext": "mode selects output"}
     reply = generate_reply(model, "Explain ALU selection", context, [{"role": "user", "content": "Earlier question"}], "lesson")
     assert model.compose.call_count == 3
-    calls = [json.loads(call.args[0]) for call in model.compose.call_args_list]
+    calls = [request_body(call) for call in model.compose.call_args_list]
     assert all(call["context"] == context for call in calls)
     assert calls[1]["storyboard"]["beats"][1]["insight"] == storyboard["beats"][1]["insight"]
     assert calls[2]["scene"]["beats"][1]["teaching"]["evidence"] == ["wire", "add"]
@@ -141,8 +145,8 @@ def test_review_feedback_drives_one_concrete_revision(storyboard, direction, app
     model = model_with(storyboard, direction, rejection, direction, approval)
     result = teach_visual(model, "Why this output?", {"selection": ["result"]}, [], "branch")
     assert result["scene"]["teaching"]["review"]["approved"]
-    request = json.loads(model.compose.call_args_list[3].args[0])
-    assert "Trace the selected connection" in request["revision_feedback"]
+    request = request_body(model.compose.call_args_list[3])
+    assert "Trace the selected connection" in json.dumps(request["review_findings"])
     assert request["mode"] == "branch"
 
 
@@ -152,7 +156,7 @@ def test_rendered_review_rejects_and_feedback_drives_revision(storyboard, direct
                                {'approved':True,'findings':[], 'observations':[{'beat':b['id'],'visible':'An object changes','inference':'The relationship is visible'} for b in storyboard['beats']]}])
     result=teach_visual(model,'Teach selection',{},[],'lesson',rendered_review=reviewer)
     assert reviewer.call_count==2
-    assert 'Separate the labels' in json.loads(model.compose.call_args_list[3].args[0])['revision_feedback']
+    assert 'Separate the labels' in json.dumps(request_body(model.compose.call_args_list[3])['review_findings'])
     assert validate_plan(result['scene'])['teaching']['frameReview']['approved']
 
 
@@ -161,7 +165,7 @@ def test_two_failed_reviews_never_return_an_unapproved_lesson(storyboard, direct
                                                   "revision": "Give each beat a new inference"}], "evidence": [],
                  "visual_checks": [{"check": c, "passed": False, "observation": "Same claimed inference repeats"} for c in VISUAL_CHECKS]}
     model = model_with(storyboard, direction, rejection, direction, rejection)
-    with pytest.raises(PlanError, match="after one revision"):
+    with pytest.raises(PlanError, match="after two revisions"):
         teach_visual(model, "Teach selection", {}, [], "lesson")
     assert model.compose.call_count == 5
 
@@ -177,7 +181,7 @@ def test_question_that_needs_a_visual_cannot_bypass_teaching_review(storyboard, 
     model = model_with({"answer": "A visual comparison will help.", "scene": direction["scene"]}, storyboard, direction, approval)
     reply = generate_reply(model, "Can you show why?", {"time": 4}, [])
     assert reply["scene"]["teaching"]["method"] == "qweeps-visual-teaching"
-    assert json.loads(model.compose.call_args_list[1].args[0])["mode"] == "branch"
+    assert request_body(model.compose.call_args_list[1])["mode"] == "branch"
 
 
 def test_saved_plan_cannot_claim_review_for_a_different_storyboard(storyboard, direction, approval):

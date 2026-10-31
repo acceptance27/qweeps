@@ -18,11 +18,12 @@ def model():
         return OpenCodeFreeLLM(cfg)
 
 
-def process(events):
+def process(events, returncode=0):
     p = Mock()
     p.stdout = io.StringIO('\n'.join(json.dumps(e) for e in events))
     p.stderr = io.StringIO('')
     p.poll.return_value = None
+    p.returncode = returncode
     return p
 
 
@@ -73,8 +74,20 @@ def test_quota_limit_is_sanitized_cached_and_not_retried_or_fallen_back():
     p.terminate.assert_called_once()
 
 
+def test_clean_exit_without_step_finish_completes_like_opencode_v2():
+    events = [{'type':'step_start','part':{'type':'step-start'}},{'type':'text','part':{'text':'partial'}}]
+    with patch('assistant.opencode_llm.subprocess.Popen',return_value=process(events)):
+        assert model().compose('request') == 'partial'
+
+
+def test_nonzero_exit_cannot_publish_partial_text():
+    events=[{'type':'text','part':{'text':'partial'}}]
+    with patch('assistant.opencode_llm.subprocess.Popen',return_value=process(events,returncode=1)):
+        with pytest.raises(ModelProviderError,match='no complete response'):
+            model().compose('request')
+
+
 @pytest.mark.parametrize('events',[
-    [{'type':'text','part':{'text':'partial'}}],
     [{'type':'text','part':{'text':'partial'}},{'type':'step_finish','part':{'reason':'length'}}],
     [{'type':'tool_use','part':{'tool':'shell'}}],
     [{'type':'error','error':{'status':401,'message':'secret'}}],

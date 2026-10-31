@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 437.9,
+ "model": "opencode-go/deepseek-v4.1-flash",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "beat score_axis lost retained ids ['weight_w1', 'weight_w2']"
+}

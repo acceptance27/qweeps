@@ -1,0 +1,11 @@
+{
+ "label": "mimo-run1",
+ "question": "How do LLMs work?",
+ "sessionId": "21526126577b4ec299d8d167c1b17a22",
+ "http": 502,
+ "wallSeconds": 1049.86,
+ "started": 1793356733.6277916,
+ "result": {
+  "error": "OpenCode did not finish within 900 seconds."
+ }
+}

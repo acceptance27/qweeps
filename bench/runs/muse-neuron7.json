@@ -1,0 +1,7 @@
+{
+ "ok": false,
+ "seconds": 249.7,
+ "model": "opencode-go/muse-spark-1.3-contributor",
+ "judge": "opencode-go/deepseek-v4.1-flash",
+ "error": "element 'seg_pos' overflows its parent 'sum_bar'"
+}
