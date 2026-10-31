@@ -178,7 +178,8 @@ A primitive is simply a compound with a hull and zero slots. This keeps
 v1 compound templates:
 
 `sum-node`, `step-card`, `value-pill`, `icon-chip`, `axis`, `number-line`,
-`bars`, `callout`, `brace`, `comparison-card`, `trace-row`, `station`, `dock`.
+`bars`, `callout`, `brace`, `comparison-card`, `trace-row`, `station`.
+`dock` is a retained-context action, not a compound.
 
 ### 4.2.2 Hull + settle morph contract
 
@@ -362,7 +363,7 @@ Deliver:
 - canonical path builder for line/rect/circle/arc;
 - **compound templates** with hull + inner slots: sum-node, step-card,
   value-pill, icon-chip, axis, number-line, bars, callout, brace,
-  comparison-card, trace-row, station, dock;
+  comparison-card, trace-row, station; `dock` remains an action;
 - **hull + settle** morph: hull 0–80%, shared children 15–80%, new slots
   65–100%, settle hold ≥1.5 s;
 - **final-state contract and density gate**: grammar-specific poster shape, no
@@ -507,7 +508,7 @@ Do these in order; each one has a test before the next:
 2. **Compound expansion.**
    - `step-card`, `sum-node`, `value-pill`, `icon-chip`, `axis`,
      `number-line`, `bars`, `callout`, `brace`, `comparison-card`,
-     `trace-row`, `station`, `dock`;
+     `trace-row`, `station`;
    - hull + measured inner slots;
    - the model never supplies inner x/y.
 3. **Hull + settle morph.**
