@@ -463,6 +463,106 @@ Acceptance:
 If the model fills boxes with prose or leaves slots empty, add examples and
 repair hints, not more primitives.
 
+### P1 execution order
+
+Do these in order; each one has a test before the next:
+
+1. **Freeze the IR contract.**
+   - primitive and compound schemas;
+   - required/optional slots;
+   - `engine`, `teaching`, `layout` validation;
+   - object/op/text limits.
+2. **Compound expansion.**
+   - `step-card`, `sum-node`, `value-pill`, `icon-chip`, `axis`,
+     `number-line`, `bars`, `callout`, `brace`, `comparison-column`,
+     `trace-row`, `station`, `dock`;
+   - hull + measured inner slots;
+   - the model never supplies inner x/y.
+3. **Hull + settle morph.**
+   - 0–80% hull, 15–80% shared children, 65–100% new slots;
+   - replace/copy;
+   - transform baking;
+   - settle hold ≥1.5 s.
+4. **Final-state contract.**
+   - grammar-specific poster shape;
+   - no naked boxes;
+   - required slots non-empty;
+   - measured text-role budgets;
+   - conclusion callout;
+   - conditional docked context.
+5. **Reference posters.**
+   - one settled reference per grammar;
+   - store the object graph, slots, relations and final bbox/density;
+   - use them as few-shot examples, not as templates to copy blindly.
+6. **Pacing and density gates.**
+   - starts/10 s, max hold, settle hold;
+   - empty-slot and no-naked-box rejection;
+   - text fit and contrast;
+   - mid-morph and settled-poster sampling.
+7. **Model harness.**
+   - one task: route → two comparison cards;
+   - same compiler, same gate, no hand edits;
+   - repeated attempts until the stopping criteria are met.
+
+### Model-test protocol
+
+The model test is a loop, not a one-off demo.
+
+**Task**
+
+> Given the route → two-card comparison fixture, emit scene IR with a hull
+> morph, a copy split, a retained dock, and filled slots.
+
+**Models**
+
+- `opencode-go/muse-spark-1.3-contributor`
+- `opencode-go/deepseek-v4.1-flash`
+- Gemini when quota permits
+
+**Fixed conditions**
+
+- same IR schema and compiler version;
+- same viewport and font;
+- same reference examples;
+- no hand edits to model output;
+- strict reviewer is DeepSeek, not the contender.
+
+**Metrics**
+
+- valid IR on first response;
+- hull morph + copy split correct;
+- number of empty slots / naked boxes;
+- text-role overflows;
+- final poster density gate;
+- strict reviewer approval;
+- revisions required;
+- time to first valid scene.
+
+**Failure taxonomy**
+
+- schema violation;
+- wrong topology (chained inputs, missing hub);
+- empty compound / naked box;
+- prose stuffed into a slot;
+- label overflow;
+- morph not settled / no hold;
+- teaching/poster mismatch.
+
+**Loop**
+
+1. Run the task.
+2. Classify failures.
+3. Fix the **compiler/contract** first, then the prompt/examples.
+4. Re-run the same task.
+5. Stop when 3 consecutive runs pass all gates, or after 6 runs if the
+   failures are model-capability limits rather than contract gaps.
+
+**Rollout gate**
+
+Beats 4–8 are not implemented until the model-authored route → comparison
+scene passes the settled-poster gate. A nice animation without a dense final
+poster does not count.
+
 ### P6 — Rollout and cleanup
 
 - feature flag per grammar;
