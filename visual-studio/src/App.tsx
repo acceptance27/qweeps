@@ -1258,9 +1258,11 @@ function StudioApp() {
 const LiveLessonPlayer = React.lazy(() => import('./live/LiveLessonPlayer'));
 const LiveLessonLoader = React.lazy(() => import('./live/LiveLessonLoader'));
 const ChapterStream = React.lazy(() => import('./live/ChapterStream'));
+const MorphPilot = React.lazy(() => import('./live/MorphPilot'));
 export default function App() {
   const params = new URLSearchParams(location.search);
   if (params.get('scene') === 'rizal_live') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the live lesson…</div>}><LiveLessonPlayer /></React.Suspense>;
+  if (params.get('pilot') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the morph pilot…</div>}><MorphPilot/></React.Suspense>;
   if (params.get('stream') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the chapter stream…</div>}><ChapterStream topic={params.get('topic')||''} replay={params.get('streamLesson')||''} methods={params.get('methods')==='1'}/></React.Suspense>;
   if (params.get('examples') === '1') return <ExampleGallery />;
   if (params.get('mode') === 'studio') return <StudioApp />;

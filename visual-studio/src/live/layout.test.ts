@@ -17,10 +17,10 @@ test('diagram captions adapt to explanatory copy while retaining usable artwork 
  assert.ok(!body.overflow);
  assert.ok(fitted.title.y+fitted.title.size*.3<fitted.body.y-fitted.body.size*.7);
 });
-test('compact diagram groups retain their captions without an arbitrary large-art requirement',()=>{
+test('minimum descriptive diagram cards reserve the artwork band and keep their captions',()=>{
  const node={title:'Incoming photon',body:'Delivers energy with positive linear momentum directed rightward.'} as LiveNode;
- const fitted=diagramCopy(font,node,380,185);
- assert.ok(!fitted.overflow&&fitted.artHeight>=60);
+ const fitted=diagramCopy(font,node,380,260);
+ assert.ok(!fitted.overflow&&fitted.artHeight>=120);
  assert.ok(!fitCopy(font,node.body,fitted.body.width,fitted.body.height,fitted.body.size).overflow);
 });
 test('dense concept descriptions receive a wide layout rather than being clipped in narrow spokes',()=>{
@@ -115,12 +115,12 @@ test('resolveDiagramBoxes separates overlapping diagram node coordinates',()=>{
  }
 });
 
-test('diagramEdge clamps connector endpoints to node boundaries with clearance',()=>{
+test('diagramEdge anchors connector endpoints to the artwork square, not the box edge',()=>{
  const a={node:{id:'a',title:'Node A',body:'A',icon:'app',color:'blue',at:1,tag:''} as LiveNode,x:100,y:150,width:300,height:250};
  const b={node:{id:'b',title:'Node B',body:'B',icon:'app',color:'green',at:2,tag:''} as LiveNode,x:700,y:150,width:300,height:250};
  const edge=diagramEdge(a,b,[a,b],font);
- assert.ok(edge.from.x>=a.x+a.width,'connector exits outside source perimeter');
- assert.ok(edge.to.x<=b.x,'connector stops outside target perimeter');
+ assert.ok(edge.from.x<a.x+a.width,'connector starts inside the source art square');
+ assert.ok(edge.to.x>b.x,'connector ends inside the target art square');
  assert.equal(edge.d,`M${edge.from.x} ${edge.from.y}L${edge.to.x} ${edge.to.y}`);
  assert.ok(edge.pill.width>0&&edge.pill.height>0,'pill reserved for relationship label');
 });

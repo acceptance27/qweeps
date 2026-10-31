@@ -514,6 +514,9 @@ class BrowserLessonStore:
                 previous=target/f'speech-{legacy}.json'
                 if previous.exists():return json.loads(previous.read_text())
             for speech_file in sorted(target.glob('speech-*.json')):
+                # Per-beat anchor checkpoints are not published lessons.
+                if speech_file.name.startswith('speech-anchor-'):
+                    continue
                 return json.loads(speech_file.read_text())
         return base
     def start_synchronization(self,payload):
