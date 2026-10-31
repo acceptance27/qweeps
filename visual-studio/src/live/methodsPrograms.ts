@@ -8,13 +8,13 @@ const comparison:SceneProgram={
   {id:'route',kind:'line',from:[260,300],to:[1180,300],role:'blue',strokeWidth:2,opacity:0},
   {id:'ship',kind:'circle',cx:340,cy:300,r:9,stroke:'#8bd0df',opacity:0},
   {id:'sigmoid',kind:'comparison-card',role:'blue',slots:{
-   title:'Sigmoid',value:'0 to 1',caption:'smooth, bounded',icon:'scale',
+   title:'Sigmoid',value:'0 to 1',badge:'S',formula:'σ(z) = 1 / (1 + e^-z)',detail:'Smooth, bounded output used for probabilities.',icon:'scale',
    criteria:[{label:'range',value:'0 → 1'},{label:'shape',value:'S-curve'},{label:'common use',value:'probabilities'}]}},
   {id:'relu',kind:'comparison-card',role:'green',slots:{
-   title:'ReLU',value:'0 to ∞',caption:'zero below, linear above',icon:'zap',
+   title:'ReLU',value:'0 to ∞',badge:'R',formula:'max(0, z)',detail:'Zero below the threshold, linear above it.',icon:'zap',
    criteria:[{label:'range',value:'0 → ∞'},{label:'shape',value:'hinge'},{label:'common use',value:'hidden layers'}]}},
   {id:'linear',kind:'comparison-card',role:'gold',slots:{
-   title:'Linear',value:'−∞ to ∞',caption:'returns the raw score',icon:'arrow',
+   title:'Linear',value:'−∞ to ∞',badge:'L',formula:'y = z',detail:'Passes the raw score through unchanged.',icon:'arrow',
    criteria:[{label:'range',value:'unbounded'},{label:'shape',value:'straight line'},{label:'common use',value:'regression'}]}},
  ],
  actions:[
@@ -35,9 +35,9 @@ const procedure:SceneProgram={
  teaching:'procedure',
  duration:9,
  objects:[
-  {id:'scale',kind:'step-card',role:'blue',slots:{title:'Scale',value:'1.4',caption:'2 × 0.7',icon:'scale'}},
-  {id:'add',kind:'step-card',role:'gold',slots:{title:'Add bias',value:'1.2',caption:'1.4 − 0.5 + 0.3',icon:'zap'}},
-  {id:'squash',kind:'step-card',role:'green',slots:{title:'Squash',value:'0.77',caption:'σ(1.2)',icon:'eye'}},
+  {id:'scale',kind:'step-card',role:'blue',slots:{title:'Scale',value:'1.4',formula:'2 × 0.7 = 1.4',detail:'Multiply each input by its weight.',icon:'scale'}},
+  {id:'add',kind:'step-card',role:'gold',slots:{title:'Add bias',value:'1.2',formula:'1.4 − 0.5 + 0.3 = 1.2',detail:'Add the bias and the other weighted input.',icon:'zap'}},
+  {id:'squash',kind:'step-card',role:'green',slots:{title:'Squash',value:'0.77',formula:'σ(1.2) = 0.77',detail:'Squash the score into a bounded output.',icon:'eye'}},
  ],
  actions:[],
  conclusion:{text:'Scale, add the bias, squash: that is one forward pass.',x:720,y:470},
@@ -48,9 +48,9 @@ const algorithm:SceneProgram={
  teaching:'algorithm',
  duration:9,
  objects:[
-  {id:'read',kind:'trace-row',role:'purple',slots:{title:'Read inputs',value:'x, w, b'}},
-  {id:'compute',kind:'trace-row',role:'gold',slots:{title:'Compute z',value:'z = 1.2'}},
-  {id:'return',kind:'trace-row',role:'green',slots:{title:'Return y',value:'y = 0.77'}},
+  {id:'read',kind:'trace-row',role:'purple',slots:{title:'Read inputs',value:'x, w, b',badge:'1',detail:'Inputs, weights and bias enter the pass.'}},
+  {id:'compute',kind:'trace-row',role:'gold',slots:{title:'Compute z',value:'z = 1.2',badge:'2',detail:'Weighted sum plus bias gives z.'}},
+  {id:'return',kind:'trace-row',role:'green',slots:{title:'Return y',value:'y = 0.77',badge:'3',detail:'The activation turns z into y.'}},
  ],
  actions:[],
  conclusion:{text:'One forward pass: no weights change.',x:720,y:555},
@@ -76,9 +76,9 @@ const recall:SceneProgram={
  duration:9,
  objects:[
   {id:'route',kind:'line',from:[180,300],to:[1260,300],role:'blue',strokeWidth:2,opacity:0},
-  {id:'weight',kind:'station',role:'blue',slots:{title:'Weight',value:'1',caption:'w · x'}},
-  {id:'sum',kind:'station',role:'purple',slots:{title:'Sum',value:'2',caption:'add bias'}},
-  {id:'activate',kind:'station',role:'green',slots:{title:'Activate',value:'3',caption:'σ(z)'}},
+  {id:'weight',kind:'station',role:'blue',slots:{title:'Weight',value:'1',badge:'W',detail:'w · x'}},
+  {id:'sum',kind:'station',role:'purple',slots:{title:'Sum',value:'2',badge:'S',detail:'add bias'}},
+  {id:'activate',kind:'station',role:'green',slots:{title:'Activate',value:'3',badge:'A',detail:'σ(z)'}},
  ],
  actions:[],
  conclusion:{text:'Weight, sum, activate: the three moves of a neuron.',x:720,y:470},

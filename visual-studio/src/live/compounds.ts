@@ -15,6 +15,10 @@ export type Slots={
  title?:string;
  value?:string;
  caption?:string;
+ detail?:string;
+ formula?:string;
+ note?:string;
+ badge?:string;
  icon?:string;
  index?:string;
  showValue?:boolean;
@@ -124,7 +128,7 @@ function path(id:string,d:string,stroke:string,opacity=0,strokeWidth=1.5):HullOb
 /** Return the default or supplied geometry for a compound. */
 export function compoundBox(compound:Compound):Box{
  const defaults:Record<CompoundKind,[number,number]>=
-  {'comparison-card':[420,320],'step-card':[300,210],'sum-node':[250,160],'value-pill':[240,60],
+  {'comparison-card':[420,380],'step-card':[300,210],'sum-node':[250,160],'value-pill':[240,60],
    'icon-chip':[190,64],axis:[900,130],'number-line':[900,130],bars:[460,250],
    callout:[600,92],brace:[320,54],'trace-row':[760,62],station:[190,118]};
  const[width,height]=defaults[compound.kind];
@@ -146,33 +150,37 @@ export function layoutCompound(compound:Compound):CompoundLayout{
    hull=path(`${compound.id}`,pathD(roundedRectLoop(box.x,box.y,w,h,16)),paint,0,2);
    hull.fill=paint;hull.fillOpacity=.07;
    add({id:id('icon-ring'),kind:'circle',cx:box.x+30,cy:box.y+31,r:15,stroke:paint,fill:paint,fillOpacity:.12,opacity:0});
-   add(text(id('icon'),box.x+30,box.y+36,glyph(compound.slots.icon),15,paint,'middle'));
+   add(text(id('icon'),box.x+30,box.y+36,compound.slots.badge??compound.slots.title?.trim().charAt(0)??glyph(compound.slots.icon),(compound.slots.badge??'').length>1?11:15,paint,'middle'));
    add(text(id('title'),box.x+54,box.y+38,compound.slots.title??'',19,'#e6ecef'));
+   const formula=compound.slots.formula?.trim();
+   if(formula)add(text(id('formula'),box.x+pad,box.y+62,formula,15,paint));
    const criteria=compound.slots.criteria??[];
-   const top=box.y+64,row=38;
+   const top=box.y+(formula?84:64),row=34;
    criteria.forEach((criterion,index)=>{
-    const y=top+index*row+23;
+    const y=top+index*row+22;
     add(text(id(`criterion-label-${index}`),box.x+pad,y,criterion.label,14,'#9bb5ba'));
     add(text(id(`criterion-value-${index}`),box.x+w-pad,y,criterion.value,14,paint,'end'));
-    if(index<criteria.length-1)add(path(id(`criterion-rule-${index}`),pathD(lineLoop([box.x+pad,y+15],[box.x+w-pad,y+15])),paint,0,1));
+    if(index<criteria.length-1)add(path(id(`criterion-rule-${index}`),pathD(lineLoop([box.x+pad,y+14],[box.x+w-pad,y+14])),paint,0,1));
    });
    const pillY=top+criteria.length*row+8;
-   add(rect(id('value-pill'),box.x+pad,pillY,w-pad*2,38,19,paint,0,.14));
-   add(text(id('value'),box.x+w/2,pillY+25,compound.slots.value??'',17,paint,'middle'));
-   const captionY=pillY+66;
-   const lines=wrapText(compound.slots.caption??'',w-pad*2,13,2);
-   lines.forEach((line,index)=>add(text(id(`caption-${index}`),box.x+pad,captionY+index*18,line,13,'#9bb5ba')));
+   add(rect(id('value-pill'),box.x+pad,pillY,w-pad*2,36,18,paint,0,.14));
+   add(text(id('value'),box.x+w/2,pillY+24,compound.slots.value??'',17,paint,'middle'));
+   const detail=compound.slots.detail??compound.slots.caption??'';
+   const lines=wrapText(detail,w-pad*2,13,3);
+   lines.forEach((line,index)=>add(text(id(`detail-${index}`),box.x+pad,pillY+56+index*18,line,13,'#9bb5ba')));
    break;
   }
   case'step-card':{
    const pad=16;
    hull=path(`${compound.id}`,pathD(roundedRectLoop(box.x,box.y,w,h,14)),paint,0,2);
    hull.fill=paint;hull.fillOpacity=.07;
-   add({id:id('badge'),kind:'circle',cx:box.x+28,cy:box.y+28,r:16,stroke:paint,fill:paint,fillOpacity:.14,opacity:0,label:compound.slots.icon?glyph(compound.slots.icon):undefined,labelSize:14,labelFill:paint});
+   add({id:id('badge'),kind:'circle',cx:box.x+28,cy:box.y+28,r:16,stroke:paint,fill:paint,fillOpacity:.14,opacity:0,label:compound.slots.badge??(compound.slots.icon?glyph(compound.slots.icon):undefined),labelSize:14,labelFill:paint});
    add(text(id('title'),box.x+52,box.y+34,compound.slots.title??'',17,'#e6ecef'));
    if(compound.slots.index)add(text(id('index'),box.x+w-16,box.y+28,compound.slots.index,11,'#7899a5','end'));
-   const body=wrapText(compound.slots.caption??'',w-pad*2,13,3);
-   body.forEach((line,index)=>add(text(id(`body-${index}`),box.x+pad,box.y+70+index*19,line,13,'#9bb5ba')));
+   const formula=compound.slots.formula?.trim();
+   if(formula)add(text(id('formula'),box.x+pad,box.y+58,formula,14,paint));
+   const body=wrapText(compound.slots.detail??compound.slots.caption??'',w-pad*2,13,3);
+   body.forEach((line,index)=>add(text(id(`body-${index}`),box.x+pad,box.y+(formula?80:70)+index*19,line,13,'#9bb5ba')));
    const value=compound.slots.value??'';
    if(value){
     add(rect(id('value-pill'),box.x+pad,box.y+h-48,w-pad*2,32,16,paint,0,.12));
@@ -251,15 +259,17 @@ export function layoutCompound(compound:Compound):CompoundLayout{
   case'trace-row':{
    hull=path(`${compound.id}`,pathD(roundedRectLoop(box.x,box.y,w,h,10)),paint,0,1.5);
    hull.fill=paint;hull.fillOpacity=.05;
-   add({id:id('index'),kind:'circle',cx:box.x+24,cy:box.y+h/2,r:13,stroke:paint,fill:paint,fillOpacity:.12,opacity:0,label:compound.slots.icon?glyph(compound.slots.icon):'·',labelSize:compound.slots.icon?12:16,labelFill:paint});
-   add(text(id('title'),box.x+46,box.y+h/2+6,compound.slots.title??'',15,'#e6ecef'));
-   add(text(id('state'),box.x+w-18,box.y+h/2+6,compound.slots.value??'',15,paint,'end'));
+   add({id:id('index'),kind:'circle',cx:box.x+24,cy:box.y+h/2,r:13,stroke:paint,fill:paint,fillOpacity:.12,opacity:0,label:compound.slots.badge??(compound.slots.icon?glyph(compound.slots.icon):'·'),labelSize:12,labelFill:paint});
+   add(text(id('title'),box.x+46,box.y+26,compound.slots.title??'',15,'#e6ecef'));
+   if(compound.slots.detail)add(text(id('detail'),box.x+46,box.y+45,compound.slots.detail,11,'#9bb5ba'));
+   add(text(id('state'),box.x+w-18,box.y+30,compound.slots.value??'',15,paint,'end'));
    break;
   }
   case'station':{
    const cx=box.x+w/2;
    hull=path(`${compound.id}`,pathD(circleLoop(cx,box.y+20,11)),paint,0,2);
    hull.fill=paint;hull.fillOpacity=.16;
+   if(compound.slots.badge)add(text(id('badge'),cx,box.y+24,compound.slots.badge,10,paint,'middle'));
    if(compound.slots.showValue!==false)add(text(id('value'),cx,box.y+54,compound.slots.value??'',14,paint,'middle'));
    const top=compound.slots.showValue===false?box.y+52:box.y+78;
    add(text(id('title'),cx,top,compound.slots.title??'',15,'#e6ecef','middle'));

@@ -401,7 +401,9 @@ The P1 layer is now in the tree and gated:
 - reference comparison at `?reference=1`, captured model output at `?model=1`;
 - `bench/model_scene_test.py` — repeated route → comparison test, no hand
   edits, same compiler and gate;
-- `bench/settled_poster_check.py` — browser gate on the settled poster.
+- `bench/settled_poster_check.py` — browser gate on the settled poster;
+- descriptive slots `formula`, `detail`, `badge`, `note` let a beat carry the
+  old equations and explanations without abandoning the dense poster.
 
 Evidence:
 
@@ -410,7 +412,7 @@ Evidence:
   context, and settled into a readable poster;
 - all eight reference posters compile and pass the settled-poster browser gate
   with **0 errors and 0 warnings**;
-- 64 TypeScript tests and 422 Python tests pass;
+- 64 TypeScript tests and 427 Python tests pass;
 - a bare rect, an empty compound, a criteria mismatch, a missing dock, a
   short settle hold and prose-stuffed slots are rejected before rendering.
 
@@ -523,7 +525,11 @@ Acceptance:
   HyperFrames contrast/layout gate;
 - beats 4–8 were sampled at mid-morph and settled state in `?methodsDemo=1`:
   **10/10 frames, 0 errors, 0 warnings**;
-- the demo's scene→card boundary was checked at `9.1` and the card at `16.8`.
+- the five latest model-authored beats were gated from the streaming page:
+  **5/5 frames, 0 errors, 0 warnings**;
+- the demo's scene→card boundary was checked at `9.1` and the card at `16.8`;
+- `?factory=1` streams model-authored beats; the latest run produced all five
+  method beats in **56.8 s total** (4.9–20.7 s each) with no repaint.
 
 Still open: one command that merges compiler, browser and reviewer findings
 into a revision request, a capped revision loop, action-boundary sampling for
@@ -552,6 +558,31 @@ Acceptance:
 
 If the model fills boxes with prose or leaves slots empty, add examples and
 repair hints, not more primitives.
+
+### P5 status — streaming factory implemented
+
+The factory is now a live path, not a one-off test:
+
+- `?factory=1` starts a job and streams `beat_start`, `repair`, `compiled` and
+  `done` events over SSE;
+- the model returns **slot JSON only** — cards, steps, rows, stations and a
+  conclusion; Python assembles the SceneProgram; the compiler owns hulls,
+  badges, inner layout and timing;
+- rich slots (`formula`, `detail`, `badge`, `note`) are in the compiler and in
+  the prompt, so the model writes equations and explanations, not summaries;
+- the factory enforces a descriptive-slot check before compilation and allows
+  one repair with the exact findings;
+- word-safe clipping on captions/details prevents a full model round-trip for
+  a one-character overflow;
+- latest streaming run: **5/5 first-pass**, **56.8 s total**, **4.9–20.7 s per
+  beat**; the clean CLI run was **103.8 s total**, **9.6–29.5 s per beat**;
+- all five model-authored beats passed the live browser gate with **0 errors
+  and 0 warnings**.
+
+Still open for production: feed real lesson briefs and source evidence, keep
+audio in the same stream, run the browser gate inside the factory before
+publishing, and connect the factory to the live lesson store instead of the
+demo gallery.
 
 ### P1 execution order
 
@@ -715,6 +746,9 @@ poster does not count.
 - `visual-studio/src/live/SceneChapterStage.tsx` — scene chapter in the live player.
 - `visual-studio/src/live/MethodsPrograms.tsx` — beat gallery at `?beats=1`.
 - `bench/live_scene_check.py` — browser gate for a live scene frame.
+- `src/assistant/visual/beat_factory.py` — model slot factory and SSE stream.
+- `visual-studio/src/live/BeatFactory.tsx` — streaming beat page at `?factory=1`.
+- `bench/beat_factory_stream.py` — CLI stream reproducer.
 - `visual-studio/scripts/ir_lesson.ts` — IR lesson builder.
 - `bench/hyperframes_check.py` — static browser gate.
 - `src/assistant/visual/browser_gate.py` — server gate.

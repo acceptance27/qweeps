@@ -22,6 +22,7 @@ from ..llm import build_visual_llm, OfflineLLM, AntigravityLLM, ModelProviderErr
 from ..http import HTTPError
 from .plan import PlanError, _text, generate_reply, manim_source, validate_plan
 from .browser_gate import check_svg
+from .beat_factory import BeatFactory
 
 PORT = 4174
 _BUNDLED_STUDIO = Path(__file__).resolve().parents[3] / "visual-studio"
@@ -64,6 +65,7 @@ class VisualService:
         from .browser_lessons import BrowserLessonStore
         self.live = BrowserLessonStore(self.llm,STUDIO_DIR,folder=(render_dir.parent/'browser-lessons') if render_dir else None,
                                       narration=self.narration if self.cfg.tts.provider=='openrouter' else None)
+        self.beats = BeatFactory(self.llm, STUDIO_DIR)
 
     def health(self) -> dict:
         return {"service": "qweeps-visual", "version": 1,
@@ -305,6 +307,19 @@ class Handler(SimpleHTTPRequestHandler):
                         self.wfile.flush()
                 except (BrokenPipeError,ConnectionResetError):
                     pass
+            elif re.fullmatch(r'/api/visual/beats/stream/[0-9a-f]{32}',parsed.path):
+                job_id=parsed.path.rsplit('/',1)[-1]
+                self.send_response(200)
+                self.send_header('Content-Type','text/event-stream')
+                self.send_header('Cache-Control','no-cache')
+                self.send_header('Connection','keep-alive')
+                self.end_headers()
+                try:
+                    for event in self.service.beats.events(job_id):
+                        self.wfile.write(('data: '+json.dumps(event)+'\n\n').encode())
+                        self.wfile.flush()
+                except (BrokenPipeError,ConnectionResetError):
+                    pass
             elif re.fullmatch(r'/api/visual/live/jobs/[0-9a-f]{32}',parsed.path):
                 self.send_json(200,self.service.live.status(parsed.path.rsplit('/',1)[-1]))
             elif re.fullmatch(r'/api/visual/live/lessons/[0-9a-f]{32}',parsed.path):
@@ -397,6 +412,8 @@ class Handler(SimpleHTTPRequestHandler):
                 result = {"sessionId": sid}
             elif route == '/api/visual/documents':
                 result=self.service.live.documents.ingest(payload)
+            elif route == '/api/visual/beats/start':
+                result=self.service.beats.start(payload)
             elif route == '/api/visual/live/jobs':
                 result=self.service.live.start(payload)
             elif route == '/api/visual/live/stream':

@@ -103,7 +103,7 @@ function checkCompoundSlots(compound:Compound):ProgramFinding[]{
  const findings:ProgramFinding[]=[];
  const slots=compound.slots??{};
  const required:Record<CompoundKind,string[]>=
-  {'comparison-card':['title','value','caption'],'step-card':['title','value'],'sum-node':['title','value'],
+  {'comparison-card':['title','value'],'step-card':['title','value'],'sum-node':['title','value'],
    'value-pill':['value'],'icon-chip':['title','icon'],axis:['ticks'],'number-line':['ticks'],bars:['bars'],
    callout:['value'],brace:['value'],'trace-row':['title','value'],station:['title','value']};
  for(const key of required[compound.kind]){
@@ -111,9 +111,10 @@ function checkCompoundSlots(compound:Compound):ProgramFinding[]{
   if(value==null||(typeof value==='string'&&!value.trim())||(Array.isArray(value)&&value.length===0))findings.push({code:'empty_slot',severity:'error',message:`${compound.kind} "${compound.id}" requires a non-empty ${key}.`,id:compound.id});
  }
  if(compound.kind==='comparison-card'){
+  if(!slots.caption?.trim()&&!slots.detail?.trim())findings.push({code:'empty_slot',severity:'error',message:`Comparison card "${compound.id}" needs a caption or detail.`,id:compound.id});
   const criteria=slots.criteria??[];
   if(criteria.length<2||criteria.length>3)findings.push({code:'criteria_rows',severity:'error',message:`Comparison card "${compound.id}" needs 2–3 shared criteria rows.`,id:compound.id});
-  const box=compoundBox(compound),contentBottom=64+criteria.length*38+8+66+18;
+  const box=compoundBox(compound),contentBottom=(slots.formula?84:64)+criteria.length*34+8+36+56+18;
   if(contentBottom<box.height*.65)findings.push({code:'card_occupancy',severity:'error',message:`Comparison card "${compound.id}" leaves too much empty hull.`,id:compound.id});
  }
  if(compound.kind==='trace-row'&&slots.caption)findings.push({code:'slot_budget',severity:'warning',message:'Trace rows use title + state, not a paragraph.',id:compound.id});
@@ -123,26 +124,31 @@ function checkCompoundSlots(compound:Compound):ProgramFinding[]{
  return findings;
 }
 
-const TEXT_LIMITS:Record<CompoundKind,{title?:number;value?:number;caption?:number}> = {
- 'comparison-card':{title:28,value:18,caption:65},'step-card':{title:24,value:18,caption:90},
+const TEXT_LIMITS:Record<CompoundKind,{title?:number;value?:number;caption?:number;formula?:number;detail?:number;badge?:number;note?:number}> = {
+ 'comparison-card':{title:28,value:18,caption:65,formula:44,detail:160,badge:2},'step-card':{title:24,value:18,caption:90,formula:44,detail:160,badge:2},
  'sum-node':{title:20,value:18,caption:45},'value-pill':{value:20},'icon-chip':{title:18,caption:24},
  axis:{},'number-line':{},bars:{},callout:{title:18,value:140},brace:{value:28},
- 'trace-row':{title:28,value:22},station:{title:18,value:12,caption:32},
+ 'trace-row':{title:28,value:22,detail:70,note:80},station:{title:18,value:12,caption:32,detail:60,badge:2},
 };
 
 function checkTextBudgets(compound:Compound):ProgramFinding[]{
  const findings:ProgramFinding[]=[];
  const box=compoundBox(compound),slots=compound.slots??{},limits=TEXT_LIMITS[compound.kind];
- for(const key of ['title','value','caption'] as const){
+ for(const key of ['title','value','caption','formula','detail','badge','note'] as const){
   const value=slots[key];const limit=limits[key];
   if(typeof value==='string'&&limit&&value.length>limit)findings.push({code:'slot_budget',severity:'error',message:`${compound.kind} "${compound.id}" ${key} exceeds ${limit} characters.`,id:compound.id});
  }
  if(compound.kind==='comparison-card'){
   if(slots.title&&textWidth(slots.title,19)>box.width-84)findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" title does not fit its measured width.`,id:compound.id});
   if(slots.value&&textWidth(slots.value,17)>box.width-36)findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" value does not fit its pill.`,id:compound.id});
-  if(slots.caption){
+  if(slots.caption&&!slots.detail){
    const lines=wrapText(slots.caption,box.width-36,13,2);
    if(lines.some(line=>line.endsWith('…')))findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" caption needs more than two lines.`,id:compound.id});
+  }
+  if(slots.formula&&textWidth(slots.formula,15)>box.width-84)findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" formula does not fit.`,id:compound.id});
+  if(slots.detail){
+   const lines=wrapText(slots.detail,box.width-36,13,3);
+   if(lines.some(line=>line.endsWith('…')))findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" detail needs more than three lines.`,id:compound.id});
   }
   for(const criterion of slots.criteria??[]){
    if(!criterion.label?.trim()||!criterion.value?.trim())findings.push({code:'empty_slot',severity:'error',message:`Card "${compound.id}" has an empty criteria row.`,id:compound.id});
@@ -150,9 +156,12 @@ function checkTextBudgets(compound:Compound):ProgramFinding[]{
    if(textWidth(criterion.label,14)+textWidth(criterion.value,14)+28>box.width-36)findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" criteria row does not fit.`,id:compound.id});
   }
  }
- if(compound.kind==='step-card'&&slots.caption){
-  const lines=wrapText(slots.caption,box.width-32,13,3);
-  if(lines.some(line=>line.endsWith('…')))findings.push({code:'text_overflow',severity:'error',message:`Step card "${compound.id}" body needs more than three lines.`,id:compound.id});
+ if(compound.kind==='step-card'){
+  if(slots.formula&&textWidth(slots.formula,14)>box.width-32)findings.push({code:'text_overflow',severity:'error',message:`Step card "${compound.id}" formula does not fit.`,id:compound.id});
+  if(slots.detail??slots.caption){
+   const lines=wrapText(slots.detail??slots.caption??'',box.width-32,13,3);
+   if(lines.some(line=>line.endsWith('…')))findings.push({code:'text_overflow',severity:'error',message:`Step card "${compound.id}" body needs more than three lines.`,id:compound.id});
+  }
  }
  if(compound.kind==='station'&&slots.caption&&textWidth(slots.caption,12)>box.width-12)findings.push({code:'text_overflow',severity:'error',message:`Station "${compound.id}" caption does not fit.`,id:compound.id});
  if(compound.kind==='callout'&&slots.value){
@@ -281,8 +290,8 @@ function comparisonPlacement(compounds:Compound[],comparison:boolean){
  if(!comparison||!cards.length)return compounds.map(compound=>({compound,box:compoundBox(compound)}));
  const width=cards.length<=2?420:cards.length===3?380:320;
  const gap=cards.length<=2?120:60;
- const height=320,startX=(1440-(cards.length*width+(cards.length-1)*gap))/2;
- return[...cards.map((compound,index)=>({compound,box:{x:startX+index*(width+gap),y:150,width,height}})),...rest.map(compound=>({compound,box:compoundBox(compound)}))];
+ const height=380,startX=(1440-(cards.length*width+(cards.length-1)*gap))/2;
+ return[...cards.map((compound,index)=>({compound,box:{x:startX+index*(width+gap),y:120,width,height}})),...rest.map(compound=>({compound,box:compoundBox(compound)}))];
 }
 function stepGap(count:number){return count>=4?24:36;}
 
