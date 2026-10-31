@@ -593,7 +593,8 @@ def test_targeted_beat_patching_only_re_reviews_flagged_beats(tmp_path,library):
  store.review(j['id'],{'revision':0,'frames':frames(j['candidate'])})
  j=await_state(store,j['id'],{'awaiting_review'})
  assert j['revision']==1
- assert j.get('revisedBeats')=={'audit'}
+ assert j.get('revisedBeats')==['audit']
+ assert json.dumps(j)  # the job API must serialize this field
  assert len(model.image_calls)==1 and len(model.image_calls[0])==4
  store.review(j['id'],{'revision':1,'frames':frames(j['candidate'])})
  j=await_state(store,j['id'],{'ready'})

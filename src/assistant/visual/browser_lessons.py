@@ -492,7 +492,11 @@ class BrowserLessonStore:
     def status(self,job_id):
         with self.lock:
             if job_id not in self.jobs:raise PlanError('The lesson preparation session expired. Try again.')
-            j=self.jobs[job_id];result={k:copy.deepcopy(j[k]) for k in ('id','status','stage','revision','lessonId','error','candidate','speechSync','revisedBeats') if k in j}
+            j=self.jobs[job_id];result={k:copy.deepcopy(j[k]) for k in ('id','status','stage','revision','lessonId','error','candidate','speechSync') if k in j}
+            if 'revisedBeats' in j:
+                value=j['revisedBeats']
+                # Internal revision tracking uses a set; the job API is JSON.
+                result['revisedBeats']=sorted(value) if isinstance(value,(set,frozenset)) else value
             if j['status']=='failed':result['canResume']=bool(j.get('speechSync') or (self.folder/j['lessonId']/'working.json').is_file())
             return result
     def start(self,payload,context=None):
