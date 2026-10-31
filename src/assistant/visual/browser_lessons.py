@@ -14,6 +14,7 @@ from ..llm import ModelProviderError
 from .documents import DocumentLibrary,ID
 from .plan import PlanError,_text as _required_text
 from .pedagogy import _model_json
+from .teaching import TEACHING_LAYOUTS,validate_teaching
 
 LAYOUTS={'comparison','process','matrix','concept','timeline','loci','diagram','fanin'}
 COLORS={'blue','gold','green','coral','purple'}
@@ -125,6 +126,11 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
         if cid in ids:raise PlanError('Chapter IDs must be unique')
         ids.add(cid);layout=c.get('layout')
         if layout not in LAYOUTS:raise PlanError('Choose an available presentation layout')
+        teaching=c.get('teaching')
+        if teaching is not None:
+            validate_teaching(teaching,layout,f"beat '{cid}'")
+        elif require_presentation:
+            raise PlanError("Choose a teaching method before a layout: beats need teaching one of " + ', '.join(sorted(TEACHING_LAYOUTS)))
         presentation=validate_presentation(c['presentation'],layout) if 'presentation' in c else None
         if require_presentation and presentation is None:raise PlanError('Choose a teaching method for every beat')
         title=_text(c.get('title'),'beat title',100);question=_text(c.get('question'),'learner question',220)
@@ -181,6 +187,19 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
             if link.get('from') not in node_ids or link.get('to') not in node_ids:raise PlanError('Connections must reference objects in this beat')
             links.append({'from':link['from'],'to':link['to'],'label':_text(link.get('label'),'relationship label',60),
                           'at':max(next(n['at'] for n in nodes if n['id']==link['from']),next(n['at'] for n in nodes if n['id']==link['to']))+2.7})
+        if layout=='process':
+            incoming={};outgoing={}
+            for link in links:
+                incoming[link['to']]=incoming.get(link['to'],0)+1
+                outgoing[link['from']]=outgoing.get(link['from'],0)+1
+            if max(incoming.values() or [0])>1 or max(outgoing.values() or [0])>1:
+                raise PlanError('The process layout is a chain: it cannot branch or collect several inputs. Use fanin for convergent inputs or diagram for a mechanism')
+        if layout=='fanin':
+            incoming={}
+            for link in links:
+                incoming[link['to']]=incoming.get(link['to'],0)+1
+            if max(incoming.values() or [0])<2:
+                raise PlanError('The fanin layout needs a hub that collects at least two inputs; use process for a true sequence')
         experiment=None
         if c.get('experiment'):
             e=c['experiment'];choices=[]
@@ -201,6 +220,7 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
           'narration':narration,'narrationAt':1.4,'audio':'','start':round(clock,2),'end':round(clock+duration,2),'finishedAt':round(clock+duration-2,2),
           'cues':[{'at':0,'text':question},{'at':max(n['at'] for n in nodes)+3.5,'text':visual['takeaway']}],
           'roles':{n['id']:n['title']+': '+n['body'] for n in nodes},'visual':visual})
+        if teaching:out['chapters'][-1]['teaching']=teaching
         continuity=c.get('continuity')
         if require_continuity and not isinstance(continuity,dict):raise PlanError('Explain how each beat follows from the preceding result')
         if continuity is not None:
@@ -237,6 +257,14 @@ free-form teaching approach: geometric construction, mechanism demonstration, wo
 counterfactual comparison, annotated infographic, quantitative visualization, spatial mnemonic,
 or another justified approach. Explain why this method helps THIS inference and specify the
 observable change that constitutes its evidence. Layout is implementation, not the method.
+Choose teaching FIRST, then a layout that can execute it. teaching is one of:
+construction -> diagram; mechanism -> fanin or diagram; quantitative -> diagram or matrix;
+comparison -> comparison or matrix; procedure -> process or timeline; algorithm -> timeline
+or process; narrative -> timeline; recall -> loci or concept.
+process is only a true chain: never chain independent inputs that converge on one result.
+Use fanin for two or three inputs feeding one hub. quantitative needs a diagram that actually
+draws a number line, curve, bar or ring, or a matrix of values. A change in layout alone is not
+a new teaching method, and a method change must change the visual grammar, not just the title.
 Do not force variety: consecutive beats may continue a construction when that serves reasoning.
 textMode='labels' uses a shared diagram stage with short labels and a concise conclusion;
 geometry and meaningful motion carry the explanation. Use diagram layout for this mode.
@@ -272,7 +300,7 @@ worked example and support inspection/interactive choices. Unsupported 3D or num
 must be stated as a capability gap, not disguised as a generic flowchart.
 Return {"title":"...","question":"...","representation":"chosen methods and why; cue mappings if used",
 "example":{"title":"one concrete case","description":"what the learner tracks","icon":"catalog key"},
-"beats":[{"id":"semantic-id","title":"...","question":"...","layout":"...","insight":"...",
+"beats":[{"id":"semantic-id","title":"...","question":"...","teaching":"construction|mechanism|quantitative|comparison|procedure|algorithm|narrative|recall","layout":"...","insight":"...",
 "presentation":{"method":"specific teaching approach","why":"why this question needs it","visualEvidence":"the actual observable construction/change and inference","textMode":"labels|descriptive"},
 "continuity":{"from":null,"bridge":"opening purpose, or prior result and why this question follows"},
 "sourcePages":[1],"visibleOperation":"before/change/after and what inference it enables",
@@ -290,9 +318,13 @@ Keep descriptions useful for someone unfamiliar with the topic. Titles <=40 char
 possible, bodies roughly 12–30 words. Include a concrete example and define terms on-screen.
 Use compact prose: representation <=900 characters; shared example title <=55,
 description <=220; insight <=250; safeguard <=220. Narration is 45–90 words.
-Carry EACH beat's presentation decision into its own scene, refining it only with a concrete
-reason. Root representation is shared context, not a lesson-wide style preset. A change in
-layout alone does not constitute a new teaching method. There is no variety quota.
+Carry EACH beat's presentation decision and teaching field into its own scene, refining them
+only with a concrete reason. The layout must still be one the teaching method can execute:
+construction->diagram, mechanism->fanin|diagram, quantitative->diagram|matrix,
+comparison->comparison|matrix, procedure->process|timeline, algorithm->timeline|process,
+narrative->timeline, recall->loci|concept. Root representation is shared context, not a
+lesson-wide style preset. A change in layout alone does not constitute a new teaching method.
+There is no variety quota.
 For labels mode, build a coherent spatial construction: use actual geometry and meaningful
 motion on a shared stage, with brief object labels and takeaway <=120 characters. Node body
 text is retained for inspection/questions but is not drawn as a paragraph. Do not build a
@@ -356,7 +388,7 @@ Return {"title":"...","question":"...","representation":"method rationale",
 "chapters":[{"id":"...","title":"...","question":"...","insight":"distinct inference",
 "presentation":{"method":"this beat's teaching approach","why":"why it fits this question","visualEvidence":"what the viewer can infer from the actual scene change","textMode":"labels|descriptive"},
 "continuity":{"from":null,"bridge":"opening purpose, or prior result and why this question follows"},
-"sourcePages":[1] if source supplied else [],"layout":"comparison|process|matrix|concept|timeline|loci|diagram","columns":[],
+"sourcePages":[1] if source supplied else [],"teaching":"construction|mechanism|quantitative|comparison|procedure|algorithm|narrative|recall","layout":"comparison|process|matrix|concept|timeline|loci|diagram","columns":[],
 "nodes":[{"id":"...","title":"...","body":"descriptive explanation","icon":"catalog key (e.g. bomb, flame, tools, warning, package, shield)",
 "color":"blue|gold|green|coral|purple","at":1,"tag":"short date/condition if relevant","cells":["column cell value"]}],
 "connections":[{"from":"node-id","to":"node-id","label":"short link label (1-4 words)"}],
@@ -385,6 +417,7 @@ class BrowserLessonStore:
         raw={k:copy.deepcopy(candidate[k]) for k in ('title','question','representation','example')}
         raw['chapters']=[{**{k:copy.deepcopy(c[k]) for k in ('id','title','question','insight','sourcePages','safeguard','narration')},
                           **({'continuity':copy.deepcopy(c['continuity'])} if 'continuity' in c else {}),
+                          **({'teaching':c['teaching']} if 'teaching' in c else {}),
                           **copy.deepcopy(c['visual']),'duration':c['end']-c['start']} for c in candidate['chapters']]
         return raw
     def _save_working(self,j,candidate):
@@ -517,6 +550,7 @@ class BrowserLessonStore:
                 for i,b in enumerate(beats):
                     if b.get('layout') not in LAYOUTS or not b.get('visibleOperation'):raise PlanError('Plan a supported visible operation for each beat')
                     if require_presentation or 'presentation' in b:validate_presentation(b.get('presentation'),b.get('layout'))
+                    if require_presentation or 'teaching' in b:validate_teaching(b.get('teaching'),b.get('layout'),f"storyboard beat '{b.get('id')}'")
                     link=b.get('continuity')
                     if not isinstance(link,dict) or link.get('from')!=(beats[i-1]['id'] if i else None):raise PlanError('Plan why each beat follows from the preceding result')
                     _text(link.get('bridge'),'planned reasoning bridge',240)

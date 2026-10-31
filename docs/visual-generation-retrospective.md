@@ -275,6 +275,11 @@ the recognizer transcribed "0 7", so only 74% of the chapter matched. Spoken
 numbers are now canonicalised before alignment. The retry produced one 119.7 s
 recording and retimed all eight chapters; playback was verified.
 
+The live planner and director now require `teaching` before `layout`, using the
+shared `teaching.py` map. The live validator also rejects branching `process`
+graphs and `fanin` without a real hub, so the showcase's grammar rules apply to
+model-generated lessons instead of only the curated fixture.
+
 ## 8. Ideas attempted and rejected
 
 - **Raise the element cap.** Tried 20 → 28 → 36 → 40. It let beats compile; it

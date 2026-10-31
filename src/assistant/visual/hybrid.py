@@ -24,18 +24,9 @@ STAGE = (0.0, 0.0, 1440.0, 800.0)
 SLOT_LIMITS = (3, 6)
 CHAPTER_LIMITS = (2, 8)
 
-# The teaching operation is chosen before the layout. The layout must be able to
-# execute that operation; this is where the benchmark's topology errors died.
-TEACHING_LAYOUTS = {
-    "construction": {"diagram"},
-    "mechanism": {"fanin", "diagram"},
-    "quantitative": {"diagram", "matrix"},
-    "comparison": {"comparison", "matrix"},
-    "procedure": {"process", "timeline"},
-    "algorithm": {"timeline", "process"},
-    "narrative": {"timeline"},
-    "recall": {"loci", "concept"},
-}
+# The teaching operation is chosen before the layout. The pairing is shared
+# with the live planner in teaching.py.
+from .teaching import TEACHING_LAYOUTS
 QUANT_TEMPLATES = {"number-line", "sigmoid-plot", "vote-bar", "sum-node", "output-ring"}
 CHAIN_LAYOUTS = {"process"}
 

@@ -121,7 +121,20 @@ playback verified. The sync initially failed because the aligner compared
 spelled narration ("zero point seven") with digit transcripts ("0 7"); spoken
 numbers are now canonicalised in `alignment.py`.
 
-Full suite: **414 tests passing**.
+### Live pipeline integration
+
+The live planner and director prompts now require `teaching` before `layout`,
+using the same map as the hybrid compiler (`src/assistant/visual/teaching.py`,
+shared by `hybrid.py` and `browser_lessons.py`). The live validator rejects:
+
+- a teaching/layout mismatch (e.g. `comparison` with `diagram`);
+- `process` graphs that branch or collect several inputs;
+- `fanin` without a hub receiving at least two inputs.
+
+The field is preserved through working drafts, revisions, and the published
+lesson, so the renderer selects the grammar for model-generated lessons too.
+
+Full suite: **416 tests passing**.
 
 ## 1. Goal
 

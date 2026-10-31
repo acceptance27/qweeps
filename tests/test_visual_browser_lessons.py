@@ -18,7 +18,7 @@ def sample():
   'insight':'Expression and secrecy protect different assets.' if page==1 else 'An audit connects a component to its actual conditions.',
   'continuity':{'from':None if page==1 else 'protection','bridge':'Identify the assets in one project.' if page==1 else 'Knowing the asset type leaves its permitted use to check.'},
   'presentation':{'method':'Aligned comparison' if page==1 else 'Worked dependency trace','why':'Identify the assets before examining their permission conditions.','visualEvidence':'Compare the named material, then connect the inventory to its notice.','textMode':'descriptive'},
-  'sourcePages':[page],'layout':layout,'nodes':[{'id':'code' if page==1 else 'inventory','title':'Source code' if page==1 else 'Inventory','body':'Identify the concrete material before deciding which conditions apply.','icon':'code' if page==1 else 'package','color':'blue','at':1,'tag':''},
+  'teaching':'comparison' if page==1 else 'procedure','sourcePages':[page],'layout':layout,'nodes':[{'id':'code' if page==1 else 'inventory','title':'Source code' if page==1 else 'Inventory','body':'Identify the concrete material before deciding which conditions apply.','icon':'code' if page==1 else 'package','color':'blue','at':1,'tag':''},
    {'id':'secret' if page==1 else 'notice','title':'Confidential information' if page==1 else 'Retain the notice','body':'Follow the actual requirement in the supplied source, preserving its qualifications.','icon':'lock' if page==1 else 'document','color':'gold','at':5,'tag':''}],
   'connections':[] if page==1 else [{'from':'inventory','to':'notice','label':'inspect terms'}],'takeaway':'Use the actual terms and the stated facts.','safeguard':'Illustrative example, not an invented legal verdict.','duration':25,'narration':'Follow one project and compare the source material with the requirement. The visible relationship explains this step.'}
  draft={'title':'A source-grounded lesson','question':'Teach this module','representation':'Comparison followed by a worked audit process.','example':{'title':'A small software project','description':'Track one component and the conditions that apply.','icon':'app'},'chapters':[chapter('protection','comparison',1),chapter('audit','process',2)]}
@@ -143,6 +143,7 @@ def test_new_lesson_is_not_published_until_real_frame_review_is_approved(tmp_pat
  with pytest.raises(PlanError,match='reviewed live lesson'):store.lesson(j['lessonId'])
  result=store.review(j['id'],{'revision':0,'frames':frames(j['candidate'])});j=await_state(store,j['id'],{'ready','failed'});assert j['status']=='ready'
  lesson=store.lesson(j['lessonId']);assert lesson['documentId']==d['id'] and lesson['review']['approved']
+ assert {c.get('teaching') for c in lesson['chapters']}=={'comparison','procedure'}
  assert len(model.image_calls)==1 and len(model.image_calls[0])==4
  assert store.start({'question':'Teach me Module 12'})['id']==job['id']
  assert model.calls[0]['source']['pages']==d['pages']
@@ -282,7 +283,7 @@ def test_general_topic_requires_factual_review_without_claiming_source_retrieval
 
 
 def test_diagram_semantics_survive_director_roundtrip_and_reject_unknown_motion_cue(library):
- lib,d=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib);_,raw=sample();c=raw['chapters'][0];c['layout']='diagram'
+ lib,d=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib);_,raw=sample();c=raw['chapters'][0];c['layout']='diagram';c['teaching']='construction'
  for i,n in enumerate(c['nodes']):
   n.update(position={'x':100+i*600,'y':120,'width':350,'height':350},artwork=[{'type':'circle','cx':50,'cy':50,'r':20}],motion=[{'cue':'secret','dx':80}])
  candidate=validate_lesson(raw,d,store.icons)
@@ -366,7 +367,7 @@ def test_visual_revision_preserves_corrected_unflagged_beats_and_skips_their_mod
 
 
 def test_text_correction_sends_only_flagged_copy_and_preserves_original_artwork_indices(tmp_path,library):
- lib,d=library;model=Mock(spec=['compose']);store=BrowserLessonStore(model,STUDIO,tmp_path/'lessons',lib);_,raw=sample();raw['chapters'][1]['layout']='diagram'
+ lib,d=library;model=Mock(spec=['compose']);store=BrowserLessonStore(model,STUDIO,tmp_path/'lessons',lib);_,raw=sample();raw['chapters'][1]['layout']='diagram';raw['chapters'][1]['teaching']='mechanism'
  for i,n in enumerate(raw['chapters'][1]['nodes']):
   n.update(position={'x':100+i*600,'y':120,'width':350,'height':350},artwork=[{'type':'line','x1':10,'y1':50,'x2':90,'y2':50},{'type':'text','text':'E = pc'}])
  candidate=validate_lesson(raw,d,store.icons);j={'lessonId':'compact','document':d};(store.folder/'compact').mkdir()
@@ -390,7 +391,7 @@ def test_changing_models_cannot_reuse_the_previous_models_lesson_cache(tmp_path,
 
 def diagram_draft():
  _,raw=sample()
- c=raw['chapters'][0];c['layout']='diagram'
+ c=raw['chapters'][0];c['layout']='diagram';c['teaching']='construction'
  c['presentation']={'method':'Geometric construction','why':'Track the changing relationship directly.','visualEvidence':'Two arrows approach and their resultant changes.','textMode':'labels'}
  for i,n in enumerate(c['nodes']):
   n.update(position={'x':100+i*600,'y':110,'width':400,'height':390},artwork=[{'type':'path','d':'M10 50 L90 50 L80 40 M90 50 L80 60'}],motion=[])
@@ -414,7 +415,7 @@ def test_new_plans_require_beat_choices_but_saved_legacy_lessons_still_load(libr
  raw['chapters'][0].pop('presentation')
  assert 'presentation' not in validate_lesson(raw,d,store.icons)['chapters'][0]['visual']
  with pytest.raises(PlanError,match='teaching method for every beat'):validate_lesson(raw,d,store.icons,require_presentation=True)
- raw=diagram_draft();raw['chapters'][0]['layout']='comparison'
+ raw=diagram_draft();raw['chapters'][0]['layout']='comparison';raw['chapters'][0]['teaching']='comparison'
  with pytest.raises(PlanError,match='diagram layout'):validate_lesson(raw,d,store.icons)
 
 
@@ -616,3 +617,30 @@ def test_diagram_layout_clearance_auto_resolves_overlapping_node_positions(libra
  assert 45<=p0['x'] and p0['x']+p0['width']<=1395
  assert 45<=p1['x'] and p1['x']+p1['width']<=1395
 
+
+
+def test_live_plans_choose_teaching_before_layout(library):
+ lib,d=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib);_,raw=sample()
+ raw['chapters'][0]['teaching']='comparison'
+ assert validate_lesson(raw,d,store.icons)['chapters'][0]['teaching']=='comparison'
+ assert store._raw(validate_lesson(raw,d,store.icons))['chapters'][0]['teaching']=='comparison'
+ raw['chapters'][0]['layout']='diagram'
+ with pytest.raises(PlanError,match="teaching 'comparison' needs layout"):
+  validate_lesson(raw,d,store.icons)
+
+
+def test_live_process_is_a_chain_and_fanin_needs_a_hub(library):
+ lib,d=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib);_,raw=sample()
+ raw['chapters'][1]['nodes'].append({'id':'third','title':'Third component','body':'A second input that also feeds the same condition.','icon':'package','color':'green','at':3,'tag':''})
+ raw['chapters'][1]['connections']=[
+  {'from':'inventory','to':'notice','label':'inspect terms'},
+  {'from':'third','to':'notice','label':'also feed'}]
+ with pytest.raises(PlanError,match='process layout is a chain'):
+  validate_lesson(raw,d,store.icons)
+ raw['chapters'][1]['layout']='fanin';raw['chapters'][1]['teaching']='mechanism'
+ for i,n in enumerate(raw['chapters'][1]['nodes']):
+  n['position']={'x':60+i*420,'y':150,'width':320,'height':260}
+ assert validate_lesson(raw,d,store.icons)['chapters'][1]['visual']['layout']=='fanin'
+ raw['chapters'][1]['connections']=[{'from':'inventory','to':'notice','label':'inspect terms'}]
+ with pytest.raises(PlanError,match='fanin layout needs a hub'):
+  validate_lesson(raw,d,store.icons)
