@@ -140,7 +140,22 @@ each at least 300x260, body text at most 100 characters, and a reserved
 than that band. This is the deterministic fix for Muse's four-card diagram whose
 body prose collided with the artwork labels.
 
-Full suite: **417 tests passing**.
+### Browser gate: HyperFrames check
+
+`bench/hyperframes_check.py` renders each chapter at `finishedAt` through the
+deterministic `?t=` parameter, serializes the SVG into a static HyperFrames
+composition, and runs `hyperframes check --json`. It reports WCAG AA contrast,
+clipped/overflowing text, occlusion, runtime and craft findings with selectors
+and boxes.
+
+The eight-chapter showcase passes all eight frames with **0 errors and 0
+warnings** (only the expected `audio_none` info for a silent frame). A control
+composition caught a 1.74:1 SVG text contrast failure and a clipped HTML card,
+so the gate is exercising real failures, not passing vacuously. Static frames
+skip motion; a full-timeline check would require exposing the live GSAP
+timeline.
+
+Full suite: **419 tests passing**.
 
 ## 1. Goal
 

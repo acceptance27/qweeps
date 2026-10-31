@@ -4,6 +4,7 @@ import base64
 import copy
 import hashlib
 import json
+import queue
 from pathlib import Path
 import re
 import threading
@@ -409,6 +410,17 @@ Return {"title":"...","question":"...","representation":"method rationale",
 "narration":"calm explanation of the reasoning, roughly 45–90 words",
 "experiment":{"prompt":"optional concrete what-if or retrieval question","choices":[{"label":"...","target":"node-id","explanation":"why this choice maps here"}]}}]}'''
 
+STREAM_CHAPTER = DIRECT + '''
+
+STREAMING MODE: The caller selected exactly ONE storyboard beat. Direct only that beat.
+Return the same lesson object, but "chapters" must contain exactly one chapter whose id
+equals targetBeat.id. Keep title/question/representation/example identical to the
+storyboard. Use previousChapter only for continuity; do not re-direct it. The chapter's
+continuity.from must be the previous beat id (or null for the opening) and its narration
+must begin with the continuity bridge. Do not add chapters and do not summarize the rest
+of the lesson.
+'''
+
 class BrowserLessonStore:
     def __init__(self,llm,studio,folder=None,documents=None,narration=None):
         self.narration=narration
@@ -417,7 +429,7 @@ class BrowserLessonStore:
         self.folder=Path(folder or default_folder);self.folder.mkdir(parents=True,exist_ok=True)
         self.bundled_folder=Path(__file__).resolve().parents[3]/'bundled-lessons/browser-lessons'
         self.documents=documents or DocumentLibrary();self.icons=json.loads((self.studio/'public/live/catalog.json').read_text())['icons']
-        self.jobs={};self.lock=threading.RLock()
+        self.jobs={};self.streams={};self.lock=threading.RLock()
     def _request(self,j,call):
         try:return call()
         except ModelProviderError as exc:
@@ -554,6 +566,132 @@ class BrowserLessonStore:
             if (self.folder/key/'lesson.json').is_file() and not payload.get('regenerate'):
                 job.update(status='ready',stage='Reviewed live lesson ready');return self.status(job_id)
         threading.Thread(target=self._generate,args=(job_id,),daemon=True).start();return self.status(job_id)
+    def start_stream(self,payload):
+        question=_text(payload.get('question') or payload.get('topic'),'lesson request',4000)
+        document=self.documents.resolve(question,payload.get('documentId'))
+        context=copy.deepcopy(payload.get('context') or {})
+        signature=json.dumps({'stream':True,'engine':7,'question':question,
+            'document':document['id'] if document else None,'context':context,
+            'model':{'provider':getattr(self.llm,'provider',type(self.llm).__name__),
+                     'generation':getattr(self.llm,'visual_model',None) or getattr(self.llm,'model',None),
+                     'vision':getattr(self.llm,'vision_model',None)},
+            'guidance':hashlib.sha256((PLAN+DIRECT+browser_guidance('planner')).encode()).hexdigest()},sort_keys=True)
+        key=hashlib.sha256(signature.encode()).hexdigest()[:32];job_id=uuid.uuid4().hex
+        request={'question':question,
+                 'source':{'title':document['title'],'pages':document['pages']} if document else None,
+                 'pausedContext':context,'assets':self.icons,'branch':False}
+        j={'id':job_id,'lessonId':key,'status':'preparing','stage':'Planning the teaching method',
+           'revision':0,'question':question,'document':document,'context':context,
+           'request':request,'stream':True}
+        with self.lock:
+            self.jobs[job_id]=j;self.streams[job_id]=queue.Queue()
+        folder=self.folder/key;folder.mkdir(parents=True,exist_ok=True)
+        (folder/'request.json').write_text(json.dumps({'question':question,'documentId':document['id'] if document else None,
+            'context':context,'stream':True},ensure_ascii=False))
+        threading.Thread(target=self._stream_generate,args=(job_id,),daemon=True).start()
+        return {'id':job_id,'status':'preparing','stage':j['stage']}
+    def stream_lesson(self,lesson_id):
+        path=self.folder/lesson_id/'stream-lesson.json'
+        if not path.is_file():raise PlanError('No completed chapter stream exists for that lesson.')
+        return json.loads(path.read_text())
+    def stream_events(self,job_id):
+        q=self.streams.get(job_id)
+        if q is None:raise PlanError('The streaming session expired. Start a new stream.')
+        while True:
+            try:event=q.get(timeout=15)
+            except queue.Empty:
+                yield {'type':'ping'};continue
+            if event is None:break
+            yield event
+    def _check_story(self,raw,document):
+        if not isinstance(raw,dict) or not raw.get('representation'):raise PlanError('Explain the presentation choice')
+        beats=_list(raw.get('beats'),'storyboard beats',1,12)
+        for i,b in enumerate(beats):
+            if b.get('layout') not in LAYOUTS or not b.get('visibleOperation'):
+                raise PlanError('Plan a supported visible operation for each beat')
+            validate_presentation(b.get('presentation'),b.get('layout'))
+            validate_teaching(b.get('teaching'),b.get('layout'),f"storyboard beat '{b.get('id')}'")
+            link=b.get('continuity')
+            if not isinstance(link,dict) or link.get('from')!=(beats[i-1]['id'] if i else None):
+                raise PlanError('Plan why each beat follows from the preceding result')
+            _text(link.get('bridge'),'planned reasoning bridge',240)
+            if not document and b.get('sourcePages'):
+                raise PlanError('Use sourcePages: [] for a topic without a supplied PDF')
+        return raw
+    def _stream_generate(self,job_id):
+        j=self.jobs[job_id];q=self.streams[job_id];started=time.monotonic()
+        def emit(kind,**data):
+            q.put({'type':kind,**data})
+        try:
+            emit('stage',stage='Planning the teaching method')
+            story=self._request(j,lambda:_model_json(self.llm,PLAN+'\n\n'+browser_guidance('planner'),
+                j['request'],lambda raw:self._check_story(raw,j['document']),tokens=5000))
+            j['storyboard']=story
+            emit('plan',title=story['title'],question=story['question'],
+                 representation=story['representation'],example=story['example'],
+                 beats=[{'id':b['id'],'title':b['title'],'teaching':b.get('teaching'),
+                         'layout':b.get('layout')} for b in story['beats']])
+            chapters=[];clock=0.;header=None
+            for index,beat in enumerate(story['beats']):
+                emit('stage',stage=f"Directing chapter {index+1} of {len(story['beats'])}: {beat['title']}",index=index)
+                previous=chapters[-1] if chapters else None
+                payload={**j['request'],'storyboard':story,
+                    'lessonProgression':[{'id':b['id'],'question':b['question'],'insight':b['insight'],
+                        'continuity':b.get('continuity'),'presentation':b.get('presentation'),
+                        'teaching':b.get('teaching')} for b in story['beats']],
+                    'targetBeat':beat,
+                    'previousChapter':({k:previous.get(k) for k in ('id','title','insight','visual')} if previous else None),
+                    'nodeContract':{'required':['id','title','body','icon','color','at','tag'],
+                        'colors':sorted(COLORS),'titleMaxCharacters':65,'bodyMaxCharacters':250,
+                        'bodyTargetCharacters':160,
+                        'diagramRequired':['position','artwork','motion'],
+                        'position':{'requiredNumericFields':['x','y','width','height'],'xRange':[45,1300],'yRange':[110,430],
+                            'widthRange':[100,1000],'heightRange':[120,390],'rightAtMost':1395,'bottomAtMost':505,
+                            'clearance':'Maintain at least 15px clearance between diagram objects without overlap.'},
+                        'artwork':'Array of SVG primitive objects, not markup or a description. Empty array uses a catalog icon.',
+                        'motion':'Array of cue-driven motion objects; use [] when no motion is needed.'},
+                    'instruction':'Direct ONLY the target beat. Return exactly one chapter.'}
+                def chapter_check(raw,beat=beat,index=index):
+                    if not isinstance(raw,dict) or not isinstance(raw.get('chapters'),list) or len(raw['chapters'])!=1:
+                        raise PlanError('Streaming mode directs exactly one chapter at a time')
+                    raw=copy.deepcopy(raw)
+                    for key in ('title','question','representation','example'):
+                        raw[key]=copy.deepcopy(story[key])
+                    candidate=validate_lesson(raw,j['document'],self.icons,require_presentation=True)
+                    chapter=candidate['chapters'][0]
+                    if chapter['id']!=beat['id']:
+                        raise PlanError(f"Direct the target beat '{beat['id']}', not '{chapter['id']}'")
+                    prior=story['beats'][index-1]['id'] if index else None
+                    link=chapter.get('continuity')
+                    if not isinstance(link,dict) or link.get('from')!=prior:
+                        raise PlanError('Carry the planned reasoning chain into the directed chapter')
+                    from .alignment import phrase_range
+                    if phrase_range(chapter['narration'],link['bridge'])[0]!=0:
+                        raise PlanError('Speak the reasoning bridge before the incoming explanation')
+                    return candidate
+                candidate=self._request(j,lambda:_model_json(self.llm,STREAM_CHAPTER,payload,chapter_check,tokens=6000))
+                chapter=candidate['chapters'][0]
+                if header is None:
+                    header={k:candidate[k] for k in ('title','question','representation','example','sources')}
+                offset=clock
+                for key in ('start','end','finishedAt','visualStart','visualEnd'):
+                    if isinstance(chapter.get(key),(int,float)):chapter[key]=round(chapter[key]+offset,2)
+                chapter['start']=round(offset,2);clock=round(chapter['end'],2)
+                chapters.append(chapter)
+                emit('chapter',index=index,chapter=chapter,duration=clock,
+                     elapsed=round(time.monotonic()-started,1))
+            lesson={'id':j['lessonId'],'kind':'live_generated',**header,'duration':round(clock,2),
+                    'chapters':chapters,'streamed':True}
+            (self.folder/j['lessonId']/'stream-lesson.json').write_text(json.dumps(lesson,ensure_ascii=False))
+            j['candidate']=lesson
+            j.update(status='ready',stage='Stream complete')
+            emit('done',duration=round(clock,2),lessonId=j['lessonId'],chapters=len(chapters),
+                 elapsed=round(time.monotonic()-started,1))
+        except Exception as exc:
+            emit('error',message=str(exc))
+            j.update(status='failed',error=str(exc),stage='Stream stopped')
+        finally:
+            q.put(None)
     def _generate(self,job_id):
         j=self.jobs[job_id]
         try:

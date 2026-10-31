@@ -17,11 +17,11 @@ type Response={answer:string;liveBranch?:{jobId:string;lessonId:string};sources?
 type Message={role:'user'|'assistant';text:string;sources?:Source[]};
 type Parent={snapshot:LiveSnapshot;label:string;audioPosition:number;lesson:LiveLesson};
 type PendingBranch=Parent&{jobId:string};
-export default function LiveLessonPlayer({initialLesson}:{initialLesson?:LiveLesson}={}){
+export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialLesson?:LiveLesson;initialTime?:number}={}){
  const[manifest,setManifest]=useState<LiveLesson>(initialLesson||rizalManifest),[pendingBranch,setPendingBranch]=useState<PendingBranch|null>(null);
  const manifestRef=useRef(manifest);manifestRef.current=manifest;const generic=manifest.kind==='live_generated',last=manifest.chapters.length-1;
  const params=new URLSearchParams(location.search);
- const[state,setState]=useState(initialLiveSnapshot),[playing,setPlaying]=useState(false),[ready,setReady]=useState(false);
+ const[state,setState]=useState(()=>({...initialLiveSnapshot(),time:clamp(initialTime,0,manifest.duration)})),[playing,setPlaying]=useState(false),[ready,setReady]=useState(false);
  const[voice,setVoice]=useState(params.get('muted')!=='1'),[audioState,setAudioState]=useState<VoiceState>({loading:false,playing:false,ready:false}),[panel,setPanel]=useState(false);
  const[session,setSession]=useState<string|null>(null),[status,setStatus]=useState('Connecting to QWEEPS…'),[error,setError]=useState('');
  const[question,setQuestion]=useState(''),[messages,setMessages]=useState<Message[]>([]),[busy,setBusy]=useState(false),[parents,setParents]=useState<Parent[]>([]),[closed,setClosed]=useState(false);

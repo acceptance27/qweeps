@@ -35,3 +35,19 @@ frame capture exist.
 - `mode` and `clock` are recorded on every row.
 - The judge model is recorded (`judge_model`) and is currently also a contender,
   so cross-model quality claims are directional.
+
+## Browser gate
+
+`bench/hyperframes_check.py` renders each chapter at its finished state and
+runs the HyperFrames browser gate (`hyperframes check --json`) on the serialized
+SVG composition. It reports WCAG AA contrast, clipped/overflowing text,
+occlusion, runtime and craft findings with selectors and boxes.
+
+```bash
+# visual server must be running with the lesson published
+.venv/bin/python bench/hyperframes_check.py   --lesson 61792edc99e6f40f6f9d37bdcdc8fb8e   --out /tmp/opencode/hf-methods.json
+```
+
+Use `--times 12.5,40` for specific absolute seconds, or `--chapter 0` for one
+chapter. Static frames intentionally skip motion; a full-timeline check would
+need the live GSAP timeline exposed.

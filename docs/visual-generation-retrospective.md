@@ -286,6 +286,12 @@ are now capped at three objects, each at least 300x260 with a 100-character
 body and a reserved 120 px artwork band. Cards that cannot fit both are rejected
 before rendering.
 
+The browser gate is now available as `bench/hyperframes_check.py`: it snapshots
+each chapter at `finishedAt` and runs `hyperframes check` for WCAG contrast,
+clipping, overflow, occlusion, runtime and craft findings. The methods showcase
+passes 8/8 frames with no errors or warnings; a control composition correctly
+failed at 1.74:1 contrast and for a clipped card.
+
 ## 8. Ideas attempted and rejected
 
 - **Raise the element cap.** Tried 20 → 28 → 36 → 40. It let beats compile; it
