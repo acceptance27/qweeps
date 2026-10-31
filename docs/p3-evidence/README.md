@@ -4,6 +4,8 @@ Captured from the real live player, not the standalone poster route.
 
 - `live-scene-mid.json` — `?sceneDemo=1&muted=1&t=2.2`, mid-construction.
 - `live-scene-settled.json` — `?sceneDemo=1&muted=1&t=8.4`, settled scene.
+- `live-scene-9.1.json` — `?sceneDemo=1&muted=1&t=9.1`, scene hold after the
+  scene's own timeline ends and before the card chapter starts at 9.6.
 - `live-card.json` — `?sceneDemo=1&muted=1&t=16.8`, card chapter after the
   scene on the same lesson clock.
 

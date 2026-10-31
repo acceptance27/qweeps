@@ -21,7 +21,7 @@ export const SCENE_DEMO_LESSON:LiveLesson={
  kind:'live_generated',
  title:'The same route, a different rule',
  question:'How does the same route produce a different risk?',
- duration:18,
+ duration:18.6,
  documentTitle:'P3 live scene integration',
  example:{title:'WWI at sea',description:'A construction scene, then a card comparison in the same player clock.',icon:'ship'},
  chapters:[
@@ -31,12 +31,18 @@ export const SCENE_DEMO_LESSON:LiveLesson={
    roles:{inputs:'inputs',sum:'weighted sum',output:'output',rel1:'first relation',rel2:'second relation'},
    sources:[],safeguard:'',
    narration:'The warning rule protects crews. The same route carries it. When the rule changes, the route surfaces a new risk.',
-   narrationAt:.2,audio:'',start:0,end:9,finishedAt:8.5,transitionOut:.4,visualStart:0,visualEnd:9,
+   narrationAt:.2,audio:'',start:0,end:9.6,finishedAt:9,transitionOut:.4,visualStart:0,visualEnd:9.6,
    continuity:{from:null,bridge:'Start with the mechanism, then compare the two cases.'},
    cues:[
     {at:0,text:'Start with the mechanism.'},
     {at:2,text:'The warning rule protects crews on the same route.'},
     {at:6.4,text:'That is the mechanism: rule, route, risk.'},
+   ],
+   narrationCues:[
+    {target:'inputs',text:'Start with the mechanism.',start:0,end:2},
+    {target:'inputs',text:'The warning rule protects crews on the same route.',start:2,end:6.4},
+    {target:'risk',text:'That is the mechanism: rule, route, risk.',start:6.4,end:9.6},
+    {target:'takeaway',text:'That is the mechanism: rule, route, risk.',start:6.4,end:9.6},
    ],
    visual:{
     layout:'concept',
@@ -52,12 +58,18 @@ export const SCENE_DEMO_LESSON:LiveLesson={
    roles:{'route':'the same route','rule':'the rule','risk':'the risk'},
    sources:[],safeguard:'',
    narration:'The route stays neutral. The rule changes, and the risk rises.',
-   narrationAt:.2,audio:'',start:9,end:18,finishedAt:17.5,transitionOut:.4,visualStart:9,visualEnd:18,
+   narrationAt:.2,audio:'',start:9.6,end:18.6,finishedAt:18.1,transitionOut:.4,visualStart:9.6,visualEnd:18.6,
    continuity:{from:'scene-build',bridge:'The mechanism now becomes a comparison.'},
    cues:[
     {at:0,text:'The route stays neutral.'},
     {at:3,text:'The rule changes: warning is dropped.'},
     {at:6.4,text:'That is the comparison: the route held, the rule changed.'},
+   ],
+   narrationCues:[
+    {target:'route',text:'The route stays neutral.',start:0,end:3},
+    {target:'rule',text:'The rule changes: warning is dropped.',start:3,end:6.4},
+    {target:'risk',text:'That is the comparison: the route held, the rule changed.',start:6.4,end:9},
+    {target:'takeaway',text:'That is the comparison: the route held, the rule changed.',start:6.4,end:9},
    ],
    visual:{
     layout:'process',

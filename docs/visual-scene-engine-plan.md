@@ -464,6 +464,10 @@ Acceptance:
   card beat, in the real `LiveLessonPlayer`;
 - clock sync measured: head `6.000 → 8.167 → 10.684`, scene timeline
   `6.000 → 8.166 →` chapter switch; the card beat then takes over;
+- the scene chapter holds its settled poster through `9.1`; the card chapter
+  starts at `9.6`, so the boundary is not a blank frame;
+- scene chapters are excluded from `GeneratedStage`, so they cannot ghost
+  through the next card chapter's cross-fade;
 - clicking the scene's `inputs` node sets the player selection to `inputs`;
 - `bench/live_scene_check.py` passed the live scene at mid-morph (`t=2.2`) and
   settled (`t=8.4`), and the card chapter at `t=16.8`, all with **0 errors and

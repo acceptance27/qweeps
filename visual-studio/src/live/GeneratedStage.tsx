@@ -37,6 +37,7 @@ function edgeLabelPoint(p:{from:{x:number;y:number};to:{x:number;y:number}},offs
  return{x:x+nx*offset,y:y+ny*offset};
 }
 function Chapter({lesson,c,index,font,time,snapshot,role}:{lesson:LiveLesson;c:LiveChapter;index:number;font:Font|null;time:number;snapshot:LiveSnapshot;role:(id:string)=>React.SVGProps<SVGGElement>}){
+ if(c.scene)return null;
  const v=c.visual!,textMode=v.presentation?.textMode||'descriptive',grammar=chapterGrammar(c),boxes=useMemo(()=>grammar==='cards'?nodeBoxes(v):grammarBoxes(v,grammar),[v,grammar]),copies=useMemo(()=>boxes.map(b=>nodeCopy(font,b.node,b.width,b.height,v.layout)),[boxes,font,v.layout]),active=time>=(c.visualStart??c.start)&&time<(c.visualEnd??c.end)||time>=lesson.duration&&index===lesson.chapters.length-1;
  const choice=c.visual?.experiment?.choices[snapshot.experiments?.[c.id]??-1];
  const narrating=speechTarget(c,time),narratingObjects=speechTargets(c,time);
@@ -87,6 +88,7 @@ export default function GeneratedStage({lesson,snapshot:s,focusRequest,update,pa
   if(!root.current||!font)return;const element=root.current;
   const ctx=gsap.context(()=>{const t=gsap.timeline({paused:true});t.set('.generated-beat',{opacity:0});
    lesson.chapters.forEach((c,i)=>{
+    if(c.scene)return;
     const pacing=generatedPacing(c);
     const selector=`.generated-beat-${i}`;
     const visualStart=c.visualStart??c.start;
@@ -131,7 +133,7 @@ export default function GeneratedStage({lesson,snapshot:s,focusRequest,update,pa
    <rect width="1440" height="600" fill="#071117"/>
    <g transform={`translate(${s.camera.x} ${s.camera.y}) translate(${cx} ${cy}) scale(${s.camera.zoom}) translate(${-cx} ${-cy})`}>
     <g className="generated-example">{labelsMode?<TextBlock font={font} text={lesson.example?.title||lesson.title} x={45} y={48} width={1350} height={32} size={23} className="example-context"/>:<><path d="M45 93H1395" stroke="#426574" strokeWidth="1"/><LiveAsset name={lesson.example?.icon||'app'} x={48} y={20} size={53}/><text x="120" y="27" fill="#7eabb9" fontSize="16" fontFamily="Arial,sans-serif">ILLUSTRATIVE WORKED EXAMPLE</text><WorkedTitle font={font} text={lesson.example?.title||lesson.title} time={s.time}/><TextBlock font={font} text={lesson.example?.description||''} x={680} y={28} width={700} height={55} size={21} className="example-description"/></>}</g>
-    {lesson.chapters.map((c,i)=><Chapter key={c.id} lesson={lesson} c={c} index={i} font={font} time={s.time} snapshot={s} role={role}/>)}
+    {lesson.chapters.map((c,i)=>c.scene?null:<Chapter key={c.id} lesson={lesson} c={c} index={i} font={font} time={s.time} snapshot={s} role={role}/>)}
    </g>
    {region&&<rect x={region.x1} y={region.y1} width={region.x2-region.x1} height={region.y2-region.y1} stroke="#edca82" fill="#edca82" fillOpacity=".08"/>}
   </svg>

@@ -96,7 +96,7 @@ test('the live demo mixes one scene chapter and one card chapter on one clock',(
  const result=compileSceneProgram(sceneChapter.scene);
  assert.equal(result.ok,true);
  assert.ok(result.scene);
- assert.equal(result.scene.duration,sceneChapter.end-sceneChapter.start);
+ assert.ok(result.scene.duration<=sceneChapter.end-sceneChapter.start);
  assert.ok((cardChapter.visual.nodes?.length??0)>=3);
  assert.equal(visualBeatIndex(SCENE_DEMO_LESSON.chapters,8.4),0);
  assert.equal(visualBeatIndex(SCENE_DEMO_LESSON.chapters,10),1);
