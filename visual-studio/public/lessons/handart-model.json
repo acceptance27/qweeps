@@ -1,0 +1,272 @@
+{
+ "id": "handart_model",
+ "kind": "live_generated",
+ "title": "Massless matter · model handcrafted art",
+ "question": "If photons have zero rest mass, what physical ingredients do they carry to form matter?",
+ "duration": 20,
+ "documentTitle": null,
+ "example": {
+  "title": "Head-on collision of two 511 keV gamma photons",
+  "description": "Two 511 keV gamma rays collide head-on in vacuum, canceling net momentum and converting their combined 1.022 MeV radiant energy into an electron-positron pair at rest.",
+  "icon": "zap"
+ },
+ "chapters": [
+  {
+   "id": "handart",
+   "title": "Light Carries Energy and Momentum",
+   "teaching": "construction",
+   "years": "diagram",
+   "question": "If photons have zero rest mass, what physical ingredients do they carry to form matter?",
+   "roles": {
+    "photon": "Propagating Photon",
+    "invariant": "Relativistic Invariant",
+    "mass": "Confined Rest Mass"
+   },
+   "sources": [],
+   "safeguard": "",
+   "narration": "Massless light carries energy and momentum that become mass when trapped at rest.",
+   "narrationAt": 0,
+   "audio": "",
+   "start": 0,
+   "end": 20,
+   "finishedAt": 18.5,
+   "transitionOut": 0.4,
+   "visualStart": 0,
+   "visualEnd": 20,
+   "continuity": {
+    "from": null,
+    "bridge": "The model authored the primitives directly."
+   },
+   "cues": [],
+   "visual": {
+    "layout": "diagram",
+    "presentation": {
+     "method": "Handcrafted diagram",
+     "why": "The model authored the primitives directly under the 3brown1blue design contract.",
+     "visualEvidence": "Geometry before algebra, annotations on objects, semantic color, concrete values.",
+     "textMode": "descriptive"
+    },
+    "nodes": [
+     {
+      "id": "photon",
+      "title": "Propagating Photon",
+      "body": "Light possesses zero rest mass but carries oscillating electromagnetic energy E = hv and directional momentum p = E/c.",
+      "tag": "m0 = 0",
+      "icon": "zap",
+      "color": "gold",
+      "at": 0,
+      "artwork": [
+       {
+        "type": "path",
+        "d": "M8 50 Q18 32 28 50 T48 50 T68 50 T88 50",
+        "stroke": "gold",
+        "fill": "none",
+        "strokeWidth": 2.4
+       },
+       {
+        "type": "line",
+        "x1": 12,
+        "y1": 72,
+        "x2": 84,
+        "y2": 72,
+        "stroke": "gold",
+        "fill": "none",
+        "strokeWidth": 2
+       },
+       {
+        "type": "path",
+        "d": "M84 72 L76 67 L76 77 Z",
+        "stroke": "gold",
+        "fill": "gold",
+        "strokeWidth": 0.8
+       },
+       {
+        "type": "circle",
+        "cx": 88,
+        "cy": 50,
+        "r": 4,
+        "stroke": "gold",
+        "fill": "none",
+        "strokeWidth": 1.5
+       },
+       {
+        "type": "text",
+        "x": 50,
+        "y": 22,
+        "size": 8,
+        "text": "E = hv m0 = 0",
+        "stroke": "none",
+        "fill": "gold",
+        "strokeWidth": 1
+       },
+       {
+        "type": "text",
+        "x": 50,
+        "y": 88,
+        "size": 8,
+        "text": "p = E/c",
+        "stroke": "none",
+        "fill": "gold",
+        "strokeWidth": 1
+       }
+      ]
+     },
+     {
+      "id": "invariant",
+      "title": "Relativistic Invariant",
+      "body": "Einstein's invariant energy relation balances momentum and rest mass: E2 = (pc)2 + (m0c2)2 across all reference frames.",
+      "tag": "E2 = (pc)2 + (m0c2)2",
+      "icon": "scale",
+      "color": "blue",
+      "at": 3,
+      "artwork": [
+       {
+        "type": "line",
+        "x1": 25,
+        "y1": 75,
+        "x2": 75,
+        "y2": 75,
+        "stroke": "blue",
+        "fill": "none",
+        "strokeWidth": 2
+       },
+       {
+        "type": "line",
+        "x1": 75,
+        "y1": 75,
+        "x2": 75,
+        "y2": 30,
+        "stroke": "blue",
+        "fill": "none",
+        "strokeWidth": 2
+       },
+       {
+        "type": "line",
+        "x1": 25,
+        "y1": 75,
+        "x2": 75,
+        "y2": 30,
+        "stroke": "blue",
+        "fill": "none",
+        "strokeWidth": 2
+       },
+       {
+        "type": "path",
+        "d": "M75 68 L68 68 L68 75",
+        "stroke": "blue",
+        "fill": "none",
+        "strokeWidth": 1
+       },
+       {
+        "type": "text",
+        "x": 50,
+        "y": 88,
+        "size": 7,
+        "text": "pc momentum",
+        "stroke": "none",
+        "fill": "blue",
+        "strokeWidth": 1
+       },
+       {
+        "type": "text",
+        "x": 50,
+        "y": 15,
+        "size": 7,
+        "text": "E2 = (pc)2 + (m0c2)2",
+        "stroke": "none",
+        "fill": "blue",
+        "strokeWidth": 1
+       }
+      ]
+     },
+     {
+      "id": "mass",
+      "title": "Confined Rest Mass",
+      "body": "Mass is not a distinct material substance; it is radiant energy trapped and localized at rest with zero net momentum.",
+      "tag": "p = 0 -> E = mc2",
+      "icon": "package",
+      "color": "coral",
+      "at": 6,
+      "artwork": [
+       {
+        "type": "rect",
+        "x": 30,
+        "y": 20,
+        "width": 40,
+        "height": 50,
+        "rx": 4,
+        "stroke": "coral",
+        "fill": "none",
+        "strokeWidth": 1.8
+       },
+       {
+        "type": "path",
+        "d": "M34 44 Q40 32 46 44 T58 44 T70 44",
+        "stroke": "coral",
+        "fill": "none",
+        "strokeWidth": 2
+       },
+       {
+        "type": "line",
+        "x1": 35,
+        "y1": 60,
+        "x2": 48,
+        "y2": 60,
+        "stroke": "coral",
+        "fill": "none",
+        "strokeWidth": 1.8
+       },
+       {
+        "type": "line",
+        "x1": 65,
+        "y1": 60,
+        "x2": 52,
+        "y2": 60,
+        "stroke": "coral",
+        "fill": "none",
+        "strokeWidth": 1.8
+       },
+       {
+        "type": "text",
+        "x": 50,
+        "y": 84,
+        "size": 7,
+        "text": "p = 0 E = mc2",
+        "stroke": "none",
+        "fill": "coral",
+        "strokeWidth": 1
+       },
+       {
+        "type": "text",
+        "x": 50,
+        "y": 13,
+        "size": 7,
+        "text": "511 keV x2 = 1.022 MeV",
+        "stroke": "none",
+        "fill": "coral",
+        "strokeWidth": 1
+       }
+      ]
+     }
+    ],
+    "connections": [
+     {
+      "from": "photon",
+      "to": "invariant",
+      "label": "energy-momentum",
+      "at": 50
+     },
+     {
+      "from": "invariant",
+      "to": "mass",
+      "label": "trap light to mass",
+      "at": 50
+     }
+    ],
+    "columns": [],
+    "takeaway": "Massless light carries energy and momentum that become mass when trapped at rest."
+   }
+  }
+ ],
+ "sources": []
+}

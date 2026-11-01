@@ -27,8 +27,8 @@ max_tokens = 2048
 timeout = 60
 fallback_provider = "offline"
 visual_provider = "opencode-go"  # empty inherits the main provider
-visual_model = "opencode-go/deepseek-v4.1-flash"
-visual_vision_model = "opencode-go/deepseek-v4.1-flash"
+visual_model = "opencode-go/muse-spark-1.3-contributor"
+visual_vision_model = "opencode-go/muse-spark-1.3-contributor"
 
 [tts]
 provider = "espeak"          # none | openrouter | piper | espeak
@@ -139,8 +139,8 @@ class LLMConfig:
     timeout: int = 60
     fallback_provider: str = "offline"
     visual_provider: str = "opencode-go"
-    visual_model: str = "opencode-go/deepseek-v4.1-flash"
-    visual_vision_model: str = "opencode-go/deepseek-v4.1-flash"
+    visual_model: str = "opencode-go/muse-spark-1.3-contributor"
+    visual_vision_model: str = "opencode-go/muse-spark-1.3-contributor"
 
 
 @dataclass

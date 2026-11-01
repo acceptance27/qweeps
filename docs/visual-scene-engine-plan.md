@@ -517,6 +517,22 @@ made them look like simplified dashboards. That path is wrong for this design.
 - `SceneProgram`/`SceneStage` remain for motion-specific scenes only, not for
   card/diagram beats.
 
+### Handcrafted-art test (P5 prototype)
+
+The current test stops selecting motifs. The model writes diagram primitives
+directly, under a strict safety contract.
+
+- `src/assistant/visual/handart.py` — 0–100 bounds, supported primitives,
+  palette colors, path-command allowlist and text limits;
+- `bench/handart_model_test.py` — one massless-matter scene, authored by Muse;
+- `visual-studio/src/live/HandArtModel.tsx` — `?handartModel=1`;
+- result with Muse (the default visual model): **first pass, 20.7 s**,
+  browser gate **0/0**;
+- the model authored the wave packet, arrow, triangle and boxed mass directly.
+
+This is closer to “the model makes the art” than the motif picker, but it is
+still one scene and not a general visual language.
+
 ### Motif layer (P5 prototype)
 
 The model can now select a semantic motif per diagram node; the compiler draws
@@ -798,6 +814,9 @@ poster does not count.
 - `visual-studio/src/live/VisualBeatStage.tsx` — single-beat existing-renderer wrapper.
 - `visual-studio/src/live/methodsVisualLesson.ts` — 1:1 visual reference lesson at `?methodsVisual=1`.
 - `src/assistant/visual/motifs.py` — safe motif-to-SVG layer.
+- `src/assistant/visual/handart.py` — direct-art validation.
+- `bench/handart_model_test.py` — direct-art model test.
+- `visual-studio/src/live/HandArtModel.tsx` — direct-art lesson at `?handartModel=1`.
 - `bench/motif_model_test.py` — motif model test.
 - `visual-studio/src/live/MotifModel.tsx` — motif lesson at `?motifModel=1`.
 - `bench/module6_model.py` — model-authored Module 6 lesson generator.

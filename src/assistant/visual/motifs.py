@@ -85,7 +85,7 @@ def vector(motif: dict, color: str):
     if angle not in (0, 45, 90, 135, 180):
         angle = 0
     length = max(20, min(60, float(motif.get("length", 38))))
-    ox, oy = 20, 72
+    ox, oy = {0: (12, 72), 45: (25, 72), 90: (50, 88), 135: (75, 72), 180: (88, 72)}[angle]
     rad = math.radians(angle)
     ex, ey = ox + math.cos(rad) * length, oy - math.sin(rad) * length
     return [

@@ -13,7 +13,7 @@ from assistant.llm import build_visual_llm  # noqa: E402
 from assistant.visual.v3_pipeline import teach_v3  # noqa: E402
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", default="opencode-go/deepseek-v4.1-flash")
+parser.add_argument("--model", default="opencode-go/muse-spark-1.3-contributor")
 parser.add_argument("--judge", default="opencode-go/deepseek-v4.1-flash")
 parser.add_argument("--question", default="How does a single artificial neuron compute its output?")
 parser.add_argument("--label", default="")

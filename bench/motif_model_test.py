@@ -151,7 +151,7 @@ def build_chapter(chapter: dict, spec: dict, index: int, duration: int) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="opencode-go/deepseek-v4.1-flash")
+    parser.add_argument("--model", default="opencode-go/muse-spark-1.3-contributor")
     parser.add_argument("--out", default=str(ROOT / "visual-studio/public/lessons/motif-model.json"))
     parser.add_argument("--reference", default=str(ROOT / "bundled-lessons/browser-lessons/61d56323819e14949204a5e95f1214fc/lesson.json"))
     args = parser.parse_args()

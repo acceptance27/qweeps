@@ -32,6 +32,18 @@ Open `?motifModel=1`.
 `wave`, `vector`, `box`, `ring`, `pair`, `axis`, `collision`, `field`,
 `equation`.
 
+## Cross-model runs
+
+Same four beats, same schema, same browser gate:
+
+| model | total | beats | gate |
+|---|---|---|---|
+| Claude Haiku 5.5 | 35.5 s | 8.3 / 9.6 / 9.0 / 8.5 s | 4/4, 0/0 |
+| GPT-6 Luna | 37.3 s | 8.8 / 9.1 / 10.7 / 8.7 s | 4/4, 0/0 |
+
+Both models passed all four beats first-pass. Screenshots:
+`haiku-chapter-1.png`, `luna-chapter-1.png`.
+
 ## Limits
 
 - The motif artwork is simpler than the hand-authored massless reference.

@@ -134,7 +134,7 @@ def fill(spec: dict, chapter: dict) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="opencode-go/deepseek-v4.1-flash")
+    parser.add_argument("--model", default="opencode-go/muse-spark-1.3-contributor")
     parser.add_argument("--out", default=str(ROOT / "visual-studio/public/lessons/module6-model.json"))
     parser.add_argument("--reference", default=str(ROOT / "bench/module6-reference.json"))
     args = parser.parse_args()
