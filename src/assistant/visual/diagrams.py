@@ -8,14 +8,14 @@ PAINTS={'blue','gold','green','coral','purple','white','muted','none'}
 
 def number(value, name, low, high):
     if type(value) not in (int,float) or not math.isfinite(value) or not low<=value<=high:
-        raise PlanError(f'{name} must be a finite number between {low} and {high}')
+        raise PlanError(f'{name} must be a finite number between {low} and {high} (got {value!r})')
     return value
 
 def validate_diagram(node):
     p=node.get('position')
     if not isinstance(p,dict):raise PlanError('Diagram objects need position {x,y,width,height}')
     position={k:number(p.get(k),f'diagram {k}',*bounds) for k,bounds in
-              [('x',(45,1300)),('y',(110,430)),('width',(100,1000)),('height',(120,390))]}
+              [('x',(45,1300)),('y',(110,430)),('width',(100,1350)),('height',(120,390))]}
     if position['x']+position['width']>1395 or position['y']+position['height']>505:
         raise PlanError('Keep diagram objects inside the diagram region x45–1395, y110–505')
     art=node.get('artwork',[])

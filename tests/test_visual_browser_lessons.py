@@ -625,7 +625,7 @@ def test_live_plans_choose_teaching_before_layout(library):
  raw['chapters'][0]['teaching']='comparison'
  assert validate_lesson(raw,d,store.icons)['chapters'][0]['teaching']=='comparison'
  assert store._raw(validate_lesson(raw,d,store.icons))['chapters'][0]['teaching']=='comparison'
- raw['chapters'][0]['layout']='diagram'
+ raw['chapters'][0]['layout']='timeline'
  with pytest.raises(PlanError,match="teaching 'comparison' needs layout"):
   validate_lesson(raw,d,store.icons)
 
@@ -651,8 +651,8 @@ def test_descriptive_diagram_reserves_artwork_and_text_space(library):
  lib,d=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib);raw=diagram_draft();c=raw['chapters'][0]
  c['presentation']['textMode']='descriptive'
  assert validate_lesson(raw,d,store.icons)['chapters'][0]['visual']['layout']=='diagram'
- c['nodes'][0]['body']='x'*120
- with pytest.raises(PlanError,match='100 characters'):
+ c['nodes'][0]['body']='x'*180
+ with pytest.raises(PlanError,match='160 characters'):
   validate_lesson(raw,d,store.icons)
  c['nodes'][0]['body']='A short explanation of the relationship.'
  c['nodes'][0]['position']['height']=220
@@ -664,3 +664,17 @@ def test_descriptive_diagram_reserves_artwork_and_text_space(library):
   c['nodes'].append(clone)
  with pytest.raises(PlanError,match='at most three objects'):
   validate_lesson(raw,d,store.icons)
+
+
+def test_bundled_massless_light_beats_1_to_4_pass_live_validation(library):
+ lib,_=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib)
+ bundled_path=STUDIO.parent/'bundled-lessons/browser-lessons/61d56323819e14949204a5e95f1214fc/lesson.json'
+ bundled=json.loads(bundled_path.read_text())
+ raw=store._raw({**bundled,'chapters':bundled['chapters'][:4]})
+ for ch,teaching in zip(raw['chapters'],['construction','comparison','quantitative','mechanism']):
+  ch['teaching']=teaching
+ validated=validate_lesson(raw,None,store.icons,require_continuity=True,require_presentation=True)
+ assert [c['id'] for c in validated['chapters']]==[
+  'mass-energy-foundation','single-photon-barrier','colliding-photons-threshold','quantum-field-pair-creation']
+ assert all(c['visual']['layout']=='diagram' for c in validated['chapters'])
+

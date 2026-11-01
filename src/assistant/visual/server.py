@@ -548,6 +548,23 @@ if __name__ == "__main__":
         raise SystemExit(0)
     signal.signal(signal.SIGTERM, terminate)
     cfg=load_config()
+    env_oc_key = os.environ.get("OPENCODE_API_KEY") or (
+        os.environ.get("OPENROUTER_API_KEY")
+        if (os.environ.get("OPENROUTER_API_KEY") or "").startswith("oc_sk_")
+        else None
+    )
+    if env_oc_key:
+        auth_file = Path.home() / ".local" / "share" / "opencode" / "auth.json"
+        if not auth_file.exists():
+            try:
+                auth_file.parent.mkdir(parents=True, exist_ok=True)
+                auth_file.write_text(json.dumps({
+                    "opencode": {"type": "api", "key": env_oc_key},
+                    "opencode-go": {"type": "api", "key": env_oc_key},
+                }))
+                auth_file.chmod(0o600)
+            except OSError:
+                pass
     if args.visual_provider:cfg.llm.visual_provider=args.visual_provider
     if args.visual_model:
         cfg.llm.visual_model=args.visual_model

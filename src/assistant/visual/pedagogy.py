@@ -100,8 +100,10 @@ def validate_storyboard(raw: Any, *, require_visual_design: bool = False) -> dic
 
 
 def _extract_json(raw: str) -> dict | None:
-    """Find the JSON object even when the model wraps it in prose or fences."""
-    text = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())
+    """Find the top-level JSON object even when the model wraps it in prose or fences."""
+    stripped = raw.strip()
+    fenced = re.search(r"```(?:json)?\s*(\{.*\})\s*```", stripped, re.DOTALL)
+    text = fenced.group(1).strip() if fenced else re.sub(r"^```(?:json)?\s*|\s*```$", "", stripped)
     try:
         value = json.loads(text)
         if isinstance(value, dict):
@@ -111,6 +113,7 @@ def _extract_json(raw: str) -> dict | None:
     start = text.find("{")
     while start >= 0:
         depth, in_string, escaped = 0, False, False
+        end_pos = -1
         for i in range(start, len(text)):
             ch = text[i]
             if in_string:
@@ -128,6 +131,7 @@ def _extract_json(raw: str) -> dict | None:
             elif ch == "}":
                 depth -= 1
                 if depth == 0:
+                    end_pos = i
                     try:
                         value = json.loads(text[start:i + 1])
                         if isinstance(value, dict):
@@ -135,7 +139,11 @@ def _extract_json(raw: str) -> dict | None:
                     except ValueError:
                         pass
                     break
-        start = text.find("{", start + 1)
+        if end_pos < 0:
+            # Outer '{' was never closed (truncated output); do not return an inner sub-object.
+            return None
+        # Advance past this closed top-level block rather than stepping inside its nested braces.
+        start = text.find("{", end_pos + 1)
     return None
 
 
