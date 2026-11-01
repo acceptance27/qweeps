@@ -509,6 +509,8 @@ made them look like simplified dashboards. That path is wrong for this design.
   are `matrix` tables, procedure is a `process` card row, narrative is
   `timeline`, recall is `loci`;
 - `?methodsVisual=1` is the 1:1 reference lesson;
+- `?module6Model=1` is a full eight-chapter Module 6 lesson authored by the
+  model from the reference facts and rendered by `GeneratedStage`;
 - `?factory=1` streams `LiveVisual` slot JSON and renders it with the existing
   renderer: **5/5 first-pass, 27.7 s total, first beat 6.5 s** (clean CLI run
   **26.1 s**, first beat **6.2 s**), browser gate **5/5, 0 errors, 0 warnings**;
@@ -779,6 +781,8 @@ poster does not count.
 - `src/assistant/visual/visual_beat_factory.py` — LiveVisual slot factory.
 - `visual-studio/src/live/VisualBeatStage.tsx` — single-beat existing-renderer wrapper.
 - `visual-studio/src/live/methodsVisualLesson.ts` — 1:1 visual reference lesson at `?methodsVisual=1`.
+- `bench/module6_model.py` — model-authored Module 6 lesson generator.
+- `visual-studio/src/live/Module6Model.tsx` — full model lesson at `?module6Model=1`.
 - `visual-studio/scripts/ir_lesson.ts` — IR lesson builder.
 - `bench/hyperframes_check.py` — static browser gate.
 - `src/assistant/visual/browser_gate.py` — server gate.
