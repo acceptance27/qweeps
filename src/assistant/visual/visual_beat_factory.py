@@ -28,10 +28,11 @@ body text is 80-180 characters and explains the mechanism, not a label."""
 
 SCHEMAS = {
     "comparison": {
+        "columns": ["Activation", "Range", "Formula", "Behavior"],
         "nodes": [
-            {"id": "sigmoid", "title": "Sigmoid", "body": "Compresses any score into a smooth S-curve, making outputs readable as probabilities.", "tag": "0 → 1  |  σ(z)", "icon": "scale", "color": "blue", "at": 0},
-            {"id": "relu", "title": "ReLU", "body": "Clips negative scores to zero and passes positives unchanged, creating a hinge.", "tag": "0 → ∞  |  max(0, z)", "icon": "zap", "color": "green", "at": 4},
-            {"id": "linear", "title": "Linear", "body": "Returns the score unchanged, so outputs grow without limit along a straight line.", "tag": "unbounded  |  y = z", "icon": "route", "color": "gold", "at": 8},
+            {"id": "sigmoid", "title": "Sigmoid", "cells": ["0 to 1", "σ(z) = 1/(1+e^-z)", "Smooth, bounded; probabilities"], "icon": "scale", "color": "blue", "at": 0, "body": "Compresses any score into a smooth S-curve, making outputs readable as probabilities."},
+            {"id": "relu", "title": "ReLU", "cells": ["0 to ∞", "max(0, z)", "Hinge; hidden layers"], "icon": "zap", "color": "green", "at": 4, "body": "Clips negative scores to zero and passes positives unchanged, creating a hinge."},
+            {"id": "linear", "title": "Linear", "cells": ["unbounded", "y = z", "Straight line; regression"], "icon": "route", "color": "gold", "at": 8, "body": "Returns the score unchanged, so outputs grow without limit along a straight line."},
         ],
         "connections": [],
         "takeaway": "The activation decides the shape of the output, not the input.",
@@ -49,10 +50,11 @@ SCHEMAS = {
         "takeaway": "Scale, add the bias, squash: that is one forward pass.",
     },
     "algorithm": {
+        "columns": ["Step", "Operation", "State / value"],
         "nodes": [
-            {"id": "read", "title": "Read inputs", "body": "Load the input vector, every weight and the bias so the pass starts from a known state.", "tag": "x, w, b", "icon": "search", "color": "purple", "at": 0},
-            {"id": "compute", "title": "Compute z", "body": "Multiply each input by its weight, sum the products and add the bias: z = 1.2.", "tag": "z = 1.2", "icon": "cpu", "color": "gold", "at": 4},
-            {"id": "return", "title": "Return y", "body": "Send z through the activation to produce y = 0.77. No weights change during this pass.", "tag": "y = 0.77", "icon": "check", "color": "green", "at": 8},
+            {"id": "read", "title": "Read inputs", "cells": ["Load x, w, b", "x, w, b"], "icon": "search", "color": "purple", "at": 0, "body": "Load the input vector, every weight and the bias so the pass starts from a known state."},
+            {"id": "compute", "title": "Compute z", "cells": ["Weighted sum + bias", "z = 1.2"], "icon": "cpu", "color": "gold", "at": 4, "body": "Multiply each input by its weight, sum the products and add the bias."},
+            {"id": "return", "title": "Return y", "cells": ["Activation", "y = 0.77"], "icon": "check", "color": "green", "at": 8, "body": "Send z through the activation to produce the output. No weights change."},
         ],
         "connections": [],
         "takeaway": "One forward pass: no weights change.",
@@ -89,7 +91,7 @@ def prompt_for(brief: dict) -> str:
         "Rules:\n"
         "- Use the brief's facts; do not add new claims.\n"
         "- Keep the node count and order shown in the shape.\n"
-        "- Every node needs title, body, tag, icon and color.\n"
+        "- comparison and algorithm are matrix tables: use columns and one cells array per row;\n  procedure, narrative and recall use title, body, tag, icon and color.\n"
         f"- icon must be one of: {', '.join(sorted(ASSETS))}.\n"
         "- color must be blue, gold, green, coral or purple.\n"
         "- body is 80-180 characters and explains the mechanism.\n"
@@ -113,25 +115,44 @@ def fill_defaults(spec: dict) -> dict:
 
 def spec_findings(spec: dict, brief: dict) -> list[dict]:
     findings: list[dict] = []
+    teaching = brief["teaching"]
     nodes = spec.get("nodes")
-    expected = {"comparison": 3, "procedure": 3, "algorithm": 3, "narrative": 3, "recall": 3}[brief["teaching"]]
+    expected = {"comparison": 3, "procedure": 3, "algorithm": 3, "narrative": 3, "recall": 3}[teaching]
     if not isinstance(nodes, list) or len(nodes) != expected:
         findings.append({"code": "node_count", "message": f"Return exactly {expected} nodes."})
         return findings
-    for index, node in enumerate(nodes):
-        if not isinstance(node.get("title"), str) or not node["title"].strip():
-            findings.append({"code": "missing_title", "message": f"Node {index+1} needs a title."})
-        body = node.get("body")
-        if not isinstance(body, str) or len(body.strip()) < 50:
-            findings.append({"code": "short_body", "message": f"Node {index+1} body must be at least 50 characters."})
-        if len(body or "") > 190:
-            findings.append({"code": "body_budget", "message": f"Node {index+1} body must be under 190 characters."})
-        if not isinstance(node.get("tag"), str):
-            findings.append({"code": "missing_tag", "message": f"Node {index+1} needs a tag."})
-        if node.get("icon") not in ASSETS:
-            findings.append({"code": "missing_asset", "message": f"Node {index+1} needs a catalog icon."})
-        if node.get("color") not in PALETTE:
-            findings.append({"code": "missing_color", "message": f"Node {index+1} needs a palette color."})
+    columns = spec.get("columns")
+    if teaching in {"comparison", "algorithm"}:
+        expected_columns = 4 if teaching == "comparison" else 3
+        if not isinstance(columns, list) or len(columns) != expected_columns:
+            findings.append({"code": "column_count", "message": f"Return exactly {expected_columns} matrix columns."})
+        for index, node in enumerate(nodes):
+            if not isinstance(node.get("title"), str) or not node["title"].strip():
+                findings.append({"code": "missing_title", "message": f"Row {index+1} needs a title."})
+            cells = node.get("cells")
+            if not isinstance(cells, list) or len(cells) != expected_columns - 1:
+                findings.append({"code": "cell_count", "message": f"Row {index+1} needs {expected_columns-1} cells."})
+            elif any(not isinstance(cell, str) or not cell.strip() for cell in cells):
+                findings.append({"code": "empty_cell", "message": f"Row {index+1} has an empty cell."})
+            if node.get("icon") not in ASSETS:
+                findings.append({"code": "missing_asset", "message": f"Row {index+1} needs a catalog icon."})
+            if node.get("color") not in PALETTE:
+                findings.append({"code": "missing_color", "message": f"Row {index+1} needs a palette color."})
+    else:
+        for index, node in enumerate(nodes):
+            if not isinstance(node.get("title"), str) or not node["title"].strip():
+                findings.append({"code": "missing_title", "message": f"Node {index+1} needs a title."})
+            body = node.get("body")
+            if not isinstance(body, str) or len(body.strip()) < 50:
+                findings.append({"code": "short_body", "message": f"Node {index+1} body must be at least 50 characters."})
+            if len(body or "") > 190:
+                findings.append({"code": "body_budget", "message": f"Node {index+1} body must be under 190 characters."})
+            if not isinstance(node.get("tag"), str):
+                findings.append({"code": "missing_tag", "message": f"Node {index+1} needs a tag."})
+            if node.get("icon") not in ASSETS:
+                findings.append({"code": "missing_asset", "message": f"Node {index+1} needs a catalog icon."})
+            if node.get("color") not in PALETTE:
+                findings.append({"code": "missing_color", "message": f"Node {index+1} needs a palette color."})
     takeaway = spec.get("takeaway")
     if not isinstance(takeaway, str) or len(takeaway.strip()) < 10:
         findings.append({"code": "missing_takeaway", "message": "Write one takeaway sentence."})
@@ -142,7 +163,8 @@ def spec_findings(spec: dict, brief: dict) -> list[dict]:
 
 def build_chapter(brief: dict, spec: dict) -> dict:
     teaching = brief["teaching"]
-    layout = {"comparison": "comparison", "procedure": "process", "algorithm": "timeline", "narrative": "timeline", "recall": "loci"}[teaching]
+    layout = {"comparison": "matrix", "procedure": "process", "algorithm": "matrix", "narrative": "timeline", "recall": "loci"}[teaching]
+    chapter_teaching = "process" if teaching == "procedure" else teaching
     visual = {
         "layout": layout,
         "presentation": {
@@ -154,21 +176,22 @@ def build_chapter(brief: dict, spec: dict) -> dict:
         "nodes": [{
             "id": str(node.get("id") or f"node-{index+1}"),
             "title": node["title"],
-            "body": node["body"],
+            "body": node.get("body", ""),
             "icon": node["icon"],
             "color": node["color"],
             "at": index * 4,
             "tag": node.get("tag", ""),
+            **({"cells": node["cells"]} if "cells" in node else {}),
         } for index, node in enumerate(spec["nodes"])],
         "connections": spec.get("connections", []),
-        "columns": [],
+        "columns": spec.get("columns", []),
         "takeaway": spec["takeaway"],
     }
     duration = 10
     return {
         "id": f"visual-{brief['id']}",
         "title": brief["title"],
-        "teaching": teaching,
+        "teaching": chapter_teaching,
         "years": brief.get("years", "one model"),
         "question": brief["question"],
         "roles": {node["id"]: node["title"] for node in visual["nodes"]},

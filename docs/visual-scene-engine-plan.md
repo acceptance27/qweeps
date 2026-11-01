@@ -505,11 +505,13 @@ made them look like simplified dashboards. That path is wrong for this design.
 - comparison, procedure, algorithm, narrative and recall now use the existing
   `LiveVisual` schema and `GeneratedStage`/`GrammarNode` renderer;
 - beats 1–3 follow the massless-matter `diagram`/`fanin`/`concept` style;
-- beats 4–8 follow the Module 6 `comparison`/`process`/`timeline`/`loci` style;
+- beats 4–8 follow the Module 6 layouts exactly: comparison and algorithm
+  are `matrix` tables, procedure is a `process` card row, narrative is
+  `timeline`, recall is `loci`;
 - `?methodsVisual=1` is the 1:1 reference lesson;
 - `?factory=1` streams `LiveVisual` slot JSON and renders it with the existing
-  renderer: **5/5 first-pass, 22.8 s total, first beat 4.5 s**, browser gate
-  **5/5, 0 errors, 0 warnings**;
+  renderer: **5/5 first-pass, 27.7 s total, first beat 6.5 s** (clean CLI run
+  **26.1 s**, first beat **6.2 s**), browser gate **5/5, 0 errors, 0 warnings**;
 - `SceneProgram`/`SceneStage` remain for motion-specific scenes only, not for
   card/diagram beats.
 

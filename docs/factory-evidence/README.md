@@ -1,51 +1,46 @@
 # Model beat factory evidence
 
-There are two live paths:
+The card beats use the existing `LiveVisual` renderer, not the compound
+`SceneProgram` cards.
 
-- `?factory=1` — model fills `LiveVisual` slots; the existing `GeneratedStage`
-  renderer draws the cards. This is the Module 6 / massless-lesson design.
-- `?methodsVisual=1` — the 1:1 reference lesson: diagram/concept beats 1–3,
-  comparison/process/timeline/loci beats 4–8.
+- `?factory=1` — model fills LiveVisual nodes/cells; `GeneratedStage` draws
+  the Module 6 / massless-lesson design.
+- `?methodsVisual=1` — the hand-authored 1:1 reference:
+  - beats 1–3: `diagram` / `fanin` / `concept`
+  - beat 4: `matrix` comparison
+  - beat 5: `process` procedure
+  - beat 6: `matrix` algorithm
+  - beat 7: `timeline` narrative
+  - beat 8: `loci` recall
 
-`visual-beats.jsonl` is the latest visual factory stream: **5/5 first-pass**,
-**22.8 s total**, first beat **4.5 s**. The five rendered tiles passed the live
-browser gate **5/5, 0 errors, 0 warnings**.
+## Latest streaming run
 
-The older compound/SceneProgram factory is retained for motion-specific scenes,
-not for these card beats.
-
-Latest UI run:
-
-| beat | time | try | result |
+| beat | layout | time | try |
 |---|---|---|---|
-| comparison | 5.7 s | 1 | pass |
-| procedure | 9.6 s | 2 | pass after one repair |
-| algorithm | 6.2 s | 1 | pass |
-| narrative | 6.1 s | 1 | pass |
-| recall | 7.3 s | 1 | pass |
+| comparison | matrix | 6.5 s | 1 |
+| procedure | process | 6.2 s | 1 |
+| algorithm | matrix | 5.3 s | 1 |
+| narrative | timeline | 5.4 s | 1 |
+| recall | loci | 4.2 s | 1 |
 
-Total: **35 s**; first beat: **5.7 s**. The model-authored SVG for every tile
-passed the live browser gate: **5/5, 0 errors, 0 warnings**.
+Total: **27.7 s**; first beat: **6.5 s**.
 
-A clean CLI run with the same code:
+A clean CLI run finished in **26.1 s**, first beat **6.2 s**, all first-pass.
 
-| beat | time | try |
-|---|---|---|
-| comparison | 5.6 s | 1 |
-| procedure | 5.0 s | 1 |
-| algorithm | 7.0 s | 1 |
-| narrative | 5.5 s | 1 |
-| recall | 5.4 s | 1 |
+The five rendered model beats passed the live browser gate:
+**5/5, 0 errors, 0 warnings**.
 
-Total: **28.5 s**, all first pass. The spread is model latency.
+Reference screenshots:
 
-Every grammar now uses a motion recipe rather than a generic reveal:
-comparison hull split, procedure rail, algorithm highlight sweep, narrative
-travel dot, recall route. The old 4–8 are the motion reference.
+- `reference-comparison.png`
+- `reference-procedure.png`
+- `reference-algorithm.png`
+
+`visual-beats.jsonl` is the clean CLI stream.
 
 Reproduce:
 
 ```bash
 .venv/bin/python bench/beat_factory_stream.py \
-  --out /tmp/opencode/beat-factory.jsonl
+  --out /tmp/opencode/visual-beats.jsonl
 ```

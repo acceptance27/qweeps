@@ -14,7 +14,6 @@ export function chapterGrammar(c:{teaching?:string;visual?:LiveVisual}):Grammar{
  if(t==='algorithm'&&layout==='timeline')return 'trace';
  if(t==='narrative'&&layout==='timeline')return 'chronology';
  if(t==='recall'&&layout==='loci')return 'route';
- if(t==='procedure'&&layout==='process')return 'procedure';
  return 'cards';
 }
 
