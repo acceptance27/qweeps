@@ -26,8 +26,8 @@ class NativeHost:
                 if lesson_id is None or (self.jobs[sid].get('lesson_id','manim_production')==lesson_id and self.jobs[sid].get('plan_hash')==plan_hash):return self.jobs[sid]
                 self.close(sid)
             lesson_id=lesson_id or 'manim_production'
-            if lesson_id not in {'manim_production','jose_rizal','alu','generated','wbc','blood3d'}:raise PlanError('Unknown native lesson')
-            manifest_path=self.studio/('public/lessons/alu.json' if lesson_id=='alu' else 'public/lessons/jose_rizal.json' if lesson_id=='jose_rizal' else 'public/lessons/wbc_native.json' if lesson_id=='wbc' else 'public/lessons/blood3d_native.json' if lesson_id=='blood3d' else 'public/production/report.json')
+            if lesson_id not in {'manim_production','jose_rizal','alu','generated','wbc','blood3d','neuron'}:raise PlanError('Unknown native lesson')
+            manifest_path=self.studio/('public/lessons/alu.json' if lesson_id=='alu' else 'public/lessons/jose_rizal.json' if lesson_id=='jose_rizal' else 'public/lessons/wbc_native.json' if lesson_id=='wbc' else 'public/lessons/blood3d_native.json' if lesson_id=='blood3d' else 'public/lessons/neuron_native.json' if lesson_id=='neuron' else 'public/production/report.json')
             if lesson_id=='generated':
                 if plan is None:raise PlanError('Generated lesson plan is missing')
                 manifest=plan
@@ -59,7 +59,7 @@ class NativeHost:
     def update(self,sid,raw):
         if not isinstance(raw,dict):raise PlanError('Native state must be an object')
         lesson_id=raw.get('lessonId','manim_production')
-        if lesson_id not in {'manim_production','jose_rizal','alu','generated','wbc','blood3d'}:raise PlanError('Unknown native lesson')
+        if lesson_id not in {'manim_production','jose_rizal','alu','generated','wbc','blood3d','neuron'}:raise PlanError('Unknown native lesson')
         plan=validate_plan(raw.get('plan')) if lesson_id=='generated' else None
         limit=120
         if lesson_id=='jose_rizal':
@@ -81,6 +81,9 @@ class NativeHost:
         elif lesson_id=='blood3d':
             if raw.get('experiment') not in (None,{}):raise PlanError('This beat has no experiment controls')
             settings={};limit=json.loads((self.studio/'public/lessons/blood3d_native.json').read_text())['duration']
+        elif lesson_id=='neuron':
+            if raw.get('experiment') not in (None,{}):raise PlanError('This beat has no experiment controls')
+            settings={};limit=json.loads((self.studio/'public/lessons/neuron_native.json').read_text())['duration']
         else:settings=experiment(self.report,raw.get('experiment'))
         t=raw.get('time',0)
         if isinstance(t,bool) or not isinstance(t,(float,int)) or not 0<=t<=limit:raise PlanError('Invalid native playhead')

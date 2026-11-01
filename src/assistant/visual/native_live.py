@@ -215,7 +215,11 @@ def main():
     elif lesson_id=='blood3d':
         from assistant.visual.ce_native import load_native_scene
         scene=load_native_scene(Path(__file__).with_name('scenes')/'blood_3d_lesson.py')
+    elif lesson_id=='neuron':
+        from assistant.visual.ce_native import load_native_scene
+        scene=load_native_scene(Path(__file__).with_name('scenes')/'qweeps_neuron_lesson.py')
     else:scene=ProductionScene(report,svg)
+    scene.lesson_id=lesson_id
     frames=0
     while True:
         state=pending.get()

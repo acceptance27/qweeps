@@ -136,12 +136,17 @@ class RecordedScene(Scene):
         self.role_hide = {}         # id(role mob) -> fade-out clock
         self.frame_baked = []       # (t, camera frame state)
         self.scene_baked = []       # (t, tuple(top-level mobjects))
-        self.initial = {}           # id(mob) -> (mob, [(part, data)]) before animation
+        self.checkpoints = []       # (t, graph, {id: (mob, family data)}) at play starts
+        self.beats = []             # {"id","title","time"} markers from the CE source
         self.roles = {}
         self.settings = None
         self.build()
 
     # ------------------------------------------------------------- recording
+    def beat(self, name, title=None):
+        """Marker the generated CE source calls at a teaching-beat boundary."""
+        self.beats.append({"id": str(name), "title": str(title or name), "time": round(self.clock, 3)})
+
     # ManimCE ThreeDScene API
     def set_camera_orientation(self, phi=70 * DEGREES, theta=-30 * DEGREES, zoom=1.0,
                                center=None, frame_center=None, **kwargs):
@@ -164,11 +169,13 @@ class RecordedScene(Scene):
             mob.fix_in_frame()
             self.add(mob)
 
-    def _capture_initial(self, mob):
-        """Remember a mobject's family data before the first animation moves it."""
-        if id(mob) in self.initial:
-            return
-        self.initial[id(mob)] = (mob, [(part, part.data.copy()) for part in mob.get_family()])
+    def _checkpoint(self):
+        """Snapshot the state at the start of a play, for history-free seeking."""
+        graph = tuple(m for m in self.mobjects if m is not self.select_group)
+        data = {}
+        for mob in graph:
+            data[id(mob)] = (mob, [(part, part.data.copy()) for part in mob.get_family()])
+        self.checkpoints.append((self.clock, graph, data))
 
     def _snapshot(self):
         # Exact scene graph, so a seek restores which mobjects exist at that
@@ -177,8 +184,6 @@ class RecordedScene(Scene):
         self.scene_baked.append(
             (self.clock, tuple(m for m in self.mobjects if m is not self.select_group))
         )
-        for mob in self.mobjects:
-            self._capture_initial(mob)
         for mob in self.mobjects:
             if not getattr(mob, "has_updaters", lambda: False)():
                 continue
@@ -256,9 +261,7 @@ class RecordedScene(Scene):
             anim.begin()
             if anim.mobject is not self.frame:
                 self.add(anim.mobject)
-                self._capture_initial(anim.mobject)
-        for mob in self.mobjects:
-            self._capture_initial(mob)
+        self._checkpoint()
         start = self.clock
         for anim in prepared:
             target = anim.mobject
@@ -294,7 +297,8 @@ class RecordedScene(Scene):
         self.role_hide = {}
         self.frame_baked = []
         self.scene_baked = []
-        self.initial = {}
+        self.checkpoints = []
+        self.beats = []
         self.roles = {}
         self.clock = 0.0
         self.frame.move_to(ORIGIN).set_width(14.22)
@@ -386,16 +390,24 @@ class RecordedScene(Scene):
         self.assemble_render_groups()
 
     def evaluate(self, t, selected, camera):
-        # Reset every animated mobject to the state it had before its first
-        # animation, then replay only tracks that have started. Without the
-        # reset the result depends on where the playhead came from; applying
-        # alpha 0 to future tracks instead would let the final FadeOut teleport
-        # objects to their end positions at the start of the scene.
-        for mob, parts in self.initial.values():
-            for part, data in parts:
-                part.data = data.copy()
+        # Restore the recorded state at the latest play boundary <= t, then
+        # replay only the play after it. Lifecycle-initial data cannot be used:
+        # Transforms change point counts, and forcing an old shape back before
+        # interpolating a later transform raises a shape mismatch.
+        checkpoint = None
+        for row in self.checkpoints:
+            if row[0] <= t + 1e-9:
+                checkpoint = row
+        if checkpoint is None and self.checkpoints:
+            checkpoint = self.checkpoints[0]
+        replay_from = 0.0
+        if checkpoint is not None:
+            replay_from = checkpoint[0]
+            for mob, parts in checkpoint[2].values():
+                for part, data in parts:
+                    part.data = data.copy()
         for start, length, anim in self.tracks:
-            if t < start:
+            if start < replay_from - 1e-9 or t < start:
                 continue
             anim.interpolate(float(np.clip((t - start) / length, 0, 1)))
         self._restore_scene(t)
@@ -491,6 +503,16 @@ class RecordedScene(Scene):
         add("daughter-b", names.get("daughter_b"))
         for key in ("struts", "marrow", "rbc", "wbc", "plts", "backdrop", "vessel", "flow"):
             add(key, names.get(key))
+        # Generated neuron scene
+        add("membrane", names.get("membrane_group"))
+        add("sodium", names.get("na_group"))
+        add("potassium", names.get("k_group"))
+        add("na-gates", names.get("gates_open") or names.get("gates_closed"))
+        add("hillock", names.get("hillock_s") or names.get("hillock_s2"))
+        add("voltage-meter", names.get("meter_fill"))
+        add("terminal", names.get("term"))
+        add("next-cell", names.get("next_cell"))
+        add("pump", names.get("pump"))
 
     def metadata(self, t):
         center = self.frame.get_center()

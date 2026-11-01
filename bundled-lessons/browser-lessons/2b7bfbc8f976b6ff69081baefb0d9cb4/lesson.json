@@ -1,0 +1,624 @@
+{
+ "id": "2b7bfbc8f976b6ff69081baefb0d9cb4",
+ "kind": "live_generated",
+ "title": "How does a neuron fire?",
+ "question": "How does a neuron decide to fire, and what happens after it does?",
+ "representation": "A QWEEPS-planned mechanism: resting battery, summed inputs at the hillock, threshold decision, Na+ upstroke, fixed spike shape, self-regenerating propagation, and reset with transmitter hand-off. Native ManimGL beats carry the mechanism; layout beats isolate the summation, all-or-none shape, and molecular reset.",
+ "example": {
+  "title": "A hot-mug touch",
+  "description": "Follow one sensory axon from the receptor to the next cell.",
+  "icon": "flame"
+ },
+ "duration": 40.0,
+ "documentId": null,
+ "documentTitle": null,
+ "sources": [],
+ "branches": [],
+ "chapters": [
+  {
+   "id": "resting-membrane",
+   "title": "A charged battery at rest",
+   "years": "",
+   "question": "What is ready to fire before anything happens?",
+   "insight": "At rest the inside is about -70 mV because Na+ is kept outside, K+ inside, and open K+ leak plus pumps hold the imbalance.",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "",
+   "narration": "At rest, the inside of the neuron sits near minus seventy millivolts. Sodium is kept outside, potassium inside; leak channels and pumps hold that imbalance, so the membrane is a charged battery waiting to be disturbed.",
+   "narrationAt": 0.8,
+   "audio": "",
+   "start": 0.0,
+   "end": 5.1,
+   "finishedAt": 3.0999999999999996,
+   "roles": {
+    "membrane": "Membrane: the boundary that separates inside from outside.",
+    "ions": "Ion gradients: Na+ outside, K+ inside.",
+    "pumps": "Leak channels and the Na+/K+ pump hold the standing gradient."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.2,
+     "text": "At rest the inside is negative and the outside is positive."
+    },
+    {
+     "at": 2.8,
+     "text": "Na+ outside and K+ inside form a stored battery."
+    }
+   ],
+   "visual": {
+    "layout": "concept",
+    "nodes": [
+     {
+      "id": "membrane",
+      "title": "Membrane",
+      "body": "A lipid bilayer separating inside from outside.",
+      "icon": "shield",
+      "color": "blue",
+      "at": 0.2,
+      "tag": "boundary"
+     },
+     {
+      "id": "ions",
+      "title": "Ion gradients",
+      "body": "Na+ outside, K+ inside: a stored battery.",
+      "icon": "zap",
+      "color": "gold",
+      "at": 1.2,
+      "tag": "-70 mV"
+     },
+     {
+      "id": "pumps",
+      "title": "Leak + pumps",
+      "body": "Leak channels and the Na+/K+ pump hold the gradient.",
+      "icon": "tools",
+      "color": "green",
+      "at": 2.4,
+      "tag": "standing"
+     }
+    ],
+    "connections": [],
+    "columns": [],
+    "takeaway": "At rest the membrane is a charged battery: Na+ outside, K+ inside, held by leaks and pumps.",
+    "presentation": {
+     "method": "Native mechanism",
+     "why": "The resting gradient is the state every later change alters.",
+     "visualEvidence": "The membrane, ion dots and voltage meter assemble into a stable -70 mV battery.",
+     "textMode": "labels"
+    }
+   },
+   "continuity": {
+    "from": null,
+    "bridge": "Opening beat: establish the resting battery before anything changes."
+   },
+   "renderer": "manimgl",
+   "nativeScene": "neuron",
+   "nativeOffset": 2.7
+  },
+  {
+   "id": "summation-decision",
+   "title": "Many whispers, one decision point",
+   "years": "",
+   "question": "How does the neuron combine incoming nudges?",
+   "insight": "Small graded EPSPs and IPSPs flow to the axon hillock and add up; only their sum decides what happens next.",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "",
+   "narration": "Inputs arrive as small graded voltages. Excitatory inputs push the hillock up, inhibitory inputs pull it down; the neuron adds them, and only their sum at the axon hillock matters.",
+   "narrationAt": 0.8,
+   "audio": "",
+   "start": 5.1,
+   "end": 11.1,
+   "finishedAt": 9.1,
+   "roles": {
+    "epsp": "Excitatory input: pushes the hillock voltage up.",
+    "ipsp": "Inhibitory input: pulls the hillock voltage down.",
+    "hillock": "Axon hillock: sums the inputs and decides whether to fire."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.3,
+     "text": "Synapses deliver small graded nudges."
+    },
+    {
+     "at": 3.0,
+     "text": "Excitatory and inhibitory inputs add at the hillock."
+    }
+   ],
+   "visual": {
+    "layout": "fanin",
+    "nodes": [
+     {
+      "id": "epsp",
+      "title": "Excitatory input",
+      "body": "A small depolarising nudge from a synapse.",
+      "icon": "zap",
+      "color": "gold",
+      "at": 0.4,
+      "tag": "+ EPSP",
+      "position": {
+       "x": 80,
+       "y": 140,
+       "width": 360,
+       "height": 180
+      }
+     },
+     {
+      "id": "ipsp",
+      "title": "Inhibitory input",
+      "body": "A small hyperpolarising nudge from another synapse.",
+      "icon": "shield",
+      "color": "blue",
+      "at": 0.4,
+      "tag": "- IPSP",
+      "position": {
+       "x": 80,
+       "y": 340,
+       "width": 360,
+       "height": 150
+      }
+     },
+     {
+      "id": "hillock",
+      "title": "Axon hillock",
+      "body": "Where the summed voltage is read and the decision is made.",
+      "icon": "route",
+      "color": "green",
+      "at": 2.8,
+      "tag": "sum",
+      "position": {
+       "x": 780,
+       "y": 210,
+       "width": 420,
+       "height": 230
+      }
+     }
+    ],
+    "connections": [
+     {
+      "from": "epsp",
+      "to": "hillock",
+      "label": "adds",
+      "at": 2.9
+     },
+     {
+      "from": "ipsp",
+      "to": "hillock",
+      "label": "subtracts",
+      "at": 2.9
+     }
+    ],
+    "columns": [],
+    "takeaway": "Only the summed voltage at the hillock decides what happens next.",
+    "presentation": {
+     "method": "Convergent-input diagram",
+     "why": "The decision is a sum of opposing inputs, not a single synapse.",
+     "visualEvidence": "Excitatory and inhibitory nudges converge on one hillock; their signs add.",
+     "textMode": "labels"
+    }
+   },
+   "continuity": {
+    "from": "resting-membrane",
+    "bridge": "The battery is established; now see how it is nudged."
+   }
+  },
+  {
+   "id": "threshold-test",
+   "title": "Threshold: fire or stay silent",
+   "years": "",
+   "question": "Why do small nudges fade but a big enough push fires?",
+   "insight": "Below about -55 mV charge leaks away; above it voltage-gated channels open and the response becomes all-or-none.",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "",
+   "narration": "Below about minus fifty-five millivolts the charge leaks away and nothing happens. Cross that threshold, and voltage-gated sodium channels open; the response becomes all-or-none.",
+   "narrationAt": 0.8,
+   "audio": "",
+   "start": 11.1,
+   "end": 16.1,
+   "finishedAt": 14.100000000000001,
+   "roles": {
+    "small": "Small push: a depolarisation that stays below threshold.",
+    "threshold": "Threshold: about -55 mV at the hillock.",
+    "big": "Suprathreshold push: opens voltage-gated Na+ channels and fires."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.3,
+     "text": "A small push decays below threshold."
+    },
+    {
+     "at": 2.6,
+     "text": "Crossing -55 mV opens the voltage-gated gates."
+    }
+   ],
+   "visual": {
+    "layout": "concept",
+    "nodes": [
+     {
+      "id": "small",
+      "title": "Small push",
+      "body": "The summed voltage stays below -55 mV.",
+      "icon": "shield",
+      "color": "blue",
+      "at": 0.2,
+      "tag": "fades"
+     },
+     {
+      "id": "threshold",
+      "title": "Threshold -55 mV",
+      "body": "The decision line at the axon hillock.",
+      "icon": "route",
+      "color": "gold",
+      "at": 1.4,
+      "tag": "-55 mV"
+     },
+     {
+      "id": "big",
+      "title": "Crossing it",
+      "body": "Voltage-gated Na+ channels open; firing becomes all-or-none.",
+      "icon": "flame",
+      "color": "coral",
+      "at": 2.6,
+      "tag": "fires"
+     }
+    ],
+    "connections": [],
+    "columns": [],
+    "takeaway": "Below threshold the charge leaks away; above it the response becomes all-or-none.",
+    "presentation": {
+     "method": "Native comparison",
+     "why": "The threshold is the decision boundary the learner must see.",
+     "visualEvidence": "Two pushes of different size are applied at the hillock; one decays, one opens the gates.",
+     "textMode": "labels"
+    }
+   },
+   "continuity": {
+    "from": "summation-decision",
+    "bridge": "The summed voltage is read against one boundary."
+   },
+   "renderer": "manimgl",
+   "nativeScene": "neuron",
+   "nativeOffset": 13.6
+  },
+  {
+   "id": "upstroke-flood",
+   "title": "The flood that is the spike",
+   "years": "",
+   "question": "What actually makes voltage shoot up?",
+   "insight": "Crossing threshold opens voltage-gated Na+ channels; Na+ rush in and positive feedback drives the rise to about +30 mV.",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "",
+   "narration": "Open sodium channels let sodium rush in. That makes the inside more positive, which opens more channels — positive feedback drives the spike toward plus thirty millivolts.",
+   "narrationAt": 0.8,
+   "audio": "",
+   "start": 16.1,
+   "end": 20.7,
+   "finishedAt": 18.7,
+   "roles": {
+    "gates": "Voltage-gated Na+ channels open at threshold.",
+    "flood": "Na+ influx: positive charge enters the cell.",
+    "feedback": "Positive feedback: depolarisation opens more channels."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.2,
+     "text": "The gates open at threshold."
+    },
+    {
+     "at": 2.2,
+     "text": "Na+ enters and drives the inside positive."
+    }
+   ],
+   "visual": {
+    "layout": "concept",
+    "nodes": [
+     {
+      "id": "gates",
+      "title": "Open Na+ gates",
+      "body": "Voltage-gated channels open at threshold.",
+      "icon": "key",
+      "color": "gold",
+      "at": 0.2,
+      "tag": "open"
+     },
+     {
+      "id": "flood",
+      "title": "Na+ influx",
+      "body": "Sodium enters and makes the inside positive.",
+      "icon": "zap",
+      "color": "blue",
+      "at": 1.4,
+      "tag": "+30 mV"
+     },
+     {
+      "id": "feedback",
+      "title": "Positive feedback",
+      "body": "More depolarisation opens more channels.",
+      "icon": "network",
+      "color": "coral",
+      "at": 2.6,
+      "tag": "runaway"
+     }
+    ],
+    "connections": [],
+    "columns": [],
+    "takeaway": "Threshold opens Na+ gates; the influx drives a positive-feedback rise to +30 mV.",
+    "presentation": {
+     "method": "Native mechanism",
+     "why": "The upstroke is a feedback loop, not a passive leak.",
+     "visualEvidence": "Na+ dots cross the membrane through open gates and the voltage meter rises.",
+     "textMode": "labels"
+    }
+   },
+   "continuity": {
+    "from": "threshold-test",
+    "bridge": "The threshold has been crossed; now follow the positive-feedback flood."
+   },
+   "renderer": "manimgl",
+   "nativeScene": "neuron",
+   "nativeOffset": 18.6
+  },
+  {
+   "id": "spike-shape",
+   "title": "How high, how fast, how brief",
+   "years": "",
+   "question": "What shape is the spike in time?",
+   "insight": "The spike lasts ~1-2 ms with fixed height; a bigger touch does not make a bigger spike, only more spikes.",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "",
+   "narration": "The spike is brief and fixed in height: about one to two milliseconds, the same size each time. A stronger touch does not make a taller spike; it makes more spikes.",
+   "narrationAt": 0.8,
+   "audio": "",
+   "start": 20.7,
+   "end": 26.7,
+   "finishedAt": 24.7,
+   "roles": {
+    "just": "Just-threshold input: one fixed-height spike.",
+    "strong": "Stronger input: additional spikes, not a taller one."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.3,
+     "text": "The spike rises and falls in about 1-2 ms."
+    },
+    {
+     "at": 3.0,
+     "text": "A stronger touch adds spikes, not height."
+    }
+   ],
+   "visual": {
+    "layout": "comparison",
+    "nodes": [
+     {
+      "id": "just",
+      "title": "Just at threshold",
+      "body": "One spike: the same height and duration as any other.",
+      "icon": "check",
+      "color": "gold",
+      "at": 0.4,
+      "tag": "1 spike"
+     },
+     {
+      "id": "strong",
+      "title": "Well above threshold",
+      "body": "A stronger touch produces more spikes, not a taller one.",
+      "icon": "flame",
+      "color": "coral",
+      "at": 0.4,
+      "tag": "more spikes"
+     }
+    ],
+    "connections": [],
+    "columns": [],
+    "takeaway": "The spike is all-or-none in height; stronger input changes the number of spikes, not their size.",
+    "presentation": {
+     "method": "Aligned comparison",
+     "why": "All-or-none is easiest to see when two inputs are compared on the same trace.",
+     "visualEvidence": "Two traces have equal peak height and width; only the spike count differs.",
+     "textMode": "descriptive"
+    }
+   },
+   "continuity": {
+    "from": "upstroke-flood",
+    "bridge": "The flood has a characteristic shape in time."
+   }
+  },
+  {
+   "id": "propagation-wave",
+   "title": "The wave that recharges itself",
+   "years": "",
+   "question": "How does the spike travel without fading?",
+   "insight": "Local current depolarises the next patch to threshold, so each segment regenerates the spike toward the terminals.",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "",
+   "narration": "The spike does not fade as it travels. Local current depolarises the next patch of membrane to threshold, so each segment regenerates the signal down the axon.",
+   "narrationAt": 0.8,
+   "audio": "",
+   "start": 26.7,
+   "end": 32.6,
+   "finishedAt": 30.6,
+   "roles": {
+    "zone": "Active zone: the membrane segment currently firing.",
+    "next": "Next patch: depolarised by local current to threshold.",
+    "terminal": "Axon terminals: the signal arrives undiminished."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.3,
+     "text": "The active zone is only a small patch at a time."
+    },
+    {
+     "at": 2.6,
+     "text": "Each patch regenerates the spike for the next."
+    }
+   ],
+   "visual": {
+    "layout": "concept",
+    "nodes": [
+     {
+      "id": "zone",
+      "title": "Active zone",
+      "body": "The patch of membrane currently above threshold.",
+      "icon": "flame",
+      "color": "gold",
+      "at": 0.2,
+      "tag": "firing"
+     },
+     {
+      "id": "next",
+      "title": "Next patch",
+      "body": "Local current pushes the next segment to threshold.",
+      "icon": "route",
+      "color": "green",
+      "at": 1.4,
+      "tag": "regenerate"
+     },
+     {
+      "id": "terminal",
+      "title": "Terminals",
+      "body": "The signal arrives without fading.",
+      "icon": "network",
+      "color": "blue",
+      "at": 2.6,
+      "tag": "arrives"
+     }
+    ],
+    "connections": [],
+    "columns": [],
+    "takeaway": "Each segment regenerates the spike, so the signal reaches the terminals undiminished.",
+    "presentation": {
+     "method": "Native mechanism",
+     "why": "Propagation is repeated regeneration, not a passive cable.",
+     "visualEvidence": "A bright active zone moves along the axon and lights successive patches.",
+     "textMode": "labels"
+    }
+   },
+   "continuity": {
+    "from": "spike-shape",
+    "bridge": "A single spike has a fixed shape; now see how that shape moves."
+   },
+   "renderer": "manimgl",
+   "nativeScene": "neuron",
+   "nativeOffset": 27.8
+  },
+  {
+   "id": "reset-release",
+   "title": "Reset and hand-off",
+   "years": "",
+   "question": "How does the neuron reset and talk to the next cell?",
+   "insight": "K+ exit repolarises, the refractory period blocks re-firing, pumps restore gradients, and Ca2+ triggers transmitter release.",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "",
+   "narration": "Potassium leaving repolarises the membrane, the refractory period prevents immediate re-firing, and the sodium-potassium pump restores the gradients. At the terminals, calcium triggers vesicles to hand the signal to the next cell.",
+   "narrationAt": 0.8,
+   "audio": "",
+   "start": 32.6,
+   "end": 40.0,
+   "finishedAt": 38.0,
+   "roles": {
+    "kout": "K+ exit: repolarises the membrane.",
+    "pump": "Na+/K+ pump: restores the ion gradients.",
+    "calcium": "Ca2+ entry: triggers vesicle fusion.",
+    "next": "Next cell: receives the transmitter."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.3,
+     "text": "K+ exit brings the voltage back down."
+    },
+    {
+     "at": 2.0,
+     "text": "Pumps restore Na+ and K+ gradients."
+    },
+    {
+     "at": 3.8,
+     "text": "Calcium triggers transmitter release to the next cell."
+    }
+   ],
+   "visual": {
+    "layout": "process",
+    "nodes": [
+     {
+      "id": "kout",
+      "title": "K+ leaves",
+      "body": "Potassium exit repolarises the membrane.",
+      "icon": "zap",
+      "color": "blue",
+      "at": 0.3,
+      "tag": "repolarise"
+     },
+     {
+      "id": "pump",
+      "title": "Pumps restore",
+      "body": "The Na+/K+ pump swaps ions back to their gradients.",
+      "icon": "tools",
+      "color": "green",
+      "at": 1.8,
+      "tag": "restore"
+     },
+     {
+      "id": "calcium",
+      "title": "Ca2+ enters",
+      "body": "Calcium at the terminal triggers vesicle fusion.",
+      "icon": "flame",
+      "color": "gold",
+      "at": 3.3,
+      "tag": "release"
+     },
+     {
+      "id": "next",
+      "title": "Next cell",
+      "body": "Transmitter hands the signal to the next neuron.",
+      "icon": "network",
+      "color": "coral",
+      "at": 4.8,
+      "tag": "hand-off"
+     }
+    ],
+    "connections": [
+     {
+      "from": "kout",
+      "to": "pump",
+      "label": "then",
+      "at": 2.0
+     },
+     {
+      "from": "pump",
+      "to": "calcium",
+      "label": "restores",
+      "at": 3.5
+     },
+     {
+      "from": "calcium",
+      "to": "next",
+      "label": "releases",
+      "at": 5.0
+     }
+    ],
+    "columns": [],
+    "takeaway": "Repolarisation, pumping and calcium release reset the neuron and pass the signal on.",
+    "presentation": {
+     "method": "Mechanism chain",
+     "why": "Reset and transmission are a sequence with distinct molecular steps.",
+     "visualEvidence": "K+ exit, pump restoration, calcium entry and vesicle release follow one another.",
+     "textMode": "descriptive"
+    }
+   },
+   "continuity": {
+    "from": "propagation-wave",
+    "bridge": "The signal has arrived; now the neuron must reset and pass it on."
+   }
+  }
+ ]
+}

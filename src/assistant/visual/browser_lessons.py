@@ -146,6 +146,11 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
         cid=_id(c.get('id'))
         if cid in ids:raise PlanError('Chapter IDs must be unique')
         ids.add(cid);layout=c.get('layout')
+        native_window=None
+        if c.get('renderer')=='manimgl':
+            native_window=resolve_native(c.get('nativeScene'),c.get('nativeBeat'))
+        elif c.get('renderer') not in (None,'svg'):
+            raise PlanError("Choose renderer 'manimgl' with a nativeScene/nativeBeat, or leave it as an SVG beat")
         if layout not in LAYOUTS:raise PlanError('Choose an available presentation layout')
         teaching=c.get('teaching')
         if teaching is not None:
@@ -239,8 +244,11 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
             experiment={'prompt':_text(e.get('prompt'),'experiment prompt',200),'choices':choices}
         narration=_text(c.get('narration'),'narration',1600)
         visible_words=sum(len(n['body'].split()) for n in nodes) if not presentation or presentation['textMode']=='descriptive' else sum(len(n['title'].split())+sum(len(p.get('text','').split()) for p in n.get('artwork',[])) for n in nodes)
-        duration=max(float(c.get('duration',30)),len(narration.split())/2.2+3,visible_words/3.3+8,max(n['at'] for n in nodes)+7,max([l['at']+4 for l in links] or [0])+2)
-        if not 15<=duration<=80:raise PlanError('Keep each beat readable within 15–80 seconds; split excessive material')
+        if native_window:
+            duration=round(native_window['end']-native_window['start'],2)
+        else:
+            duration=max(float(c.get('duration',30)),len(narration.split())/2.2+3,visible_words/3.3+8,max(n['at'] for n in nodes)+7,max([l['at']+4 for l in links] or [0])+2)
+            if not 15<=duration<=80:raise PlanError('Keep each beat readable within 15–80 seconds; split excessive material')
         duration=round(duration,2)
         visual={'layout':layout,'nodes':nodes,'connections':links,'columns':columns,
                 'takeaway':_text(c.get('takeaway'),'visible conclusion',180 if presentation and presentation['textMode']=='labels' else 230),'experiment':experiment}
@@ -248,9 +256,12 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
         out['chapters'].append({'id':cid,'title':title,'years':' · '.join(f'p. {p}' for p in pages),'question':question,'insight':insight,
           'sourcePages':pages,'sources':['document'] if document else [],'safeguard':_text(c.get('safeguard'),'misreading safeguard',300),
           'narration':narration,'narrationAt':1.4,'audio':'','start':round(clock,2),'end':round(clock+duration,2),'finishedAt':round(clock+duration-2,2),
-          'cues':[{'at':0,'text':question},{'at':max(n['at'] for n in nodes)+3.5,'text':visual['takeaway']}],
+          'cues':[{'at':0,'text':question},{'at':round(max(1.0,duration-2.5),2) if native_window else max(n['at'] for n in nodes)+3.5,'text':visual['takeaway']}],
           'roles':{n['id']:n['title']+': '+n['body'] for n in nodes},'visual':visual})
         if teaching:out['chapters'][-1]['teaching']=teaching
+        if native_window:
+            out['chapters'][-1].update(renderer='manimgl',nativeScene=c['nativeScene'],
+                nativeBeat=native_window['id'],nativeOffset=round(native_window['start'],2))
         continuity=c.get('continuity')
         if require_continuity and not isinstance(continuity,dict):raise PlanError('Explain how each beat follows from the preceding result')
         if continuity is not None:
@@ -440,6 +451,12 @@ must begin with the continuity bridge. Do not add chapters and do not summarize 
 of the lesson.
 '''
 
+from .native_catalog import native_prompt, resolve_native
+NATIVE_GUIDANCE = native_prompt()
+PLAN = f'{PLAN}\n{NATIVE_GUIDANCE}'
+DIRECT = f'{DIRECT}\n{NATIVE_GUIDANCE}'
+STREAM_CHAPTER = f'{STREAM_CHAPTER}\nIf targetBeat names renderer/nativeScene/nativeBeat, copy those three fields exactly into the chapter.'
+
 def _declared_branch(lesson, question):
     """Pick the best declared branch for a question (keyword score)."""
     low = (question or "").lower()
@@ -474,6 +491,7 @@ class BrowserLessonStore:
         raw['chapters']=[{**{k:copy.deepcopy(c[k]) for k in ('id','title','question','insight','sourcePages','safeguard','narration')},
                           **({'continuity':copy.deepcopy(c['continuity'])} if 'continuity' in c else {}),
                           **({'teaching':c['teaching']} if 'teaching' in c else {}),
+                          **({k:copy.deepcopy(c[k]) for k in ('renderer','nativeScene','nativeBeat') if k in c}),
                           **copy.deepcopy(c['visual']),'duration':c['end']-c['start']} for c in candidate['chapters']]
         return raw
     def _save_working(self,j,candidate):
@@ -644,11 +662,20 @@ class BrowserLessonStore:
     def _check_story(self,raw,document):
         if not isinstance(raw,dict) or not raw.get('representation'):raise PlanError('Explain the presentation choice')
         beats=_list(raw.get('beats'),'storyboard beats',1,12)
+        used_native=set()
         for i,b in enumerate(beats):
             if b.get('layout') not in LAYOUTS or not b.get('visibleOperation'):
                 raise PlanError('Plan a supported visible operation for each beat')
             validate_presentation(b.get('presentation'),b.get('layout'))
             validate_teaching(b.get('teaching'),b.get('layout'),f"storyboard beat '{b.get('id')}'")
+            if b.get('renderer')=='manimgl':
+                window=resolve_native(b.get('nativeScene'),b.get('nativeBeat'))
+                key=(b['nativeScene'],window['id'])
+                if key in used_native:raise PlanError('Use each native scene beat at most once')
+                used_native.add(key)
+                b['renderer']='manimgl';b['nativeScene']=key[0];b['nativeBeat']=key[1]
+            elif b.get('renderer') not in (None,'svg'):
+                raise PlanError("Choose renderer 'manimgl' with a nativeScene/nativeBeat, or leave it as an SVG beat")
             link=b.get('continuity')
             if not isinstance(link,dict) or link.get('from')!=(beats[i-1]['id'] if i else None):
                 raise PlanError('Plan why each beat follows from the preceding result')
@@ -709,7 +736,7 @@ class BrowserLessonStore:
                             raw[key]=copy.deepcopy(story[key])
                     ch0=raw['chapters'][0]
                     if isinstance(ch0,dict):
-                        for bkey in ('id','title','question','insight','safeguard','teaching','layout','presentation','continuity','sourcePages'):
+                        for bkey in ('id','title','question','insight','safeguard','teaching','layout','presentation','continuity','sourcePages','renderer','nativeScene','nativeBeat'):
                             if not ch0.get(bkey) and beat.get(bkey) is not None:
                                 ch0[bkey]=copy.deepcopy(beat[bkey])
                         if not ch0.get('insight'):
@@ -841,7 +868,7 @@ class BrowserLessonStore:
                         if isinstance(ch,dict):
                             bmatch=next((b for b in beats if b.get('id')==ch.get('id')),beats[idx] if idx<len(beats) else None)
                             if bmatch:
-                                for bkey in ('id','title','question','insight','safeguard','teaching','layout','presentation','continuity','sourcePages'):
+                                for bkey in ('id','title','question','insight','safeguard','teaching','layout','presentation','continuity','sourcePages','renderer','nativeScene','nativeBeat'):
                                     if not ch.get(bkey) and bmatch.get(bkey) is not None:
                                         ch[bkey]=copy.deepcopy(bmatch[bkey])
                 attempt=folder/f"{attempt_prefix}-{uuid.uuid4().hex[:8]}.json"

@@ -152,8 +152,7 @@ class OpenCodeLLM:
                     "messages": messages,
                     "max_tokens": max_tokens or 9000,
                     "temperature": 0.2,
-                    "reasoning_effort": "none",
-                    "thinking": {"type": "disabled"},
+                    "provider_options": {"thinking": {"type": "disabled"}},
                 }
                 data = post_json(
                     "https://opencode.ai/inference/go/openai/v1/chat/completions",
