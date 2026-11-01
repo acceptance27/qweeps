@@ -401,3 +401,7 @@ cd visual-studio && npm test
 | `visual-studio/src/learning/NativeLessonCanvas.tsx` | native frame transport + hit-testing |
 | `visual-studio/public/lessons/*.json` | native manifests (duration) |
 | `bundled-lessons/browser-lessons/*/lesson.json` | lesson content + chapter renderers |
+
+## See also
+
+- `docs/hybrid-native-lesson-pipeline.md` — how a generated lesson mixes native ManimGL beats with layout beats, and the orchestration still to build.
