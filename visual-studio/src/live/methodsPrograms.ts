@@ -2,19 +2,20 @@ import type {SceneProgram} from './sceneProgram';
 
 const comparison:SceneProgram={
  title:'Three activation choices',
+ header:{eyebrow:'ILLUSTRATIVE WORKED EXAMPLE',title:'One input, three activation rules',description:'The same input z passes through three rules. The formula, range and behavior differ; the input does not.'},
  teaching:'comparison',
  duration:8,
  objects:[
   {id:'route',kind:'line',from:[260,300],to:[1180,300],role:'blue',strokeWidth:2,opacity:0},
   {id:'ship',kind:'circle',cx:340,cy:300,r:9,stroke:'#8bd0df',opacity:0},
   {id:'sigmoid',kind:'comparison-card',role:'blue',slots:{
-   title:'Sigmoid',value:'0 to 1',badge:'S',formula:'σ(z) = 1 / (1 + e^-z)',detail:'Smooth, bounded output used for probabilities.',icon:'scale',
+   title:'Sigmoid',value:'0 to 1',badge:'S',asset:'scale',formula:'σ(z) = 1 / (1 + e^-z)',detail:'Smooth and bounded: it compresses any real score into a probability between zero and one.',icon:'scale',
    criteria:[{label:'range',value:'0 → 1'},{label:'shape',value:'S-curve'},{label:'common use',value:'probabilities'}]}},
   {id:'relu',kind:'comparison-card',role:'green',slots:{
-   title:'ReLU',value:'0 to ∞',badge:'R',formula:'max(0, z)',detail:'Zero below the threshold, linear above it.',icon:'zap',
+   title:'ReLU',value:'0 to ∞',badge:'R',asset:'zap',formula:'max(0, z)',detail:'Zero below the threshold, then linear above it; this keeps hidden layers sparse and trainable.',icon:'zap',
    criteria:[{label:'range',value:'0 → ∞'},{label:'shape',value:'hinge'},{label:'common use',value:'hidden layers'}]}},
   {id:'linear',kind:'comparison-card',role:'gold',slots:{
-   title:'Linear',value:'−∞ to ∞',badge:'L',formula:'y = z',detail:'Passes the raw score through unchanged.',icon:'arrow',
+   title:'Linear',value:'−∞ to ∞',badge:'L',asset:'route',formula:'y = z',detail:'Returns the raw score unchanged; useful for regression, but it cannot bound an output.',icon:'arrow',
    criteria:[{label:'range',value:'unbounded'},{label:'shape',value:'straight line'},{label:'common use',value:'regression'}]}},
  ],
  actions:[
@@ -32,12 +33,13 @@ const comparison:SceneProgram={
 
 const procedure:SceneProgram={
  title:'Compute one example',
+ header:{eyebrow:'ILLUSTRATIVE WORKED EXAMPLE',title:'One forward pass, step by step',description:'Scale the input, add the bias, then squash the score. Each card keeps the equation and the result.'},
  teaching:'procedure',
  duration:9,
  objects:[
-  {id:'scale',kind:'step-card',role:'blue',slots:{title:'Scale',value:'1.4',formula:'2 × 0.7 = 1.4',detail:'Multiply each input by its weight.',icon:'scale'}},
-  {id:'add',kind:'step-card',role:'gold',slots:{title:'Add bias',value:'1.2',formula:'1.4 − 0.5 + 0.3 = 1.2',detail:'Add the bias and the other weighted input.',icon:'zap'}},
-  {id:'squash',kind:'step-card',role:'green',slots:{title:'Squash',value:'0.77',formula:'σ(1.2) = 0.77',detail:'Squash the score into a bounded output.',icon:'eye'}},
+  {id:'scale',kind:'step-card',role:'blue',slots:{title:'Scale',value:'1.4',asset:'scale',formula:'2 × 0.7 = 1.4',detail:'Multiply each input by its weight before anything is summed.',icon:'scale'}},
+  {id:'add',kind:'step-card',role:'gold',slots:{title:'Add bias',value:'1.2',asset:'zap',formula:'1.4 − 0.5 + 0.3 = 1.2',detail:'Add the bias and the other weighted input to form the score.',icon:'zap'}},
+  {id:'squash',kind:'step-card',role:'green',slots:{title:'Squash',value:'0.77',asset:'eye',formula:'σ(1.2) = 0.77',detail:'Pass the score through the activation to bound the output.',icon:'eye'}},
  ],
  actions:[],
  conclusion:{text:'Scale, add the bias, squash: that is one forward pass.',x:720,y:470},
@@ -45,12 +47,13 @@ const procedure:SceneProgram={
 
 const algorithm:SceneProgram={
  title:'The forward pass',
+ header:{eyebrow:'ILLUSTRATIVE WORKED EXAMPLE',title:'The forward pass as a trace',description:'Read inputs, compute z, return y. The same rows and state values move through the pass.'},
  teaching:'algorithm',
  duration:9,
  objects:[
-  {id:'read',kind:'trace-row',role:'purple',slots:{title:'Read inputs',value:'x, w, b',badge:'1',detail:'Inputs, weights and bias enter the pass.'}},
-  {id:'compute',kind:'trace-row',role:'gold',slots:{title:'Compute z',value:'z = 1.2',badge:'2',detail:'Weighted sum plus bias gives z.'}},
-  {id:'return',kind:'trace-row',role:'green',slots:{title:'Return y',value:'y = 0.77',badge:'3',detail:'The activation turns z into y.'}},
+  {id:'read',kind:'trace-row',role:'purple',slots:{title:'Read inputs',value:'x, w, b',badge:'1',asset:'search',detail:'Inputs, weights and bias enter the pass.'}},
+  {id:'compute',kind:'trace-row',role:'gold',slots:{title:'Compute z',value:'z = 1.2',badge:'2',asset:'cpu',detail:'Weighted sum plus bias gives z.'}},
+  {id:'return',kind:'trace-row',role:'green',slots:{title:'Return y',value:'y = 0.77',badge:'3',asset:'check',detail:'The activation turns z into y.'}},
  ],
  actions:[],
  conclusion:{text:'One forward pass: no weights change.',x:720,y:555},
@@ -58,6 +61,7 @@ const algorithm:SceneProgram={
 
 const narrative:SceneProgram={
  title:'How the idea evolved',
+ header:{eyebrow:'ILLUSTRATIVE WORKED EXAMPLE',title:'Three moments in the idea',description:'The perceptron, backpropagation, and scale: how one unit became a trainable network.'},
  teaching:'narrative',
  duration:10,
  objects:[
@@ -72,6 +76,7 @@ const narrative:SceneProgram={
 
 const recall:SceneProgram={
  title:'Remember the three moves',
+ header:{eyebrow:'ILLUSTRATIVE WORKED EXAMPLE',title:'Weight, sum, activate',description:'The three moves of a neuron, in order. Follow the route and the mnemonic.'},
  teaching:'recall',
  duration:9,
  objects:[

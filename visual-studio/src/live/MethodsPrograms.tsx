@@ -5,7 +5,7 @@ import {METHOD_LABELS,METHOD_ORDER,METHOD_PROGRAMS} from './methodsPrograms';
 import './live.css';
 
 const SHAPES:Record<string,string>={
- comparison:'3 cards · shared criteria rows · conclusion',
+ comparison:'3 cards · icons + formula + detail · conclusion',
  procedure:'3 step cards · rail · result',
  algorithm:'trace rows · state column · conclusion',
  narrative:'axis · dated stations · conclusion',

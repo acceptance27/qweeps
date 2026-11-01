@@ -28,31 +28,19 @@ def test_valid_comparison_spec_builds_a_split_scene():
     spec = {
         "cards": [
             {
-                "title": "Sigmoid", "badge": "S", "formula": "σ(z) = 1 / (1 + e^-z)",
+                "title": "Sigmoid", "badge": "S", "asset": "scale", "formula": "σ(z) = 1 / (1 + e^-z)",
                 "value": "0 to 1", "detail": "Smooth, bounded output used for probabilities.",
-                "criteria": [
-                    {"label": "range", "value": "0 → 1"},
-                    {"label": "curve", "value": "S-curve"},
-                    {"label": "use", "value": "probabilities"},
-                ], "role": "blue",
+                "role": "blue",
             },
             {
-                "title": "ReLU", "badge": "R", "formula": "max(0, z)",
-                "value": "0 to infinity", "detail": "Zero for negatives, linear above.",
-                "criteria": [
-                    {"label": "range", "value": "0 → infinity"},
-                    {"label": "curve", "value": "hinge"},
-                    {"label": "use", "value": "hidden layers"},
-                ], "role": "green",
+                "title": "ReLU", "badge": "R", "asset": "zap", "formula": "max(0, z)",
+                "value": "0 to infinity", "detail": "Zero for negatives and linear above, which keeps hidden layers sparse and trainable.",
+                "role": "green",
             },
             {
-                "title": "Linear", "badge": "L", "formula": "y = z",
-                "value": "unbounded", "detail": "Passes the raw score through unchanged.",
-                "criteria": [
-                    {"label": "range", "value": "unbounded"},
-                    {"label": "curve", "value": "straight line"},
-                    {"label": "use", "value": "regression"},
-                ], "role": "gold",
+                "title": "Linear", "badge": "L", "asset": "route", "formula": "y = z",
+                "value": "unbounded", "detail": "Passes the raw score through unchanged, so regression outputs can grow without a bound.",
+                "role": "gold",
             },
         ],
         "conclusion": "The activation decides the shape of the output, not the input.",
@@ -71,12 +59,12 @@ def test_summary_spec_is_rejected_before_compilation():
     brief = next(item for item in BEAT_BRIEFS if item["teaching"] == "comparison")
     spec = {
         "cards": [
-            {"title": "Sigmoid", "formula": "", "detail": "bounded", "criteria": []},
-            {"title": "ReLU", "formula": "max(0,z)", "detail": "hinge", "criteria": []},
+            {"title": "Sigmoid", "formula": "", "detail": "bounded"},
+            {"title": "ReLU", "formula": "max(0,z)", "detail": "hinge"},
         ],
         "conclusion": "The rule decides.",
     }
     codes = {finding["code"] for finding in spec_findings(spec, brief)}
     assert "missing_formula" in codes
     assert "missing_detail" in codes
-    assert "criteria_count" in codes
+    assert "missing_detail" in codes

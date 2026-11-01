@@ -6,6 +6,7 @@ export type SceneObject=
  | {id:string;kind:'path';d:string;fill?:string;fillOpacity?:number;stroke?:string;strokeWidth?:number;opacity?:number;dash?:string}
  | {id:string;kind:'text';x:number;y:number;text:string;size:number;fill?:string;anchor?:'start'|'middle'|'end';opacity?:number}
  | {id:string;kind:'arrow';from:Point;to:Point;stroke?:string;strokeWidth?:number;opacity?:number}
+ | {id:string;kind:'asset';name:string;x:number;y:number;size:number;color?:string;opacity?:number}
  | {id:string;kind:'group';children:SceneObject[];opacity?:number};
 
 export type SceneAction=

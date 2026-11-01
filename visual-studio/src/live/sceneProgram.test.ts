@@ -48,13 +48,13 @@ test('every teaching grammar has a dense reference settled poster',()=>{
  }
 });
 
-test('comparison cards must share criteria labels in the same order',()=>{
+test('comparison cards compile without the old criteria table',()=>{
  const program=structuredClone(REFERENCE_PROGRAM);
- const card=program.objects.find(object=>object.id==='right') as {slots:{criteria:{label:string;value:string}[]}};
- card.slots.criteria[1].label='different label';
+ for(const card of program.objects as {kind:string;slots?:{criteria?:unknown}}[]){
+  if(card.kind==='comparison-card'&&card.slots)delete card.slots.criteria;
+ }
  const result=compileSceneProgram(program);
- assert.equal(result.ok,false);
- assert.ok(result.findings.some(finding=>finding.code==='criteria_mismatch'));
+ assert.equal(result.ok,true,result.findings.map(f=>f.code).join(','));
 });
 
 test('a bare rect and a naked compound are rejected before rendering',()=>{
@@ -107,8 +107,8 @@ import {METHODS_DEMO_LESSON} from './methodsDemoLesson';
 
 test('beats 4-8 compile to dense settled posters',()=>{
  const expected:Record<string,{compounds:number;slots:number}>={
-  comparison:{compounds:3,slots:42},procedure:{compounds:3,slots:18},algorithm:{compounds:3,slots:9},
-  narrative:{compounds:4,slots:12},recall:{compounds:3,slots:9},
+  comparison:{compounds:3,slots:18},procedure:{compounds:3,slots:18},algorithm:{compounds:3,slots:15},
+  narrative:{compounds:4,slots:12},recall:{compounds:3,slots:15},
  };
  for(const name of METHOD_ORDER){
   const result=compileSceneProgram(METHOD_PROGRAMS[name]);

@@ -23,6 +23,7 @@ from ..http import HTTPError
 from .plan import PlanError, _text, generate_reply, manim_source, validate_plan
 from .browser_gate import check_svg
 from .beat_factory import BeatFactory
+from .visual_beat_factory import VisualBeatFactory
 
 PORT = 4174
 _BUNDLED_STUDIO = Path(__file__).resolve().parents[3] / "visual-studio"
@@ -66,6 +67,7 @@ class VisualService:
         self.live = BrowserLessonStore(self.llm,STUDIO_DIR,folder=(render_dir.parent/'browser-lessons') if render_dir else None,
                                       narration=self.narration if self.cfg.tts.provider=='openrouter' else None)
         self.beats = BeatFactory(self.llm, STUDIO_DIR)
+        self.visual_beats = VisualBeatFactory(self.llm, STUDIO_DIR)
 
     def health(self) -> dict:
         return {"service": "qweeps-visual", "version": 1,
@@ -211,10 +213,16 @@ class Handler(SimpleHTTPRequestHandler):
 
     def allowed(self) -> bool:
         host = self.headers.get("Host", "").split(":")[0]
+        if host not in {"127.0.0.1", "localhost"}:
+            return False
         origin = self.headers.get("Origin")
-        return host in {"127.0.0.1", "localhost"} and (not origin or origin in {
-            "http://127.0.0.1:4174", "http://localhost:4174", "http://127.0.0.1:4173",
-            "http://localhost:4173", "http://127.0.0.1:3000", "http://localhost:3000"})
+        if not origin:
+            return True
+        # The studio may be served on any local port (--port) or through the Vite
+        # dev proxy. A local origin is no weaker than the existing no-Origin path,
+        # which already serves requests from local clients.
+        parsed = urlsplit(origin)
+        return parsed.scheme in {"http", "https"} and parsed.hostname in {"127.0.0.1", "localhost"}
 
     def send_json(self, code, payload):
         try:
@@ -303,6 +311,19 @@ class Handler(SimpleHTTPRequestHandler):
                 self.end_headers()
                 try:
                     for event in self.service.live.stream_events(job_id):
+                        self.wfile.write(('data: '+json.dumps(event)+'\n\n').encode())
+                        self.wfile.flush()
+                except (BrokenPipeError,ConnectionResetError):
+                    pass
+            elif re.fullmatch(r'/api/visual/visual-beats/stream/[0-9a-f]{32}',parsed.path):
+                job_id=parsed.path.rsplit('/',1)[-1]
+                self.send_response(200)
+                self.send_header('Content-Type','text/event-stream')
+                self.send_header('Cache-Control','no-cache')
+                self.send_header('Connection','keep-alive')
+                self.end_headers()
+                try:
+                    for event in self.service.visual_beats.events(job_id):
                         self.wfile.write(('data: '+json.dumps(event)+'\n\n').encode())
                         self.wfile.flush()
                 except (BrokenPipeError,ConnectionResetError):
@@ -412,6 +433,8 @@ class Handler(SimpleHTTPRequestHandler):
                 result = {"sessionId": sid}
             elif route == '/api/visual/documents':
                 result=self.service.live.documents.ingest(payload)
+            elif route == '/api/visual/visual-beats/start':
+                result=self.service.visual_beats.start(payload)
             elif route == '/api/visual/beats/start':
                 result=self.service.beats.start(payload)
             elif route == '/api/visual/live/jobs':

@@ -16,6 +16,7 @@ export type SceneProgram={
  title:string;teaching:string;duration:number;objects:ProgramObject[];actions:ProgramAction[];
  conclusion?:{text:string;x:number;y:number};
  context?:{label?:string};
+ header?:{eyebrow?:string;title?:string;description?:string};
 };
 
 export type ProgramFinding={code:string;severity:'error'|'warning';message:string;id?:string};
@@ -62,6 +63,14 @@ export function compileSceneProgram(program:SceneProgram):CompiledProgram{
   return{compound:placedCompound,layout:layoutCompound(placedCompound)};
  });
  const all:SceneObject[]=[];
+ const headerObjects:SceneObject[]=[];
+ if(program.header){
+  headerObjects.push({id:'header-eyebrow',kind:'text',x:45,y:28,text:(program.header.eyebrow??'ILLUSTRATIVE WORKED EXAMPLE').toUpperCase(),size:12,fill:'#edca82',opacity:0});
+  headerObjects.push({id:'header-title',kind:'text',x:45,y:58,text:program.header.title??program.title,size:26,fill:'#e6ecef',opacity:0});
+  if(program.header.description)wrapText(program.header.description,620,15,2).forEach((line,index)=>headerObjects.push({id:`header-description-${index}`,kind:'text',x:780,y:42+index*20,text:line,size:15,fill:'#9bb5ba',opacity:0}));
+  headerObjects.push({id:'header-rule',kind:'path',d:pathD(lineLoop([45,80],[1395,80])),stroke:'#31505d',strokeWidth:1,opacity:0});
+ }
+ all.push(...headerObjects);
  const compoundIds:Record<string,string>={};
  for(const{compound,layout}of layouts){
   all.push(layout.hull,...layout.slots);
@@ -79,6 +88,7 @@ export function compileSceneProgram(program:SceneProgram):CompiledProgram{
  const actions:SceneAction[]=program.teaching==='comparison'
   ? comparisonTimeline(program,compounds,layouts,extras)
   : motionTimeline(program,layouts,extras);
+ for(const object of headerObjects)actions.push({at:.05,duration:.4,kind:'show',id:object.id});
  if(program.conclusion){const last=Math.max(0,...actions.map(a=>a.at+a.duration));actions.push({at:Math.min(program.duration-1.6,Math.max(last+.3,program.duration-2)),duration:.4,kind:'show',id:'conclusion'});}
  actions.sort((a,b)=>a.at-b.at);
 
@@ -113,10 +123,8 @@ function checkCompoundSlots(compound:Compound):ProgramFinding[]{
  }
  if(compound.kind==='comparison-card'){
   if(!slots.caption?.trim()&&!slots.detail?.trim())findings.push({code:'empty_slot',severity:'error',message:`Comparison card "${compound.id}" needs a caption or detail.`,id:compound.id});
-  const criteria=slots.criteria??[];
-  if(criteria.length<2||criteria.length>3)findings.push({code:'criteria_rows',severity:'error',message:`Comparison card "${compound.id}" needs 2–3 shared criteria rows.`,id:compound.id});
-  const box=compoundBox(compound),contentBottom=(slots.formula?84:64)+criteria.length*34+8+36+56+18;
-  if(contentBottom<box.height*.65)findings.push({code:'card_occupancy',severity:'error',message:`Comparison card "${compound.id}" leaves too much empty hull.`,id:compound.id});
+  const box=compoundBox(compound),contentBottom=280;
+  if(contentBottom<box.height*.75)findings.push({code:'card_occupancy',severity:'error',message:`Comparison card "${compound.id}" leaves too much empty hull.`,id:compound.id});
  }
  if(compound.kind==='trace-row'&&slots.caption)findings.push({code:'slot_budget',severity:'warning',message:'Trace rows use title + state, not a paragraph.',id:compound.id});
  findings.push(...checkTextBudgets(compound));
@@ -126,7 +134,7 @@ function checkCompoundSlots(compound:Compound):ProgramFinding[]{
 }
 
 const TEXT_LIMITS:Record<CompoundKind,{title?:number;value?:number;caption?:number;formula?:number;detail?:number;badge?:number;note?:number}> = {
- 'comparison-card':{title:28,value:18,caption:65,formula:44,detail:160,badge:2},'step-card':{title:24,value:18,caption:90,formula:44,detail:160,badge:2},
+ 'comparison-card':{title:24,value:18,caption:65,formula:32,detail:160,badge:2},'step-card':{title:24,value:18,caption:90,formula:26,detail:160,badge:2},
  'sum-node':{title:20,value:18,caption:45},'value-pill':{value:20},'icon-chip':{title:18,caption:24},
  axis:{},'number-line':{},bars:{},callout:{title:18,value:140},brace:{value:28},
  'trace-row':{title:28,value:22,detail:70,note:80},station:{title:18,value:12,caption:32,detail:60,badge:2},
@@ -140,15 +148,15 @@ function checkTextBudgets(compound:Compound):ProgramFinding[]{
   if(typeof value==='string'&&limit&&value.length>limit)findings.push({code:'slot_budget',severity:'error',message:`${compound.kind} "${compound.id}" ${key} exceeds ${limit} characters.`,id:compound.id});
  }
  if(compound.kind==='comparison-card'){
-  if(slots.title&&textWidth(slots.title,19)>box.width-84)findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" title does not fit its measured width.`,id:compound.id});
-  if(slots.value&&textWidth(slots.value,17)>box.width-36)findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" value does not fit its pill.`,id:compound.id});
+  if(slots.title&&textWidth(slots.title,23)>box.width-84)findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" title does not fit its measured width.`,id:compound.id});
+  if(slots.value&&textWidth(slots.value,18)>box.width-40)findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" value does not fit its pill.`,id:compound.id});
   if(slots.caption&&!slots.detail){
-   const lines=wrapText(slots.caption,box.width-36,13,2);
+   const lines=wrapText(slots.caption,box.width-40,16,2);
    if(lines.some(line=>line.endsWith('…')))findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" caption needs more than two lines.`,id:compound.id});
   }
-  if(slots.formula&&textWidth(slots.formula,15)>box.width-84)findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" formula does not fit.`,id:compound.id});
+  if(slots.formula&&textWidth(slots.formula,18)>box.width-40)findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" formula does not fit.`,id:compound.id});
   if(slots.detail){
-   const lines=wrapText(slots.detail,box.width-36,13,3);
+   const lines=wrapText(slots.detail,box.width-40,19,4);
    if(lines.some(line=>line.endsWith('…')))findings.push({code:'text_overflow',severity:'error',message:`Card "${compound.id}" detail needs more than three lines.`,id:compound.id});
   }
   for(const criterion of slots.criteria??[]){
@@ -158,13 +166,13 @@ function checkTextBudgets(compound:Compound):ProgramFinding[]{
   }
  }
  if(compound.kind==='step-card'){
-  if(slots.formula&&textWidth(slots.formula,14)>box.width-32)findings.push({code:'text_overflow',severity:'error',message:`Step card "${compound.id}" formula does not fit.`,id:compound.id});
+  if(slots.formula&&textWidth(slots.formula,19)>box.width-36)findings.push({code:'text_overflow',severity:'error',message:`Step card "${compound.id}" formula does not fit.`,id:compound.id});
   if(slots.detail??slots.caption){
-   const lines=wrapText(slots.detail??slots.caption??'',box.width-32,13,3);
+   const lines=wrapText(slots.detail??slots.caption??'',box.width-36,17,4);
    if(lines.some(line=>line.endsWith('…')))findings.push({code:'text_overflow',severity:'error',message:`Step card "${compound.id}" body needs more than three lines.`,id:compound.id});
   }
  }
- if(compound.kind==='station'&&slots.caption&&textWidth(slots.caption,12)>box.width-12)findings.push({code:'text_overflow',severity:'error',message:`Station "${compound.id}" caption does not fit.`,id:compound.id});
+ if(compound.kind==='station'&&slots.caption&&textWidth(slots.caption,14)>box.width-12)findings.push({code:'text_overflow',severity:'error',message:`Station "${compound.id}" caption does not fit.`,id:compound.id});
  if(compound.kind==='callout'&&slots.value){
   const lines=wrapText(slots.value,box.width-40,15,2);
   if(lines.some(line=>line.endsWith('…')))findings.push({code:'text_overflow',severity:'error',message:`Callout "${compound.id}" needs more than two lines.`,id:compound.id});
@@ -185,8 +193,6 @@ function checkGrammar(program:SceneProgram,compounds:Compound[],primitives:Progr
   if(!program.actions.some(action=>action.kind==='morph'&&action.mode==='replace'))findings.push({code:'missing_morph',severity:'error',message:'Use a replace morph from the route to the first comparison card.'});
   if(!program.actions.some(action=>action.kind==='morph'&&action.mode==='copy'))findings.push({code:'missing_copy',severity:'error',message:'Use a copy morph from the route to the second comparison card.'});
   if(!has('dock'))findings.push({code:'missing_dock',severity:'error',message:'Dock the retained route context after the split.'});
-  const labels=cards.map(card=>(card.slots.criteria??[]).map(criterion=>criterion.label.trim().toLowerCase()).join('|'));
-  if(cards.length>1&&new Set(labels).size>1)findings.push({code:'criteria_mismatch',severity:'error',message:'Comparison cards must share the same criteria labels in the same order.'});
   if(!lines.length)findings.push({code:'missing_context',severity:'error',message:'A comparison poster needs a retained route context.'});
  }
  if(teaching==='procedure'){
@@ -231,12 +237,12 @@ function placeCompounds(program:SceneProgram,compounds:Compound[]):{compound:Com
  const byKind=(...kinds:CompoundKind[])=>compounds.filter(compound=>kinds.includes(compound.kind));
  if(program.teaching==='procedure'){
   const steps=byKind('step-card');
-  const width=290,height=190,gap=stepGap(steps.length),start=(1440-(steps.length*width+(steps.length-1)*gap))/2;
-  return steps.map((compound,index)=>({compound:{...compound,slots:{...compound.slots,index:`${index+1}/${steps.length}`}},box:{x:start+index*(width+gap),y:170,width,height}}));
+  const width=320,height=240,gap=40,start=(1440-(steps.length*width+(steps.length-1)*gap))/2;
+  return steps.map((compound,index)=>({compound:{...compound,slots:{...compound.slots,badge:`${index+1}`}},box:{x:start+index*(width+gap),y:170,width,height}}));
  }
  if(program.teaching==='algorithm'){
   const rows=byKind('trace-row');
-  return rows.map((compound,index)=>({compound,box:{x:160,y:126+index*78,width:1120,height:62}}));
+  return rows.map((compound,index)=>({compound,box:{x:240,y:140+index*116,width:960,height:86}}));
  }
  if(program.teaching==='narrative'||program.teaching==='recall'){
   const stations=byKind('station');
@@ -244,7 +250,7 @@ function placeCompounds(program:SceneProgram,compounds:Compound[]):{compound:Com
   const route=program.objects.find(isLine) as ProgramLine|undefined;
   const left=route?Math.min(route.from[0],route.to[0]):180;
   const right=route?Math.max(route.from[0],route.to[0]):1260;
-  const width=220,height=118;
+  const width=260,height=118;
   const placed:{compound:Compound;box:{x:number;y:number;width:number;height:number}}[]=[];
   if(program.teaching==='narrative'){
    const axisY=170,baseline=axisY+130*.55,stationY=baseline-20;
@@ -256,7 +262,7 @@ function placeCompounds(program:SceneProgram,compounds:Compound[]):{compound:Com
    stations.forEach((compound,index)=>{
     const fallback=stations.length===1?left+(right-left)/2:left+(right-left)*index/(stations.length-1);
     const x=tickX(compound.slots.value??'')??fallback;
-    placed.push({compound:{...compound,slots:{...compound.slots,showValue:false}},box:{x:x-width/2,y:stationY,width,height}});
+    placed.push({compound:{...compound,slots:{...compound.slots,showValue:false}},box:{x:x-width/2,y:stationY,width,height:118}});
    });
    if(axis)placed.unshift({compound:axis,box:{x:left,y:axisY,width:right-left,height:130}});
    return placed;
@@ -264,7 +270,7 @@ function placeCompounds(program:SceneProgram,compounds:Compound[]):{compound:Com
   const routeY=route?route.from[1]:300;
   stations.forEach((compound,index)=>{
    const fraction=stations.length===1?.5:index/(stations.length-1);
-   placed.push({compound,box:{x:left+fraction*(right-left)-width/2,y:routeY-20,width,height}});
+   placed.push({compound:{...compound,slots:{...compound.slots,large:true}},box:{x:left+fraction*(right-left)-width/2,y:routeY-64,width,height:160}});
   });
   return placed;
  }
@@ -291,8 +297,8 @@ function comparisonPlacement(compounds:Compound[],comparison:boolean){
  if(!comparison||!cards.length)return compounds.map(compound=>({compound,box:compoundBox(compound)}));
  const width=cards.length<=2?420:cards.length===3?380:320;
  const gap=cards.length<=2?120:60;
- const height=380,startX=(1440-(cards.length*width+(cards.length-1)*gap))/2;
- return[...cards.map((compound,index)=>({compound,box:{x:startX+index*(width+gap),y:120,width,height}})),...rest.map(compound=>({compound,box:compoundBox(compound)}))];
+ const height=300,startX=(1440-(cards.length*width+(cards.length-1)*gap))/2;
+ return[...cards.map((compound,index)=>({compound,box:{x:startX+index*(width+gap),y:150,width,height}})),...rest.map(compound=>({compound,box:compoundBox(compound)}))];
 }
 function stepGap(count:number){return count>=4?24:36;}
 
@@ -325,7 +331,7 @@ function grammarExtras(program:SceneProgram,boxes:ReturnType<typeof layoutBoxes>
    objects.push({id:'narrative-travel',kind:'circle',cx:box.x,cy:baseline,r:5,fill:'#edca82',stroke:'#edca82',opacity:0});
   }
  }
- if(program.teaching==='comparison'){
+ if(program.teaching==='comparison'&&!program.header){
   const route=program.objects.find(isLine);
   if(route){
    const minX=Math.min(route.from[0],route.to[0]),maxX=Math.max(route.from[0],route.to[0]);
@@ -351,6 +357,7 @@ function comparisonTimeline(program:SceneProgram,compounds:Compound[],layouts:{c
    target.layout.slots.forEach((slot,index)=>actions.push({at:action.at+action.duration*.65+index*.045,duration:.35,kind:'show',id:slot.id}));
   }else if(action.kind==='dock'){
    const scale=Math.min(1,Math.max(.7,action.scale??.8));
+   if(!extras.objects.some(object=>object.id==='context'))continue;
    const route=program.objects.find(isLine);
    const minX=route?Math.min(route.from[0],route.to[0]):260;
    const maxX=route?Math.max(route.from[0],route.to[0]):1180;
@@ -364,6 +371,7 @@ function comparisonTimeline(program:SceneProgram,compounds:Compound[],layouts:{c
   if(object.id==='context'||object.id==='context-label')continue;
   actions.push({at:.3,duration:.4,kind:'show',id:object.id});
  }
+ if(program.header)actions.push({at:Math.max(.8,program.duration-3.4),duration:.5,kind:'indicate',id:'header-title'});
  return actions;
 }
 

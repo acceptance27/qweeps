@@ -5,7 +5,7 @@ import {GRAMMAR_LABELS,POSTER_ORDER,REFERENCE_POSTERS} from './referencePosters'
 import './live.css';
 
 const SHAPES:Record<string,string>={
- comparison:'2–4 columns · shared criteria rows · conclusion',
+ comparison:'2–4 columns · icons + formula + detail · conclusion',
  procedure:'3–4 step cards · rail · result',
  algorithm:'trace rows · state column · conclusion',
  narrative:'axis · dated stations · captions · conclusion',

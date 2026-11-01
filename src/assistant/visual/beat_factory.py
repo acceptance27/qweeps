@@ -20,6 +20,7 @@ from ..llm import ModelProviderError, OfflineLLM
 BEAT_BRIEFS = [
     {
         "id": "comparison",
+        "header": {"eyebrow": "ILLUSTRATIVE WORKED EXAMPLE", "title": "One input, three activation rules", "description": "Sigmoid, ReLU and linear read the same z; only the output rule changes."},
         "teaching": "comparison",
         "title": "Three activation choices",
         "question": "How do sigmoid, ReLU and linear activations differ?",
@@ -36,6 +37,7 @@ BEAT_BRIEFS = [
     },
     {
         "id": "procedure",
+        "header": {"eyebrow": "ILLUSTRATIVE WORKED EXAMPLE", "title": "One forward pass, step by step", "description": "Scale, add the bias, squash. The equations stay visible on the cards."},
         "teaching": "procedure",
         "title": "Compute one example",
         "question": "What are the exact steps for these numbers?",
@@ -50,6 +52,7 @@ BEAT_BRIEFS = [
     },
     {
         "id": "algorithm",
+        "header": {"eyebrow": "ILLUSTRATIVE WORKED EXAMPLE", "title": "The forward pass as a trace", "description": "Read inputs, compute z, return y; no weights change."},
         "teaching": "algorithm",
         "title": "The forward pass",
         "question": "What does the neuron do as an algorithm?",
@@ -65,6 +68,7 @@ BEAT_BRIEFS = [
     },
     {
         "id": "narrative",
+        "header": {"eyebrow": "ILLUSTRATIVE WORKED EXAMPLE", "title": "Three moments in the idea", "description": "Perceptron, backpropagation, scale: how one unit became a trainable network."},
         "teaching": "narrative",
         "title": "How the idea evolved",
         "question": "Where did this model come from?",
@@ -79,6 +83,7 @@ BEAT_BRIEFS = [
     },
     {
         "id": "recall",
+        "header": {"eyebrow": "ILLUSTRATIVE WORKED EXAMPLE", "title": "Weight, sum, activate", "description": "The three moves of a neuron, in order."},
         "teaching": "recall",
         "title": "Remember the three moves",
         "question": "How can I remember what a neuron does?",
@@ -92,6 +97,8 @@ BEAT_BRIEFS = [
         "roles": ["blue", "purple", "green"],
     },
 ]
+
+ASSETS = {"scale","zap","route","lock","shield","bomb","warning","check","search","cpu","eye","package","atom","cross","key","brain","network","database","route","tools","flask-conical","flame"}
 
 BUDGETS = {
     "comparison": {"title": 28, "formula": 44, "value": 18, "detail": 160, "criteria_value": 18, "badge": 2},
@@ -113,14 +120,10 @@ SCHEMAS = {
             {
                 "title": "Sigmoid",
                 "badge": "S",
+                "asset": "scale",
                 "formula": "σ(z) = 1 / (1 + e^-z)",
                 "value": "0 to 1",
                 "detail": "Smooth, bounded output used for probabilities.",
-                "criteria": [
-                    {"label": "range", "value": "0 → 1"},
-                    {"label": "curve", "value": "S-curve"},
-                    {"label": "use", "value": "probabilities"},
-                ],
                 "role": "blue",
             }
         ],
@@ -130,6 +133,7 @@ SCHEMAS = {
         "steps": [
             {
                 "title": "Scale",
+                "asset": "scale",
                 "formula": "2 × 0.7 = 1.4",
                 "value": "1.4",
                 "detail": "Multiply each input by its weight.",
@@ -143,6 +147,7 @@ SCHEMAS = {
             {
                 "title": "Read inputs",
                 "value": "x, w, b",
+                "asset": "search",
                 "badge": "1",
                 "detail": "Inputs, weights and bias enter the pass.",
                 "role": "purple",
@@ -207,16 +212,32 @@ def prompt_for(brief: dict) -> str:
         f"{json.dumps(shape, ensure_ascii=False, indent=1)}\n\n"
         "Rules:\n"
         "- Use the brief's facts; do not add new claims.\n"
-        "- comparison: every card needs badge, formula, value, detail and the three shared criteria labels from the brief.\n"
-        "- procedure: every step needs formula and detail.\n"
-        "- algorithm: every row needs badge and detail.\n"
+        "- comparison: every card needs badge, asset, formula, value and detail.\n"
+        "- procedure: every step needs formula, detail and a catalog asset.\n"
+        "- algorithm: every row needs badge, detail and a catalog asset.\n"
         "- narrative: ticks and station values must match; every station needs caption.\n"
         "- recall: every station needs badge and detail.\n"
-        "- detail explains the meaning; do not restate the formula.\n"
+        "- detail is 80-120 characters and explains the mechanism; do not restate the formula.\n"
         "- conclusion must be one sentence under 110 characters.\n"
         f"- Field budgets: {json.dumps(BUDGETS[brief['teaching']])}.\n"
+        "- asset must be one of: scale, zap, route, lock, shield, bomb, warning, check, search, cpu, eye, package, atom, cross, key, brain, network, database.\n"
         "- Return only the JSON object."
     )
+
+
+DEFAULT_ASSETS = {
+    "comparison": ["scale", "zap", "route", "atom"],
+    "procedure": ["scale", "zap", "eye", "check"],
+    "algorithm": ["search", "cpu", "check", "route"],
+}
+
+def fill_assets(spec: dict, brief: dict) -> dict:
+    units = spec.get("cards") or spec.get("steps") or spec.get("rows") or []
+    defaults = DEFAULT_ASSETS.get(brief["teaching"], [])
+    for index, unit in enumerate(units):
+        if not unit.get("asset") and defaults:
+            unit["asset"] = defaults[index % len(defaults)]
+    return spec
 
 
 def spec_findings(spec: dict, brief: dict) -> list[dict]:
@@ -237,20 +258,10 @@ def spec_findings(spec: dict, brief: dict) -> list[dict]:
         if not isinstance(cards, list) or not 2 <= len(cards) <= 4:
             findings.append({"code": "card_count", "message": "Return 2-4 comparison cards."})
             return findings
-        labels = brief.get("criteria") or []
         for index, card in enumerate(cards):
             need(card.get("title"), "missing_title", f"Card {index+1} needs a title.")
             need(card.get("formula"), "missing_formula", f"Card {index+1} needs a formula.")
-            need(card.get("detail"), "missing_detail", f"Card {index+1} needs a detail sentence.", 20)
-            criteria = card.get("criteria")
-            if not isinstance(criteria, list) or len(criteria) != len(labels):
-                findings.append({"code": "criteria_count", "message": f"Card {index+1} needs exactly {len(labels)} criteria rows."})
-            else:
-                for row, label in zip(criteria, labels):
-                    if row.get("label") != label:
-                        findings.append({"code": "criteria_label", "message": f"Card {index+1} criteria labels must be {labels} in order."})
-                        break
-                    need(row.get("value"), "criteria_value", f"Card {index+1} criterion '{label}' needs a value.")
+            need(card.get("detail"), "missing_detail", f"Card {index+1} needs a detail sentence.", 45)
     elif teaching == "procedure":
         steps = spec.get("steps")
         if not isinstance(steps, list) or not 3 <= len(steps) <= 4:
@@ -259,7 +270,8 @@ def spec_findings(spec: dict, brief: dict) -> list[dict]:
         for index, step in enumerate(steps):
             need(step.get("title"), "missing_title", f"Step {index+1} needs a title.")
             need(step.get("formula"), "missing_formula", f"Step {index+1} needs its equation.")
-            need(step.get("detail"), "missing_detail", f"Step {index+1} needs a detail sentence.", 12)
+            if step.get("asset") not in ASSETS: findings.append({"code": "missing_asset", "message": f"Step {index+1} needs a catalog asset such as scale, lock or eye."})
+            need(step.get("detail"), "missing_detail", f"Step {index+1} needs a detail sentence.", 35)
     elif teaching == "algorithm":
         rows = spec.get("rows")
         if not isinstance(rows, list) or not 3 <= len(rows) <= 5:
@@ -269,6 +281,7 @@ def spec_findings(spec: dict, brief: dict) -> list[dict]:
             need(row.get("title"), "missing_title", f"Row {index+1} needs a title.")
             need(row.get("value"), "missing_value", f"Row {index+1} needs a state value.")
             need(row.get("detail"), "missing_detail", f"Row {index+1} needs a detail line.", 10)
+            if row.get("asset") not in ASSETS: findings.append({"code": "missing_asset", "message": f"Row {index+1} needs a catalog asset such as search, cpu or check."})
     elif teaching == "narrative":
         stations = spec.get("stations")
         ticks = spec.get("ticks")
@@ -296,6 +309,7 @@ def spec_findings(spec: dict, brief: dict) -> list[dict]:
 
 def build_program(brief: dict, spec: dict) -> dict:
     teaching = brief["teaching"]
+    header = brief.get("header")
     roles = brief.get("roles") or ["blue", "green", "gold", "coral"]
     conclusion = spec["conclusion"]
     if teaching == "comparison":
@@ -307,9 +321,8 @@ def build_program(brief: dict, spec: dict) -> dict:
                 "kind": "comparison-card",
                 "role": role,
                 "slots": {
-                    "title": card["title"], "value": card.get("value", ""), "detail": clip_words(card["detail"], 160),
+                    "title": card["title"], "value": card.get("value", ""), "detail": clip_words(card["detail"], 160), "asset": card.get("asset"),
                     "formula": card["formula"], "badge": card.get("badge") or card["title"][0],
-                    "criteria": card["criteria"],
                 },
             })
         objects = [
@@ -326,7 +339,7 @@ def build_program(brief: dict, spec: dict) -> dict:
             {"at": 3.8, "duration": .8, "kind": "dock", "ids": [card["id"] for card in cards], "y": 60, "scale": .8},
         ]
         return {
-            "title": brief["title"], "teaching": teaching, "duration": brief["duration"],
+            "title": brief["title"], "teaching": teaching, "duration": brief["duration"], "header": header,
             "objects": objects, "actions": actions,
             "conclusion": {"text": conclusion, "x": 720, "y": 560},
             "context": {"label": brief.get("context") or "shared input"},
@@ -334,29 +347,29 @@ def build_program(brief: dict, spec: dict) -> dict:
     if teaching == "procedure":
         objects = [{
             "id": f"step-{index+1}", "kind": "step-card", "role": step.get("role") or roles[index % len(roles)],
-            "slots": {"title": step["title"], "formula": step["formula"], "value": step.get("value", ""), "detail": clip_words(step["detail"], 160), "badge": str(index + 1)},
+            "slots": {"title": step["title"], "formula": step["formula"], "value": step.get("value", ""), "detail": clip_words(step["detail"], 160), "badge": str(index + 1), "asset": step.get("asset")},
         } for index, step in enumerate(spec["steps"])]
-        return {"title": brief["title"], "teaching": teaching, "duration": brief["duration"], "objects": objects, "actions": [], "conclusion": {"text": conclusion, "x": 720, "y": 470}}
+        return {"title": brief["title"], "teaching": teaching, "duration": brief["duration"], "header": header, "objects": objects, "actions": [], "conclusion": {"text": conclusion, "x": 720, "y": 470}}
     if teaching == "algorithm":
         objects = [{
             "id": f"row-{index+1}", "kind": "trace-row", "role": row.get("role") or roles[index % len(roles)],
-            "slots": {"title": row["title"], "value": row["value"], "badge": row.get("badge") or str(index + 1), "detail": clip_words(row["detail"], 70)},
+            "slots": {"title": row["title"], "value": row["value"], "badge": row.get("badge") or str(index + 1), "detail": clip_words(row["detail"], 70), "asset": row.get("asset")},
         } for index, row in enumerate(spec["rows"])]
-        return {"title": brief["title"], "teaching": teaching, "duration": brief["duration"], "objects": objects, "actions": [], "conclusion": {"text": conclusion, "x": 720, "y": 555}}
+        return {"title": brief["title"], "teaching": teaching, "duration": brief["duration"], "header": header, "objects": objects, "actions": [], "conclusion": {"text": conclusion, "x": 720, "y": 555}}
     if teaching == "narrative":
         objects = [{"id": "axis", "kind": "axis", "role": "muted", "slots": {"ticks": [{"label": tick} for tick in spec["ticks"]]}}]
         objects += [{
             "id": f"station-{index+1}", "kind": "station", "role": station.get("role") or roles[index % len(roles)],
             "slots": {"title": station["title"], "value": station["value"], "caption": clip_words(station["caption"], 32)},
         } for index, station in enumerate(spec["stations"])]
-        return {"title": brief["title"], "teaching": teaching, "duration": brief["duration"], "objects": objects, "actions": [], "conclusion": {"text": conclusion, "x": 720, "y": 470}}
+        return {"title": brief["title"], "teaching": teaching, "duration": brief["duration"], "header": header, "objects": objects, "actions": [], "conclusion": {"text": conclusion, "x": 720, "y": 470}}
     if teaching == "recall":
         objects = [{"id": "route", "kind": "line", "from": [180, 300], "to": [1260, 300], "role": "blue", "strokeWidth": 2, "opacity": 0}]
         objects += [{
             "id": f"station-{index+1}", "kind": "station", "role": station.get("role") or roles[index % len(roles)],
             "slots": {"title": station["title"], "value": station["value"], "badge": station.get("badge") or station["title"][0], "detail": clip_words(station["detail"], 60)},
         } for index, station in enumerate(spec["stations"])]
-        return {"title": brief["title"], "teaching": teaching, "duration": brief["duration"], "objects": objects, "actions": [], "conclusion": {"text": conclusion, "x": 720, "y": 470}}
+        return {"title": brief["title"], "teaching": teaching, "duration": brief["duration"], "header": header, "objects": objects, "actions": [], "conclusion": {"text": conclusion, "x": 720, "y": 470}}
     raise ValueError(f"Unknown teaching method: {teaching}")
 
 
@@ -442,13 +455,13 @@ class BeatFactory:
             stream.put(None)
 
     def _generate(self, brief: dict, index: int, emit) -> tuple[dict, dict, int]:
-        spec = self._ask(brief, emit)
+        spec = fill_assets(self._ask(brief, emit), brief)
         findings = spec_findings(spec, brief)
         program = build_program(brief, spec)
         compiled = compile_program(self.studio, program)
         if findings or not compiled.get("ok"):
             emit("repair", index=index, reason="slot or compiler gate", findings=findings + [f for f in compiled.get("findings", []) if f.get("severity") == "error"][:6])
-            spec = self._ask(brief, emit, spec=spec, findings=findings + compiled.get("findings", []))
+            spec = fill_assets(self._ask(brief, emit, spec=spec, findings=findings + compiled.get("findings", [])), brief)
             program = build_program(brief, spec)
             compiled = compile_program(self.studio, program)
             if not compiled.get("ok"):

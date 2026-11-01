@@ -211,7 +211,7 @@ Grammar-specific final shapes:
 |---|---|
 | construction/mechanism | hero + 2–4 parts + explicit relations + conclusion |
 | quantitative | plot/axis/number-line + 2–3 annotations + conclusion |
-| comparison | 2–4 columns + shared criteria rows + conclusion |
+| comparison | 2–4 columns + icons + formula/detail + conclusion |
 | procedure | 3–4 step cards + rail + result |
 | algorithm | trace rows + state column + conclusion |
 | narrative | axis + dated markers + captions + conclusion |
@@ -395,7 +395,7 @@ The P1 layer is now in the tree and gated:
   number-line, bars, callout, brace, trace-row and station;
 - `visual-studio/src/live/sceneProgram.ts` — model-facing IR, compound
   expansion, poster placement, hull/settle timing, measured text budgets,
-  criteria sharing, naked-box/empty-slot rejection, settle hold and pacing;
+  asset/detail budgets, naked-box/empty-slot rejection, settle hold and pacing;
 - eight reference settled posters at `?posters=1` (comparison, procedure,
   algorithm, narrative, recall, quantitative, construction, mechanism);
 - reference comparison at `?reference=1`, captured model output at `?model=1`;
@@ -408,12 +408,12 @@ The P1 layer is now in the tree and gated:
 Evidence:
 
 - Muse and DeepSeek each passed the model-authored comparison gate **3/3**;
-  both filled shared criteria rows, used replace + copy, docked the retained
+  both filled formula/detail/asset slots, used replace + copy, docked the retained
   context, and settled into a readable poster;
 - all eight reference posters compile and pass the settled-poster browser gate
   with **0 errors and 0 warnings**;
 - 65 TypeScript tests and 427 Python tests pass;
-- a bare rect, an empty compound, a criteria mismatch, a missing dock, a
+- a bare rect, an empty compound, a text overflow, a missing dock, a
   short settle hold and prose-stuffed slots are rejected before rendering.
 
 The model still needs prompt/examples rather than free coordinates. P2 (shared
@@ -497,6 +497,22 @@ Still open for P3 production:
 - P4 still needs the automated merge/revision loop and action-boundary
   sampling; the manual mid-morph and settled checks now exist.
 
+### Design path correction
+
+The card beats were being recreated in the compound `SceneProgram` path, which
+made them look like simplified dashboards. That path is wrong for this design.
+
+- comparison, procedure, algorithm, narrative and recall now use the existing
+  `LiveVisual` schema and `GeneratedStage`/`GrammarNode` renderer;
+- beats 1–3 follow the massless-matter `diagram`/`fanin`/`concept` style;
+- beats 4–8 follow the Module 6 `comparison`/`process`/`timeline`/`loci` style;
+- `?methodsVisual=1` is the 1:1 reference lesson;
+- `?factory=1` streams `LiveVisual` slot JSON and renders it with the existing
+  renderer: **5/5 first-pass, 22.8 s total, first beat 4.5 s**, browser gate
+  **5/5, 0 errors, 0 warnings**;
+- `SceneProgram`/`SceneStage` remain for motion-specific scenes only, not for
+  card/diagram beats.
+
 ### P4 — Motion and settled-poster gate
 
 Deliver:
@@ -520,7 +536,7 @@ Acceptance:
 ### P4 status — partial
 
 - the compiler rejects dead holds, short settle holds, empty slots, naked
-  boxes, criteria mismatches and prose-stuffed slots;
+  boxes, asset overflows and prose-stuffed slots;
 - `bench/live_scene_check.py` samples a chosen live frame through the
   HyperFrames contrast/layout gate;
 - beats 4–8 were sampled at mid-morph and settled state in `?methodsDemo=1`:
@@ -758,6 +774,9 @@ poster does not count.
 - `src/assistant/visual/beat_factory.py` — model slot factory and SSE stream.
 - `visual-studio/src/live/BeatFactory.tsx` — streaming beat page at `?factory=1`.
 - `bench/beat_factory_stream.py` — CLI stream reproducer.
+- `src/assistant/visual/visual_beat_factory.py` — LiveVisual slot factory.
+- `visual-studio/src/live/VisualBeatStage.tsx` — single-beat existing-renderer wrapper.
+- `visual-studio/src/live/methodsVisualLesson.ts` — 1:1 visual reference lesson at `?methodsVisual=1`.
 - `visual-studio/scripts/ir_lesson.ts` — IR lesson builder.
 - `bench/hyperframes_check.py` — static browser gate.
 - `src/assistant/visual/browser_gate.py` — server gate.

@@ -1,6 +1,7 @@
 import React,{useEffect,useLayoutEffect,useRef} from 'react';
 import gsap from 'gsap';
 import type {Scene,SceneAction,SceneObject} from './scene';
+import {LiveAsset} from './LiveAssets';
 
 function arrowHead(from:[number,number],to:[number,number]){
  const angle=Math.atan2(to[1]-from[1],to[0]-from[0]),size=13;
@@ -74,7 +75,8 @@ export default function SceneStage({scene,onComplete,playing=true,time,onSelect,
   if(object.kind==='rect')return <rect key={object.id} ref={ref} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined} x={object.x} y={object.y} width={object.width} height={object.height} rx={object.rx??4} fill={object.fill??'none'} fillOpacity={object.fillOpacity??1} stroke={object.stroke??'#8bd0df'} strokeWidth={object.strokeWidth??2} opacity={object.opacity??1}/>;
   if(object.kind==='path')return <path key={object.id} ref={ref} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined} d={object.d} fill={object.fill??'none'} fillOpacity={object.fillOpacity??1} stroke={object.stroke??'#8bd0df'} strokeWidth={object.strokeWidth??2} opacity={object.opacity??1} strokeDasharray={object.dash}/>;
   if(object.kind==='text')return <text key={object.id} ref={ref} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined} x={object.x} y={object.y} fill={object.fill??'#e6ecef'} fontSize={object.size} textAnchor={object.anchor??'start'} opacity={object.opacity??1} fontFamily="Arial">{object.text}</text>;
-  if(object.kind==='arrow')return <g key={object.id} ref={ref} opacity={object.opacity??1} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined}>
+  if(object.kind==='asset')return <g key={object.id} ref={ref} opacity={object.opacity??1} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined}><LiveAsset name={object.name} x={object.x} y={object.y} size={object.size} color={object.color??'#edca82'}/></g>;
+ if(object.kind==='arrow')return <g key={object.id} ref={ref} opacity={object.opacity??1} data-scene-id={object.id} data-selected={selected?.includes(object.id)?'true':undefined}>
    <path d={`M${object.from[0]} ${object.from[1]}L${object.to[0]} ${object.to[1]}`} fill="none" stroke={object.stroke??'#8bd0df'} strokeWidth={object.strokeWidth??2}/>
    <polygon points={arrowHead(object.from,object.to)} fill={object.stroke??'#8bd0df'}/>
   </g>;

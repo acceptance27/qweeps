@@ -1,7 +1,18 @@
 # Model beat factory evidence
 
-`?factory=1` starts the streaming factory. The page opens five tiles and fills
-them as each beat passes the compiler.
+There are two live paths:
+
+- `?factory=1` — model fills `LiveVisual` slots; the existing `GeneratedStage`
+  renderer draws the cards. This is the Module 6 / massless-lesson design.
+- `?methodsVisual=1` — the 1:1 reference lesson: diagram/concept beats 1–3,
+  comparison/process/timeline/loci beats 4–8.
+
+`visual-beats.jsonl` is the latest visual factory stream: **5/5 first-pass**,
+**22.8 s total**, first beat **4.5 s**. The five rendered tiles passed the live
+browser gate **5/5, 0 errors, 0 warnings**.
+
+The older compound/SceneProgram factory is retained for motion-specific scenes,
+not for these card beats.
 
 Latest UI run:
 

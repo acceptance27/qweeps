@@ -19,9 +19,11 @@ export type Slots={
  formula?:string;
  note?:string;
  badge?:string;
+ asset?:string;
  icon?:string;
  index?:string;
  showValue?:boolean;
+ large?:boolean;
  criteria?:Criterion[];
  ticks?:Tick[];
  bars?:Bar[];
@@ -128,9 +130,9 @@ function path(id:string,d:string,stroke:string,opacity=0,strokeWidth=1.5):HullOb
 /** Return the default or supplied geometry for a compound. */
 export function compoundBox(compound:Compound):Box{
  const defaults:Record<CompoundKind,[number,number]>=
-  {'comparison-card':[420,380],'step-card':[300,210],'sum-node':[250,160],'value-pill':[240,60],
+  {'comparison-card':[380,300],'step-card':[320,240],'sum-node':[250,160],'value-pill':[240,60],
    'icon-chip':[190,64],axis:[900,130],'number-line':[900,130],bars:[460,250],
-   callout:[600,92],brace:[320,54],'trace-row':[760,62],station:[220,118]};
+   callout:[600,92],brace:[320,54],'trace-row':[900,86],station:[260,150]};
  const[width,height]=defaults[compound.kind];
  return{x:compound.x??0,y:compound.y??0,width:compound.width??width,height:compound.height??height};
 }
@@ -147,45 +149,36 @@ export function layoutCompound(compound:Compound):CompoundLayout{
  switch(compound.kind){
   case'comparison-card':{
    const pad=18;
+   const asset=compound.slots.asset;
    hull=path(`${compound.id}`,pathD(roundedRectLoop(box.x,box.y,w,h,16)),paint,0,2);
-   hull.fill=paint;hull.fillOpacity=.07;
-   add({id:id('icon-ring'),kind:'circle',cx:box.x+30,cy:box.y+31,r:15,stroke:paint,fill:paint,fillOpacity:.12,opacity:0});
-   add(text(id('icon'),box.x+30,box.y+36,compound.slots.badge??compound.slots.title?.trim().charAt(0)??glyph(compound.slots.icon),(compound.slots.badge??'').length>1?11:15,paint,'middle'));
-   add(text(id('title'),box.x+54,box.y+38,compound.slots.title??'',19,'#e6ecef'));
+   hull.fill=paint;hull.fillOpacity=.06;
+   if(asset)add({id:id('asset'),kind:'asset',name:asset,x:box.x+18,y:box.y+18,size:44,color:paint,opacity:0});
+   else{
+    add({id:id('icon-ring'),kind:'circle',cx:box.x+32,cy:box.y+34,r:17,stroke:paint,fill:paint,fillOpacity:.12,opacity:0});
+    add(text(id('icon'),box.x+32,box.y+39,compound.slots.badge??compound.slots.title?.trim().charAt(0)??glyph(compound.slots.icon),17,paint,'middle'));
+   }
+   add(text(id('title'),box.x+(asset?76:58),box.y+42,compound.slots.title??'',24,'#e6ecef'));
    const formula=compound.slots.formula?.trim();
-   if(formula)add(text(id('formula'),box.x+pad,box.y+62,formula,15,paint));
-   const criteria=compound.slots.criteria??[];
-   const top=box.y+(formula?84:64),row=34;
-   criteria.forEach((criterion,index)=>{
-    const y=top+index*row+22;
-    add(text(id(`criterion-label-${index}`),box.x+pad,y,criterion.label,14,'#9bb5ba'));
-    add(text(id(`criterion-value-${index}`),box.x+w-pad,y,criterion.value,14,paint,'end'));
-    if(index<criteria.length-1)add(path(id(`criterion-rule-${index}`),pathD(lineLoop([box.x+pad,y+14],[box.x+w-pad,y+14])),paint,0,1));
-   });
-   const pillY=top+criteria.length*row+8;
-   add(rect(id('value-pill'),box.x+pad,pillY,w-pad*2,36,18,paint,0,.14));
-   add(text(id('value'),box.x+w/2,pillY+24,compound.slots.value??'',17,paint,'middle'));
+   if(formula)add(text(id('formula'),box.x+pad,box.y+96,formula,17,paint));
    const detail=compound.slots.detail??compound.slots.caption??'';
-   const lines=wrapText(detail,w-pad*2,13,3);
-   lines.forEach((line,index)=>add(text(id(`detail-${index}`),box.x+pad,pillY+56+index*18,line,13,'#9bb5ba')));
+   wrapText(detail,w-pad*2,19,4).forEach((line,index)=>add(text(id(`detail-${index}`),box.x+pad,box.y+(formula?128:100)+index*24,line,19,'#c9d9dd')));
+   add(text(id('value'),box.x+pad,box.y+h-20,compound.slots.value??'',15,'#9bb5ba'));
    break;
   }
   case'step-card':{
-   const pad=16;
+   const pad=18;
+   const asset=compound.slots.asset;
    hull=path(`${compound.id}`,pathD(roundedRectLoop(box.x,box.y,w,h,14)),paint,0,2);
-   hull.fill=paint;hull.fillOpacity=.07;
-   add({id:id('badge'),kind:'circle',cx:box.x+28,cy:box.y+28,r:16,stroke:paint,fill:paint,fillOpacity:.14,opacity:0,label:compound.slots.badge??(compound.slots.icon?glyph(compound.slots.icon):undefined),labelSize:14,labelFill:paint});
-   add(text(id('title'),box.x+52,box.y+34,compound.slots.title??'',17,'#e6ecef'));
-   if(compound.slots.index)add(text(id('index'),box.x+w-16,box.y+28,compound.slots.index,11,'#7899a5','end'));
+   hull.fill=paint;hull.fillOpacity=.06;
+   if(asset)add({id:id('asset'),kind:'asset',name:asset,x:box.x+18,y:box.y+18,size:44,color:paint,opacity:0});
+   else add({id:id('badge'),kind:'circle',cx:box.x+30,cy:box.y+30,r:19,stroke:paint,fill:paint,fillOpacity:.14,opacity:0,label:compound.slots.badge??(compound.slots.icon?glyph(compound.slots.icon):undefined),labelSize:16,labelFill:paint});
+   add(text(id('title'),box.x+(asset?76:58),box.y+40,compound.slots.title??'',24,'#e6ecef'));
    const formula=compound.slots.formula?.trim();
-   if(formula)add(text(id('formula'),box.x+pad,box.y+58,formula,14,paint));
-   const body=wrapText(compound.slots.detail??compound.slots.caption??'',w-pad*2,13,3);
-   body.forEach((line,index)=>add(text(id(`body-${index}`),box.x+pad,box.y+(formula?80:70)+index*19,line,13,'#9bb5ba')));
+   if(formula)add(text(id('formula'),box.x+pad,box.y+84,formula,19,paint));
+   const body=wrapText(compound.slots.detail??compound.slots.caption??'',w-pad*2,17,4);
+   body.forEach((line,index)=>add(text(id(`body-${index}`),box.x+pad,box.y+(formula?114:90)+index*20,line,17,'#c9d9dd')));
    const value=compound.slots.value??'';
-   if(value){
-    add(rect(id('value-pill'),box.x+pad,box.y+h-48,w-pad*2,32,16,paint,0,.12));
-    add(text(id('value'),box.x+w/2,box.y+h-27,value,14,paint,'middle'));
-   }
+   if(value)add(text(id('value'),box.x+pad,box.y+h-18,value,20,paint));
    break;
   }
   case'sum-node':{
@@ -257,24 +250,33 @@ export function layoutCompound(compound:Compound):CompoundLayout{
    break;
   }
   case'trace-row':{
-   hull=path(`${compound.id}`,pathD(roundedRectLoop(box.x,box.y,w,h,10)),paint,0,1.5);
+   const asset=compound.slots.asset;
+   const stateX=asset?box.x+w-92:box.x+w-20;
+   hull=path(`${compound.id}`,pathD(roundedRectLoop(box.x,box.y,w,h,12)),paint,0,1.5);
    hull.fill=paint;hull.fillOpacity=.05;
-   add({id:id('index'),kind:'circle',cx:box.x+24,cy:box.y+h/2,r:13,stroke:paint,fill:paint,fillOpacity:.12,opacity:0,label:compound.slots.badge??(compound.slots.icon?glyph(compound.slots.icon):'·'),labelSize:12,labelFill:paint});
-   add(text(id('title'),box.x+46,box.y+26,compound.slots.title??'',15,'#e6ecef'));
-   if(compound.slots.detail)add(text(id('detail'),box.x+46,box.y+45,compound.slots.detail,11,'#9bb5ba'));
-   add(text(id('state'),box.x+w-18,box.y+30,compound.slots.value??'',15,paint,'end'));
+   add({id:id('index'),kind:'circle',cx:box.x+30,cy:box.y+h/2,r:18,stroke:paint,fill:paint,fillOpacity:.12,opacity:0,label:compound.slots.badge??(compound.slots.icon?glyph(compound.slots.icon):'·'),labelSize:14,labelFill:paint});
+   add(text(id('title'),box.x+60,box.y+34,compound.slots.title??'',22,'#e6ecef'));
+   if(compound.slots.detail)add(text(id('detail'),box.x+60,box.y+57,compound.slots.detail,15,'#9bb5ba'));
+   add(text(id('state'),stateX,box.y+37,compound.slots.value??'',22,paint,'end'));
+   if(asset)add({id:id('asset'),kind:'asset',name:asset,x:box.x+w-48,y:box.y+24,size:36,color:paint,opacity:0});
    break;
   }
   case'station':{
    const cx=box.x+w/2;
-   hull=path(`${compound.id}`,pathD(circleLoop(cx,box.y+20,11)),paint,0,2);
-   hull.fill=paint;hull.fillOpacity=.16;
-   if(compound.slots.badge)add(text(id('badge'),cx,box.y+24,compound.slots.badge,10,paint,'middle'));
-   if(compound.slots.showValue!==false)add(text(id('value'),cx,box.y+54,compound.slots.value??'',14,paint,'middle'));
-   const top=compound.slots.showValue===false?box.y+52:box.y+78;
-   add(text(id('title'),cx,top,compound.slots.title??'',15,'#e6ecef','middle'));
-   const caption=compound.slots.caption??'';
-   if(caption)add(text(id('caption'),cx,top+20,caption,12,'#9bb5ba','middle'));
+   const large=compound.slots.large===true;
+   const radius=large?50:12;
+   const cy=large?box.y+62:box.y+20;
+   hull=path(`${compound.id}`,pathD(circleLoop(cx,cy,radius)),paint,0,2);
+   hull.fill=paint;hull.fillOpacity=large?.1:.16;
+   if(compound.slots.badge)add(text(id('badge'),cx,cy+(large?12:3),compound.slots.badge,large?30:10,paint,'middle'));
+   if(large){
+    add({id:id('index-ring'),kind:'circle',cx:cx+38,cy:cy-38,r:14,fill:paint,fillOpacity:1,stroke:paint,opacity:0});
+    add(text(id('value'),cx+38,cy-33,compound.slots.value??'',12,'#071117','middle'));
+   }else if(compound.slots.showValue!==false)add(text(id('value'),cx,box.y+50,compound.slots.value??'',16,paint,'middle'));
+   const top=large?box.y+136:(compound.slots.showValue===false?box.y+76:box.y+76);
+   add(text(id('title'),cx,top,compound.slots.title??'',large?22:24,'#e6ecef','middle'));
+   const caption=compound.slots.caption??compound.slots.detail??'';
+   if(caption)add(text(id('caption'),cx,top+24,caption,large?16:16,'#9bb5ba','middle'));
    break;
   }
  }
