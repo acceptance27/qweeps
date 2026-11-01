@@ -553,4 +553,11 @@ if __name__ == "__main__":
         cfg.llm.visual_model=args.visual_model
         cfg.llm.visual_vision_model=args.visual_vision_model or args.visual_model
     elif args.visual_vision_model:cfg.llm.visual_vision_model=args.visual_vision_model
+    if not args.visual_provider:
+        try:
+            build_visual_llm(cfg)
+        except ModelProviderError:
+            cfg.llm.enabled = False
+            if cfg.tts.provider == "openrouter" and not cfg.secret(cfg.tts.api_key_env):
+                cfg.tts.provider = "none"
     serve(args.port, args.studio_dir,cfg=cfg)

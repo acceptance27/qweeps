@@ -1,11 +1,73 @@
 from __future__ import annotations
 
+import json
 import os
 import re
-import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+try:
+    import tomllib  # type: ignore[import-not-found]
+except ModuleNotFoundError:
+    try:
+        import tomli as tomllib  # type: ignore[import-not-found,no-redef]
+    except ModuleNotFoundError:
+        class _TomlFallback:
+            @staticmethod
+            def _strip_comment(line: str) -> str:
+                in_str = False
+                quote_char = ""
+                escaped = False
+                for i, ch in enumerate(line):
+                    if escaped:
+                        escaped = False
+                        continue
+                    if ch == "\\":
+                        escaped = True
+                        continue
+                    if in_str:
+                        if ch == quote_char:
+                            in_str = False
+                    elif ch in ('"', "'"):
+                        in_str = True
+                        quote_char = ch
+                    elif ch == "#":
+                        return line[:i]
+                return line
+
+            @classmethod
+            def loads(cls, text: str) -> dict[str, Any]:
+                root: dict[str, Any] = {}
+                current: dict[str, Any] = root
+                for raw_line in text.splitlines():
+                    line = cls._strip_comment(raw_line).strip()
+                    if not line:
+                        continue
+                    if line.startswith("[") and line.endswith("]"):
+                        sec = line[1:-1].strip().strip('"').strip("'")
+                        current = root.setdefault(sec, {})
+                        continue
+                    if "=" in line:
+                        m = re.match(r'^("([^"\\]|\\.)*"|\'([^\'\\]|\\.)*\'|[A-Za-z0-9_.-]+)\s*=\s*(.+)$', line)
+                        if m:
+                            raw_k, _, _, raw_v = m.groups()
+                            key = json.loads(raw_k) if raw_k.startswith('"') else raw_k.strip("'")
+                            val_str = raw_v.strip()
+                            if val_str.startswith("'") and val_str.endswith("'"):
+                                val: Any = val_str[1:-1]
+                            else:
+                                val = json.loads(val_str)
+                            current[key] = val
+                return root
+
+            @classmethod
+            def load(cls, fp: Any) -> dict[str, Any]:
+                raw = fp.read()
+                text = raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else str(raw)
+                return cls.loads(text)
+
+        tomllib = _TomlFallback()  # type: ignore[assignment]
 
 DEFAULT_CONFIG_DIR = Path.home() / ".config" / "qweeps"
 LEGACY_CONFIG_DIR = Path.home() / ".config" / "omarchy-assistant"
