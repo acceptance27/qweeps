@@ -12,7 +12,7 @@ TEACHING_LAYOUTS = {
     "construction": {"diagram"},
     "mechanism": {"fanin", "diagram"},
     "quantitative": {"diagram", "matrix"},
-    "comparison": {"comparison", "matrix"},
+    "comparison": {"comparison", "matrix", "diagram"},
     "procedure": {"process", "timeline"},
     "algorithm": {"timeline", "process"},
     "narrative": {"timeline"},

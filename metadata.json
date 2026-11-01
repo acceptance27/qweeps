@@ -1,0 +1,6 @@
+{
+  "name": "Manim MovingCameraScene Studio",
+  "description": "Authentic 3Blue1Brown-style mathematical animation engine featuring crisp anti-aliased vector geometry, pure black canvas, LaTeX serif typography, and smooth MovingCameraScene transitions without neon glow.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

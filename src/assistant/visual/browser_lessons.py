@@ -140,7 +140,7 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
     if example_icon not in icons:
         if fallback_icons:example_icon='app'
         else:raise PlanError(f"Choose a sourced icon from the asset catalog (got '{example_icon}'). Allowed: {', '.join(sorted(icons)[:15])}...")
-    out['example']={'title':_text(example.get('title'),'worked example title',90),'description':_text(example.get('description'),'worked example',300),'icon':example_icon}
+    out['example']={'title':_text(example.get('title'),'worked example title',120),'description':_text(example.get('description'),'worked example',450),'icon':example_icon}
     out['chapters']=[];clock=0.;ids=set();prior_insights=set()
     for index,c in enumerate(_list(raw.get('chapters'),'chapters',1,12)):
         cid=_id(c.get('id'))
@@ -209,8 +209,8 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
                 position=n.get('position') or {}
                 if position.get('width',0)<300 or position.get('height',0)<260:
                     raise PlanError('Each descriptive diagram object needs at least 300x260 pixels so its artwork band and readable prose do not collide')
-                if len(n['body'])>100:
-                    raise PlanError('Keep a descriptive diagram body to 100 characters; move supporting detail into the narration or a separate beat')
+                if len(n['body'])>160:
+                    raise PlanError('Keep a descriptive diagram body to 160 characters; move supporting detail into the narration or a separate beat')
         if layout in {'comparison','process','timeline','fanin'} and len(nodes)>4:raise PlanError('Use at most four objects for this layout, or choose a matrix/concept layout')
         links=[]
         for link in _list(c.get('connections',[]),'connections',0,10):
@@ -243,7 +243,7 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
         if not 15<=duration<=80:raise PlanError('Keep each beat readable within 15–80 seconds; split excessive material')
         duration=round(duration,2)
         visual={'layout':layout,'nodes':nodes,'connections':links,'columns':columns,
-                'takeaway':_text(c.get('takeaway'),'visible conclusion',120 if presentation and presentation['textMode']=='labels' else 230),'experiment':experiment}
+                'takeaway':_text(c.get('takeaway'),'visible conclusion',180 if presentation and presentation['textMode']=='labels' else 230),'experiment':experiment}
         if presentation:visual['presentation']=presentation
         out['chapters'].append({'id':cid,'title':title,'years':' · '.join(f'p. {p}' for p in pages),'question':question,'insight':insight,
           'sourcePages':pages,'sources':['document'] if document else [],'safeguard':_text(c.get('safeguard'),'misreading safeguard',300),
@@ -289,13 +289,13 @@ or another justified approach. Explain why this method helps THIS inference and 
 observable change that constitutes its evidence. Layout is implementation, not the method.
 Choose teaching FIRST, then a layout that can execute it. teaching is one of:
 construction -> diagram; mechanism -> fanin or diagram; quantitative -> diagram or matrix;
-comparison -> comparison or matrix; procedure -> process or timeline; algorithm -> timeline
-or process; narrative -> timeline; recall -> loci or concept.
+comparison -> comparison, matrix or diagram (use diagram for counterfactual vector/geometric/state comparisons);
+procedure -> process or timeline; algorithm -> timeline or process; narrative -> timeline; recall -> loci or concept.
 process is only a true chain: never chain independent inputs that converge on one result.
 Use fanin for two or three inputs feeding one hub. quantitative needs a diagram that actually
-draws a number line, curve, bar or ring, or a matrix of values. A change in layout alone is not
+draws a number line, curve, bar, triangle or ring, or a matrix of values. A change in layout alone is not
 a new teaching method, and a method change must change the visual grammar, not just the title.
-Do not force variety: consecutive beats may continue a construction when that serves reasoning.
+Do not force variety: consecutive beats may continue a diagram construction when that serves reasoning (for example, building a physical foundation, testing a counterfactual conservation barrier, staging a collision threshold, and showing field excitation across consecutive diagram beats).
 textMode='labels' uses a shared diagram stage with short labels and a concise conclusion;
 geometry and meaningful motion carry the explanation. Use diagram layout for this mode.
 textMode='descriptive' keeps supporting definitions/descriptions in infographic layouts, or
@@ -344,7 +344,7 @@ guarantee ownership, compliance or infringement from an illustrative scenario.''
 DIRECT='''Direct the supplied storyboard into a live SVG/GSAP lesson. Return JSON only, no code.
 All source pages and permitted assets are supplied. Do not call tools, read files,
 browse, run commands or edit a project. Produce only the final JSON.
-Use the exact schema below. Choose appropriate supplied SVG icons instead of inventing drawings.
+Use the exact schema below. For card/infographic layouts, choose appropriate supplied SVG catalog icons. For diagram layouts, compose rich multi-primitive custom vector artwork in each node's 100x100 artwork array instead of falling back to catalog icons.
 Keep descriptions useful for someone unfamiliar with the topic. Titles <=40 characters where
 possible, bodies roughly 12–30 words. Include a concrete example and define terms on-screen.
 Use compact prose: representation <=900 characters; shared example title <=55,
@@ -352,7 +352,7 @@ description <=220; insight <=250; safeguard <=220. Narration is 45–90 words.
 Carry EACH beat's presentation decision and teaching field into its own scene, refining them
 only with a concrete reason. The layout must still be one the teaching method can execute:
 construction->diagram, mechanism->fanin|diagram, quantitative->diagram|matrix,
-comparison->comparison|matrix, procedure->process|timeline, algorithm->timeline|process,
+comparison->comparison|matrix|diagram, procedure->process|timeline, algorithm->timeline|process,
 narrative->timeline, recall->loci|concept. Root representation is shared context, not a
 lesson-wide style preset. A change in layout alone does not constitute a new teaching method.
 There is no variety quota.
@@ -402,18 +402,17 @@ renderer reserves measured space below artwork for its title/body. In labels mod
 only a short title is drawn below the artwork; the body is available on inspection.
 Avoid overlapping boxes and keep labels legible.
 A descriptive diagram carries prose: use at most three objects, each at least
-300x260, body <=100 characters. Labels mode hides the body and can carry more
-geometry.
+300x260, body <=160 characters. Labels mode hides the body and can carry 2–6 objects
+(such as two colliding inputs on left/right, a central interaction nexus, and a threshold/accounting node below).
 artwork is a list of <=24 primitives in a local 100x100 viewBox: {type:'path',d:'M...'},
 {type:'circle',cx,cy,r}, {type:'ellipse',cx,cy,rx,ry}, {type:'rect',x,y,width,height,rx},
 {type:'line',x1,y1,x2,y2}, or {type:'text',x,y,text,size:6..24}. Paint fields stroke/fill
 are palette names blue|gold|green|coral|purple|white|muted|none; strokeWidth defaults 1.4.
-Use actual equations and vector geometry when they substantiate the inference. Use Unicode
-symbols, not LaTeX markup. Artwork can be empty to use a catalog icon instead.
+In a diagram beat, every node MUST construct 6–16 coordinated vector primitives (e.g. sinusoidal wave paths M 10 50 Q 22 25 35 50 T 60 50 T 85 50, vector lines with arrowhead paths, right-triangle/axis geometry, concentric field rings, and centered equation/quantity text labels like E = hν, p = E/c, Σp = 0, Δp ≠ 0). Use Unicode symbols, not LaTeX markup. Do not leave artwork empty or draw a single primitive on a diagram beat.
 Optional motion:[{cue:'object-id-in-this-beat',dx:0,dy:0,scale:1,opacity:1,duration:1.5,delay:0}]
 moves the artwork relative to its initial position when that object is discussed. All dx/dy
 destinations are absolute pixel offsets from the initial drawing; several objects can share
-a cue for coordinated motion. Labels below the artwork stay fixed. Use at most four motions
+a cue for coordinated motion (e.g. left and right particles translating inward with dx:+140 and dx:-140 on a central collision cue). Labels below the artwork stay fixed. Use at most four motions
 per node, duration .2–6 seconds. Narrate the named objects and the change so recorded speech
 can drive these cues. Movement must explain a relationship; use schematic paths honestly.
 No invented live sliders, real detector footage, computed measurements or physics engines.
@@ -692,16 +691,44 @@ class BrowserLessonStore:
                         'position':{'requiredNumericFields':['x','y','width','height'],'xRange':[45,1300],'yRange':[110,430],
                             'widthRange':[100,1000],'heightRange':[120,390],'rightAtMost':1395,'bottomAtMost':505,
                             'clearance':'Maintain at least 15px clearance between diagram objects without overlap.'},
-                        'artwork':'Array of SVG primitive objects, not markup or a description. Empty array uses a catalog icon.',
-                        'motion':'Array of cue-driven motion objects; use [] when no motion is needed.'},
+                        'artwork':'Array of 6–16 SVG primitive objects in 100x100 space (paths, vectors, geometric shapes, equation text labels) constructing the mechanism or proof; never markup or prose.',
+                        'motion':'Array of cue-driven motion objects (dx, dy, scale, opacity) animating the interaction across the stage when cued.'},
                     'instruction':'Direct ONLY the target beat. Return exactly one chapter.'}
-                def chapter_check(raw,beat=beat,index=index):
+                def chapter_check(raw,beat=beat,index=index,fallback_icons=False):
+                    if isinstance(raw,dict) and 'chapters' not in raw and ('nodes' in raw or raw.get('id')==beat['id']):
+                        raw={'chapters':[raw]}
+                    elif isinstance(raw,dict) and isinstance(raw.get('chapters'),list) and len(raw['chapters'])>1:
+                        matched=[c for c in raw['chapters'] if isinstance(c,dict) and c.get('id')==beat['id']]
+                        if len(matched)==1:
+                            raw={**raw,'chapters':matched}
                     if not isinstance(raw,dict) or not isinstance(raw.get('chapters'),list) or len(raw['chapters'])!=1:
                         raise PlanError('Streaming mode directs exactly one chapter at a time')
                     raw=copy.deepcopy(raw)
                     for key in ('title','question','representation','example'):
-                        raw[key]=copy.deepcopy(story[key])
-                    candidate=validate_lesson(raw,j['document'],self.icons,require_presentation=True)
+                        if not raw.get(key):
+                            raw[key]=copy.deepcopy(story[key])
+                    ch0=raw['chapters'][0]
+                    if isinstance(ch0,dict):
+                        for bkey in ('id','title','question','insight','safeguard','teaching','layout','presentation','continuity','sourcePages'):
+                            if not ch0.get(bkey) and beat.get(bkey) is not None:
+                                ch0[bkey]=copy.deepcopy(beat[bkey])
+                        if not ch0.get('insight'):
+                            ch0['insight']=ch0.get('takeaway') or beat.get('visibleOperation') or ch0.get('title','')
+                        if not ch0.get('safeguard'):
+                            ch0['safeguard']=ch0.get('takeaway') or beat.get('visibleOperation') or ch0.get('title','')
+                        prior_id=story['beats'][index-1]['id'] if index else None
+                        if isinstance(ch0.get('continuity'),dict):
+                            ch0['continuity']['from']=prior_id
+                            bridge=(ch0['continuity'].get('bridge') or '').strip()
+                            narr=(ch0.get('narration') or '').strip()
+                            if bridge and narr:
+                                from .alignment import phrase_range
+                                if phrase_range(narr,bridge)[0]!=0 and len(bridge)+1+len(narr)<=1550:
+                                    ch0['narration']=f'{bridge} {narr}'
+                    issues=direction_node_issues(raw)
+                    if issues:
+                        raise PlanError('Correct these scene fields together:\n'+'\n'.join(issues[:12]))
+                    candidate=validate_lesson(raw,j['document'],self.icons,fallback_icons=fallback_icons,require_presentation=True)
                     chapter=candidate['chapters'][0]
                     if chapter['id']!=beat['id']:
                         raise PlanError(f"Direct the target beat '{beat['id']}', not '{chapter['id']}'")
@@ -713,7 +740,8 @@ class BrowserLessonStore:
                     if phrase_range(chapter['narration'],link['bridge'])[0]!=0:
                         raise PlanError('Speak the reasoning bridge before the incoming explanation')
                     return candidate
-                candidate=self._request(j,lambda:_model_json(self.llm,STREAM_CHAPTER,payload,chapter_check,tokens=6000))
+                tokens=9000 if beat.get('layout')=='diagram' else 6000
+                candidate=self._request(j,lambda:_model_json(self.llm,STREAM_CHAPTER,payload,chapter_check,tokens=tokens))
                 chapter=candidate['chapters'][0]
                 if header is None:
                     header={k:candidate[k] for k in ('title','question','representation','example','sources')}
@@ -804,6 +832,18 @@ class BrowserLessonStore:
                                     raw['chapters'][idx]=copy.deepcopy(c)
                                     break
                 # Preserve failed direction attempts for diagnosis without publishing them.
+                if isinstance(raw,dict) and isinstance(raw.get('chapters'),list):
+                    raw=copy.deepcopy(raw)
+                    for key in ('title','question','representation','example'):
+                        if not raw.get(key) and story.get(key) is not None:
+                            raw[key]=copy.deepcopy(story[key])
+                    for idx, ch in enumerate(raw['chapters']):
+                        if isinstance(ch,dict):
+                            bmatch=next((b for b in beats if b.get('id')==ch.get('id')),beats[idx] if idx<len(beats) else None)
+                            if bmatch:
+                                for bkey in ('id','title','question','insight','safeguard','teaching','layout','presentation','continuity','sourcePages'):
+                                    if not ch.get(bkey) and bmatch.get(bkey) is not None:
+                                        ch[bkey]=copy.deepcopy(bmatch[bkey])
                 attempt=folder/f"{attempt_prefix}-{uuid.uuid4().hex[:8]}.json"
                 attempt.write_text(json.dumps(raw,ensure_ascii=False))
                 issues=direction_node_issues(raw)
@@ -852,8 +892,8 @@ class BrowserLessonStore:
                         'position':{'requiredNumericFields':['x','y','width','height'],'xRange':[45,1300],'yRange':[110,430],
                             'widthRange':[100,1000],'heightRange':[120,390],'rightAtMost':1395,'bottomAtMost':505,
                             'clearance':'Maintain at least 15px clearance between diagram objects without overlap.'},
-                        'artwork':'Array of SVG primitive objects, not markup or a description. Empty array uses a catalog icon.',
-                        'motion':'Array of cue-driven motion objects; use [] when no motion is needed.'},
+                        'artwork':'Array of 6–16 SVG primitive objects in 100x100 space (paths, vectors, geometric shapes, equation text labels) constructing the mechanism or proof; never markup or prose.',
+                        'motion':'Array of cue-driven motion objects (dx, dy, scale, opacity) animating the interaction across the stage when cued.'},
                      'instruction':'Direct ONLY these one or two beats. Use the shared worked example. Return compact JSON; do not repeat the entire module.'}
             if findings:
                 sec_findings=[f for f in findings if f.get('beat') in {b['id'] for b in beats}]
