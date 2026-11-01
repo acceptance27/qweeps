@@ -209,6 +209,12 @@ def main():
     elif lesson_id=='generated':
         from assistant.visual.generated_live import GeneratedScene
         scene=GeneratedScene(report)
+    elif lesson_id=='wbc':
+        from assistant.visual.ce_native import load_native_scene
+        scene=load_native_scene(Path(__file__).with_name('scenes')/'white_blood_cell_lesson.py')
+    elif lesson_id=='blood3d':
+        from assistant.visual.ce_native import load_native_scene
+        scene=load_native_scene(Path(__file__).with_name('scenes')/'blood_3d_lesson.py')
     else:scene=ProductionScene(report,svg)
     frames=0
     while True:

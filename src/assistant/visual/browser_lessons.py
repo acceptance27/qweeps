@@ -441,6 +441,18 @@ must begin with the continuity bridge. Do not add chapters and do not summarize 
 of the lesson.
 '''
 
+def _declared_branch(lesson, question):
+    """Pick the best declared branch for a question (keyword score)."""
+    low = (question or "").lower()
+    best = None
+    for branch in lesson.get("branches") or []:
+        words = branch.get("keywords") or []
+        score = sum(1 for word in words if str(word).lower() in low)
+        if score and (best is None or score > best[0]):
+            best = (score, branch)
+    return best[1] if best else None
+
+
 class BrowserLessonStore:
     def __init__(self,llm,studio,folder=None,documents=None,narration=None):
         self.narration=narration
@@ -1245,6 +1257,11 @@ Return JSON only: {"answer":"..."}.'''
                            lambda r:{'answer':_text(r.get('answer'),'answer',5000)},tokens=1800)
         result.update(scene=None,researchAvailable=bool(evidence),sources=[{'title':f"{document['title']} · p. {p['page']}",'url':f"/api/visual/documents/{document['id']}/file#page={p['page']}"} for p in evidence[:3]] if document else [])
         if payload.get('mode')=='branch':
+            declared=_declared_branch(lesson,question)
+            if declared:
+                result['browserBranch']={'lessonId':lesson['id'],'chapter':declared.get('chapter'),
+                                          'focus':declared.get('focus'),'visualReason':declared.get('reason','')}
+                return result
             parent_scene={'lessonId':lesson['id'],'representation':lesson.get('representation'),
                           'example':copy.deepcopy(lesson.get('example')),
                           'beat':{k:copy.deepcopy(beat[k]) for k in ('id','title','question','insight','visual','roles') if k in beat}}

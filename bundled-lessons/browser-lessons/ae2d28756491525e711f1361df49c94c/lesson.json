@@ -1,0 +1,466 @@
+{
+ "id": "ae2d28756491525e711f1361df49c94c",
+ "kind": "live_generated",
+ "title": "How a white blood cell decides what is a threat",
+ "question": "How does a white blood cell know what to attack?",
+ "representation": "Follow one neutrophil through contact, two candidate surfaces, a receptor match, a zoom into the PAMP molecule, the response, and the resulting rule. Branches open the PAMP detail from the comparison beat.",
+ "example": {
+  "title": "A neutrophil meeting a bacterium and a self cell",
+  "description": "One immune cell, two surfaces, one receptor match.",
+  "icon": "shield"
+ },
+ "duration": 27.1,
+ "documentId": null,
+ "documentTitle": null,
+ "sources": [],
+ "branches": [
+  {
+   "id": "pamp",
+   "keywords": [
+    "pamp",
+    "spike",
+    "lipopolysaccharide",
+    "lps",
+    "bacterium",
+    "bacteria",
+    "molecule"
+   ],
+   "chapter": "pamp-detail",
+   "focus": "pamp",
+   "reason": "Opening the PAMP spike: lipid A anchor and sugar chain",
+   "lessonId": "ae2d28756491525e711f1361df49c94c"
+  }
+ ],
+ "chapters": [
+  {
+   "id": "contact",
+   "title": "Contact is not yet a decision",
+   "years": "",
+   "question": "What does a neutrophil actually check when it touches something?",
+   "insight": "Contact is necessary but not sufficient.",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "Avoid the reading that any collision triggers an attack.",
+   "narration": "A neutrophil patrols with receptors on its surface. Touching a cell tells it almost nothing. The decision starts when one of those receptors matches a molecular pattern on the surface it has touched.",
+   "narrationAt": 1.0,
+   "audio": "",
+   "start": 0.0,
+   "end": 4.6,
+   "finishedAt": 3.5999999999999996,
+   "roles": {
+    "neutrophil": "Neutrophil: First responder. It patrols tissue and tests surfaces with membrane receptors.",
+    "receptors": "Surface receptors: Y-shaped probes. Each has a shape that can bind one family of molecules.",
+    "environment": "Tissue space: Self cells and microbes are both present. Contact alone cannot separate them."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.2,
+     "text": "A neutrophil patrols with receptors on its surface."
+    },
+    {
+     "at": 2.53,
+     "text": "Touching a cell tells it almost nothing; the receptor match is the test."
+    }
+   ],
+   "visual": {
+    "layout": "diagram",
+    "nodes": [
+     {
+      "id": "neutrophil",
+      "title": "Neutrophil",
+      "body": "First responder. It patrols tissue and tests surfaces with membrane receptors.",
+      "icon": "shield",
+      "color": "blue",
+      "at": 0.5,
+      "tag": "immune cell"
+     },
+     {
+      "id": "receptors",
+      "title": "Surface receptors",
+      "body": "Y-shaped probes. Each has a shape that can bind one family of molecules.",
+      "icon": "eye",
+      "color": "gold",
+      "at": 2.5,
+      "tag": "shape = test"
+     },
+     {
+      "id": "environment",
+      "title": "Tissue space",
+      "body": "Self cells and microbes are both present. Contact alone cannot separate them.",
+      "icon": "globe",
+      "color": "green",
+      "at": 4.5,
+      "tag": "mixed"
+     }
+    ],
+    "connections": [
+     {
+      "from": "receptors",
+      "to": "neutrophil",
+      "label": "signals inward",
+      "at": 5
+     },
+     {
+      "from": "environment",
+      "to": "receptors",
+      "label": "samples",
+      "at": 6
+     }
+    ],
+    "columns": [],
+    "takeaway": "A receptor match, not contact, starts the immune response.",
+    "presentation": {
+     "method": "Annotated mechanism",
+     "why": "Establishes which part of the cell makes the decision, before any candidate appears.",
+     "visualEvidence": "Membrane receptors sample the surface; contact alone carries no verdict.",
+     "textMode": "descriptive"
+    }
+   },
+   "continuity": {
+    "from": null,
+    "bridge": "Opening beat: establish the question and the actor."
+   },
+   "renderer": "manimgl",
+   "nativeScene": "wbc"
+  },
+  {
+   "id": "candidates",
+   "title": "Two candidates at once",
+   "years": "",
+   "question": "Which of these two surfaces should the cell attack?",
+   "insight": "Which candidate matches a receptor?",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "Do not equate 'foreign-looking' with 'dangerous' without the receptor match.",
+   "narration": "A bacterium carrying PAMP spikes and a self cell carrying MHC-I markers arrive together. The bacterium is a threat; the self cell is the body's own tissue. The cell has to tell them apart while both are in contact range.",
+   "narrationAt": 1.0,
+   "audio": "",
+   "start": 4.6,
+   "end": 10.4,
+   "finishedAt": 9.4,
+   "roles": {
+    "bacterium": "Bacterium: Carries PAMPs: molecular patterns found on microbes but not on host cells.",
+    "self_cell": "Self cell: Displays MHC-I markers that identify it as the body's own tissue."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.2,
+     "text": "A bacterium with PAMP spikes and a self cell with MHC-I arrive together."
+    },
+    {
+     "at": 3.19,
+     "text": "The self cell is not a threat, even in contact range."
+    }
+   ],
+   "visual": {
+    "layout": "comparison",
+    "nodes": [
+     {
+      "id": "bacterium",
+      "title": "Bacterium",
+      "body": "Carries PAMPs: molecular patterns found on microbes but not on host cells.",
+      "icon": "bomb",
+      "color": "coral",
+      "at": 0.5,
+      "tag": "PAMP +"
+     },
+     {
+      "id": "self_cell",
+      "title": "Self cell",
+      "body": "Displays MHC-I markers that identify it as the body's own tissue.",
+      "icon": "heart",
+      "color": "green",
+      "at": 2.5,
+      "tag": "MHC-I self"
+     }
+    ],
+    "connections": [],
+    "columns": [],
+    "takeaway": "Danger and self can arrive together; the cell must distinguish them.",
+    "presentation": {
+     "method": "Aligned comparison",
+     "why": "Puts the two candidate surfaces side by side at the moment of decision.",
+     "visualEvidence": "One surface carries PAMPs, the other carries self markers.",
+     "textMode": "descriptive"
+    }
+   },
+   "continuity": {
+    "from": "contact",
+    "bridge": "The previous beat established that receptors test surfaces. Two surfaces now demand a verdict."
+   },
+   "renderer": "manimgl",
+   "nativeScene": "wbc"
+  },
+  {
+   "id": "pamp-detail",
+   "title": "Inside a PAMP spike",
+   "years": "",
+   "question": "What is a PAMP, physically?",
+   "insight": "The pattern is chemical shape, not appearance.",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "Avoid treating PAMPs as invisible tags; they are molecules with a shape.",
+   "narration": "A PAMP is a molecular pattern, not a label. On this bacterium the spike is built from lipopolysaccharide: a lipid A anchor in the membrane and a sugar chain projecting outward. The receptor's binding pocket fits that shape, which is why this surface, and not the self cell, is recognised.",
+   "narrationAt": 0.52,
+   "audio": "",
+   "start": 10.4,
+   "end": 15.2,
+   "finishedAt": 14.2,
+   "roles": {
+    "pamp": "PAMP spike: Lipopolysaccharide: lipid A anchored in the membrane plus a projecting sugar chain.",
+    "receptor": "Receptor pocket: A shape complementary to the PAMP. Binding is the recognition event.",
+    "membrane": "Bacterial membrane: Holds lipid A in place; the sugar chain is what the receptor actually contacts."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.2,
+     "text": "A PAMP is a molecular pattern, not a label."
+    },
+    {
+     "at": 2.64,
+     "text": "Lipid A anchors the spike; the sugar chain is what the receptor contacts."
+    }
+   ],
+   "visual": {
+    "layout": "diagram",
+    "nodes": [
+     {
+      "id": "pamp",
+      "title": "PAMP spike",
+      "body": "Lipid A anchors it in the membrane; the sugar chain is what the receptor contacts.",
+      "icon": "atom",
+      "color": "coral",
+      "at": 0.5,
+      "tag": "LPS"
+     },
+     {
+      "id": "receptor",
+      "title": "Receptor pocket",
+      "body": "A shape complementary to the PAMP. Binding is the recognition event.",
+      "icon": "key",
+      "color": "gold",
+      "at": 2.5,
+      "tag": "fit"
+     },
+     {
+      "id": "membrane",
+      "title": "Bacterial membrane",
+      "body": "Holds lipid A in place; the sugar chain is what the receptor actually contacts.",
+      "icon": "shield",
+      "color": "blue",
+      "at": 4.5,
+      "tag": "anchor"
+     }
+    ],
+    "connections": [
+     {
+      "from": "pamp",
+      "to": "receptor",
+      "label": "binds",
+      "at": 6
+     },
+     {
+      "from": "membrane",
+      "to": "pamp",
+      "label": "anchors",
+      "at": 4
+     }
+    ],
+    "columns": [],
+    "takeaway": "A PAMP is a molecular shape the receptor can bind, not a warning label.",
+    "presentation": {
+     "method": "Zoomed mechanism",
+     "why": "The learner asked what the spike is, so the branch resolves its molecular construction.",
+     "visualEvidence": "The spike decomposes into a membrane anchor and a sugar chain that fits the receptor.",
+     "textMode": "descriptive"
+    }
+   },
+   "continuity": {
+    "from": "candidates",
+    "bridge": "The comparison showed two surfaces; this beat opens one of them to explain what the matching pattern actually is."
+   },
+   "renderer": "manimgl",
+   "nativeScene": "wbc"
+  },
+  {
+   "id": "response",
+   "title": "From match to response",
+   "years": "",
+   "question": "What does the cell do after the match?",
+   "insight": "Recognition and response are separate steps.",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "Do not imply the cell 'knows' the bacterium is harmful beyond the pattern match.",
+   "narration": "Binding starts a signal cascade that reaches the nucleus. The cell extends pseudopodia, pulls the bacterium inside, and digests it in a phagosome. Cytokines then leave the cell and recruit more neutrophils to the site.",
+   "narrationAt": 1.0,
+   "audio": "",
+   "start": 15.2,
+   "end": 23.4,
+   "finishedAt": 22.4,
+   "roles": {
+    "signal": "Signal cascade: Surface binding becomes an internal signal reaching the nucleus.",
+    "engulf": "Engulfment: Pseudopodia wrap the bacterium into a phagosome.",
+    "digest": "Digestion: An oxidative burst destroys the bacterium inside the vesicle.",
+    "recruit": "Recruitment: Cytokines call more neutrophils to the tissue."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.2,
+     "text": "Binding starts a signal cascade that reaches the nucleus."
+    },
+    {
+     "at": 4.51,
+     "text": "Cytokines leave the cell and recruit more neutrophils."
+    }
+   ],
+   "visual": {
+    "layout": "process",
+    "nodes": [
+     {
+      "id": "signal",
+      "title": "Signal cascade",
+      "body": "Surface binding becomes an internal signal reaching the nucleus.",
+      "icon": "zap",
+      "color": "gold",
+      "at": 0.5,
+      "tag": "activate"
+     },
+     {
+      "id": "engulf",
+      "title": "Engulfment",
+      "body": "Pseudopodia wrap the bacterium into a phagosome.",
+      "icon": "shield",
+      "color": "blue",
+      "at": 2.5,
+      "tag": "phagocytosis"
+     },
+     {
+      "id": "digest",
+      "title": "Digestion",
+      "body": "An oxidative burst destroys the bacterium inside the vesicle.",
+      "icon": "flask-conical",
+      "color": "coral",
+      "at": 4.5,
+      "tag": "destroy"
+     },
+     {
+      "id": "recruit",
+      "title": "Recruitment",
+      "body": "Cytokines call more neutrophils to the tissue.",
+      "icon": "network",
+      "color": "green",
+      "at": 6.5,
+      "tag": "amplify"
+     }
+    ],
+    "connections": [
+     {
+      "from": "signal",
+      "to": "engulf",
+      "label": "triggers",
+      "at": 4
+     },
+     {
+      "from": "engulf",
+      "to": "digest",
+      "label": "then",
+      "at": 6
+     },
+     {
+      "from": "digest",
+      "to": "recruit",
+      "label": "signals",
+      "at": 8
+     }
+    ],
+    "columns": [],
+    "takeaway": "A local recognition decision becomes a physical and tissue-level response.",
+    "presentation": {
+     "method": "Mechanism chain",
+     "why": "Shows how one binding event scales into engulfment and recruitment.",
+     "visualEvidence": "The bacterium is internalised, destroyed, and the response is amplified.",
+     "textMode": "labels"
+    }
+   },
+   "continuity": {
+    "from": "pamp-detail",
+    "bridge": "The detail beat explained the match; this beat follows what that match sets in motion."
+   },
+   "renderer": "manimgl",
+   "nativeScene": "wbc"
+  },
+  {
+   "id": "rule",
+   "title": "The decision rule",
+   "years": "",
+   "question": "What should we remember?",
+   "insight": "Specificity is the whole decision.",
+   "sourcePages": [],
+   "sources": [],
+   "safeguard": "Do not reduce immunity to a single receptor; this is one innate recognition path.",
+   "narration": "PAMP match, attack. Self marker, ignore. The immune decision is specificity of recognition, not the fact of contact.",
+   "narrationAt": 0.93,
+   "audio": "",
+   "start": 23.4,
+   "end": 27.1,
+   "finishedAt": 26.1,
+   "roles": {
+    "attack": "PAMP match \u2192 attack: A receptor binds a microbial pattern, so the response starts.",
+    "ignore": "Self marker \u2192 ignore: MHC-I identifies host tissue, so no response is started."
+   },
+   "narrationCues": [],
+   "cues": [
+    {
+     "at": 0.2,
+     "text": "PAMP match, attack. Self marker, ignore."
+    },
+    {
+     "at": 2.04,
+     "text": "The decision is specificity of recognition, not contact."
+    }
+   ],
+   "visual": {
+    "layout": "concept",
+    "nodes": [
+     {
+      "id": "attack",
+      "title": "PAMP match \u2192 attack",
+      "body": "A receptor binds a microbial pattern, so the response starts.",
+      "icon": "check",
+      "color": "green",
+      "at": 0.5,
+      "tag": "go"
+     },
+     {
+      "id": "ignore",
+      "title": "Self marker \u2192 ignore",
+      "body": "MHC-I identifies host tissue, so no response is started.",
+      "icon": "cross",
+      "color": "coral",
+      "at": 2.5,
+      "tag": "stop"
+     }
+    ],
+    "connections": [],
+    "columns": [],
+    "takeaway": "Recognition specificity, not contact, decides the response.",
+    "presentation": {
+     "method": "Contrast rule",
+     "why": "Condenses the lesson into the two outcomes the learner must keep.",
+     "visualEvidence": "The same contact event produces opposite outcomes depending on the match.",
+     "textMode": "labels"
+    }
+   },
+   "continuity": {
+    "from": "response",
+    "bridge": "The mechanism is complete; this beat compresses it into a rule to remember."
+   },
+   "renderer": "manimgl",
+   "nativeScene": "wbc"
+  }
+ ]
+}

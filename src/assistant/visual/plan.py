@@ -607,6 +607,11 @@ Narration should explain the mechanism in 2–3 sentences per beat, not describe
 or announce drawing operations. Allow a 1.5 second pause for the first visual to register.
 """
 
+# Explicit staging budget (low/medium/high) shared with the clip pipeline.
+from .detail_contract import with_detail
+
+PLAN_PROMPT = with_detail(PLAN_PROMPT)
+
 
 def generate_scene_reply(llm: Any, question: str, context: dict, history: list, mode: str = "question") -> dict:
     if mode not in {"question", "lesson", "branch"}:

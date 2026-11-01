@@ -1,0 +1,263 @@
+{
+  "id": "dbb634c1d142045a84dcbc40ef8a7d36",
+  "kind": "live_generated",
+  "title": "How blood is made, in 3D",
+  "question": "How does a bone marrow stem cell become the cells in your blood?",
+  "representation": "A native ManimGL 3D sequence: the trabecular lattice and marrow niche, stem-cell division, the three mature blood lineages, and their release into the circulation.",
+  "example": {
+    "title": "Inside a marrow niche",
+    "description": "Bone struts, a red marrow pocket, dividing stem cells, and three cell lines leaving.",
+    "icon": "heart"
+  },
+  "duration": 28.57,
+  "documentId": null,
+  "documentTitle": null,
+  "sources": [],
+  "branches": [],
+  "chapters": [
+    {
+      "id": "lattice",
+      "title": "The marrow is a scaffold",
+      "years": "",
+      "question": "What holds the marrow space open while blood cells are made?",
+      "insight": "Bone is not a solid wall: a trabecular lattice frames the soft marrow.",
+      "sourcePages": [],
+      "sources": [],
+      "safeguard": "Do not present bone as a smooth shell; the open lattice is the point.",
+      "narration": "Inside a bone, a beige lattice of trabeculae holds open a pocket of red marrow. The struts are rigid, but the space between them is soft and full of cells.",
+      "narrationAt": 0.6,
+      "audio": "",
+      "start": 0.0,
+      "end": 11.0,
+      "finishedAt": 11.0,
+      "roles": {
+        "struts": "Trabeculae: rigid bone struts that frame the marrow pocket.",
+        "marrow": "Red marrow: the soft, well-supplied space where blood cells are produced."
+      },
+      "narrationCues": [],
+      "cues": [
+        {
+          "at": 0.4,
+          "text": "A bone is mostly empty space inside a lattice."
+        },
+        {
+          "at": 3.4,
+          "text": "The red marrow sits in the pocket the struts protect."
+        },
+        {
+          "at": 6.0,
+          "text": "The camera orbits while the structure holds still."
+        }
+      ],
+      "visual": {
+        "layout": "diagram",
+        "nodes": [
+          {
+            "id": "struts",
+            "title": "Trabeculae",
+            "body": "Rigid bone struts that frame the marrow pocket instead of enclosing it.",
+            "icon": "building",
+            "color": "gold",
+            "at": 0.6,
+            "tag": "bone"
+          },
+          {
+            "id": "marrow",
+            "title": "Red marrow",
+            "body": "The soft space between struts, supplied by blood and packed with stem cells.",
+            "icon": "heart",
+            "color": "coral",
+            "at": 3.4,
+            "tag": "factory"
+          }
+        ],
+        "connections": [
+          {
+            "from": "struts",
+            "to": "marrow",
+            "label": "frames",
+            "at": 3.6
+          }
+        ],
+        "columns": [],
+        "takeaway": "The marrow is an open pocket held by a lattice, not a cavity in solid bone.",
+        "presentation": {
+          "method": "Native 3D establishing shot",
+          "why": "The learner needs to see the geometry of the niche before cells appear in it.",
+          "visualEvidence": "Beige trabeculae surround and frame a translucent red marrow sphere in three dimensions.",
+          "textMode": "descriptive"
+        }
+      },
+      "continuity": {
+        "from": null,
+        "bridge": "Opening beat: establish the marrow niche in three dimensions."
+      },
+      "renderer": "manimgl",
+      "nativeScene": "blood3d"
+    },
+    {
+      "id": "stem-cells",
+      "title": "One stem cell becomes many",
+      "years": "",
+      "question": "How does one cell become the starting point for every blood lineage?",
+      "insight": "Haematopoietic stem cells divide and commit to different fates.",
+      "sourcePages": [],
+      "sources": [],
+      "safeguard": "Division is not the same as specialisation; commitment follows it.",
+      "narration": "With the lattice gone, the stem cells are visible. One divides, and the daughters begin to take different routes: some remain stem cells, others commit to a lineage.",
+      "narrationAt": 11.2,
+      "audio": "",
+      "start": 11.0,
+      "end": 16.0,
+      "finishedAt": 16.0,
+      "roles": {
+        "hsc": "Haematopoietic stem cells: self-renewing cells that can commit to any blood lineage.",
+        "daughter-a": "Daughter cell A: a division product beginning to commit.",
+        "daughter-b": "Daughter cell B: a division product beginning to commit."
+      },
+      "narrationCues": [],
+      "cues": [
+        {
+          "at": 11.2,
+          "text": "The marrow clears and the stem cells are revealed."
+        },
+        {
+          "at": 13.4,
+          "text": "One stem cell divides into two daughters."
+        }
+      ],
+      "visual": {
+        "layout": "process",
+        "nodes": [
+          {
+            "id": "hsc",
+            "title": "Stem cell pool",
+            "body": "A small group of haematopoietic stem cells in the marrow niche.",
+            "icon": "sparkles",
+            "color": "purple",
+            "at": 11.2,
+            "tag": "self-renew"
+          },
+          {
+            "id": "division",
+            "title": "Division",
+            "body": "One cell becomes two daughters that can take different fates.",
+            "icon": "branch",
+            "color": "blue",
+            "at": 13.4,
+            "tag": "commit"
+          }
+        ],
+        "connections": [
+          {
+            "from": "hsc",
+            "to": "division",
+            "label": "divides",
+            "at": 13.4
+          }
+        ],
+        "columns": [],
+        "takeaway": "Every blood cell starts from a stem cell that divided and then committed.",
+        "presentation": {
+          "method": "Native 3D mechanism",
+          "why": "Division is a spatial event; seeing the daughter cells separate makes commitment legible.",
+          "visualEvidence": "A stem cell splits into two daughters that move apart in the marrow space.",
+          "textMode": "descriptive"
+        }
+      },
+      "continuity": {
+        "from": "lattice",
+        "bridge": "The niche is established; now watch the cells inside it divide."
+      },
+      "renderer": "manimgl",
+      "nativeScene": "blood3d"
+    },
+    {
+      "id": "lineages",
+      "title": "Three cell lines enter the blood",
+      "years": "",
+      "question": "What do committed blood cells become, and where do they go?",
+      "insight": "Red cells, white cells and platelets leave the marrow for the circulation.",
+      "sourcePages": [],
+      "sources": [],
+      "safeguard": "Platelets are cell fragments, not whole cells; say so.",
+      "narration": "The committed cells mature into the three lines that fill the blood: red cells that carry oxygen, white cells that defend the body, and platelets that seal leaks. Then they leave the marrow for the circulation.",
+      "narrationAt": 16.2,
+      "audio": "",
+      "start": 16.0,
+      "end": 28.57,
+      "finishedAt": 28.57,
+      "roles": {
+        "rbc": "Red blood cell: a flexible disc packed with haemoglobin for oxygen transport.",
+        "wbc": "White blood cell: a nucleated defender of the tissue and blood.",
+        "plts": "Platelets: small cell fragments that clump to seal a vessel."
+      },
+      "narrationCues": [],
+      "cues": [
+        {
+          "at": 16.2,
+          "text": "Three mature cell types appear around the niche."
+        },
+        {
+          "at": 19.0,
+          "text": "Each rotates so its shape is visible."
+        },
+        {
+          "at": 23.0,
+          "text": "The mature cells move out into the circulation."
+        },
+        {
+          "at": 25.0,
+          "text": "Blood is built cell by cell, continuously."
+        }
+      ],
+      "visual": {
+        "layout": "comparison",
+        "nodes": [
+          {
+            "id": "rbc",
+            "title": "Red cell",
+            "body": "A biconcave, haemoglobin-filled disc that carries oxygen.",
+            "icon": "heart",
+            "color": "coral",
+            "at": 16.2,
+            "tag": "oxygen"
+          },
+          {
+            "id": "wbc",
+            "title": "White cell",
+            "body": "A nucleated cell that patrols tissue and blood for threats.",
+            "icon": "shield",
+            "color": "blue",
+            "at": 17.4,
+            "tag": "immunity"
+          },
+          {
+            "id": "plts",
+            "title": "Platelets",
+            "body": "Small cell fragments that stick to damaged vessel walls.",
+            "icon": "flame",
+            "color": "gold",
+            "at": 18.6,
+            "tag": "clotting"
+          }
+        ],
+        "connections": [],
+        "columns": [],
+        "takeaway": "One stem-cell source supplies oxygen, immunity and clotting for a lifetime.",
+        "presentation": {
+          "method": "Aligned native 3D comparison",
+          "why": "The three lineages must be compared by shape and colour at the same moment.",
+          "visualEvidence": "A red disc, a lobed white cell and yellow platelets rotate side by side.",
+          "textMode": "labels"
+        }
+      },
+      "continuity": {
+        "from": "stem-cells",
+        "bridge": "The daughters have committed; now see what they become."
+      },
+      "renderer": "manimgl",
+      "nativeScene": "blood3d"
+    }
+  ]
+}

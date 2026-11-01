@@ -8,13 +8,14 @@ import {checkpoint,clamp,initialLiveSnapshot,type LiveSnapshot} from './geometry
 import {RizalStage,roleTime} from './RizalStage';
 import {adjacentBeatTime,visualBeatIndex} from './navigation';
 import GeneratedStage from './GeneratedStage';
+import {NativeLessonCanvas} from '../learning/NativeLessonCanvas';
 import SceneChapterStage from './SceneChapterStage';
 import LivePreparation from './LivePreparation';
 import type {LiveLesson} from './lessonTypes';
 import './live.css';
 
 type Source={title:string;url:string};
-type Response={answer:string;liveBranch?:{jobId:string;lessonId:string};sources?:Source[];researchAvailable?:boolean;browserBranch?:{lessonId:string;chapter:number;focus:string;visualReason:string}};
+type Response={answer:string;liveBranch?:{jobId:string;lessonId:string};sources?:Source[];researchAvailable?:boolean;browserBranch?:{lessonId:string;chapter:number|string;focus:string;visualReason:string}};
 type Message={role:'user'|'assistant';text:string;sources?:Source[]};
 type Parent={snapshot:LiveSnapshot;label:string;audioPosition:number;lesson:LiveLesson};
 type PendingBranch=Parent&{jobId:string};
@@ -32,7 +33,7 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
  const playingRef=useRef(playing);playingRef.current=playing;
  const sourceInput=useRef<HTMLTextAreaElement>(null),transcript=useRef<HTMLDivElement>(null);
  const request=useRef<AbortController|null>(null),parentRef=useRef(parents);parentRef.current=parents;
- const lessonAudio=useRef<NarrationTransport|null>(null),answerAudio=useRef<NarrationTransport|null>(null),resumeOffset=useRef<number|null>(null);
+ const lessonAudio=useRef<NarrationTransport|null>(null),answerAudio=useRef<NarrationTransport|null>(null),resumeOffset=useRef<number|null>(null),clipVideo=useRef<HTMLVideoElement|null>(null);
  if(!lessonAudio.current){lessonAudio.current=new NarrationTransport(async text=>(await api<{url:string}>('narration',{text})).url,setAudioState);for(const c of manifest.chapters)if(c.audio)lessonAudio.current.seed(c.narration,c.audio);if(manifest.audioTrack)lessonAudio.current.seed(manifest.audioTrack.key,manifest.audioTrack.url);}
  if(!answerAudio.current)answerAudio.current=new NarrationTransport(async text=>(await api<{url:string}>('narration',{text})).url,()=>{});
  const foundIndex=manifest.chapters.findIndex(c=>state.time>=c.start&&state.time<c.end);
@@ -55,12 +56,13 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
  function applyResponse(reply:Response,origin:LiveSnapshot,label:string,audioPosition=lessonAudio.current?.position||0,originLesson=manifestRef.current){
   setMessages(m=>[...m,{role:'assistant',text:reply.answer,sources:reply.sources}]);
   if(reply.liveBranch){setPendingBranch({jobId:reply.liveBranch.jobId,snapshot:checkpoint(origin),lesson:originLesson,label,audioPosition});}
-  else if(reply.browserBranch){const b=reply.browserBranch,c=manifest.chapters[b.chapter];
-   if(!c||b.lessonId!=='rizal_live'){setError('The requested visual branch is unavailable.');return;}
+  else if(reply.browserBranch){const b=reply.browserBranch,m=manifestRef.current;
+   const ci=typeof b.chapter==='number'?b.chapter:m.chapters.findIndex(c=>c.id===b.chapter),c=m.chapters[ci];
+   if(!c||(b.lessonId&&b.lessonId!==m.id)){setError('The requested visual branch is unavailable.');return;}
    setParents(p=>[...p,{snapshot:checkpoint(origin),label,audioPosition,lesson:originLesson}]);
    resumeOffset.current=null;
-   const time=b.focus&&roleTime[b.focus]!==undefined?roleTime[b.focus]:Math.min(c.end-1,c.start+Math.max(5,c.cues[1]?.at||5));
-   setState({...initialLiveSnapshot(),time,chapter:b.chapter,selected:b.focus?[b.focus]:[],focus:b.focus});
+   const time=b.focus&&roleTime[b.focus]!==undefined?roleTime[b.focus]:Math.min(c.end-1,c.start+Math.max(2,c.cues[1]?.at||5));
+   setState({...initialLiveSnapshot(),time,chapter:ci,selected:b.focus?[b.focus]:[],focus:b.focus});
    setSeekVersion(v=>v+1);setFocusRequest(v=>v+1);setBranchReason(b.visualReason);setStatus('Focused exploration · your previous place is saved');
   }else setStatus(reply.researchAvailable===false?'Answered · source lookup unavailable':'Answered at your paused position');
   void speakAnswer(reply.answer);
@@ -97,7 +99,9 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
     const next=synchronizedTime(s.time,dt,limit,master);if(next>=limit){setPlaying(false);lessonAudio.current?.pause();}return{...s,time:next};});id=requestAnimationFrame(tick);};
   id=requestAnimationFrame(tick);return()=>cancelAnimationFrame(id);
  },[playing,ready,closed,busy,manifest.id]);
- useEffect(()=>{transcript.current?.scrollTo({top:transcript.current.scrollHeight,behavior:'smooth'});},[messages,busy]);
+ useEffect(()=>{if(chapter.clip)setReady(true);},[chapter.id,chapter.clip?.video]);
+useEffect(()=>{const v=clipVideo.current;if(!v||!chapter.clip)return;const start=chapter.clip.offset||0,end=start+(chapter.clip.duration??chapter.end-chapter.start);const target=Math.max(start,Math.min(end-.05,start+(state.time-chapter.start)));if(Math.abs(v.currentTime-target)>.25)v.currentTime=target;if(playing&&!busy){void v.play().catch(()=>{});}else{v.pause();}},[state.time,playing,busy,chapter.id,chapter.clip?.video]);
+useEffect(()=>{transcript.current?.scrollTo({top:transcript.current.scrollHeight,behavior:'smooth'});},[messages,busy]);
  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){e.preventDefault();close();return;}const target=e.target instanceof Element?e.target:null;if(target?.closest('textarea,select,[contenteditable="true"],input:not([type="range"])')||e.altKey||e.ctrlKey||e.metaKey)return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();step(e.key==='ArrowLeft'?-1:1,e.shiftKey);return;}if(e.code==='Space'&&!target?.closest('button')){e.preventDefault();if(playing)pause();else if(canStart)setPlaying(true);}if(e.key==='/'){e.preventDefault();setPanel(true);setTimeout(()=>sourceInput.current?.focus(),0);}};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);});
  if(closed)return <main className="live-closed"><p>Lesson closed.</p><a href={generic?`/?lesson=${manifest.id}&paused=1`:'/?scene=rizal_live&paused=1'}>Open the live lesson</a></main>;
  return <main className={`qweeps-live ${panel?'chat-visible':''}`} data-playhead={state.time.toFixed(3)} data-scene={generic?'live_generated':'rizal_live'}>
@@ -105,7 +109,7 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
   <div className="live-layout"><section className="live-canvas-column">
    <div className="live-question"><span>{String(index+1).padStart(2,'0')} / {String(manifest.chapters.length).padStart(2,'0')}</span><div><p>{chapter.years}</p><h2>{chapter.question}</h2>{bridge&&<p className="live-continuity">{bridge}</p>}</div>{parents.length>0&&<button className="live-return" onClick={returnToParent}><ArrowLeft size={15}/>Return to {parentRef.current.at(-1)?.snapshot.time.toFixed(1)}s</button>}</div>
    {branchReason&&<div className="live-branch-reason"><GitBranch size={13}/>{branchReason}</div>}
-   {chapter.scene?<SceneChapterStage chapter={chapter} time={state.time} selected={state.selected} update={setState} pause={pause} onReady={setReady}/>:generic?<GeneratedStage lesson={manifest} snapshot={state} focusRequest={focusRequest} update={setState} pause={pause} onReady={setReady}/>:<RizalStage snapshot={state} focusRequest={focusRequest} update={setState} pause={pause} onReady={setReady}/>}
+   {chapter.renderer==='manimgl'?<div className="live-stage-surface"><NativeLessonCanvas sessionId={session} snapshot={{sceneId:chapter.nativeScene||'wbc',plan:null,time:state.time,nodes:{},positions:{},camera:state.camera,selected:state.selected,region:null}} update={fn=>setState(s=>{const n=fn({sceneId:chapter.nativeScene||'wbc',plan:null,time:s.time,nodes:{},positions:{},camera:s.camera,selected:s.selected,region:null});return{...s,time:n.time,selected:n.selected,camera:n.camera,region:n.region};})} pause={pause} onReady={v=>{if(v)setReady(true);}} onFrame={()=>{}}/></div>:chapter.clip?<div className="live-stage-surface"><video ref={clipVideo} className="live-beat-clip" src={chapter.clip.video} muted playsInline preload="auto"/>{chapter.hotspots?.map(h=><button key={h.id} className="live-clip-hotspot" aria-label={`Inspect ${h.label}`} title={h.label} style={{left:`${h.x}%`,top:`${h.y}%`,width:`${h.w}%`,height:`${h.h}%`}} onClick={()=>{pause();setState(s=>({...s,selected:[h.id],focus:h.id}));setStatus(`Selected ${h.label} · ask about it`);}}/>)}</div>:chapter.scene?<SceneChapterStage chapter={chapter} time={state.time} selected={state.selected} update={setState} pause={pause} onReady={setReady}/>:generic?<GeneratedStage lesson={manifest} snapshot={state} focusRequest={focusRequest} update={setState} pause={pause} onReady={setReady}/>:<RizalStage snapshot={state} focusRequest={focusRequest} update={setState} pause={pause} onReady={setReady}/>}
    <div className="live-caption" aria-live="off">{caption}</div>
    <div className="live-context-bar"><span>{state.selected.length?<>Selected <strong>{state.selected.join(' · ').replaceAll('-',' ')}</strong></>:chapter.scene?'Click a scene object to inspect it.':'Click an object or drag a region to ask about it.'}</span><div>{selectedDetails.length>0&&<button aria-label="Read selected object explanation" onClick={()=>{pause();setPanel(true);}}>Details</button>}<button disabled={!state.selected.length||!!chapter.scene} onClick={focusSelection}><Focus size={13}/>Focus</button><button onClick={()=>{pause();setState(s=>({...s,camera:{x:0,y:0,zoom:1},focus:'',selected:[],region:null}));}}><RotateCcw size={13}/>Overview</button></div></div>
    <footer className="live-transport"><div className="live-chapters">{manifest.chapters.map((c,i)=><button key={c.id} className={chapter.id===c.id?'active':''} onClick={()=>{seek((c.visualStart??c.start)+.01);setState(s=>({...s,chapter:null,camera:{x:0,y:0,zoom:1}}));}}><span>{i+1}</span>{generic?c.title:['Origins & medicine','The European journey','Two novels','The Dapitan years','Trial & farewell','Public memory'][i]}</button>)}</div>

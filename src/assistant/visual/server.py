@@ -21,6 +21,7 @@ from ..config import load_config
 from ..llm import build_visual_llm, OfflineLLM, AntigravityLLM, ModelProviderError
 from ..http import HTTPError
 from .plan import PlanError, _text, generate_reply, manim_source, validate_plan
+from .render_backends import LocalCEBackend, backend_from_env
 from .browser_gate import check_svg
 from .beat_factory import BeatFactory
 from .visual_beat_factory import VisualBeatFactory
@@ -80,6 +81,8 @@ class VisualService:
                 "modelUsage": self.llm.metrics() if hasattr(self.llm,'metrics') else None,
                 "fallbackProvider": None if isinstance(self.llm, AntigravityLLM) or getattr(self.llm,'free_only',False) else self.cfg.llm.fallback_provider,
                 "manimReady": self.renderer is not None, "tts": self.cfg.tts.provider,
+                "renderBackend": os.environ.get("QWEEPS_RENDER_BACKEND", "local"),
+                "rendererUrl": os.environ.get("QWEEPS_GM_URL", "http://127.0.0.1:8080"),
                 "teachingMethod": "qweeps-visual-teaching",
                 "lessonPipeline": ["storyboard", "animation", "teaching_review", "rendered_frame_review"],
                 "teachingReferences": ["pdf_explainer", "math_01", "astar_heuristics", "hyperframes_rizal"],
@@ -180,7 +183,8 @@ class VisualService:
         return self._render_trusted_source(manim_source(validate_plan(raw)))
 
     def _render_trusted_source(self, source_text: str) -> dict:
-        if not self.renderer:
+        backend = backend_from_env(self.renderer)
+        if isinstance(backend, LocalCEBackend) and not self.renderer:
             raise PlanError("Manim Community Edition is unavailable. Set QWEEPS_MANIM_PYTHON to a Python environment containing manim.")
         if not self.render_lock.acquire(blocking=False):
             raise PlanError("A Manim render is already running. Try again when it finishes.")
@@ -188,19 +192,18 @@ class VisualService:
             job = uuid.uuid4().hex
             folder = self.render_dir / job
             folder.mkdir(parents=True)
-            source = folder / "lesson.py"
-            source.write_text(source_text)
-            proc = subprocess.run([self.renderer, "-m", "manim", "-ql", "--disable_caching",
-                                   "--media_dir", str(folder / "media"), str(source), "QweepsLesson"],
-                                  capture_output=True, text=True, timeout=180, cwd=folder)
-            (folder / "render.log").write_text(proc.stdout + proc.stderr)
-            videos = list((folder / "media" / "videos").glob("**/QweepsLesson.mp4"))
-            if proc.returncode or not videos:
-                raise PlanError("Manim rendering failed. " + (proc.stderr or proc.stdout)[-1500:])
-            shutil.copyfile(videos[0], folder / "lesson.mp4")
-            return {"url": f"/renders/{job}.mp4", "source": source_text}
-        except subprocess.TimeoutExpired as exc:
-            raise PlanError("Manim rendering exceeded the three-minute limit.") from exc
+            (folder / "lesson.py").write_text(source_text)
+            try:
+                result = backend.render(source_text, "QweepsLesson", folder)
+            except subprocess.TimeoutExpired as exc:
+                raise PlanError("Manim rendering exceeded the three-minute limit.") from exc
+            except RuntimeError as exc:
+                raise PlanError(str(exc)[-1800:]) from exc
+            target = folder / "lesson.mp4"
+            if Path(result.video).resolve() != target.resolve():
+                shutil.copyfile(result.video, target)
+            return {"url": f"/renders/{job}.mp4", "source": source_text,
+                    "backend": result.backend}
         finally:
             self.render_lock.release()
 
@@ -343,7 +346,7 @@ class Handler(SimpleHTTPRequestHandler):
                     pass
             elif re.fullmatch(r'/api/visual/live/jobs/[0-9a-f]{32}',parsed.path):
                 self.send_json(200,self.service.live.status(parsed.path.rsplit('/',1)[-1]))
-            elif re.fullmatch(r'/api/visual/live/lessons/[0-9a-f]{32}',parsed.path):
+            elif re.fullmatch(r'/api/visual/live/lessons/[A-Za-z0-9_-]+',parsed.path):
                 self.send_json(200,self.service.live.lesson(parsed.path.rsplit('/',1)[-1]))
             elif parsed.path == "/api/visual/native/frame":
                 sid = parse_qs(parsed.query).get("sessionId", [None])[0]
@@ -402,6 +405,16 @@ class Handler(SimpleHTTPRequestHandler):
             elif re.fullmatch(r"/renders/[0-9a-f]{32}\.mp4", parsed.path):
                 job = parsed.path.split("/")[-1][:-4]
                 path = self.service.render_dir / job / "lesson.mp4"
+                self.send_video(path)
+            elif re.fullmatch(r"/api/visual/clips/[a-z0-9_]+-(?:gl|ce)-[0-9a-f]{16}\.mp4", parsed.path):
+                from .manim_clips import CLIPS, clip_path, source_sha
+                stem = parsed.path.rsplit("/", 1)[-1][:-4]
+                name, renderer, sha = stem.rsplit("-", 2)
+                if name not in CLIPS or sha != source_sha(CLIPS[name]):
+                    raise PlanError("Unknown visual clip")
+                path = clip_path(name, renderer)
+                if not path.is_file():
+                    raise PlanError("Clip is not rendered yet; run assistant.visual.manim_clips render")
                 self.send_video(path)
             elif parsed.path.startswith("/api/"):
                 self.send_json(404, {"error": "Unknown API endpoint"})
