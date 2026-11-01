@@ -130,7 +130,7 @@ export function compoundBox(compound:Compound):Box{
  const defaults:Record<CompoundKind,[number,number]>=
   {'comparison-card':[420,380],'step-card':[300,210],'sum-node':[250,160],'value-pill':[240,60],
    'icon-chip':[190,64],axis:[900,130],'number-line':[900,130],bars:[460,250],
-   callout:[600,92],brace:[320,54],'trace-row':[760,62],station:[190,118]};
+   callout:[600,92],brace:[320,54],'trace-row':[760,62],station:[220,118]};
  const[width,height]=defaults[compound.kind];
  return{x:compound.x??0,y:compound.y??0,width:compound.width??width,height:compound.height??height};
 }

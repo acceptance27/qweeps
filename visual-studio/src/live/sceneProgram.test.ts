@@ -135,3 +135,16 @@ test('the live methods demo runs five scene chapters on one clock',()=>{
  assert.equal(previous,METHODS_DEMO_LESSON.duration);
  for(let index=0;index<5;index++)assert.equal(visualBeatIndex(METHODS_DEMO_LESSON.chapters,METHODS_DEMO_LESSON.chapters[index].start+.2),index);
 });
+
+test('grammar recipes keep the old choreography instead of a generic reveal',()=>{
+ const algorithm=compileSceneProgram(METHOD_PROGRAMS.algorithm);
+ assert.ok(algorithm.scene?.objects.some(object=>object.kind==='group'&&object.children.some(child=>child.id==='trace-highlight')));
+ assert.ok(algorithm.scene?.actions.some(action=>action.kind==='move'&&action.id==='trace-highlight'));
+ const narrative=compileSceneProgram(METHOD_PROGRAMS.narrative);
+ assert.ok(narrative.scene?.objects.some(object=>object.kind==='group'&&object.children.some(child=>child.id==='narrative-travel')));
+ assert.ok(narrative.scene?.actions.some(action=>action.kind==='move'&&action.id==='narrative-travel'));
+ const procedure=compileSceneProgram(METHOD_PROGRAMS.procedure);
+ assert.ok(procedure.scene?.actions.some(action=>action.kind==='draw'&&action.id==='rail'));
+ const recall=compileSceneProgram(METHOD_PROGRAMS.recall);
+ assert.ok(recall.scene?.actions.some(action=>action.kind==='draw'&&action.id==='route'));
+});

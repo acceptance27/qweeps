@@ -1,4 +1,5 @@
 import {lineLoop,pathD,measurePacing} from './morph';
+import {motionTimeline} from './motionRecipes';
 import type {Scene,SceneAction,SceneObject} from './scene';
 import {
  PAINT,textWidth,wrapText,layoutCompound,compoundBox,
@@ -77,7 +78,7 @@ export function compileSceneProgram(program:SceneProgram):CompiledProgram{
 
  const actions:SceneAction[]=program.teaching==='comparison'
   ? comparisonTimeline(program,compounds,layouts,extras)
-  : autoTimeline(program,compounds,layouts,extras);
+  : motionTimeline(program,layouts,extras);
  if(program.conclusion){const last=Math.max(0,...actions.map(a=>a.at+a.duration));actions.push({at:Math.min(program.duration-1.6,Math.max(last+.3,program.duration-2)),duration:.4,kind:'show',id:'conclusion'});}
  actions.sort((a,b)=>a.at-b.at);
 
@@ -243,7 +244,7 @@ function placeCompounds(program:SceneProgram,compounds:Compound[]):{compound:Com
   const route=program.objects.find(isLine) as ProgramLine|undefined;
   const left=route?Math.min(route.from[0],route.to[0]):180;
   const right=route?Math.max(route.from[0],route.to[0]):1260;
-  const width=190,height=118;
+  const width=220,height=118;
   const placed:{compound:Compound;box:{x:number;y:number;width:number;height:number}}[]=[];
   if(program.teaching==='narrative'){
    const axisY=170,baseline=axisY+130*.55,stationY=baseline-20;
@@ -311,6 +312,18 @@ function grammarExtras(program:SceneProgram,boxes:ReturnType<typeof layoutBoxes>
   objects.push({id:'trace-header-step',kind:'text',x:172,y:112,text:'step',size:12,fill:'#7899a5',opacity:0});
   objects.push({id:'trace-header-state',kind:'text',x:1268,y:112,text:'state',size:12,fill:'#7899a5',anchor:'end',opacity:0});
   actions.push({at:.1,duration:.3,kind:'show',id:'trace-header-step'},{at:.2,duration:.3,kind:'show',id:'trace-header-state'});
+  const rows=boxes.compounds.filter(compound=>compound.kind==='trace-row');
+  if(rows.length){
+   const first=boxes.byId[rows[0].id];
+   objects.push({id:'trace-highlight',kind:'rect',x:first.x-4,y:first.y-2,width:first.width+8,height:first.height+4,rx:12,fill:'#edca82',fillOpacity:.08,stroke:'#edca82',strokeWidth:1.5,opacity:0});
+  }
+ }
+ if(program.teaching==='narrative'){
+  const axis=boxes.compounds.find(compound=>compound.kind==='axis');
+  if(axis){
+   const box=boxes.byId[axis.id],baseline=box.y+box.height*.55;
+   objects.push({id:'narrative-travel',kind:'circle',cx:box.x,cy:baseline,r:5,fill:'#edca82',stroke:'#edca82',opacity:0});
+  }
  }
  if(program.teaching==='comparison'){
   const route=program.objects.find(isLine);
@@ -351,30 +364,6 @@ function comparisonTimeline(program:SceneProgram,compounds:Compound[],layouts:{c
   if(object.id==='context'||object.id==='context-label')continue;
   actions.push({at:.3,duration:.4,kind:'show',id:object.id});
  }
- return actions;
-}
-
-function autoTimeline(program:SceneProgram,compounds:Compound[],layouts:{compound:Compound;layout:ReturnType<typeof layoutCompound>}[],extras:{objects:SceneObject[];actions:SceneAction[]}):SceneAction[]{
- const actions:SceneAction[]=[...extras.actions];
- const ordered=[...layouts].sort((a,b)=>a.layout.box.x-b.layout.box.x||a.layout.box.y-b.layout.box.y);
- const available=Math.max(1.2,program.duration-3.4);
- const step=Math.min(1.15,available/Math.max(ordered.length,1));
- ordered.forEach(({compound,layout},index)=>{
-  const start=.25+index*step;
-  actions.push({at:start,duration:.45,kind:'show',id:layout.hull.id});
-  layout.slots.forEach((slot,slotIndex)=>actions.push({at:start+.28+slotIndex*.05,duration:.32,kind:'show',id:slot.id}));
-  if(compound.kind==='trace-row'||compound.kind==='station')actions.push({at:start+.3,duration:.4,kind:'indicate',id:layout.hull.id});
- });
- for(const primitive of program.objects){
-  if(isLine(primitive))actions.push({at:.15,duration:.6,kind:'draw',id:primitive.id});
-  else if(!isCompound(primitive)&&primitive.kind!=='text')actions.push({at:.3,duration:.4,kind:'show',id:primitive.id});
-  else if(!isCompound(primitive)&&primitive.kind==='text')actions.push({at:.4,duration:.4,kind:'show',id:primitive.id});
- }
- for(const object of extras.objects){
-  if(actions.some(action=>action.id===object.id))continue;
-  actions.push({at:.4,duration:.4,kind:'show',id:object.id});
- }
- if(ordered.length)actions.push({at:Math.max(.8,program.duration-4.2),duration:.5,kind:'indicate',id:ordered[Math.min(1,ordered.length-1)].layout.hull.id});
  return actions;
 }
 
