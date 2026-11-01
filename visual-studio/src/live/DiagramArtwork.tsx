@@ -2,7 +2,7 @@ import React from 'react';
 import type {LiveNode} from './lessonTypes';
 import {LiveAsset,palette} from './LiveAssets';
 
-const paints:Record<string,string>={...palette,white:'#e6eef0',muted:'#7899a5',none:'none'};
+const paints:Record<string,string>={...palette,white:'#e6eef0',muted:'#7899a5',ink:'#071117',none:'none'};
 /** Explicit primitive props only: no SVG markup, external URLs or generated code. */
 export function DiagramArtwork({node,width,height}:{node:LiveNode;width:number;height:number}){
  const size=Math.min(width,height),x=(width-size)/2,y=(height-size)/2;

@@ -1260,6 +1260,7 @@ const SceneDemo = React.lazy(() => import('./live/SceneDemo'));
 const MethodsDemo = React.lazy(() => import('./live/MethodsDemo'));
 const MethodsVisualDemo = React.lazy(() => import('./live/MethodsVisualDemo'));
 const Module6Model = React.lazy(() => import('./live/Module6Model'));
+const MotifModel = React.lazy(() => import('./live/MotifModel'));
 const BeatFactory = React.lazy(() => import('./live/BeatFactory'));
 const LiveLessonLoader = React.lazy(() => import('./live/LiveLessonLoader'));
 const ChapterStream = React.lazy(() => import('./live/ChapterStream'));
@@ -1272,6 +1273,7 @@ const MethodsPrograms = React.lazy(() => import('./live/MethodsPrograms'));
 export default function App() {
   const params = new URLSearchParams(location.search);
   if (params.get('factory') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Starting the beat factory…</div>}><BeatFactory/></React.Suspense>;
+  if (params.get('motifModel') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the motif model test…</div>}><MotifModel/></React.Suspense>;
   if (params.get('module6Model') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the model-authored Module 6…</div>}><Module6Model/></React.Suspense>;
   if (params.get('methodsVisual') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the visual methods lesson…</div>}><MethodsVisualDemo/></React.Suspense>;
   if (params.get('methodsDemo') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the five method beats…</div>}><MethodsDemo/></React.Suspense>;

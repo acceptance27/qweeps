@@ -39,7 +39,12 @@ export function resolveDiagramBoxes(nodes:LiveNode[],minMargin=15):NodeBox[]{
 
 export function nodeBoxes(v:LiveVisual):NodeBox[]{
  const n=v.nodes.length;
- if(v.layout==='diagram'||v.layout==='fanin')return resolveDiagramBoxes(v.nodes);
+ if(v.layout==='diagram'){
+  if(v.nodes.length===3&&v.nodes.every(node=>!node.position))return v.nodes.map((node,i)=>({node,x:[80,530,980][i],y:130,width:380,height:340}));
+  if(v.nodes.length===4&&v.nodes.every(node=>!node.position))return v.nodes.map((node,i)=>i<3?{node,x:[80,530,980][i],y:110,width:340,height:140}:{node,x:480,y:360,width:480,height:140});
+  return resolveDiagramBoxes(v.nodes);
+ }
+ if(v.layout==='fanin')return resolveDiagramBoxes(v.nodes);
  if(v.layout==='matrix')return v.nodes.map((node,i)=>({node,x:45,y:148+i*(350/n),width:1350,height:350/n}));
  if(v.layout==='concept'&&conceptUsesGrid(v)&&n<=4){
   const cols=n===4?2:n,rows=Math.ceil(n/cols),width=(1350-25*(cols-1))/cols;

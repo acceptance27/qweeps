@@ -517,6 +517,22 @@ made them look like simplified dashboards. That path is wrong for this design.
 - `SceneProgram`/`SceneStage` remain for motion-specific scenes only, not for
   card/diagram beats.
 
+### Motif layer (P5 prototype)
+
+The model can now select a semantic motif per diagram node; the compiler draws
+it. The model never writes SVG paths or pixel coordinates.
+
+- `src/assistant/visual/motifs.py` — wave, vector, box, ring, pair, axis,
+  collision, field and equation motifs;
+- `bench/motif_model_test.py` — four massless-matter beats authored by the
+  model from the reference facts;
+- `visual-studio/src/live/MotifModel.tsx` — `?motifModel=1`;
+- model test: **4/4 first-pass, 32.7 s total, 6.5–8.9 s per beat**;
+- browser gate: **4/4, 0 errors, 0 warnings**.
+
+Still open: the motif artwork is simpler than the hand-authored reference;
+diagram motion is reveal-only; audio remains separate.
+
 ### P4 — Motion and settled-poster gate
 
 Deliver:
@@ -781,6 +797,9 @@ poster does not count.
 - `src/assistant/visual/visual_beat_factory.py` — LiveVisual slot factory.
 - `visual-studio/src/live/VisualBeatStage.tsx` — single-beat existing-renderer wrapper.
 - `visual-studio/src/live/methodsVisualLesson.ts` — 1:1 visual reference lesson at `?methodsVisual=1`.
+- `src/assistant/visual/motifs.py` — safe motif-to-SVG layer.
+- `bench/motif_model_test.py` — motif model test.
+- `visual-studio/src/live/MotifModel.tsx` — motif lesson at `?motifModel=1`.
 - `bench/module6_model.py` — model-authored Module 6 lesson generator.
 - `visual-studio/src/live/Module6Model.tsx` — full model lesson at `?module6Model=1`.
 - `visual-studio/scripts/ir_lesson.ts` — IR lesson builder.
