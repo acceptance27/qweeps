@@ -1,0 +1,914 @@
+{
+  "id": "71e225e8d711f3de3256535b3f107a1c",
+  "kind": "live_generated",
+  "documentId": null,
+  "title": "Mini-Lesson: Could you explain what a verifier is?",
+  "question": "Could you explain what a verifier is?",
+  "representation": "Focused 3-beat branch mini-lesson exploring The Witness (Certificate) Protocol V(x, w).",
+  "example": {
+    "title": "From O(n^2) Sorting to Cook-Levin SAT & Cryptography",
+    "description": "Follow one computational thread across 4 Acts (20 beats): Class P -> Class NP -> NP-Completeness -> The Millennium Prize.",
+    "icon": "cpu"
+  },
+  "chapters": [
+    {
+      "id": "branch-b1-concept",
+      "title": "1. Why We Need a Verifier: Search vs Check",
+      "years": "Mini-Lesson · Beat 1 / 3",
+      "question": "Could you explain what a verifier is?",
+      "insight": "Searching from scratch explores 2^n possibilities, whereas a verifier V(x, w) checks one proposed certificate w in O(n^k) time.",
+      "sourcePages": [],
+      "sources": [],
+      "safeguard": "Focused mini-lesson layout beat.",
+      "narration": "Branching from your question: let us unpack exactly what a verifier is and how it works. Rather than searching an exponential tree of possibilities from scratch, a verifier V(x, w) is a fast deterministic algorithm that checks whether a proposed witness w solves problem instance x.",
+      "narrationAt": 0.0,
+      "audio": "/narration/29af2a641224ee7289e0a8b0dc38004289415de3b0fa4f2502ccf48d83ecdf5c.mp3",
+      "start": 0.0,
+      "end": 18.396,
+      "finishedAt": 18.146,
+      "continuity": {
+        "from": null,
+        "bridge": "Branching from your question: let us unpack exactly what a verifier is and how it works.",
+        "spokenEnd": 6.4
+      },
+      "teaching": "comparison",
+      "cues": [
+        {
+          "at": 0.2,
+          "text": "Branching from your question: let us unpack exactly what a verifier is and how it works."
+        },
+        {
+          "at": 6.04,
+          "text": "Rather than searching an exponential tree of possibilities from scratch, a verifier V(x, w) is a fast deterministic algorithm that checks whether a proposed witness w solves problem instance x."
+        }
+      ],
+      "roles": {
+        "ver-input-x": "Problem Instance x: The raw question (e.g. a graph, Sudoku puzzle, or formula of size n).",
+        "ver-witness-w": "Witness Certificate w: A short candidate solution or proof (|w| <= n^k) supplied to the checker.",
+        "ver-gate-v": "Deterministic Verifier V(x, w): Checks whether w satisfies all constraints of x in polynomial O(n^k) time."
+      },
+      "visual": {
+        "layout": "comparison",
+        "nodes": [
+          {
+            "id": "ver-input-x",
+            "title": "Problem Instance x",
+            "body": "The raw question (e.g. a graph, Sudoku puzzle, or formula of size n).",
+            "icon": "cpu",
+            "color": "blue",
+            "at": 1,
+            "tag": "Input size n",
+            "artwork": []
+          },
+          {
+            "id": "ver-witness-w",
+            "title": "Witness Certificate w",
+            "body": "A short candidate solution or proof (|w| <= n^k) supplied to the checker.",
+            "icon": "key",
+            "color": "gold",
+            "at": 2,
+            "tag": "Short proof w",
+            "artwork": []
+          },
+          {
+            "id": "ver-gate-v",
+            "title": "Deterministic Verifier V(x, w)",
+            "body": "Checks whether w satisfies all constraints of x in polynomial O(n^k) time.",
+            "icon": "check",
+            "color": "green",
+            "at": 3,
+            "tag": "Outputs YES / NO",
+            "artwork": []
+          }
+        ],
+        "connections": [],
+        "columns": [],
+        "takeaway": "A verifier does not guess or search—it deterministically checks a supplied proof certificate w.",
+        "experiment": null,
+        "presentation": {
+          "method": "Interactive Comparison Grammar",
+          "why": "Structured cards with animated Lucide icons break down the concept clearly.",
+          "visualEvidence": "A verifier does not guess or search—it deterministically checks a supplied proof certificate w.",
+          "textMode": "descriptive"
+        }
+      },
+      "targetDuration": 18.396,
+      "transition": {
+        "type": "fade",
+        "duration": 0.35,
+        "shared": []
+      },
+      "narrationCues": [
+        {
+          "target": "context",
+          "start": 0.05,
+          "end": 6.4,
+          "text": "Branching from your question: let us unpack exactly what a verifier is and how it works.",
+          "phrase": "1. Why We Need a Verifier: Search vs Check",
+          "attention": true
+        },
+        {
+          "target": "ver-input-x",
+          "start": 6.4,
+          "end": 8.68,
+          "text": "Branching from your question: let us unpack exactly what a verifier is and how it works. Rather than searching an exponential tree of possibilities from scratch, a verifier V(x, w) is a fast deterministic algorithm that checks whether a proposed witness w solves problem instance x.",
+          "phrase": "Problem Instance x",
+          "attention": true
+        },
+        {
+          "target": "ver-witness-w",
+          "start": 8.68,
+          "end": 10.97,
+          "text": "Branching from your question: let us unpack exactly what a verifier is and how it works. Rather than searching an exponential tree of possibilities from scratch, a verifier V(x, w) is a fast deterministic algorithm that checks whether a proposed witness w solves problem instance x.",
+          "phrase": "Witness Certificate w",
+          "attention": true
+        },
+        {
+          "target": "ver-gate-v",
+          "start": 10.97,
+          "end": 13.25,
+          "text": "Branching from your question: let us unpack exactly what a verifier is and how it works. Rather than searching an exponential tree of possibilities from scratch, a verifier V(x, w) is a fast deterministic algorithm that checks whether a proposed witness w solves problem instance x.",
+          "phrase": "Deterministic Verifier V(x, w)",
+          "attention": true
+        },
+        {
+          "target": "takeaway",
+          "start": 6.04,
+          "end": 18.25,
+          "text": "A verifier does not guess or search—it deterministically checks a supplied proof certificate w.",
+          "phrase": "A verifier does not guess or search—",
+          "attention": true
+        }
+      ],
+      "transitionOut": 0.25,
+      "visualStart": 0.0,
+      "visualEnd": 18.396
+    },
+    {
+      "id": "branch-b2-mechanism",
+      "title": "2. Inside the Verifier Gate V(x, w)",
+      "years": "Mini-Lesson · Beat 2 / 3",
+      "question": "How does V(x, w) process the instance x and witness w step by step?",
+      "insight": "Instance x and Witness w feed together into V(x, w), which runs polynomial local checks in sequence before lighting the YES beacon.",
+      "sourcePages": [],
+      "sources": [],
+      "safeguard": "Focused mini-lesson mechanism beat.",
+      "narration": "Now watch the verifier gate V(x, w) operate in live 3Blue1Brown geometry. Problem instance x on the top-left and witness certificate w on the bottom-left slide into the central Verifier box, trigger three sequential polynomial constraint checks, and fire a green arrow to the YES beacon.",
+      "narrationAt": 0.0,
+      "audio": "/narration/ca8d38e9abf132015c24e552d05adeb9f87d35495b440e536fca0844ee793e41.mp3",
+      "start": 18.396,
+      "end": 37.977,
+      "finishedAt": 37.727,
+      "continuity": {
+        "from": "branch-b1-concept",
+        "bridge": "Now watch the verifier gate V(x, w) operate in live 3Blue1Brown geometry.",
+        "spokenEnd": 23.506
+      },
+      "teaching": "mechanism",
+      "cues": [
+        {
+          "at": 0.0,
+          "text": "Now watch the verifier gate V(x, w) operate in live 3Blue1Brown geometry."
+        },
+        {
+          "at": 6.5,
+          "text": "Problem instance x on the top-left and witness certificate w on the bottom-left slide into the central Verifier box, trigger three sequential polynomial constraint checks, and fire a green arrow to the YES beacon."
+        }
+      ],
+      "roles": {
+        "ar1": "Ar1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "ar2": "Ar2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "ar3": "Ar3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "arr1": "Arr1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "arr2": "Arr2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "arr3": "Arr3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "arrow1": "Arrow1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "arrow2": "Arrow2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "aw": "Aw (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "ax": "Ax (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "ax1-x": "Ax1 X (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "ax1-y": "Ax1 Y (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "ax2-x": "Ax2 X (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "ax2-y": "Ax2 Y (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "banner-box": "Banner Box (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "bar1": "Bar1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "bar1-done": "Bar1 Done (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "bar2": "Bar2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "bar3": "Bar3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "bars": "Bars (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "box-sur": "Box Sur (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "c-a1": "C A1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "c-a2": "C A2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "c-a3": "C A3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "cleanup1": "Cleanup1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "cleanup2": "Cleanup2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "cleanup3": "Cleanup3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "conv-box": "Conv Box (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "crown-box": "Crown Box (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "d-exp": "D Exp (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "d-n2": "D N2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "d1": "D1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "d1-g": "D1 G (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "d2": "D2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "d2-g": "D2 G (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "d3": "D3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "d3-g": "D3 G (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "d4": "D4 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "d4-g": "D4 G (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "dot1": "Dot1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "dot2": "Dot2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "dot3": "Dot3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "dots": "Dots (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "edges": "Edges (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "exp-curve": "Exp Curve (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "fwd": "Fwd (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "g-a1": "G A1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "g-a2": "G A2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "g-a3": "G A3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "gate-and": "Gate And (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "gate-not": "Gate Not (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "gate-or": "Gate Or (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "goal-dot": "Goal Dot (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "gold-arrow": "Gold Arrow (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "gold-target": "Gold Target (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "halo1": "Halo1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "halo2": "Halo2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "halo3": "Halo3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "hex-shape": "Hex Shape (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "instance-dot": "Instance Dot (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "inv-arrow": "Inv Arrow (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "keyhole": "Keyhole (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "left-circ": "Left Circ (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "master-box": "Master Box (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "n2-curve": "N2 Curve (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "nodes": "Nodes (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "np-ellipse": "Np Ellipse (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "np-outer": "Np Outer (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "out-arrow": "Out Arrow (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "p-circle": "P Circle (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "p-dot": "P Dot (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "p-halo": "P Halo (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "p-hull": "P Hull (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "p-inner": "P Inner (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "pad-body": "Pad Body (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "peq-box": "Peq Box (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "poly-curve": "Poly Curve (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "poly-dot": "Poly Dot (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "q-dot": "Q Dot (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "q-halo": "Q Halo (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "r1": "R1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "r2": "R2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "r3": "R3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "r4": "R4 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "red-arrows": "Red Arrows (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "right-tri": "Right Tri (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "shackle": "Shackle (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "sol-box": "Sol Box (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "sp1": "Sp1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "sp2": "Sp2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "sp3": "Sp3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "spark": "Spark (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "sq": "Sq (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "start-dot": "Start Dot (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "t1": "T1 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "t2": "T2 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "t3": "T3 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "t4": "T4 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "t5": "T5 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "t6": "T6 (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "tree": "Tree (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "tri": "Tri (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "vbox": "Vbox (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "verify-token": "Verify Token (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "w-circle": "W Circle (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "wave": "Wave (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "x-circle": "X Circle (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
+        "yes-beacon": "Yes Beacon (7. The Witness (Certificate) Protocol V(x, w)): A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer."
+      },
+      "visual": {
+        "layout": "diagram",
+        "nodes": [],
+        "connections": [],
+        "columns": [],
+        "takeaway": "Instance x and Witness w feed together into V(x, w), which runs polynomial local checks in sequence before lighting the YES beacon.",
+        "experiment": null,
+        "presentation": {
+          "method": "3Blue1Brown Native ManimGL Construction",
+          "why": "Live ManimGL geometry shows the exact mechanism you asked about.",
+          "visualEvidence": "Instance x and Witness w feed together into V(x, w), which runs polynomial local checks in sequence before lighting the YES beacon.",
+          "textMode": "labels"
+        }
+      },
+      "targetDuration": 19.581,
+      "renderer": "manimgl",
+      "nativeScene": "gen_e3276006ebb8",
+      "nativeOffset": 33.3,
+      "nativeDuration": 10.4,
+      "transition": {
+        "from": "branch-b1-concept",
+        "to": "branch-b2-mechanism",
+        "type": "fade",
+        "duration": 0.28,
+        "shared": []
+      },
+      "narrationCues": [
+        {
+          "target": "context",
+          "start": 0.05,
+          "end": 5.11,
+          "text": "Now watch the verifier gate V(x, w) operate in live 3Blue1Brown geometry.",
+          "phrase": "2. Inside the Verifier Gate V(x, w)",
+          "attention": true
+        },
+        {
+          "target": "takeaway",
+          "start": 6.5,
+          "end": 19.43,
+          "text": "Instance x and Witness w feed together into V(x, w), which runs polynomial local checks in sequence before lighting the YES beacon.",
+          "phrase": "Instance x and Witness w feed togeth",
+          "attention": true
+        }
+      ],
+      "transitionOut": 0.25,
+      "visualStart": 18.396,
+      "visualEnd": 37.977,
+      "nativeMap": [
+        {
+          "at": 0.0,
+          "scene": 33.3
+        },
+        {
+          "at": 19.581,
+          "scene": 43.7
+        }
+      ]
+    },
+    {
+      "id": "branch-b3-synthesis",
+      "title": "3. The Two Laws of an NP Verifier",
+      "years": "Mini-Lesson · Beat 3 / 3",
+      "question": "What two mathematical rules must V(x, w) obey to define Class NP?",
+      "insight": "To qualify as an NP verifier, the witness w must have polynomial length |w| <= |x|^k AND the checker V(x, w) must halt in polynomial time O(|x|^k).",
+      "sourcePages": [],
+      "sources": [],
+      "safeguard": "Focused mini-lesson layout beat.",
+      "narration": "Why can we not hide an exponential list inside the witness? Two strict polynomial rules keep verification honest. First, the certificate w must be polynomially short so it can even be read; second, V(x, w) must verify all constraints in deterministic O(n^k) time, turning Sudoku, TSP, and SAT into fast verification problems.",
+      "narrationAt": 0.0,
+      "audio": "/narration/04ad6a2db9985b4cce17768401340b15e0563cc10e4ff8ca83ed5ac835f0f259.mp3",
+      "start": 37.977,
+      "end": 61.695,
+      "finishedAt": 61.445,
+      "continuity": {
+        "from": "branch-b2-mechanism",
+        "bridge": "Why can we not hide an exponential list inside the witness? Two strict polynomial rules keep verification honest.",
+        "spokenEnd": 46.187
+      },
+      "teaching": "procedure",
+      "cues": [
+        {
+          "at": 0.0,
+          "text": "Why can we not hide an exponential list inside the witness?"
+        },
+        {
+          "at": 4.04,
+          "text": "Two strict polynomial rules keep verification honest."
+        },
+        {
+          "at": 7.62,
+          "text": "First, the certificate w must be polynomially short so it can even be read; second, V(x, w) must verify all constraints in deterministic O(n^k) time, turning Sudoku, TSP, and SAT into fast verification problems."
+        }
+      ],
+      "roles": {
+        "law-short": "1. Short Witness (|w| <= |x|^k): The certificate w cannot be exponentially long; its bit-length is bounded by a polynomial in |x|.",
+        "law-fast": "2. Fast Check (O(|x|^k) steps): Given x and w, the deterministic machine V(x, w) finishes checking in polynomial time.",
+        "law-sound": "3. Soundness & Completeness: x is a YES instance if and only if there EXISTS at least one witness w where V(x, w) = YES."
+      },
+      "visual": {
+        "layout": "process",
+        "nodes": [
+          {
+            "id": "law-short",
+            "title": "1. Short Witness (|w| <= |x|^k)",
+            "body": "The certificate w cannot be exponentially long; its bit-length is bounded by a polynomial in |x|.",
+            "icon": "sliders",
+            "color": "gold",
+            "at": 1,
+            "tag": "Rule 1 · Poly size",
+            "artwork": []
+          },
+          {
+            "id": "law-fast",
+            "title": "2. Fast Check (O(|x|^k) steps)",
+            "body": "Given x and w, the deterministic machine V(x, w) finishes checking in polynomial time.",
+            "icon": "zap",
+            "color": "blue",
+            "at": 2,
+            "tag": "Rule 2 · Poly time",
+            "artwork": []
+          },
+          {
+            "id": "law-sound",
+            "title": "3. Soundness & Completeness",
+            "body": "x is a YES instance if and only if there EXISTS at least one witness w where V(x, w) = YES.",
+            "icon": "shield",
+            "color": "green",
+            "at": 3,
+            "tag": "Rule 3 · Exists w",
+            "artwork": []
+          }
+        ],
+        "connections": [
+          {
+            "from": "law-short",
+            "to": "law-fast",
+            "label": "feeds into",
+            "at": 2
+          },
+          {
+            "from": "law-fast",
+            "to": "law-sound",
+            "label": "establishes",
+            "at": 3
+          }
+        ],
+        "columns": [],
+        "takeaway": "Class NP is the set of all decision problems that possess a short-witness, polynomial-time verifier V(x, w).",
+        "experiment": null,
+        "presentation": {
+          "method": "Interactive Process Grammar",
+          "why": "Structured cards with animated Lucide icons break down the concept clearly.",
+          "visualEvidence": "Class NP is the set of all decision problems that possess a short-witness, polynomial-time verifier V(x, w).",
+          "textMode": "descriptive"
+        }
+      },
+      "targetDuration": 23.718,
+      "transition": {
+        "from": "branch-b2-mechanism",
+        "to": "branch-b3-synthesis",
+        "type": "fade",
+        "duration": 0.28,
+        "shared": []
+      },
+      "narrationCues": [
+        {
+          "target": "context",
+          "start": 0.05,
+          "end": 8.21,
+          "text": "Why can we not hide an exponential list inside the witness? Two strict polynomial rules keep verification honest.",
+          "phrase": "3. The Two Laws of an NP Verifier",
+          "attention": true
+        },
+        {
+          "target": "law-short",
+          "start": 8.21,
+          "end": 11.17,
+          "text": "Why can we not hide an exponential list inside the witness? Two strict polynomial rules keep verification honest. First, the certificate w must be polynomially short so it can even be read; second, V(x, w) must verify all constraints in deterministic O(n^k) time, turning Sudoku, TSP, and SAT into fast verification problems.",
+          "phrase": "1. Short Witness (|w| <= |x|^k)",
+          "attention": true
+        },
+        {
+          "target": "law-fast",
+          "start": 11.17,
+          "end": 14.12,
+          "text": "Why can we not hide an exponential list inside the witness? Two strict polynomial rules keep verification honest. First, the certificate w must be polynomially short so it can even be read; second, V(x, w) must verify all constraints in deterministic O(n^k) time, turning Sudoku, TSP, and SAT into fast verification problems.",
+          "phrase": "2. Fast Check (O(|x|^k) steps)",
+          "attention": true
+        },
+        {
+          "target": "law-sound",
+          "start": 14.12,
+          "end": 17.08,
+          "text": "Why can we not hide an exponential list inside the witness? Two strict polynomial rules keep verification honest. First, the certificate w must be polynomially short so it can even be read; second, V(x, w) must verify all constraints in deterministic O(n^k) time, turning Sudoku, TSP, and SAT into fast verification problems.",
+          "phrase": "3. Soundness & Completeness",
+          "attention": true
+        },
+        {
+          "target": "takeaway",
+          "start": 7.62,
+          "end": 23.57,
+          "text": "Class NP is the set of all decision problems that possess a short-witness, polynomial-time verifier V(x, w).",
+          "phrase": "Class NP is the set of all decision ",
+          "attention": true
+        }
+      ],
+      "transitionOut": 0.25,
+      "visualStart": 37.977,
+      "visualEnd": 61.695
+    }
+  ],
+  "sources": [
+    {
+      "id": "cook-1971",
+      "title": "S. A. Cook (1971) — The Complexity of Theorem-Proving Procedures",
+      "url": "https://doi.org/10.1145/800157.805047"
+    },
+    {
+      "id": "karp-1972",
+      "title": "R. M. Karp (1972) — Reducibility Among Combinatorial Problems",
+      "url": "https://doi.org/10.1007/978-1-4684-2001-2_9"
+    },
+    {
+      "id": "clay-pvsnp",
+      "title": "Clay Mathematics Institute — P vs NP Millennium Prize Problem",
+      "url": "https://www.claymath.org/millennium/p-vs-np/"
+    }
+  ],
+  "duration": 61.695,
+  "nativeScenes": {
+    "gen_e3276006ebb8": {
+      "sceneId": "gen_e3276006ebb8",
+      "title": "P vs NP — 3b1b Native Mechanism Beats",
+      "sceneClass": "GenScene",
+      "sourceHash": "e3276006ebb8",
+      "duration": 115.9,
+      "beats": [
+        {
+          "id": "b1-poly-sorting",
+          "title": "1. Polynomial Growth O(n^k) & Fast Sorting",
+          "start": 0.0,
+          "end": 7.8
+        },
+        {
+          "id": "b2-exp-wall",
+          "title": "2. The Combinatorial Wall: n^2 vs 2^n",
+          "start": 7.8,
+          "end": 15.6
+        },
+        {
+          "id": "b4-class-p-wavefront",
+          "title": "4. Class P: Polynomial-Time Shortest Path Wavefront",
+          "start": 15.6,
+          "end": 23.5
+        },
+        {
+          "id": "b6-find-vs-check",
+          "title": "6. The Core Asymmetry: Blind Search vs Fast Verification",
+          "start": 23.5,
+          "end": 33.3
+        },
+        {
+          "id": "b7-witness-verifier",
+          "title": "7. The Witness (Certificate) Protocol V(x, w)",
+          "start": 33.3,
+          "end": 43.7
+        },
+        {
+          "id": "b9-p-inside-np",
+          "title": "9. Why P Is Inside NP (P subseteq NP)",
+          "start": 43.7,
+          "end": 53.4
+        },
+        {
+          "id": "b11-poly-reduction",
+          "title": "11. Polynomial-Time Reductions (A <=_p B)",
+          "start": 53.4,
+          "end": 64.2
+        },
+        {
+          "id": "b13-cook-levin-sat",
+          "title": "13. Boolean Satisfiability (SAT) & The Cook-Levin Theorem",
+          "start": 64.2,
+          "end": 74.3
+        },
+        {
+          "id": "b14-np-complete-crown",
+          "title": "14. NP-Hard vs NP-Complete: The Domino Crown",
+          "start": 74.3,
+          "end": 83.6
+        },
+        {
+          "id": "b16-world-p-eq-np",
+          "title": "16. World 1: What If P = NP? Verification Becomes Creation",
+          "start": 83.6,
+          "end": 95.2
+        },
+        {
+          "id": "b17-crypto-collapse",
+          "title": "17. The Dark Side of P = NP: Cryptography Breaks",
+          "start": 95.2,
+          "end": 105.2
+        },
+        {
+          "id": "b18-consensus-p-neq-np",
+          "title": "18. World 2: Why Consensus Favors P != NP",
+          "start": 105.2,
+          "end": 115.9
+        }
+      ],
+      "cues": [
+        {
+          "id": "poly-curve",
+          "time": 0.0
+        },
+        {
+          "id": "b1-bars-swap",
+          "time": 2.4
+        },
+        {
+          "id": "b1-sorted-green",
+          "time": 5.0
+        },
+        {
+          "id": "exp-wall",
+          "time": 7.8
+        },
+        {
+          "id": "b2-explosion",
+          "time": 11.0
+        },
+        {
+          "id": "b2-wall-flash",
+          "time": 12.8
+        },
+        {
+          "id": "p-wavefront",
+          "time": 15.6
+        },
+        {
+          "id": "b4-wavefront-sweep",
+          "time": 18.3
+        },
+        {
+          "id": "b4-golden-path",
+          "time": 19.5
+        },
+        {
+          "id": "find-vs-check",
+          "time": 23.5
+        },
+        {
+          "id": "b6-dead-ends",
+          "time": 26.5
+        },
+        {
+          "id": "b6-verify-token",
+          "time": 28.5
+        },
+        {
+          "id": "b6-verify-yes",
+          "time": 30.7
+        },
+        {
+          "id": "verifier-gate",
+          "time": 33.3
+        },
+        {
+          "id": "b7-slide-into-box",
+          "time": 36.5
+        },
+        {
+          "id": "b7-check-bars-pulse",
+          "time": 37.9
+        },
+        {
+          "id": "b7-yes-beacon",
+          "time": 40.1
+        },
+        {
+          "id": "p-subset-np",
+          "time": 43.7
+        },
+        {
+          "id": "b9-p-glides-in",
+          "time": 45.7
+        },
+        {
+          "id": "b9-no-witness",
+          "time": 47.2
+        },
+        {
+          "id": "b9-decide-yes",
+          "time": 48.8
+        },
+        {
+          "id": "reduction-machine",
+          "time": 53.4
+        },
+        {
+          "id": "b11-triangle-enters",
+          "time": 56.2
+        },
+        {
+          "id": "b11-hexagon-transforms",
+          "time": 57.4
+        },
+        {
+          "id": "b11-solver-slides-in",
+          "time": 59.2
+        },
+        {
+          "id": "b11-yes-maps-yes",
+          "time": 60.6
+        },
+        {
+          "id": "cook-levin-circuit",
+          "time": 64.2
+        },
+        {
+          "id": "b13-signals-flow",
+          "time": 67.0
+        },
+        {
+          "id": "b13-inputs-flip-ones",
+          "time": 69.4
+        },
+        {
+          "id": "b13-sat-box-verified",
+          "time": 70.7
+        },
+        {
+          "id": "np-complete-crown",
+          "time": 74.3
+        },
+        {
+          "id": "b14-arrows-point-summit",
+          "time": 76.7
+        },
+        {
+          "id": "b14-crown-sparks-gold",
+          "time": 78.3
+        },
+        {
+          "id": "b14-all-turn-green",
+          "time": 79.3
+        },
+        {
+          "id": "p-equals-np-collapse",
+          "time": 83.6
+        },
+        {
+          "id": "b16-rings-collapse-golden",
+          "time": 85.6
+        },
+        {
+          "id": "b16-arrows-branch-creation",
+          "time": 88.7
+        },
+        {
+          "id": "crypto-padlock",
+          "time": 95.2
+        },
+        {
+          "id": "b17-padlock-created",
+          "time": 97.2
+        },
+        {
+          "id": "b17-inverter-strikes",
+          "time": 100.2
+        },
+        {
+          "id": "b17-shackle-swings-open",
+          "time": 101.2
+        },
+        {
+          "id": "p-neq-np-gap",
+          "time": 105.2
+        },
+        {
+          "id": "b18-barrier-created",
+          "time": 107.6
+        },
+        {
+          "id": "b18-algorithms-advance",
+          "time": 108.6
+        },
+        {
+          "id": "b18-algorithms-bounce",
+          "time": 110.7
+        }
+      ],
+      "roles": [
+        "ar1",
+        "ar2",
+        "ar3",
+        "arr1",
+        "arr2",
+        "arr3",
+        "arrow1",
+        "arrow2",
+        "aw",
+        "ax",
+        "ax1-x",
+        "ax1-y",
+        "ax2-x",
+        "ax2-y",
+        "banner-box",
+        "bar1",
+        "bar1-done",
+        "bar2",
+        "bar3",
+        "bars",
+        "box-sur",
+        "c-a1",
+        "c-a2",
+        "c-a3",
+        "cleanup1",
+        "cleanup2",
+        "cleanup3",
+        "conv-box",
+        "crown-box",
+        "d-exp",
+        "d-n2",
+        "d1",
+        "d1-g",
+        "d2",
+        "d2-g",
+        "d3",
+        "d3-g",
+        "d4",
+        "d4-g",
+        "dot1",
+        "dot2",
+        "dot3",
+        "dots",
+        "edges",
+        "exp-curve",
+        "fwd",
+        "g-a1",
+        "g-a2",
+        "g-a3",
+        "gate-and",
+        "gate-not",
+        "gate-or",
+        "goal-dot",
+        "gold-arrow",
+        "gold-target",
+        "halo1",
+        "halo2",
+        "halo3",
+        "hex-shape",
+        "instance-dot",
+        "inv-arrow",
+        "keyhole",
+        "left-circ",
+        "master-box",
+        "n2-curve",
+        "nodes",
+        "np-ellipse",
+        "np-outer",
+        "out-arrow",
+        "p-circle",
+        "p-dot",
+        "p-halo",
+        "p-hull",
+        "p-inner",
+        "pad-body",
+        "peq-box",
+        "poly-curve",
+        "poly-dot",
+        "q-dot",
+        "q-halo",
+        "r1",
+        "r2",
+        "r3",
+        "r4",
+        "red-arrows",
+        "right-tri",
+        "shackle",
+        "sol-box",
+        "sp1",
+        "sp2",
+        "sp3",
+        "spark",
+        "sq",
+        "start-dot",
+        "t1",
+        "t2",
+        "t3",
+        "t4",
+        "t5",
+        "t6",
+        "tree",
+        "tri",
+        "vbox",
+        "verify-token",
+        "w-circle",
+        "wave",
+        "x-circle",
+        "yes-beacon"
+      ],
+      "tracks": 230,
+      "source": "/home/anonymous/.cache/omarchy-assistant/native-scenes/gen_e3276006ebb8/scene.py"
+    }
+  },
+  "nativeMode": "continuous",
+  "review": {
+    "approved": true,
+    "method": "branch-mini-lesson",
+    "findings": [],
+    "observations": []
+  },
+  "audioTrack": {
+    "url": "/narration/f6270322a634f8f5dc0a62d87b80c56f8c78cdeabbbed0bb7f32dcbc17dcfdaa.wav",
+    "key": "f6270322a634f8f5dc0a62d87b80c56f8c78cdeabbbed0bb7f32dcbc17dcfdaa",
+    "duration": 61.695,
+    "clock": "audio"
+  },
+  "speechSynchronization": {
+    "version": 5,
+    "baseFingerprint": "f6270322a634f8f5dc0a62d87b80c56f8c78cdeabbbed0bb7f32dcbc17dcfdaa",
+    "method": "one-lesson-recording-with-measured-word-anchors",
+    "scriptSource": "branch mini-lesson script",
+    "recordingCount": 1
+  }
+}

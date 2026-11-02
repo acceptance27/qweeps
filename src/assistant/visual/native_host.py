@@ -44,7 +44,6 @@ class NativeHost:
             active=[j for j in self.jobs.values() if j['process'].poll() is None]
             if len(active)>=3:
                 idle=min(active,key=lambda j:j['seen'])
-                if time.monotonic()-idle['seen']<60:raise PlanError('Three native renderer sessions are already active. Close one to continue.')
                 idle_sid=next(key for key,value in self.jobs.items() if value is idle)
                 self.close(idle_sid)
             default_cache=Path.home()/'.cache/qweeps' if not (Path.home()/'.cache/omarchy-assistant').is_dir() else Path.home()/'.cache/omarchy-assistant'
