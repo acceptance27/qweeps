@@ -29,14 +29,25 @@ def native_map(chapter: dict, scene_cues: list[dict]) -> list[dict]:
         key = round(audio, 3)
         mentions[key] = min(scene_time, mentions.get(key, scene_time))
 
+    # Drop inverted anchors: a later spoken cue that points back to an earlier
+    # scene moment would force a clamp and skip the animation between them.
+    pairs = sorted(mentions.items())
+    end_scene = offset + duration
+    suffix = end_scene
+    keep = []
+    for audio, scene_time in reversed(pairs):
+        if scene_time <= suffix + 1e-6:
+            keep.append((audio, scene_time))
+        suffix = min(suffix, scene_time)
+    keep.reverse()
+
     points = [(0.0, offset)]
-    for audio in sorted(mentions):
-        scene_time = mentions[audio]
+    for audio, scene_time in keep:
         previous = points[-1]
         if audio <= previous[0] + 1e-6:
             continue
         points.append((audio, max(scene_time, previous[1])))
-    points.append((span, max(offset + duration, points[-1][1])))
+    points.append((span, max(end_scene, points[-1][1])))
 
     # Drop repeated scene times (they would hold a still frame); keep the
     # earliest audio moment that reaches that scene state.
