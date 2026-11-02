@@ -536,17 +536,9 @@ class BrowserLessonStore:
                 from .synchronization import fingerprint
                 path=target/f'speech-{fingerprint(base,self.narration)}.json'
                 if path.exists():return json.loads(path.read_text())
-                for version in (3,2):
-                    previous=target/f'speech-{fingerprint(base,self.narration,version)}.json'
-                    if previous.exists():return json.loads(previous.read_text())
-                legacy=hashlib.sha256(json.dumps({'version':1,'lesson':base,'voice':self.narration.signature()},sort_keys=True).encode()).hexdigest()
-                previous=target/f'speech-{legacy}.json'
-                if previous.exists():return json.loads(previous.read_text())
-            for speech_file in sorted(target.glob('speech-*.json')):
-                # Per-beat anchor checkpoints are not published lessons.
-                if speech_file.name.startswith('speech-anchor-'):
-                    continue
-                return json.loads(speech_file.read_text())
+            # The published lesson.json is authoritative. Do not fall back to
+            # an arbitrary older speech-*.json: that reintroduced stale visual
+            # windows and stale narration after a sync-version change.
         return base
     def start_synchronization(self,payload):
         base=self._base_lesson(payload.get('lessonId'));lesson_id=base['id']
