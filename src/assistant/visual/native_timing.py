@@ -8,6 +8,25 @@ Each output point is chapter-relative audio seconds -> absolute scene seconds.
 """
 from __future__ import annotations
 
+import bisect
+
+
+def choose_baked_frame(times: list[float], t: float, tolerance: float = 1e-6):
+    """Index of the baked keyframe nearest to t, or None before the first one.
+
+    A group may gain a child updater later in the scene.  Restoring the first
+    baked frame for an earlier t would snap the whole group to its fully-built
+    future state, so a seek before the updater existed must use the normal
+    animation/checkpoint state instead.
+    """
+    if not times or t < times[0] - tolerance:
+        return None
+    if t >= times[-1]:
+        return len(times) - 1
+    index = bisect.bisect_left(times, t)
+    before, after = index - 1, index
+    return after if abs(times[after] - t) < abs(t - times[before]) else before
+
 
 def native_map(chapter: dict, scene_cues: list[dict]) -> list[dict]:
     start = float(chapter.get("start", 0.0))

@@ -317,6 +317,10 @@ ManimGL:
 - **Camera state.** Camera frame points and uniforms are stored in every play
   checkpoint. Without that, seeking past a later `play()` skipped the camera
   track and froze the frame mid-zoom.
+- **Baked updater frames.** A group that gains a child updater later (a neuron
+  plus its pulsing halo) is baked from that point on. Seeks before the first
+  baked frame use the normal checkpoint/animation state instead of restoring
+  the group's fully-built future state.
 
 The model is not asked to avoid group shifts, write per-dot transforms, or
 emit a particular transform type. `self.cue(...)` remains an accepted

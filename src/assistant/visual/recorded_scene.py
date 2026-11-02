@@ -14,6 +14,8 @@ import numpy as np
 from manimlib import *
 from manimlib.animation.animation import prepare_animation
 
+from .native_timing import choose_baked_frame
+
 # ManimCE's YELLOW is a softer gold (#F7D96F); ManimGL's is pure yellow.
 # Override the shared palette constants so compiled CE sources keep CE colors.
 YELLOW = "#F7D96F"
@@ -593,15 +595,10 @@ class RecordedScene(Scene):
             if t > self.updater_stop.get(id(mob), float("inf")):
                 continue  # updater was cleared: later animations own this mobject
             times = [row[0] for row in frames]
-            if t <= times[0]:
-                chosen = frames[0][1]
-            elif t >= times[-1]:
-                chosen = frames[-1][1]
-            else:
-                index = int(np.searchsorted(times, t))
-                before, after = index - 1, index
-                pick = after if abs(times[after] - t) < abs(t - times[before]) else before
-                chosen = frames[pick][1]
+            pick = choose_baked_frame(times, t)
+            if pick is None:
+                continue
+            chosen = frames[pick][1]
             for part, data in chosen:
                 part.data = data.copy()
         # Surface.become() copies the target's (unset) bounding box; re-flag it

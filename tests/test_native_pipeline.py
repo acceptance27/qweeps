@@ -1,5 +1,5 @@
 from assistant.visual.native_author import assemble, choose_native_beats, clean_code, condense_narration
-from assistant.visual.native_timing import native_map
+from assistant.visual.native_timing import native_map, choose_baked_frame
 from assistant.visual.ce_text_metrics import collect_text_specs, metric_key
 from assistant.visual.native_audit import _iou, _overlap
 
@@ -139,6 +139,15 @@ def test_native_map_falls_back_to_linear():
     points = native_map({"start": 2.0, "end": 8.0, "nativeOffset": 4.0,
                          "nativeDuration": 3.0, "narrationCues": []}, [])
     assert points == [{"at": 0.0, "scene": 4.0}, {"at": 6.0, "scene": 7.0}]
+
+
+def test_baked_frames_before_the_first_updater_frame_are_not_restored():
+    times = [8.9, 9.0, 9.1]
+    # Seeking into an earlier fade must not restore the fully-built future.
+    assert choose_baked_frame(times, 2.1) is None
+    assert choose_baked_frame(times, 8.9) == 0
+    assert choose_baked_frame(times, 8.96) == 1
+    assert choose_baked_frame(times, 9.5) == 2
 
 
 def test_clean_code_keeps_group_transforms():
