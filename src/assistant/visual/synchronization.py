@@ -145,5 +145,10 @@ def assemble_lesson(base,plans,piece,alignment):
         if bridge_ends[i] is not None:c['continuity']['spokenEnd']=c['visualStart']
     for i,c in enumerate(result['chapters']):
         c['visualEnd']=result['chapters'][i+1]['visualStart'] if i+1<len(result['chapters']) else result['duration']
+    # Native scenes are timed to their own audio beat. Keeping the bridge-delayed
+    # visual window would hold the previous scene and then jump into the next.
+    for c in result['chapters']:
+        if c.get('renderer')=='manimgl':
+            c['visualStart']=c['start'];c['visualEnd']=c['end']
     result['narrationScript']=lesson_script(base)
     return bytes(int(lead*RATE)*2)+piece+bytes(int(tail*RATE)*2),result
