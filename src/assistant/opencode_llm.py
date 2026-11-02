@@ -66,7 +66,7 @@ class OpenCodeLLM:
                     break
         return key
 
-    def _run_direct_go(self, model: str, instruction: str, system: str = "", frames=(), max_tokens: int | None = None) -> str:
+    def _run_direct_go(self, model: str, instruction: str, system: str = "", frames=(), max_tokens: int | None = None, reasoning_effort: str | None = None) -> str:
         import base64
         from .http import HTTPError, post_json
         key = self._go_api_key()
@@ -152,8 +152,11 @@ class OpenCodeLLM:
                     "messages": messages,
                     "max_tokens": max_tokens or 9000,
                     "temperature": 0.2,
-                    "provider_options": {"thinking": {"type": "disabled"}},
                 }
+                if reasoning_effort:
+                    payload["reasoning_effort"] = reasoning_effort
+                else:
+                    payload["provider_options"] = {"thinking": {"type": "disabled"}}
                 data = post_json(
                     "https://opencode.ai/inference/go/openai/v1/chat/completions",
                     payload,
@@ -218,11 +221,11 @@ class OpenCodeLLM:
         except OSError:
             pass
 
-    def _run(self, instruction, system="", frames=(), max_tokens=None):
+    def _run(self, instruction, system="", frames=(), max_tokens=None, reasoning_effort=None):
         started = time.monotonic()
         text, error = None, ""
         try:
-            text = self._run_inner(instruction, system, frames, max_tokens=max_tokens)
+            text = self._run_inner(instruction, system, frames, max_tokens=max_tokens, reasoning_effort=reasoning_effort)
             return text
         except Exception as exc:
             error = str(exc)[:300]
@@ -230,11 +233,11 @@ class OpenCodeLLM:
         finally:
             self._record_call(instruction, system, frames, time.monotonic() - started, text, error)
 
-    def _run_inner(self, instruction, system="", frames=(), max_tokens=None):
+    def _run_inner(self, instruction, system="", frames=(), max_tokens=None, reasoning_effort=None):
         model = self.vision_model if frames else self.model
         self._check_limit(model)
         if not hasattr(subprocess.Popen, "assert_called") and self._go_api_key():
-            return self._run_direct_go(model, instruction, system, frames, max_tokens=max_tokens)
+            return self._run_direct_go(model, instruction, system, frames, max_tokens=max_tokens, reasoning_effort=reasoning_effort)
         permissions = [{"action": "*", "resource": "*", "effect": "deny"}]
         agent = {"model": model, "permissions": permissions}
         with tempfile.TemporaryDirectory(prefix="qweeps-opencode-") as folder:
@@ -309,8 +312,8 @@ class OpenCodeLLM:
                 raise ModelProviderError(msg)
             return text
 
-    def compose(self, instruction, system=""):
-        return self._run(instruction, system)
+    def compose(self, instruction, system="", max_tokens=None, reasoning_effort=None):
+        return self._run(instruction, system, max_tokens=max_tokens, reasoning_effort=reasoning_effort)
 
     def _chat(self, messages, max_tokens=None):
         system = "\n\n".join(m["content"] for m in messages if m.get("role") == "system")

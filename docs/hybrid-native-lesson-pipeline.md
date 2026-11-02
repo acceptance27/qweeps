@@ -480,7 +480,43 @@ is the generated ManimCE source.
 
 ---
 
-## 12. Open questions
+## 12. Implementation status
+
+Implemented on this branch:
+
+- **Registry** — `native_scenes.py` stores `scene.py` + `manifest.json`;
+  `native_live.py` and `native_host.py` resolve registry ids and built-ins.
+- **Native authoring** — `native_author.py` builds the prompt from the
+  storyboard, generates one `GenScene`, compiles it through `ce_native`,
+  validates beat ids/order, and registers the manifest.
+- **Hybrid job** — `BrowserLessonStore._generate_hybrid` runs plan → layout
+  direction → native generation → compile → assembly when `native: true`.
+- **Assembly** — storyboard order, native windows, `nativeOffset`, rebuilt clock
+  and continuity (`native_author.assemble`).
+- **Cleanups** — duplicate scene title hidden; `Text`-to-`Text` transforms
+  replaced with opacity crossfades and variable reassignment.
+- **Runtime** — registry manifests, worker keep-alive, first-scene prewarm,
+  registry experiment handling, generic semantic roles for generated scenes.
+- **UI** — “Include native ManimGL beats” in the live lesson loader.
+
+Still to build before this is production-ready:
+
+- **Native review gate** — render a frame per beat and reject label collisions,
+  duplicate titles, or a missing promised construction. The prototype pipeline
+  publishes after compile validation only.
+- **Layout review for native jobs** — the hybrid path skips the existing
+  browser-frame review and its revision loop.
+- **Multiple native runs** — one scene per contiguous native run; the assembly
+  currently supports a single run per job.
+- **Narration budget** — cap native-beat narration at roughly
+  `window × 3` words, or move the explanation into an adjacent layout beat.
+- **Portable generated lessons** — registry scenes live in the user cache;
+  publishing a bundled lesson still needs the source copied into `scenes/` or
+  the lesson kept in the cache.
+- **Layout duration balance** — a leftover layout beat can absorb the rest of
+  the storyboard (the 4-beat neuron run left a 32 s final layout beat).
+
+## 13. Open questions
 
 - **Multiple native runs** — one continuous scene per run, or one scene for the
   whole lesson with layout beats skipping ahead? The current player supports

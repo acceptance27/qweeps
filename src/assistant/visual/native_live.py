@@ -200,7 +200,12 @@ def main():
         pending.put(None)
     threading.Thread(target=read,daemon=True).start()
     lesson_id=sys.argv[4] if len(sys.argv)>4 else 'manim_production'
-    if lesson_id=='jose_rizal':
+    from assistant.visual.native_scenes import load_manifest
+    registered=load_manifest(lesson_id)
+    if registered:
+        from assistant.visual.ce_native import load_native_scene
+        scene=load_native_scene(registered['source'])
+    elif lesson_id=='jose_rizal':
         from assistant.visual.rizal_live import RizalScene
         scene=RizalScene(report)
     elif lesson_id=='alu':

@@ -340,7 +340,12 @@ class RecordedScene(Scene):
                     if not (target is role_mob or target in role_mob.get_family()
                             or role_mob in target.get_family()):
                         continue
-                    anim.interpolate(1)
+                    try:
+                        anim.interpolate(1)
+                    except (ValueError, IndexError):
+                        # Transform across different point counts; this probe is
+                        # only an opacity heuristic and must not break the build.
+                        continue
                     opacities = []
                     for part in role_mob.family_members_with_points():
                         try:
@@ -513,6 +518,30 @@ class RecordedScene(Scene):
         add("terminal", names.get("term"))
         add("next-cell", names.get("next_cell"))
         add("pump", names.get("pump"))
+        # Generated scenes use arbitrary variable names. Register semantic
+        # objects by keyword so bounds and inspection still work. Labels and
+        # captions are excluded; nested groups are fine.
+        skip = ("label", "text", "tag", "caption", "title", "framing")
+        for name, mob in names.items():
+            if not isinstance(mob, Mobject):
+                continue
+            low = str(name).lower()
+            if any(token in low for token in skip):
+                continue
+            key = None
+            if "membrane" in low: key = "membrane"
+            elif low.startswith("na_") or "sodium" in low: key = "sodium"
+            elif low.startswith("k_") or "potassium" in low: key = "potassium"
+            elif "thresh" in low: key = "threshold"
+            elif "voltage" in low: key = "voltage"
+            elif "axon" in low: key = "axon"
+            elif "neuron" in low: key = "neuron"
+            elif "terminal" in low: key = "terminal"
+            elif "vesic" in low: key = "vesicle"
+            elif "pump" in low: key = "pump"
+            elif "hillock" in low: key = "hillock"
+            if key and key not in self.roles:
+                add(key, mob)
 
     def metadata(self, t):
         center = self.frame.get_center()

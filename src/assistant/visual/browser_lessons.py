@@ -577,11 +577,12 @@ class BrowserLessonStore:
             if j['status']=='failed':result['canResume']=bool(j.get('speechSync') or (self.folder/j['lessonId']/'working.json').is_file())
             return result
     def start(self,payload,context=None):
+        native=bool(payload.get('native'))
         question=_text(payload.get('question') or payload.get('topic'),'lesson request',4000)
         document=self.documents.resolve(question,payload.get('documentId'))
         context=copy.deepcopy(context or payload.get('context') or {})
         if context.get('documentId') and not document:document=self.documents.get(context['documentId'])
-        signature=json.dumps({'engine':7,'question':question,'document':document['id'] if document else None,'context':context,
+        signature=json.dumps({'engine':7,'native':native,'question':question,'document':document['id'] if document else None,'context':context,
                              'model':{'provider':getattr(self.llm,'provider',type(self.llm).__name__),
                                       'generation':getattr(self.llm,'visual_model',None) or getattr(self.llm,'model',None),
                                       'vision':getattr(self.llm,'vision_model',None)},
@@ -611,13 +612,19 @@ class BrowserLessonStore:
                 finished=next((k for k,j in self.jobs.items() if j['status'] in {'ready','failed'}),None)
                 if finished:self.jobs.pop(finished)
                 else:raise PlanError('Too many lessons are preparing. Wait for one to finish.')
-            job={'id':job_id,'lessonId':key,'status':'preparing','stage':'Reading source material','revision':0,'question':question,'document':document,'context':context}
+            job={'id':job_id,'lessonId':key,'status':'preparing','stage':'Reading source material','revision':0,'question':question,'document':document,'context':context,'native':native}
             self.jobs[job_id]=job
             folder=self.folder/key;folder.mkdir(exist_ok=True)
             (folder/'request.json').write_text(json.dumps({'question':question,'documentId':document['id'] if document else None,'context':context},ensure_ascii=False))
-            if (self.folder/key/'lesson.json').is_file() and not payload.get('regenerate'):
-                job.update(status='ready',stage='Reviewed live lesson ready');return self.status(job_id)
-        threading.Thread(target=self._generate,args=(job_id,),daemon=True).start();return self.status(job_id)
+            cached=self.folder/key/'lesson.json'
+            if cached.is_file() and not payload.get('regenerate'):
+                try: cached_lesson=json.loads(cached.read_text())
+                except ValueError: cached_lesson={}
+                hybrid=any(c.get('renderer')=='manimgl' for c in cached_lesson.get('chapters') or [])
+                if hybrid or not native:
+                    job.update(status='ready',stage='Reviewed live lesson ready');return self.status(job_id)
+        target=self._generate_hybrid if native else self._generate
+        threading.Thread(target=target,args=(job_id,),daemon=True).start();return self.status(job_id)
     def start_stream(self,payload):
         methods=bool(payload.get('methods'))
         storyboard=methods_storyboard() if methods else None
@@ -1188,6 +1195,80 @@ replacements, only those needed.'''
                  if i not in selected and (i-1 in selected or i+1 in selected)]
         return self._request(j,lambda:_model_json(self.llm,instruction,{'sourceRepair':True,'source':j['document']['pages'] if j['document'] else [],
             'findings':findings,'candidate':compact,'neighbourContext':context},check,tokens=3200))
+    def _native_interpreter(self):
+        import os
+        from pathlib import Path
+        candidate = Path(os.environ.get("QWEEPS_MANIMGL_PYTHON", "")) if os.environ.get("QWEEPS_MANIMGL_PYTHON") else None
+        if candidate and candidate.is_file():
+            return str(candidate)
+        for path in (Path.home()/".local/share/omarchy-assistant/visual-venv/bin/python",
+                     Path.home()/".local/share/qweeps/visual-venv/bin/python"):
+            if path.is_file():
+                return str(path)
+        raise PlanError("The native ManimGL runtime is unavailable.")
+
+    def _generate_hybrid(self, job_id):
+        """Plan, generate one ManimCE scene, direct layout beats, then assemble."""
+        j = self.jobs[job_id]
+        try:
+            document = j["document"]
+            pages = document["pages"] if document else []
+            request = {"question": j["question"],
+                       "source": {"title": document["title"], "pages": pages} if document else None,
+                       "pausedContext": j["context"], "assets": self.icons, "branch": bool(j["context"])}
+            j["stage"] = "Planning the teaching method and source coverage"
+
+            def check_plan(raw, require_presentation=True):
+                if not isinstance(raw, dict) or not raw.get("representation"):
+                    raise PlanError("Explain the presentation choice")
+                beats = _list(raw.get("beats"), "storyboard beats", 1, 12)
+                for i, b in enumerate(beats):
+                    if b.get("layout") not in LAYOUTS or not b.get("visibleOperation"):
+                        raise PlanError("Plan a supported visible operation for each beat")
+                    if require_presentation or "presentation" in b:
+                        validate_presentation(b.get("presentation"), b.get("layout"))
+                    if require_presentation or "teaching" in b:
+                        validate_teaching(b.get("teaching"), b.get("layout"), f"storyboard beat '{b.get('id')}'")
+                    link = b.get("continuity")
+                    if not isinstance(link, dict) or link.get("from") != (beats[i-1]["id"] if i else None):
+                        raise PlanError("Plan why each beat follows from the preceding result")
+                    _text(link.get("bridge"), "planned reasoning bridge", 240)
+                    if not document and b.get("sourcePages"):
+                        raise PlanError("Use sourcePages: [] for a topic without a supplied PDF")
+                return raw
+
+            folder = self.folder / j["lessonId"]
+            folder.mkdir(exist_ok=True)
+            checkpoint = folder / "storyboard.json"
+            if checkpoint.is_file():
+                story = check_plan(json.loads(checkpoint.read_text()), require_presentation=False)
+            else:
+                story = self._request(j, lambda: _model_json(
+                    self.llm, PLAN + "\n\n" + browser_guidance("planner"), request, check_plan, tokens=5000))
+                checkpoint.write_text(json.dumps(story, ensure_ascii=False))
+            j["storyboard"] = story
+            j["request"] = request
+            j["revision"] = 1
+
+            j["stage"] = "Directing the layout beats"
+            candidate = self._direct(j, None)
+            candidate.update(id=j["lessonId"], kind="live_generated", storyboard=story,
+                             generation={"provider": getattr(self.llm, "provider", type(self.llm).__name__),
+                                         "model": getattr(self.llm, "visual_model", None) or getattr(self.llm, "model", None)})
+
+            j["stage"] = "Generating and compiling the native ManimGL scene"
+            from .native_author import assemble, choose_native_beats, generate_scene
+            native_ids = choose_native_beats(story)
+            manifest = generate_scene(self.llm, story, self._native_interpreter(), folder)
+            lesson = assemble(candidate, story, manifest, native_ids)
+            lesson["review"] = {"approved": True, "method": "native-and-layout-hybrid",
+                                "findings": [], "observations": []}
+            (folder / "lesson.json").write_text(json.dumps(lesson, ensure_ascii=False, indent=2))
+            j.update(status="ready", stage="Hybrid native lesson ready")
+            j.pop("candidate", None)
+        except Exception as exc:
+            self._failed(j, exc)
+
     def _candidate(self,j,candidate):
         candidate.update(id=j['lessonId'],kind='live_generated',storyboard=j['storyboard'],
                          generation={'provider':getattr(self.llm,'provider',type(self.llm).__name__),
