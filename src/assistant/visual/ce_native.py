@@ -6,6 +6,7 @@ the end of construct(). Everything else stays exactly as the CE source wrote it.
 from __future__ import annotations
 
 import ast
+import os
 from pathlib import Path
 
 COMPAT_MODULE = "assistant.visual.recorded_scene"
@@ -58,6 +59,17 @@ def compile_native_source(source: str) -> str:
 
 def load_native_scene(path: str | Path):
     source = Path(path).read_text()
+    # Match ManimCE's text boxes before any Text object is constructed. The
+    # measurement is cached, and a missing CE interpreter degrades to native
+    # Pango metrics rather than blocking compilation.
+    if os.environ.get("QWEEPS_CE_TEXT_METRICS", "1") != "0":
+        try:
+            from . import recorded_scene
+            from .ce_text_metrics import measure_source
+
+            recorded_scene.TEXT_METRICS.update(measure_source(source))
+        except Exception:
+            pass
     namespace: dict = {"__name__": "recorded_scene", "__file__": str(path)}
     exec(compile(compile_native_source(source), str(path), "exec"), namespace)
     scene_cls = namespace.get("GenScene")

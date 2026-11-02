@@ -6,6 +6,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -24,8 +25,14 @@ def main() -> None:
                         "start": round(float(beat["time"]), 3), "end": round(float(end), 3)})
     cues = [{"id": cue["id"], "time": round(float(cue["time"]), 3)}
             for cue in getattr(scene, "cues", [])]
+    audit = []
+    if os.environ.get("QWEEPS_NATIVE_AUDIT", "1") != "0":
+        from .native_audit import audit_scene
+
+        audit = audit_scene(scene)
     target.write_text(json.dumps({"duration": round(float(scene.duration), 3),
-                                  "beats": windows, "cues": cues, "tracks": len(scene.tracks)}, indent=1))
+                                  "beats": windows, "cues": cues,
+                                  "tracks": len(scene.tracks), "audit": audit}, indent=1))
 
 
 if __name__ == "__main__":

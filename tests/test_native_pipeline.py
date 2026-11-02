@@ -1,5 +1,7 @@
 from assistant.visual.native_author import assemble, choose_native_beats, clean_code, condense_narration
 from assistant.visual.native_timing import native_map
+from assistant.visual.ce_text_metrics import collect_text_specs, metric_key
+from assistant.visual.native_audit import _iou, _overlap
 
 
 def story():
@@ -63,7 +65,7 @@ def test_assemble_maps_native_windows_and_rebuilds_clock():
     assert result["nativeScenes"]["gen_test"]["sceneId"] == "gen_test"
 
 
-def test_clean_code_crossfades_text_and_hides_scene_title():
+def test_clean_code_preserves_ce_transforms_and_hides_scene_title():
     source = '''from manim import *
 class GenScene(Scene):
     def construct(self):
@@ -74,11 +76,10 @@ class GenScene(Scene):
         self.beat("x", "X")
 '''
     cleaned = clean_code(source)
-    assert "Transform(caption_rest, cap_dep)" not in cleaned
-    assert "caption_rest.animate.set_opacity(0)" in cleaned
-    assert "cap_dep.animate.set_opacity(1)" in cleaned
-    assert "caption_rest = cap_dep" in cleaned
-    assert "title.set_opacity(0)" in cleaned
+    # The shim lowers transforms; the compiler must not rewrite the model's
+    # CE animation into an opacity crossfade.
+    assert "Transform(caption_rest, cap_dep)" in cleaned
+    assert "set_opacity(0)" in cleaned and "title.set_opacity" in cleaned
     assert 'self.beat("x", "X")' in cleaned
 
 
@@ -96,7 +97,7 @@ def test_condense_native_narration_fits_window():
     assert result["chapters"][1]["narration"] == "sum " * 30
 
 
-def test_clean_code_crossfades_replacement_transform_on_text():
+def test_clean_code_keeps_replacement_transform_on_text():
     source = '''from manim import *
 class GenScene(Scene):
     def construct(self):
@@ -105,10 +106,7 @@ class GenScene(Scene):
         self.play(ReplacementTransform(a, b), run_time=1.0)
 '''
     cleaned = clean_code(source)
-    assert "ReplacementTransform(a, b)" not in cleaned
-    assert "a.animate.set_opacity(0)" in cleaned
-    assert "b.animate.set_opacity(1)" in cleaned
-    assert "a = b" in cleaned
+    assert "ReplacementTransform(a, b)" in cleaned
 
 
 def test_clean_code_keeps_replacement_transform_on_groups():
@@ -143,7 +141,7 @@ def test_native_map_falls_back_to_linear():
     assert points == [{"at": 0.0, "scene": 4.0}, {"at": 6.0, "scene": 7.0}]
 
 
-def test_clean_code_expands_group_transforms():
+def test_clean_code_keeps_group_transforms():
     source = '''from manim import *
 class GenScene(Scene):
     def construct(self):
@@ -152,5 +150,29 @@ class GenScene(Scene):
         self.play(Transform(g1, g2), run_time=1.0)
 '''
     cleaned = clean_code(source)
-    assert "*[Transform(x, y) for x, y in zip(g1, g2)]" in cleaned
-    assert "Transform(g1, g2)" not in cleaned
+    assert "Transform(g1, g2)" in cleaned
+    assert "zip(g1, g2)" not in cleaned
+
+
+def test_collect_text_specs_finds_static_text_boxes():
+    source = '''from manim import *
+class GenScene(Scene):
+    def construct(self):
+        a = Text("Neutrophil", font_size=20)
+        b = Text("Bacterium")
+        c = Text(dynamic_string)
+'''
+    specs = collect_text_specs(source)
+    assert {(s["text"], s["font_size"]) for s in specs} == {
+        ("Neutrophil", 20.0), ("Bacterium", 48.0)}
+    assert metric_key("Neutrophil", 20) == metric_key("Neutrophil", 20.0)
+
+
+def test_audit_overlap_distinguishes_a_collision_from_a_duplicate_box():
+    a = [0.0, 0.0, 1.0, 1.0]
+    same = [0.0, 0.0, 1.0, 1.0]
+    moved = [0.5, 0.0, 1.5, 1.0]
+    assert _overlap(a, same) == 1.0
+    assert _iou(a, same) == 1.0
+    assert _iou(a, moved) == 1 / 3
+    assert _overlap(a, [2.0, 0.0, 3.0, 1.0]) == 0.0

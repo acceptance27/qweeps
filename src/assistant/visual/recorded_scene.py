@@ -15,8 +15,29 @@ from manimlib import *
 from manimlib.animation.animation import prepare_animation
 
 # ManimCE's YELLOW is a softer gold (#F7D96F); ManimGL's is pure yellow.
-# Override the shared palette constant so compiled CE sources keep CE colors.
+# Override the shared palette constants so compiled CE sources keep CE colors.
 YELLOW = "#F7D96F"
+YELLOW_C = "#F7D96F"
+# The rest of the shared palette already matches ManimCE except BLUE_E.
+BLUE_E = "#236B8E"
+
+# ManimCE aliases that ManimGL does not export.  Generated CE code may use any
+# of these names; define them so `from manim import *` keeps working.
+_CE_COLOR_ALIASES = {
+    "DARKER_GRAY": "#222222", "DARKER_GREY": "#222222",
+    "DARK_BLUE": "#236B8E",
+    "DARK_GRAY": "#444444", "DARK_GREY": "#444444",
+    "GRAY": "#888888", "GRAY_A": "#DDDDDD", "GRAY_B": "#BBBBBB",
+    "GRAY_BROWN": "#736357", "GRAY_C": "#888888", "GRAY_D": "#444444",
+    "GRAY_E": "#222222",
+    "LIGHTER_GRAY": "#DDDDDD", "LIGHTER_GREY": "#DDDDDD",
+    "LIGHT_GRAY": "#BBBBBB", "LIGHT_GREY": "#BBBBBB",
+    "LOGO_BLACK": "#343434", "LOGO_BLUE": "#525893", "LOGO_GREEN": "#87C2A5",
+    "LOGO_RED": "#E07A5F", "LOGO_WHITE": "#ECE7E2",
+    "PURE_BLUE": "#0000FF", "PURE_CYAN": "#00FFFF", "PURE_GREEN": "#00FF00",
+    "PURE_MAGENTA": "#FF00FF", "PURE_RED": "#FF0000", "PURE_YELLOW": "#FFFF00",
+}
+globals().update(_CE_COLOR_ALIASES)
 
 import inspect
 
@@ -42,9 +63,128 @@ FPS = 30
 DT = 1.0 / FPS
 
 _VMobject_base = VMobject
+
+
+# ------------------------------------------------------- CE animation adapters
+# ManimCE animation constructors accept any number of mobjects:
+#   FadeIn(a, b), Create(a, b), Indicate(a, b), GrowArrow(a, b)
+# ManimGL's constructors take exactly one and quietly treat the second as a
+# different positional parameter (a shift vector, a point, etc.). Wrap the
+# constructors so ordinary CE code keeps its meaning: multiple mobjects become
+# an AnimationGroup of per-mobject animations.
+def _variadic_animation(cls):
+    def factory(*args, **kwargs):
+        if len(args) > 1 and all(isinstance(arg, Mobject) for arg in args):
+            return AnimationGroup(*[cls(arg, **kwargs) for arg in args])
+        return cls(*args, **kwargs)
+
+    factory.__name__ = getattr(cls, "__name__", "animation")
+    factory.__qualname__ = factory.__name__
+    factory._ce_animation = cls
+    return factory
+
+
+for _name in ("FadeIn", "FadeOut", "ShowCreation", "Uncreate", "Write",
+              "DrawBorderThenFill", "Indicate", "GrowFromCenter", "GrowArrow"):
+    if _name in globals():
+        globals()[_name] = _variadic_animation(globals()[_name])
+
 Create = ShowCreation
-Uncreate = Uncreate if "Uncreate" in globals() else ShowCreation
 MathTex = Tex
+
+
+# ------------------------------------------------------------ CE text metrics
+# Measured by the compiler in a real ManimCE environment and keyed by
+# (text, font_size, font, weight, slant).  Pango/font differences otherwise
+# make the same `Text(...)` occupy a different box in ManimGL; stretch the
+# native text box to the CE box so coordinates, spacing and collisions match.
+TEXT_METRICS: dict = {}
+
+
+def _metric_key(text, font_size, font, weight, slant):
+    return "|".join((str(text), str(float(font_size)), str(font or ""),
+                     str(weight or ""), str(slant or "")))
+
+
+def _apply_text_metric(obj, text, font_size, font, weight, slant):
+    metric = TEXT_METRICS.get(_metric_key(text, font_size, font, weight, slant))
+    if not metric:
+        return obj
+    width, height = metric
+    try:
+        if width > 0 and obj.get_width() > 0:
+            obj.stretch_to_fit_width(width)
+        if height > 0 and obj.get_height() > 0:
+            obj.stretch_to_fit_height(height)
+    except (AttributeError, ValueError):
+        pass
+    return obj
+
+
+def _ce_text_factory(*args, **kwargs):
+    text = args[0] if args else kwargs.get("text", "")
+    font_size = kwargs.get("font_size", 48)
+    font = kwargs.get("font")
+    weight = kwargs.get("weight")
+    slant = kwargs.get("slant")
+    # An explicit height/width already defines the box; do not override it.
+    explicit = kwargs.get("height") is not None or kwargs.get("width") is not None
+    color = kwargs.pop("color", None)
+    obj = _Text_base(*args, **kwargs)
+    if color is not None:
+        obj.set_color(color)
+    if not explicit:
+        _apply_text_metric(obj, text, font_size, font, weight, slant)
+    return obj
+
+
+_Text_base = globals().get("Text")
+if _Text_base is not None:
+    Text = _ce_text_factory
+
+
+# ------------------------------------------------------ CE transform adapters
+# ManimGL's Transform already calls align_data_and_family, but make the
+# equivalence explicit: align a copy of the target before the animation begins
+# so group/submobject mismatches morph instead of popping.  A replacement
+# between different Text strings matches glyphs instead of interpolating two
+# unrelated point forests; everything else keeps the real transform.
+_RealTransform = Transform
+_RealReplacementTransform = ReplacementTransform
+
+
+class CETransform(_RealTransform):
+    def begin(self):
+        if self.target_mobject is not None and not self.mobject.is_aligned_with(self.target_mobject):
+            # Align a local copy: never replace target_mobject, because
+            # ReplacementTransform adds that exact object to the scene and a
+            # later animation may still use the original variable.
+            target_copy = self.target_mobject.copy()
+            self.mobject.align_data_and_family(target_copy)
+        super().begin()
+
+
+class CEReplacementTransform(_RealReplacementTransform):
+    def begin(self):
+        if self.target_mobject is not None and not self.mobject.is_aligned_with(self.target_mobject):
+            target_copy = self.target_mobject.copy()
+            self.mobject.align_data_and_family(target_copy)
+        super().begin()
+
+
+def _is_text_mobject(mobj):
+    return _Text_base is not None and isinstance(mobj, _Text_base)
+
+
+def CEReplacementTransformFactory(mobject, target_mobject=None, **kwargs):
+    if (_is_text_mobject(mobject) and _is_text_mobject(target_mobject)
+            and getattr(mobject, "text", None) != getattr(target_mobject, "text", None)):
+        return TransformMatchingShapes(mobject, target_mobject, **kwargs)
+    return CEReplacementTransform(mobject, target_mobject, **kwargs)
+
+
+Transform = CETransform
+ReplacementTransform = CEReplacementTransformFactory
 
 
 # ------------------------------------------------------------ CE color kwargs
@@ -60,7 +200,7 @@ def _wrap_color(cls):
     return factory
 
 
-for _name in ("Circle", "Ellipse", "Dot", "Text", "Tex", "Line", "Arrow", "Triangle",
+for _name in ("Circle", "Ellipse", "Dot", "Tex", "Line", "Arrow", "Triangle",
               "Rectangle", "RoundedRectangle", "Square", "Polygon", "Arc", "VMobject"):
     if _name in globals():
         globals()[_name] = _wrap_color(globals()[_name])
@@ -141,7 +281,7 @@ class RecordedScene(Scene):
         self.role_hide = {}         # id(role mob) -> fade-out clock
         self.frame_baked = []       # (t, camera frame state)
         self.scene_baked = []       # (t, tuple(top-level mobjects))
-        self.checkpoints = []       # (t, graph, {id: (mob, family data)}) at play starts
+        self.checkpoints = []       # (t, graph, {id: (mob, family data)}, frame) at play starts
         self.beats = []             # {"id","title","time"} markers from the CE source
         self.cues = []              # {"id","time"} sub-beat anchors for narration sync
         self.roles = {}
@@ -179,13 +319,28 @@ class RecordedScene(Scene):
             mob.fix_in_frame()
             self.add(mob)
 
+    def _frame_state(self):
+        """Points plus uniforms define a CameraFrame completely."""
+        return (
+            self.frame.get_points().copy(),
+            {key: (value.copy() if hasattr(value, "copy") else value)
+             for key, value in self.frame.uniforms.items()},
+        )
+
+    def _restore_frame_state(self, state):
+        points, uniforms = state
+        self.frame.set_points(points.copy())
+        for key, value in uniforms.items():
+            if key in self.frame.uniforms:
+                self.frame.uniforms[key] = value.copy() if hasattr(value, "copy") else value
+
     def _checkpoint(self):
         """Snapshot the state at the start of a play, for history-free seeking."""
         graph = tuple(m for m in self.mobjects if m is not self.select_group)
         data = {}
         for mob in graph:
             data[id(mob)] = (mob, [(part, part.data.copy()) for part in mob.get_family()])
-        self.checkpoints.append((self.clock, graph, data))
+        self.checkpoints.append((self.clock, graph, data, self._frame_state()))
 
     def _snapshot(self):
         # Exact scene graph, so a seek restores which mobjects exist at that
@@ -422,6 +577,10 @@ class RecordedScene(Scene):
             for mob, parts in checkpoint[2].values():
                 for part, data in parts:
                     part.data = data.copy()
+            # The CameraFrame is not part of the scene graph, so a camera
+            # animation that started before this checkpoint would otherwise
+            # never be replayed and the frame would freeze mid-zoom.
+            self._restore_frame_state(checkpoint[3])
         for start, length, anim in self.tracks:
             if start < replay_from - 1e-9 or t < start:
                 continue

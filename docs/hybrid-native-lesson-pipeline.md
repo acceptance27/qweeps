@@ -283,16 +283,61 @@ then fail the job with the last error.
 
 ### 5.4 Deterministic cleanups
 
-Applied to generated source before compile/registration, all timing-preserving:
+Applied to generated source before compile/registration, timing-preserving:
 
-- remove a duplicate scene title before the first beat;
-- replace `Transform(caption, other_text)` with a crossfade
-  (`FadeOut` + `FadeIn` + reassignment), because ManimGL/ManimCE interpolate
-  glyphs differently;
-- keep every `self.play` and `run_time` unchanged so beat windows stay valid.
+- remove a duplicate scene title before the first beat. The lesson header
+  already supplies the title.
+- keep every `self.play`, transform, group animation and `run_time` as the
+  model wrote it. Transform lowering, group alignment, text matching, palette
+  and text metrics live in the runtime shim (`recorded_scene.py`), not in a
+  source rewrite.
 
-Further layout fixes (label collisions) should be reported by the frame review,
-not silently rewritten.
+### 5.5 GL equivalence layer
+
+Ordinary ManimCE is the authoring language. `recorded_scene.py` adapts it to
+ManimGL:
+
+- **Variadic animations.** CE `FadeIn(a, b)`, `Create(a, b)` and
+  `Indicate(a, b)` become an `AnimationGroup` of per-mobject animations.
+- **Transforms.** `CETransform` and `CEReplacementTransform` align
+  `data`/`family` before interpolating, so group transforms morph instead of
+  popping. They align a *local copy* of the target; they never replace
+  `target_mobject`, because a later `ReplacementTransform` may still use the
+  model's original variable.
+- **Text replacement.** `ReplacementTransform` between different `Text`
+  strings uses glyph matching (`TransformMatchingShapes`) instead of
+  interpolating unrelated point forests.
+- **Palette.** CE `YELLOW`/`YELLOW_C` (`#F7D96F`) and `BLUE_E` (`#236B8E`) are
+  authoritative, and CE-only aliases (`GRAY_*`, `PURE_*`, `LOGO_*`, ...) are
+  defined.
+- **Text metrics.** The compiler measures static `Text(...)` calls in a real
+  ManimCE environment, caches the boxes in
+  `~/.cache/omarchy-assistant/ce-text-metrics.json`, and stretches native text
+  to the CE width/height. See `ce_text_metrics.py`.
+- **Camera state.** Camera frame points and uniforms are stored in every play
+  checkpoint. Without that, seeking past a later `play()` skipped the camera
+  track and froze the frame mid-zoom.
+
+The model is not asked to avoid group shifts, write per-dot transforms, or
+emit a particular transform type. `self.cue(...)` remains an accepted
+synchronization annotation.
+
+### 5.6 Native audit gate
+
+`native_audit.py` runs after compile, before registration:
+
+- label collisions at sampled beat times (top-level text boxes, 32% overlap);
+- a duplicated title near the top;
+- a static beat (first and last frame pixel difference below 1.2);
+- cue coverage against the storyboard objects when cues are present.
+
+Findings fail the job with the offending beat/time. `QWEEPS_NATIVE_AUDIT=0`
+disables the gate for debugging. The audit skips source/target pairs that are
+mid-transform at the sampled time, so a legitimate in-place label morph is not
+reported as a collision.
+
+Further layout fixes (label collisions) should be reported by the audit or
+frame review, not silently rewritten.
 
 ---
 
@@ -493,17 +538,19 @@ Implemented on this branch:
   direction → native generation → compile → assembly when `native: true`.
 - **Assembly** — storyboard order, native windows, `nativeOffset`, rebuilt clock
   and continuity (`native_author.assemble`).
-- **Cleanups** — duplicate scene title hidden; `Text`-to-`Text` transforms
-  replaced with opacity crossfades and variable reassignment.
+- **Cleanups** — duplicate scene title hidden. Transforms, group animations,
+  palette, text metrics and replacement-text matching are lowered by the
+  runtime shim instead of rewriting the model's CE animation.
+- **GL equivalence** — variadic animations, aligned transforms, CE palette,
+  CE text metrics, camera frame checkpoints.
+- **Native audit** — label collisions, duplicate titles, static beats and cue
+  coverage are checked after compile; findings fail the job.
 - **Runtime** — registry manifests, worker keep-alive, first-scene prewarm,
   registry experiment handling, generic semantic roles for generated scenes.
 - **UI** — “Include native ManimGL beats” in the live lesson loader.
 
 Still to build before this is production-ready:
 
-- **Native review gate** — render a frame per beat and reject label collisions,
-  duplicate titles, or a missing promised construction. The prototype pipeline
-  publishes after compile validation only.
 - **Layout review for native jobs** — the hybrid path skips the existing
   browser-frame review and its revision loop.
 - **Multiple native runs** — one scene per contiguous native run; the assembly

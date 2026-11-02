@@ -56,10 +56,7 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
     lines += [
         "",
         "Make the mechanism legible without narration: label the parts and the change. "
-        "Every beat must show continuous motion, not a static diagram with labels appearing: "
-        "move the ion dots themselves through the membrane (Na+ in, K+ out), open/close gates, "
-        "draw a trace, or transform a state. Animate each ion dot individually; never shift a "
-        "whole ion group. Do not only grow arrows or icons. "
+        "Every beat must show continuous motion, not a static diagram with labels appearing. "
         "Keep every beat's promised visible operation. Do not add, remove or reorder beats. "
         "The whole scene should run roughly 30-55 seconds.",
     ]
@@ -67,49 +64,16 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
 
 
 _TEXT_ASSIGN = re.compile(r"^\s*(\w+)\s*=\s*Text\(", re.M)
-_TEXT_TRANSFORM = re.compile(r"(?<![A-Za-z0-9_])Transform\((\w+),\s*(\w+)\)")
-_TEXT_REPLACEMENT = re.compile(r"(?<![A-Za-z0-9_])ReplacementTransform\((\w+),\s*(\w+)\)")
-_VGROUP_ASSIGN = re.compile(r"^\s*(\w+)\s*=\s*VGroup\(", re.M)
-_ANIMATE_SHIFT = re.compile(r"(?<![A-Za-z0-9_])(\w+)\.animate\.shift\(([^()]+)\)")
 
 
 def clean_code(code: str) -> str:
     code = re.sub(r"^```(?:python)?\s*", "", code.strip())
     code = re.sub(r"```\s*$", "", code).strip() + "\n"
-    # Different Text strings interpolate glyph paths differently in CE and GL.
-    # Crossfade and reassign the variable; this replays cleanly in both.
-    # .animate.shift on a group can replay to a target-shaped start in
-    # ManimGL. An explicit Transform with a copy keeps start/target aligned.
-    def shift_rewrite(match):
-        name, amount = match.group(1), match.group(2)
-        if name.endswith("_dots"):
-            return f"*[Transform(dot, dot.copy().shift({amount})) for dot in {name}]"
-        return f"Transform({name}, {name}.copy().shift({amount}))"
-    code = _ANIMATE_SHIFT.sub(shift_rewrite, code)
+    # Transform lowering, group `.animate` lowering, per-dot motion and text
+    # crossfades all live in the native shim now (recorded_scene).  The CE
+    # source keeps the model's own animation choices; only the duplicate scene
+    # title is handled here because the lesson header already supplies one.
     text_vars = set(_TEXT_ASSIGN.findall(code))
-    group_vars = set(_VGROUP_ASSIGN.findall(code))
-    output = []
-    for line in code.splitlines():
-        # A group Transform between different point counts pops in ManimGL.
-        # Transform matching submobjects instead when both sides are VGroups.
-        for a, b in _TEXT_TRANSFORM.findall(line):
-            if a in group_vars and b in group_vars and a not in text_vars and b not in text_vars:
-                line = re.sub(rf"Transform\({a},\s*{b}\)",
-                              f"*[Transform(x, y) for x, y in zip({a}, {b})]", line, count=1)
-        pairs = [
-            (a, b, pattern) for pattern in (_TEXT_TRANSFORM, _TEXT_REPLACEMENT)
-            for a, b in pattern.findall(line)
-            if a in text_vars and b in text_vars
-        ]
-        indent = re.match(r"^\s*", line).group(0)
-        for a, b, pattern in pairs:
-            output.append(f"{indent}{b}.set_opacity(0)")
-            line = pattern.sub(
-                f"{a}.animate.set_opacity(0), {b}.animate.set_opacity(1)", line, count=1)
-        output.append(line)
-        output.extend(f"{indent}{a} = {b}" for a, b, _ in pairs)
-    code = "\n".join(output) + "\n"
-    # The lesson header already supplies the title; hide the scene's own copy.
     for name in ("top_title", "scene_title", "title", "heading"):
         if name in text_vars:
             code = code.replace("self.beat(", f"{name}.set_opacity(0)\n        self.beat(", 1)
@@ -145,6 +109,27 @@ def generate_scene(llm, story: dict, interpreter: str, folder: Path,
     source_path = folder / "generated_neuron.py"
     source_path.write_text(source)
     compiled = compile_source(interpreter, source_path, folder)
+    audit = compiled.get("audit") or []
+    if audit and os.environ.get("QWEEPS_NATIVE_AUDIT", "1") != "0":
+        details = "; ".join(
+            f"{item.get('code')} {item.get('detail', '')}".strip()
+            for item in audit[:4])
+        raise PlanError("Native scene audit failed: " + details)
+    cues = compiled.get("cues") or []
+    if cues and nodes_by_beat:
+        def normalise(value):
+            return re.sub(r"[^a-z0-9]+", "-", str(value).lower()).strip("-")
+
+        cue_names = [normalise(cue.get("id")) for cue in cues]
+        missing = []
+        for beat_id, nodes in nodes_by_beat.items():
+            for node in nodes or []:
+                token = normalise(node)
+                if not any(token in cue or cue in token for cue in cue_names if cue):
+                    missing.append(f"{beat_id}:{node}")
+        if missing:
+            raise PlanError("Native scene cues do not cover the storyboard objects: "
+                            + ", ".join(missing[:8]))
     expected = [beat["id"] for beat in story.get("beats") or []]
     found = [beat["id"] for beat in compiled.get("beats") or []]
     if found != expected:
