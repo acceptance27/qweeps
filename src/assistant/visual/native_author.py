@@ -58,7 +58,8 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
         "Make the mechanism legible without narration: label the parts and the change. "
         "Every beat must show continuous motion, not a static diagram with labels appearing: "
         "move the ion dots themselves through the membrane (Na+ in, K+ out), open/close gates, "
-        "draw a trace, or transform a state. Do not only grow arrows or icons. "
+        "draw a trace, or transform a state. Animate each ion dot individually; never shift a "
+        "whole ion group. Do not only grow arrows or icons. "
         "Keep every beat's promised visible operation. Do not add, remove or reorder beats. "
         "The whole scene should run roughly 30-55 seconds.",
     ]
@@ -67,6 +68,7 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
 
 _TEXT_ASSIGN = re.compile(r"^\s*(\w+)\s*=\s*Text\(", re.M)
 _TEXT_TRANSFORM = re.compile(r"(?<![A-Za-z0-9_])Transform\((\w+),\s*(\w+)\)")
+_ANIMATE_SHIFT = re.compile(r"(?<![A-Za-z0-9_])(\w+)\.animate\.shift\(([^()]+)\)")
 
 
 def clean_code(code: str) -> str:
@@ -74,6 +76,14 @@ def clean_code(code: str) -> str:
     code = re.sub(r"```\s*$", "", code).strip() + "\n"
     # Different Text strings interpolate glyph paths differently in CE and GL.
     # Crossfade and reassign the variable; this replays cleanly in both.
+    # .animate.shift on a group can replay to a target-shaped start in
+    # ManimGL. An explicit Transform with a copy keeps start/target aligned.
+    def shift_rewrite(match):
+        name, amount = match.group(1), match.group(2)
+        if name.endswith("_dots"):
+            return f"*[Transform(dot, dot.copy().shift({amount})) for dot in {name}]"
+        return f"Transform({name}, {name}.copy().shift({amount}))"
+    code = _ANIMATE_SHIFT.sub(shift_rewrite, code)
     text_vars = set(_TEXT_ASSIGN.findall(code))
     output = []
     for line in code.splitlines():
