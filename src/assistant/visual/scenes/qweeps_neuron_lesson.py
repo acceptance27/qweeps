@@ -120,7 +120,7 @@ class GenScene(Scene):
         gate1_open = Rectangle(width=0.55, height=1.0, stroke_color=BLUE, stroke_width=5, fill_color=BLUE, fill_opacity=0.25).move_to([-1.2, 0.4, 0])
         gate2_open = Rectangle(width=0.55, height=1.0, stroke_color=BLUE, stroke_width=5, fill_color=BLUE, fill_opacity=0.25).move_to([0.2, 0.4, 0])
         gates_open = VGroup(gate1_open, gate2_open)
-        self.play(ReplacementTransform(gates_closed, gates_open), run_time=1.0)
+        self.play(Transform(gate1_closed, gate1_open), Transform(gate2_closed, gate2_open), run_time=1.0)
 
         in1 = Arrow(start=[-1.2, 1.6, 0], end=[-1.2, -0.3, 0], color=BLUE, stroke_width=6)
         in2 = Arrow(start=[0.2, 1.6, 0], end=[0.2, -0.3, 0], color=BLUE, stroke_width=6)
@@ -136,7 +136,7 @@ class GenScene(Scene):
         cap5 = Text("Spike ~1ms tall and fixed: bigger = more, not taller", font_size=18).to_edge(DOWN, buff=0.3)
         self.play(FadeOut(caption), FadeIn(cap5), run_time=0.6)
         caption = cap5
-        self.play(FadeOut(membrane_group), FadeOut(na_group), FadeOut(k_group), FadeOut(na_label), FadeOut(k_label), FadeOut(membrane_label), FadeOut(pump), FadeOut(pump_label), FadeOut(gates_open), FadeOut(in1), FadeOut(in2), FadeOut(inside_txt), FadeOut(gate_label), FadeOut(axon_label), FadeOut(thresh_group), FadeOut(thresh_label), run_time=0.6)
+        self.play(FadeOut(membrane_group), FadeOut(na_group), FadeOut(k_group), FadeOut(na_label), FadeOut(k_label), FadeOut(membrane_label), FadeOut(pump), FadeOut(pump_label), FadeOut(gates_closed), FadeOut(in1), FadeOut(in2), FadeOut(inside_txt), FadeOut(gate_label), FadeOut(axon_label), FadeOut(thresh_group), FadeOut(thresh_label), run_time=0.6)
 
         x_axis = Line(start=[-5, -1.8, 0], end=[3, -1.8, 0], color=WHITE, stroke_width=3)
         y_axis = Line(start=[-5, -1.8, 0], end=[-5, 1.5, 0], color=WHITE, stroke_width=3)
