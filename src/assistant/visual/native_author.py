@@ -63,7 +63,7 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
 
 
 _TEXT_ASSIGN = re.compile(r"^\s*(\w+)\s*=\s*Text\(", re.M)
-_TEXT_TRANSFORM = re.compile(r"Transform\((\w+),\s*(\w+)\)")
+_TEXT_TRANSFORM = re.compile(r"(?<![A-Za-z0-9_])Transform\((\w+),\s*(\w+)\)")
 
 
 def clean_code(code: str) -> str:
@@ -183,19 +183,41 @@ def condense_narration(llm, lesson: dict, manifest: dict, native_ids: list[str])
         raw = llm.compose(prompt + "\n\n" + payload, max_tokens=2500, reasoning_effort="minimal")
     except TypeError:
         raw = llm.compose(prompt + "\n\n" + payload)
-    raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())
-    try:
-        parsed = json.JSONDecoder().raw_decode(raw)[0]
-        shortened = {row["id"]: row["narration"] for row in parsed.get("chapters") or []}
-    except (ValueError, KeyError, TypeError):
-        return lesson
-    changed = False
+    def parse(response):
+        response = re.sub(r"^```(?:json)?\s*|\s*```$", "", response.strip())
+        try:
+            parsed = json.JSONDecoder().raw_decode(response)[0]
+            return {row["id"]: row["narration"] for row in parsed.get("chapters") or []}
+        except (ValueError, KeyError, TypeError):
+            return {}
+
+    shortened = parse(raw)
     for chapter in lesson.get("chapters") or []:
         text = shortened.get(chapter.get("id"))
         if isinstance(text, str) and text.strip():
             chapter["narration"] = text.strip()
-            changed = True
-    return lesson if changed else lesson
+    # The model often lands a few words over. One explicit enforcement pass.
+    over = []
+    budgets = {row["id"]: row["maxWords"] for row in requests}
+    for chapter in lesson.get("chapters") or []:
+        budget = budgets.get(chapter.get("id"))
+        if budget and len(str(chapter.get("narration") or "").split()) > budget * 1.1:
+            over.append({"id": chapter["id"], "maxWords": budget,
+                         "narration": chapter.get("narration", "")})
+    if over:
+        retry = ("Rewrite each narration to at most maxWords words. Keep the mechanism "
+                 "and specific insight; remove secondary detail. Return JSON only as "
+                 '{"chapters":[{"id":"...","narration":"..."}]}.\n\n'
+                 + json.dumps({"chapters": over}))
+        try:
+            raw = llm.compose(retry, max_tokens=2000, reasoning_effort="minimal")
+        except TypeError:
+            raw = llm.compose(retry)
+        for chapter in lesson.get("chapters") or []:
+            text = parse(raw).get(chapter.get("id"))
+            if isinstance(text, str) and text.strip():
+                chapter["narration"] = text.strip()
+    return lesson
 
 def assemble(lesson: dict, story: dict, manifest: dict, native_ids: list[str]) -> dict:
     by_id = {chapter["id"]: chapter for chapter in lesson.get("chapters") or []}

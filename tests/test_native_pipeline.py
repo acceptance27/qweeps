@@ -93,3 +93,16 @@ def test_condense_native_narration_fits_window():
     result = condense_narration(FakeLLM(), data, manifest(), ["resting"])
     assert result["chapters"][0]["narration"] == "Resting charge waits at -70 mV."
     assert result["chapters"][1]["narration"] == "sum " * 30
+
+
+def test_clean_code_does_not_break_replacement_transform():
+    source = '''from manim import *
+class GenScene(Scene):
+    def construct(self):
+        a = Text("one")
+        b = Text("two")
+        self.play(ReplacementTransform(a, b), run_time=1.0)
+'''
+    cleaned = clean_code(source)
+    assert "ReplacementTransform(a, b)" in cleaned
+    assert "Replacement" not in cleaned.replace("ReplacementTransform", "")
