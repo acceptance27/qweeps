@@ -230,6 +230,11 @@ def _ce_number_line(*args, **kwargs):
         config = dict(kwargs.get("decimal_number_config") or {})
         config.setdefault("font_size", size)
         kwargs["decimal_number_config"] = config
+    if "font_size" in kwargs:
+        size = kwargs.pop("font_size")
+        config = dict(kwargs.get("decimal_number_config") or {})
+        config.setdefault("font_size", size)
+        kwargs["decimal_number_config"] = config
     if "label_direction" in kwargs:
         kwargs.setdefault("line_to_number_direction", kwargs.pop("label_direction"))
     if "label_buff" in kwargs:
@@ -328,11 +333,31 @@ def _ce_axis_labels(self, x_label=None, y_label=None, **kwargs):
 _RealAxes.get_axis_labels = _ce_axis_labels
 
 
+def _normalize_axis_config(config):
+    if not isinstance(config, dict):
+        return config
+    config = dict(config)
+    size = config.pop("font_size", None)
+    if size is not None:
+        numbers = dict(config.get("decimal_number_config") or {})
+        numbers.setdefault("font_size", size)
+        config["decimal_number_config"] = numbers
+    return config
+
+
 def _ce_axes(*args, **kwargs):
     if "x_length" in kwargs:
         kwargs.setdefault("width", kwargs.pop("x_length"))
     if "y_length" in kwargs:
         kwargs.setdefault("height", kwargs.pop("y_length"))
+    tips = kwargs.pop("tips", None)
+    if tips:
+        axis_config = dict(kwargs.get("axis_config") or {})
+        axis_config.setdefault("include_tip", True)
+        kwargs["axis_config"] = axis_config
+    for key in ("axis_config", "x_axis_config", "y_axis_config"):
+        if key in kwargs:
+            kwargs[key] = _normalize_axis_config(kwargs[key])
     return _RealAxes(*args, **kwargs)
 
 
