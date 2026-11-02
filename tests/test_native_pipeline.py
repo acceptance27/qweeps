@@ -141,3 +141,16 @@ def test_native_map_falls_back_to_linear():
     points = native_map({"start": 2.0, "end": 8.0, "nativeOffset": 4.0,
                          "nativeDuration": 3.0, "narrationCues": []}, [])
     assert points == [{"at": 0.0, "scene": 4.0}, {"at": 6.0, "scene": 7.0}]
+
+
+def test_clean_code_expands_group_transforms():
+    source = '''from manim import *
+class GenScene(Scene):
+    def construct(self):
+        g1 = VGroup(Rectangle(), Rectangle())
+        g2 = VGroup(Rectangle(), Rectangle())
+        self.play(Transform(g1, g2), run_time=1.0)
+'''
+    cleaned = clean_code(source)
+    assert "*[Transform(x, y) for x, y in zip(g1, g2)]" in cleaned
+    assert "Transform(g1, g2)" not in cleaned

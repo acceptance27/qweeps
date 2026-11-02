@@ -69,6 +69,7 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
 _TEXT_ASSIGN = re.compile(r"^\s*(\w+)\s*=\s*Text\(", re.M)
 _TEXT_TRANSFORM = re.compile(r"(?<![A-Za-z0-9_])Transform\((\w+),\s*(\w+)\)")
 _TEXT_REPLACEMENT = re.compile(r"(?<![A-Za-z0-9_])ReplacementTransform\((\w+),\s*(\w+)\)")
+_VGROUP_ASSIGN = re.compile(r"^\s*(\w+)\s*=\s*VGroup\(", re.M)
 _ANIMATE_SHIFT = re.compile(r"(?<![A-Za-z0-9_])(\w+)\.animate\.shift\(([^()]+)\)")
 
 
@@ -86,8 +87,15 @@ def clean_code(code: str) -> str:
         return f"Transform({name}, {name}.copy().shift({amount}))"
     code = _ANIMATE_SHIFT.sub(shift_rewrite, code)
     text_vars = set(_TEXT_ASSIGN.findall(code))
+    group_vars = set(_VGROUP_ASSIGN.findall(code))
     output = []
     for line in code.splitlines():
+        # A group Transform between different point counts pops in ManimGL.
+        # Transform matching submobjects instead when both sides are VGroups.
+        for a, b in _TEXT_TRANSFORM.findall(line):
+            if a in group_vars and b in group_vars and a not in text_vars and b not in text_vars:
+                line = re.sub(rf"Transform\({a},\s*{b}\)",
+                              f"*[Transform(x, y) for x, y in zip({a}, {b})]", line, count=1)
         pairs = [
             (a, b, pattern) for pattern in (_TEXT_TRANSFORM, _TEXT_REPLACEMENT)
             for a, b in pattern.findall(line)
