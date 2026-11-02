@@ -274,6 +274,84 @@ def _ce_star(n=5, outer_radius=1.0, inner_radius=0.5, density=2,
 Star = _ce_star
 
 
+# ManimCE uses x_length/y_length for Axes and NumberPlane; ManimGL uses
+# width/height.  Add the missing CE Axes helpers used by math scenes.
+_RealAxes = Axes
+
+
+def _ce_axes_plot(self, function, x_range=None, **kwargs):
+    return self.get_graph(function, x_range=x_range, **kwargs)
+
+
+def _ce_lines_to_point(self, point, color=WHITE, dash_length=0.1,
+                       stroke_width=2):
+    origin = self.get_origin()
+    vertical = DashedLine([point[0], origin[1], 0], point, color=color,
+                          dash_length=dash_length, stroke_width=stroke_width)
+    horizontal = DashedLine([origin[0], point[1], 0], point, color=color,
+                            dash_length=dash_length, stroke_width=stroke_width)
+    return VGroup(vertical, horizontal)
+
+
+def _ce_secant_slope_group(self, x, graph, dx=1.0, dx_line_color=YELLOW,
+                           df_line_color=GREEN, secant_line_color=RED,
+                           secant_line_length=6):
+    function = getattr(graph, "underlying_function", None) or getattr(graph, "function")
+    p1 = self.c2p(x, function(x))
+    p2 = self.c2p(x + dx, function(x + dx))
+    corner = np.array([p2[0], p1[1], 0])
+    dx_line = Line(p1, corner, color=dx_line_color)
+    df_line = Line(corner, p2, color=df_line_color)
+    secant = Line(p1, p2, color=secant_line_color)
+    secant.set_length(secant_line_length).move_to((p1 + p2) / 2)
+    group = VGroup(dx_line, df_line, secant)
+    group.dx_line = dx_line
+    group.df_line = df_line
+    group.secant_line = secant
+    return group
+
+
+_RealAxes.plot = _ce_axes_plot
+_RealAxes.get_lines_to_point = _ce_lines_to_point
+_RealAxes.get_secant_slope_group = _ce_secant_slope_group
+_RealAxes_get_axis_labels = _RealAxes.get_axis_labels
+
+
+def _ce_axis_labels(self, x_label=None, y_label=None, **kwargs):
+    if x_label is not None:
+        kwargs.setdefault("x_label_tex", x_label)
+    if y_label is not None:
+        kwargs.setdefault("y_label_tex", y_label)
+    return _RealAxes_get_axis_labels(self, **kwargs)
+
+
+_RealAxes.get_axis_labels = _ce_axis_labels
+
+
+def _ce_axes(*args, **kwargs):
+    if "x_length" in kwargs:
+        kwargs.setdefault("width", kwargs.pop("x_length"))
+    if "y_length" in kwargs:
+        kwargs.setdefault("height", kwargs.pop("y_length"))
+    return _RealAxes(*args, **kwargs)
+
+
+Axes = _ce_axes
+
+_RealNumberPlane = NumberPlane
+
+
+def _ce_number_plane(*args, **kwargs):
+    if "x_length" in kwargs:
+        kwargs.setdefault("width", kwargs.pop("x_length"))
+    if "y_length" in kwargs:
+        kwargs.setdefault("height", kwargs.pop("y_length"))
+    return _RealNumberPlane(*args, **kwargs)
+
+
+NumberPlane = _ce_number_plane
+
+
 # ------------------------------------------------------------ CE color kwargs
 def _wrap_color(cls):
     def factory(*args, **kwargs):

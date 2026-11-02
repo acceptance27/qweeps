@@ -109,6 +109,19 @@ class GenScene(Scene):
     assert "ReplacementTransform(a, b)" in cleaned
 
 
+def test_clean_code_hides_a_title_defined_after_the_first_beat():
+    source = '''from manim import *
+class GenScene(Scene):
+    def construct(self):
+        self.beat("b1", "One")
+        title = Text("A later title")
+        self.play(FadeIn(title), run_time=1.0)
+'''
+    cleaned = clean_code(source)
+    assert cleaned.index("title = Text") < cleaned.index("title.set_opacity(0)")
+    assert cleaned.index("title.set_opacity(0)") < cleaned.index("self.play(FadeIn(title)")
+
+
 def test_clean_code_keeps_replacement_transform_on_groups():
     source = '''from manim import *
 class GenScene(Scene):

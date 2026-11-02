@@ -1,6 +1,7 @@
 """Generate, compile and register a native ManimGL scene from a QWEEPS storyboard."""
 from __future__ import annotations
 
+import ast
 import json
 import os
 import re
@@ -66,6 +67,31 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
 _TEXT_ASSIGN = re.compile(r"^\s*(\w+)\s*=\s*Text\(", re.M)
 
 
+def _hide_scene_title(code: str) -> str:
+    text_vars = set(_TEXT_ASSIGN.findall(code))
+    names = ("top_title", "scene_title", "title", "heading")
+    name = next((candidate for candidate in names if candidate in text_vars), None)
+    if name is None:
+        return code
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return code
+    assignment = next(
+        (node for node in ast.walk(tree)
+         if isinstance(node, ast.Assign)
+         and any(isinstance(target, ast.Name) and target.id == name
+                 for target in node.targets)),
+        None,
+    )
+    if assignment is None or assignment.end_lineno is None:
+        return code
+    lines = code.splitlines(keepends=True)
+    indent = re.match(r"^\s*", lines[assignment.lineno - 1]).group(0)
+    lines.insert(assignment.end_lineno, f"{indent}{name}.set_opacity(0)\n")
+    return "".join(lines)
+
+
 def clean_code(code: str) -> str:
     code = re.sub(r"^```(?:python)?\s*", "", code.strip())
     code = re.sub(r"```\s*$", "", code).strip() + "\n"
@@ -73,12 +99,9 @@ def clean_code(code: str) -> str:
     # crossfades all live in the native shim now (recorded_scene).  The CE
     # source keeps the model's own animation choices; only the duplicate scene
     # title is handled here because the lesson header already supplies one.
-    text_vars = set(_TEXT_ASSIGN.findall(code))
-    for name in ("top_title", "scene_title", "title", "heading"):
-        if name in text_vars:
-            code = code.replace("self.beat(", f"{name}.set_opacity(0)\n        self.beat(", 1)
-            break
-    return code
+    # Hide it immediately after its assignment, not before the first beat:
+    # models do not always construct the title first.
+    return _hide_scene_title(code)
 
 
 def compile_source(interpreter: str, source: Path, folder: Path) -> dict:
