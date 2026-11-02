@@ -65,6 +65,7 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
    const unique:typeof points=[];
    for(const point of points){
      const last=unique[unique.length-1];
+     if(last&&point.x===last.x)continue; // same spoken moment: keep the earliest scene time
      if(!last||point.y>last.y||point.x===0)unique.push(point);
    }
    points.length=0;points.push(...unique);
