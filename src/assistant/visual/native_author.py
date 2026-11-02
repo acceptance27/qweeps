@@ -22,7 +22,7 @@ def choose_native_beats(story: dict, limit: int = 5) -> list[str]:
     preferred = [
         beat["id"] for beat in beats
         if beat.get("layout") in {"diagram", "process"}
-        and beat.get("teaching") in {"construction", "mechanism", "procedure"}
+        and beat.get("teaching") in {"construction", "mechanism"}
     ]
     if len(preferred) < 2:
         preferred = [beat["id"] for beat in beats][:2]
@@ -34,7 +34,17 @@ def choose_native_beats(story: dict, limit: int = 5) -> list[str]:
 def native_beats_for(story: dict, mode: str = "per_beat") -> list[str]:
     """Choose one continuous native run or the hybrid per-beat native slices."""
     if mode == "continuous":
-        return [beat["id"] for beat in story.get("beats") or []]
+        beats = story.get("beats") or []
+        selected = choose_native_beats(story)
+        if not selected:
+            return []
+        ids = [beat["id"] for beat in beats]
+        positions = [ids.index(beat_id) for beat_id in selected if beat_id in ids]
+        if not positions:
+            return []
+        # Fill the gap between the first and last native beat so layout chapters
+        # cannot interrupt the continuous run. Layout may remain before/after.
+        return ids[min(positions):max(positions) + 1]
     return choose_native_beats(story)
 
 

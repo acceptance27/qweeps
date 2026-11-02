@@ -366,6 +366,30 @@ native→layout and layout→native switches do not appear as an instant pop. Th
 native prompt additionally requires a short opening fade and a closing hold or
 fade inside the scene itself.
 
+### 5.8 Native composition modes
+
+The lesson request accepts `nativeMode`:
+
+- `per_beat` (default): the planner selects native beats and the rest stay as
+  directed layout chapters. Native chapters are slices of one compiled scene.
+- `continuous`: the selected native beats form one contiguous native run, and
+  every beat between the first and last native beat joins that run. Layout
+  chapters may remain before and after it, but not inside it. The player keeps
+  the same native session and suppresses fades inside the run
+  (`transition.type = "none"`), so the mechanism runs as one continuous film.
+
+Continuous mode is the choice for a mechanism lesson where the viewer should
+watch one uninterrupted construction. Per-beat mode is for lessons that need
+maps, text panels, comparisons or recall layouts between native mechanisms.
+Native selection is limited to construction/mechanism beats; procedure and
+recall beats stay as layout, because they do not benefit from a continuous
+Manim construction.
+
+Generated scenes also register remaining named scene objects as clickable roles
+when they do not match the built-in vocabulary. This preserves object inspection
+and region questions for topics such as batteries, motors, maps and apparatus.
+
+
 
 ---
 

@@ -55,6 +55,17 @@ def test_continuous_mode_uses_every_beat_in_one_native_run():
     assert native_beats_for(story(), "per_beat") == choose_native_beats(story())
 
 
+def test_continuous_mode_fills_gaps_but_leaves_layout_before_and_after():
+    data = {"beats": [
+        {"id": "intro", "layout": "comparison", "teaching": "comparison"},
+        {"id": "a", "layout": "diagram", "teaching": "mechanism"},
+        {"id": "b", "layout": "comparison", "teaching": "comparison"},
+        {"id": "c", "layout": "process", "teaching": "mechanism"},
+        {"id": "recall", "layout": "loci", "teaching": "recall"},
+    ]}
+    assert native_beats_for(data, "continuous") == ["a", "b", "c"]
+
+
 def test_assemble_maps_native_windows_and_rebuilds_clock():
     result = assemble(lesson(), story(), manifest(), ["resting", "sum"])
     chapters = result["chapters"]

@@ -1206,6 +1206,102 @@ replacements, only those needed.'''
                 return str(path)
         raise PlanError("The native ManimGL runtime is unavailable.")
 
+    def _continuous_candidate(self, story: dict, lesson_id: str,
+                              native_ids: set[str] | None = None,
+                              layout_candidate: dict | None = None) -> dict:
+        """A continuous native run plus the directed layout intro/outro."""
+        native_ids = native_ids or {beat.get("id") for beat in story.get("beats") or []}
+        directed = {chapter.get("id"): chapter for chapter in
+                    (layout_candidate or {}).get("chapters") or []}
+        chapters = []
+        for beat in story.get("beats") or []:
+            if beat.get("id") not in native_ids and beat.get("id") in directed:
+                chapters.append(copy.deepcopy(directed[beat["id"]]))
+                continue
+            narration = str(beat.get("narration") or beat.get("insight")
+                            or beat.get("question") or "").strip()
+            chapters.append({
+                "id": beat.get("id"),
+                "title": beat.get("title") or beat.get("id"),
+                "years": beat.get("years") or "",
+                "question": beat.get("question") or beat.get("title") or "",
+                "insight": beat.get("insight") or "",
+                "sourcePages": list(beat.get("sourcePages") or []),
+                "sources": [],
+                "safeguard": beat.get("safeguard") or "",
+                "narration": narration,
+                "narrationAt": 1.4,
+                "audio": "",
+                "start": 0.0,
+                "end": 0.0,
+                "finishedAt": 0.0,
+                "continuity": copy.deepcopy(beat.get("continuity") or {}),
+                "teaching": beat.get("teaching"),
+                "cues": [],
+                "roles": {},
+                "visual": {
+                    "layout": beat.get("layout") or "diagram",
+                    "nodes": [],
+                    "connections": [],
+                    "columns": [],
+                    "takeaway": "",
+                    "experiment": None,
+                    **({"presentation": copy.deepcopy(beat["presentation"])}
+                       if beat.get("presentation") else {}),
+                },
+            })
+        return {
+            "id": lesson_id,
+            "kind": "live_generated",
+            "title": story.get("title") or "Visual lesson",
+            "question": story.get("question") or "",
+            "representation": story.get("representation") or "",
+            "example": copy.deepcopy(story.get("example")),
+            "chapters": chapters,
+            "sources": [],
+        }
+
+    def _layout_fallback(self, story: dict, beats: list[dict], lesson_id: str) -> dict:
+        """Publish a simple layout chapter when the Director provider is empty."""
+        icon = "zap" if "zap" in self.icons else next(iter(self.icons), "circle")
+        chapters = []
+        for beat in beats:
+            cid = beat.get("id")
+            title = beat.get("title") or cid
+            insight = beat.get("insight") or beat.get("question") or title
+            nodes = [
+                {"id": f"{cid}-context", "title": title,
+                 "body": beat.get("question") or title, "icon": icon,
+                 "color": "blue", "at": 1, "tag": "context"},
+                {"id": f"{cid}-idea", "title": "Key idea", "body": insight,
+                 "icon": icon, "color": "gold", "at": 2, "tag": "takeaway"},
+            ]
+            chapters.append({
+                "id": cid, "title": title, "years": beat.get("years") or "",
+                "question": beat.get("question") or title, "insight": insight,
+                "sourcePages": list(beat.get("sourcePages") or []), "sources": [],
+                "safeguard": beat.get("safeguard") or "",
+                "narration": beat.get("narration") or insight,
+                "narrationAt": 1.4, "audio": "", "start": 0.0, "end": 0.0,
+                "finishedAt": 0.0,
+                "continuity": copy.deepcopy(beat.get("continuity") or {}),
+                "teaching": beat.get("teaching"), "cues": [],
+                "roles": {node["id"]: f"{node['title']}: {node['body']}" for node in nodes},
+                "visual": {
+                    "layout": beat.get("layout") or "concept", "nodes": nodes,
+                    "connections": [], "columns": [], "takeaway": insight,
+                    "experiment": None,
+                    **({"presentation": copy.deepcopy(beat["presentation"])}
+                       if beat.get("presentation") else {}),
+                },
+            })
+        return {"id": lesson_id, "kind": "live_generated",
+                "title": story.get("title") or "Visual lesson",
+                "question": story.get("question") or "",
+                "representation": story.get("representation") or "",
+                "example": copy.deepcopy(story.get("example")),
+                "chapters": chapters, "sources": []}
+
     def _generate_hybrid(self, job_id):
         """Plan, generate one ManimCE scene, direct layout beats, then assemble."""
         j = self.jobs[job_id]
@@ -1249,10 +1345,45 @@ replacements, only those needed.'''
             j["request"] = request
             j["revision"] = 1
             from .visual_contract import base_contract, enrich_contract
+            from .native_author import assemble, condense_narration, generate_scene, native_beats_for
             j["visualContract"] = base_contract(story)
+            mode = j.get("nativeMode") or "per_beat"
+            native_ids = native_beats_for(story, mode)
 
-            j["stage"] = "Directing the layout beats"
-            candidate = self._direct(j, None)
+            j["stage"] = "Directing the layout beats" if mode != "continuous" else "Directing the layout intro and outro"
+            if mode == "continuous":
+                layout_ids = {beat["id"] for beat in story.get("beats") or []
+                              if beat["id"] not in native_ids}
+                layout_candidate = None
+                if layout_ids:
+                    layout_beats = [copy.deepcopy(beat) for beat in story.get("beats") or []
+                                    if beat["id"] in layout_ids]
+                    for index, beat in enumerate(layout_beats):
+                        previous = layout_beats[index - 1]["id"] if index else None
+                        continuity = dict(beat.get("continuity") or {})
+                        if continuity.get("from") not in layout_ids:
+                            continuity["from"] = previous
+                            beat["continuity"] = continuity
+                    saved_story = j["storyboard"]
+                    j["storyboard"] = {**story, "beats": layout_beats}
+                    try:
+                        try:
+                            layout_candidate = self._direct(j, None)
+                        except (ModelProviderError, PlanError):
+                            j["stage"] = "Building a deterministic layout fallback"
+                            layout_candidate = self._layout_fallback(
+                                story, layout_beats, j["lessonId"])
+                    finally:
+                        j["storyboard"] = saved_story
+                candidate = self._continuous_candidate(
+                    story, j["lessonId"], set(native_ids), layout_candidate)
+                if layout_candidate:
+                    candidate["title"] = layout_candidate.get("title") or candidate["title"]
+                    candidate["question"] = layout_candidate.get("question") or candidate["question"]
+                    candidate["representation"] = layout_candidate.get("representation") or candidate["representation"]
+                    candidate["example"] = layout_candidate.get("example") or candidate["example"]
+            else:
+                candidate = self._direct(j, None)
             candidate.update(id=j["lessonId"], kind="live_generated", storyboard=story,
                              generation={"provider": getattr(self.llm, "provider", type(self.llm).__name__),
                                          "model": getattr(self.llm, "visual_model", None) or getattr(self.llm, "model", None)})
@@ -1260,9 +1391,6 @@ replacements, only those needed.'''
             j["visualContract"] = contract
 
             j["stage"] = "Generating and compiling the native ManimGL scene"
-            from .native_author import assemble, condense_narration, generate_scene, native_beats_for
-            mode = j.get("nativeMode") or "per_beat"
-            native_ids = native_beats_for(story, mode)
             nodes_by_beat = {c["id"]: [n["id"] for n in (c.get("visual") or {}).get("nodes") or []]
                              for c in candidate.get("chapters") or []}
             manifest = generate_scene(self.llm, story, self._native_interpreter(), folder,
@@ -1273,12 +1401,12 @@ replacements, only those needed.'''
             lesson["visualContract"] = contract
             lesson["nativeMode"] = mode
             if mode == "continuous":
-                for index, chapter in enumerate(lesson.get("chapters") or []):
-                    chapter["transition"] = ({
-                        "type": "fade", "duration": 0.4, "shared": []
-                    } if index == 0 else {
-                        "type": "none", "duration": 0, "shared": []
-                    })
+                previous_native = False
+                for chapter in lesson.get("chapters") or []:
+                    is_native = chapter.get("renderer") == "manimgl"
+                    if previous_native and is_native:
+                        chapter["transition"] = {"type": "none", "duration": 0, "shared": []}
+                    previous_native = is_native
             if self.narration is not None:
                 j["stage"] = "Recording and measuring the lesson narration"
                 from .synchronization import compile_speech
