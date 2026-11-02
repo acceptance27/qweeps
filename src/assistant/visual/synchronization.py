@@ -129,6 +129,10 @@ def assemble_lesson(base,plans,piece,alignment):
         c['end']=lead+end+(tail if i==len(plans)-1 else 0)
         shift=lead+start-c['start']
         c['narrationCues']=[{**e,'start':shift+e['start'],'end':shift+e['end']} for e in events]
+        if c.get('renderer')=='manimgl':
+            from .native_timing import native_map
+            manifest=(result.get('nativeScenes') or {}).get(c.get('nativeScene'),{})
+            c['nativeMap']=native_map(c,manifest.get('cues') or [])
         c['narrationAt']=lead+spans[i][0]-c['start'];c['audio']=''
         c['transitionOut']=min(.4,max(.06,end-spans[i][1]))
         c['finishedAt']=max(c['start'],min(c['end']-c['transitionOut']-.01,lead+spans[i][1]+.02))

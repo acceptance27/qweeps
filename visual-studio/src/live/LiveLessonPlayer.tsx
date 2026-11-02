@@ -42,6 +42,16 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
  const chapter=manifest.chapters[state.time>=manifest.duration?last:index];
  const nativeTime=(c:LiveChapter,t:number)=>{
    if(c.renderer!=='manimgl')return t;
+   if(c.nativeMap?.length){
+     const p=Math.max(0,Math.min(c.end-c.start,t-c.start));
+     const map=c.nativeMap;
+     let lo=map[0],hi=map[map.length-1];
+     if(p<=lo.at)return lo.scene;
+     if(p>=hi.at)return hi.scene;
+     for(let i=0;i<map.length-1;i++)if(p>=map[i].at&&p<=map[i+1].at){lo=map[i];hi=map[i+1];break;}
+     const f=hi.at===lo.at?0:(p-lo.at)/(hi.at-lo.at);
+     return lo.scene+f*(hi.scene-lo.scene);
+   }
    const offset=c.nativeOffset??c.start;
    const duration=c.nativeDuration??(c.end-c.start);
    const span=Math.max(.01,c.end-c.start);

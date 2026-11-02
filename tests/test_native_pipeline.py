@@ -1,4 +1,5 @@
 from assistant.visual.native_author import assemble, choose_native_beats, clean_code, condense_narration
+from assistant.visual.native_timing import native_map
 
 
 def story():
@@ -120,3 +121,23 @@ class GenScene(Scene):
 '''
     cleaned = clean_code(source)
     assert "ReplacementTransform(a, b)" in cleaned
+
+
+def test_native_map_combines_equal_audio_times():
+    points = native_map(
+        {"start": 10.0, "end": 20.0, "nativeOffset": 5.0, "nativeDuration": 6.0,
+         "narrationCues": [{"target": "a", "start": 4.0},
+                           {"target": "b", "start": 4.0},
+                           {"target": "c", "start": 8.0}]},
+        [{"id": "a", "time": 6.0}, {"id": "b", "time": 9.0}, {"id": "c", "time": 10.0}],
+    )
+    assert points[0] == {"at": 0.0, "scene": 5.0}
+    assert points[1] == {"at": 4.0, "scene": 6.0}
+    assert points[-1] == {"at": 10.0, "scene": 11.0}
+    assert all(right["scene"] >= left["scene"] for left, right in zip(points, points[1:]))
+
+
+def test_native_map_falls_back_to_linear():
+    points = native_map({"start": 2.0, "end": 8.0, "nativeOffset": 4.0,
+                         "nativeDuration": 3.0, "narrationCues": []}, [])
+    assert points == [{"at": 0.0, "scene": 4.0}, {"at": 6.0, "scene": 7.0}]
