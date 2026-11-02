@@ -516,7 +516,44 @@ Still to build before this is production-ready:
 - **Layout duration balance** — a leftover layout beat can absorb the rest of
   the storyboard (the 4-beat neuron run left a 32 s final layout beat).
 
-## 13. Open questions
+## 13. Measured on the first hybrid run
+
+Question: “Explain how a neuron fires in 4 beats.” (`native: true`)
+
+| Stage | Time |
+|---|---|
+| plan / storyboard | 34 s |
+| layout direction (4 beats) | 5 m 34 s |
+| native ManimCE generation | 4 m 12 s |
+| compile + beat windows | 5 s |
+| assembly + publish | < 1 s |
+| **question → first hybrid lesson ready** | **~10 m 24 s** |
+
+The pipeline does not stream individual beats. The first native beat appears
+only after the whole job is ready, when the player opens and the scene builds
+(another ~5–8 s).
+
+Narration, after synchronization:
+
+| Stage | Result |
+|---|---|
+| anchor mapping (4 chapters) | 5 s |
+| TTS + alignment + one WAV | 70 s |
+| output | 85.4 s continuous WAV, 5/6/6/4 cues |
+| lesson clock | 50.95 s |
+
+**Pacing mismatch:** the four chapters carry 50–65 words of narration each,
+while a native window is 5–7 s. The one-track narration is 85.4 s but the
+lesson clock is 51 s. The player advances chapters on the lesson clock, so the
+stage changes before the narration finishes. Native-beat narration must be
+capped to roughly `window × 3` words, or that explanation must move into the
+adjacent layout beat.
+
+The initial sync attempt failed because the anchor step asked for 2,000 tokens
+while Muse Spark spent ~2.2k on reasoning and returned empty content. The budget
+is now 8,000 and synchronization succeeds.
+
+## 14. Open questions
 
 - **Multiple native runs** — one continuous scene per run, or one scene for the
   whole lesson with layout beats skipping ahead? The current player supports

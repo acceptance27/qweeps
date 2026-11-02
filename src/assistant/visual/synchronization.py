@@ -62,7 +62,7 @@ def compile_speech(store,j,base):
         part=folder/f'speech-anchor-{signature}-{c["id"]}.json'
         if part.exists():return validate_anchors(json.loads(part.read_text()),[c])[0]
         payload={'chapters':[{'id':c['id'],'narration':c['narration'],'objects':[{'id':n['id'],'title':n['title'],'body':n['body']} for n in c['visual']['nodes']]}]}
-        raw=store._request(j,lambda:_model_json(store.llm,SCRIPT,payload,lambda r:validate_anchors(r,[c]),tokens=2000))
+        raw=store._request(j,lambda:_model_json(store.llm,SCRIPT,payload,lambda r:validate_anchors(r,[c]),tokens=8000))
         pending=part.with_suffix('.'+uuid.uuid4().hex+'.tmp');pending.write_text(json.dumps({'chapters':raw},ensure_ascii=False));pending.replace(part)
         return raw[0]
     pool=ThreadPoolExecutor(max_workers=2)
