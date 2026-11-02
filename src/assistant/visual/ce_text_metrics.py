@@ -75,11 +75,15 @@ def collect_text_specs(source: str) -> list[dict]:
 
 
 def ce_interpreter() -> str | None:
-    override = os.environ.get("QWEEPS_MANIM_CE_PYTHON")
+    # Match the documented ManimCE install paths and environment variable used
+    # by manim_clips/render_backends.  Do not depend on a developer checkout
+    # such as a sibling generative-manim repository.
+    override = (os.environ.get("QWEEPS_MANIM_CE_PYTHON")
+                or os.environ.get("QWEEPS_MANIM_PYTHON"))
     candidates = [
         override,
+        str(Path.home() / ".local/share/qweeps/manim-ce/bin/python"),
         str(Path.home() / ".local/share/omarchy-assistant/manim-ce/bin/python"),
-        str(Path.home() / "Work/generative-manim/.venv/bin/python"),
     ]
     for candidate in candidates:
         if candidate and Path(candidate).is_file():
