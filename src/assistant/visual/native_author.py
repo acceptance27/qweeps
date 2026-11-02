@@ -56,6 +56,8 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
     lines += [
         "",
         "Make the mechanism legible without narration: label the parts and the change. "
+        "Every beat must show continuous motion, not a static diagram with labels appearing: "
+        "move ions or arrows, open/close gates, draw a trace, or transform a state. "
         "Keep every beat's promised visible operation. Do not add, remove or reorder beats. "
         "The whole scene should run roughly 30-55 seconds.",
     ]

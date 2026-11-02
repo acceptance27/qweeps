@@ -47,13 +47,27 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
    const span=Math.max(.01,c.end-c.start);
    const points=[{x:0,y:offset}];
    const cues=(manifest.nativeScenes?.[c.nativeScene||'']?.cues)||[];
+   const anchors=new Map<string,{x:number;y:number}>();
    for(const q of c.narrationCues||[]){
      const hit=cues.find(x=>x.id===q.target);
-     if(hit)points.push({x:Math.max(0,Math.min(span,q.start)),y:Math.max(offset,Math.min(offset+duration,hit.time))});
+     if(!hit)continue;
+     const x=Math.max(0,Math.min(span,q.start));
+     const y=Math.max(offset,Math.min(offset+duration,hit.time));
+     const previous=anchors.get(hit.id);
+     if(!previous||x<previous.x)anchors.set(hit.id,{x,y});
    }
+   for(const point of anchors.values())points.push(point);
    points.push({x:span,y:offset+duration});
    points.sort((a,b)=>a.x-b.x||a.y-b.y);
    for(let i=1;i<points.length;i++)if(points[i].y<points[i-1].y)points[i].y=points[i-1].y;
+   // Repeated speech references can share a scene time; keep the earliest and
+   // drop later identical scene times so the frame never holds for seconds.
+   const unique:typeof points=[];
+   for(const point of points){
+     const last=unique[unique.length-1];
+     if(!last||point.y>last.y||point.x===0)unique.push(point);
+   }
+   points.length=0;points.push(...unique);
    const p=Math.max(0,Math.min(span,t-c.start));
    let lo=points[0],hi=points[points.length-1];
    for(let i=0;i<points.length-1;i++)if(p>=points[i].x&&p<=points[i+1].x){lo=points[i];hi=points[i+1];break;}
