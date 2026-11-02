@@ -95,7 +95,7 @@ def test_condense_native_narration_fits_window():
     assert result["chapters"][1]["narration"] == "sum " * 30
 
 
-def test_clean_code_does_not_break_replacement_transform():
+def test_clean_code_crossfades_replacement_transform_on_text():
     source = '''from manim import *
 class GenScene(Scene):
     def construct(self):
@@ -104,5 +104,19 @@ class GenScene(Scene):
         self.play(ReplacementTransform(a, b), run_time=1.0)
 '''
     cleaned = clean_code(source)
+    assert "ReplacementTransform(a, b)" not in cleaned
+    assert "a.animate.set_opacity(0)" in cleaned
+    assert "b.animate.set_opacity(1)" in cleaned
+    assert "a = b" in cleaned
+
+
+def test_clean_code_keeps_replacement_transform_on_groups():
+    source = '''from manim import *
+class GenScene(Scene):
+    def construct(self):
+        a = VGroup(Circle(), Circle())
+        b = VGroup(Square(), Square())
+        self.play(ReplacementTransform(a, b), run_time=1.0)
+'''
+    cleaned = clean_code(source)
     assert "ReplacementTransform(a, b)" in cleaned
-    assert "Replacement" not in cleaned.replace("ReplacementTransform", "")

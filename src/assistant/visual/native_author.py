@@ -68,6 +68,7 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
 
 _TEXT_ASSIGN = re.compile(r"^\s*(\w+)\s*=\s*Text\(", re.M)
 _TEXT_TRANSFORM = re.compile(r"(?<![A-Za-z0-9_])Transform\((\w+),\s*(\w+)\)")
+_TEXT_REPLACEMENT = re.compile(r"(?<![A-Za-z0-9_])ReplacementTransform\((\w+),\s*(\w+)\)")
 _ANIMATE_SHIFT = re.compile(r"(?<![A-Za-z0-9_])(\w+)\.animate\.shift\(([^()]+)\)")
 
 
@@ -88,16 +89,17 @@ def clean_code(code: str) -> str:
     output = []
     for line in code.splitlines():
         pairs = [
-            (a, b) for a, b in _TEXT_TRANSFORM.findall(line)
+            (a, b, pattern) for pattern in (_TEXT_TRANSFORM, _TEXT_REPLACEMENT)
+            for a, b in pattern.findall(line)
             if a in text_vars and b in text_vars
         ]
         indent = re.match(r"^\s*", line).group(0)
-        for a, b in pairs:
+        for a, b, pattern in pairs:
             output.append(f"{indent}{b}.set_opacity(0)")
-            line = re.sub(rf"Transform\({a},\s*{b}\)",
-                          f"{a}.animate.set_opacity(0), {b}.animate.set_opacity(1)", line)
+            line = pattern.sub(
+                f"{a}.animate.set_opacity(0), {b}.animate.set_opacity(1)", line, count=1)
         output.append(line)
-        output.extend(f"{indent}{a} = {b}" for a, b in pairs)
+        output.extend(f"{indent}{a} = {b}" for a, b, _ in pairs)
     code = "\n".join(output) + "\n"
     # The lesson header already supplies the title; hide the scene's own copy.
     for name in ("top_title", "scene_title", "title", "heading"):

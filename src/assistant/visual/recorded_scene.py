@@ -13,6 +13,11 @@ from __future__ import annotations
 import numpy as np
 from manimlib import *
 from manimlib.animation.animation import prepare_animation
+
+# ManimCE's YELLOW is a softer gold (#F7D96F); ManimGL's is pure yellow.
+# Override the shared palette constant so compiled CE sources keep CE colors.
+YELLOW = "#F7D96F"
+
 import inspect
 
 
