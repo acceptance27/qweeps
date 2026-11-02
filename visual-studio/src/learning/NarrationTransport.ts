@@ -29,6 +29,7 @@ export class NarrationTransport {
   return this.current;
  }
  async playFrom(seconds=0){this.wanted=true;const epoch=this.epoch;if(this.current)await this.current;if(!this.wanted||epoch!==this.epoch||!this.ready)return;if(Number.isFinite(this.audio.duration)&&seconds>=this.audio.duration){this.wanted=false;return;}this.audio.currentTime=Math.max(0,seconds);await this.audio.play();}
+ seek(seconds:number){if(!this.ready)return;const max=Number.isFinite(this.audio.duration)?this.audio.duration:seconds;this.audio.currentTime=Math.max(0,Math.min(seconds,max));if(this.text)this.positions.set(this.text,this.audio.currentTime);}
  pause(){this.wanted=false;this.audio.pause();this.playing=false;this.emit();}
  async resume(){this.wanted=true;const epoch=this.epoch;if(this.current)await this.current;if(!this.wanted||epoch!==this.epoch||!this.ready||this.audio.ended||this.audio.currentTime>=this.audio.duration-.03)return;await this.audio.play();}
  stop(){this.pause();this.epoch++;this.ready=false;this.loading=false;this.text='';this.current=null;this.audio.removeAttribute('src');this.emit();}

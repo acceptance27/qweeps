@@ -1,4 +1,4 @@
-from assistant.visual.native_author import assemble, choose_native_beats, clean_code, condense_narration
+from assistant.visual.native_author import assemble, choose_native_beats, clean_code, condense_narration, _repair_prompt
 from assistant.visual.native_timing import native_map, choose_baked_frame
 from assistant.visual.ce_text_metrics import collect_text_specs, metric_key
 from assistant.visual.native_audit import _iou, _overlap
@@ -95,6 +95,29 @@ def test_condense_native_narration_fits_window():
     result = condense_narration(FakeLLM(), data, manifest(), ["resting"])
     assert result["chapters"][0]["narration"] == "Resting charge waits at -70 mV."
     assert result["chapters"][1]["narration"] == "sum " * 30
+
+
+def test_condense_narration_keeps_bridge_and_targets_layout_time():
+    class BridgeDroppingLLM:
+        def compose(self, instruction, system="", max_tokens=None, reasoning_effort=None):
+            return '{"chapters":[{"id":"resting","narration":"Resting charge waits."}]}'
+
+    data = lesson()
+    data["chapters"][0]["narration"] = "long " * 40
+    data["chapters"][0]["continuity"] = {"from": None, "bridge": "Bridge sentence."}
+    result = condense_narration(BridgeDroppingLLM(), data, manifest(), ["resting"])
+    assert result["chapters"][0]["narration"].startswith("Bridge sentence.")
+    assert result["chapters"][0]["targetDuration"] <= 14
+    assert result["chapters"][1]["targetDuration"] <= 14
+
+
+def test_native_repair_prompt_carries_audit_findings_and_source():
+    text = _repair_prompt("original prompt", "class GenScene: pass",
+                          [{"code": "label-collision", "time": 2.1,
+                            "detail": "'A' overlaps 'B'"}])
+    assert "original prompt" in text
+    assert "label-collision" in text and "'A' overlaps 'B'" in text
+    assert "class GenScene: pass" in text
 
 
 def test_clean_code_keeps_replacement_transform_on_text():

@@ -95,7 +95,7 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
  const audioKey=manifest.audioTrack?.key||chapter.narration,canStart=!voice||!manifest.audioTrack||audioState.ready;
  const cueReached=!!manifest.audioTrack||state.time>=chapter.start+chapter.narrationAt;
  const pause=()=>{if(playingRef.current&&voices.current&&lessonAudio.current?.isReady)resumeOffset.current=lessonAudio.current.position;setPlaying(false);lessonAudio.current?.pause();answerAudio.current?.pause();};
- const seek=(time:number)=>{pause();resumeOffset.current=null;setState(s=>({...s,time:clamp(time,0,manifest.duration),focus:''}));setSeekVersion(v=>v+1);};
+ const seek=(time:number)=>{pause();resumeOffset.current=null;if(manifest.audioTrack)lessonAudio.current?.seek(clamp(time,0,manifest.duration));setState(s=>({...s,time:clamp(time,0,manifest.duration),focus:''}));setSeekVersion(v=>v+1);};
  const step=(direction:number,atStart=false)=>{seek(adjacentBeatTime(manifest.chapters,current.current.time,direction,atStart));setState(s=>({...s,chapter:null,camera:{x:0,y:0,zoom:1},selected:[],region:null}));setBranchReason('');};
  const close=()=>{pause();request.current?.abort();setClosed(true);if(session)void api('closed',{sessionId:session,desktop:params.get('desktop')==='1'}).catch(()=>{});};
  const viewContext=(s=current.current)=>{const m=manifestRef.current;return{sceneId:m.kind==='live_generated'?'live_generated':'rizal_live',lessonId:m.id,documentId:m.documentId,title:m.title,focused:document.hasFocus(),time:s.time,camera:s.camera,selection:s.selected,region:s.region,experiments:s.experiments,

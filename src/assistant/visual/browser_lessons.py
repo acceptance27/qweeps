@@ -247,8 +247,8 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
         if native_window:
             duration=round(native_window['end']-native_window['start'],2)
         else:
-            duration=max(float(c.get('duration',30)),len(narration.split())/2.2+3,visible_words/3.3+8,max(n['at'] for n in nodes)+7,max([l['at']+4 for l in links] or [0])+2)
-            if not 15<=duration<=80:raise PlanError('Keep each beat readable within 15–80 seconds; split excessive material')
+            duration=max(float(c.get('duration') or 0),len(narration.split())/2.2+3,visible_words/3.3+8,max(n['at'] for n in nodes)+7,max([l['at']+4 for l in links] or [0])+2)
+            if not 6<=duration<=80:raise PlanError('Keep each beat readable within 6–80 seconds; split excessive material')
         duration=round(duration,2)
         visual={'layout':layout,'nodes':nodes,'connections':links,'columns':columns,
                 'takeaway':_text(c.get('takeaway'),'visible conclusion',180 if presentation and presentation['textMode']=='labels' else 230),'experiment':experiment}
@@ -1275,6 +1275,10 @@ replacements, only those needed.'''
             candidate = condense_narration(self.llm, candidate, manifest, native_ids)
             lesson = assemble(candidate, story, manifest, native_ids, contract=contract)
             lesson["visualContract"] = contract
+            if self.narration is not None:
+                j["stage"] = "Recording and measuring the lesson narration"
+                from .synchronization import compile_speech
+                lesson = compile_speech(self, j, lesson)
             lesson["review"] = {"approved": True, "method": "native-and-layout-hybrid",
                                 "findings": [], "observations": []}
             (folder / "lesson.json").write_text(json.dumps(lesson, ensure_ascii=False, indent=2))

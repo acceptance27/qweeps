@@ -13,7 +13,7 @@ from .pedagogy import _model_json
 from .alignment import align_recordings,measured_cues,validate_anchors,script_word_times,spoken_sentence_cues,phrase_range,tokens,ENGINE
 
 RATE=24000
-VERSION=4
+VERSION=5
 SCRIPT='''Attach visual cues to the supplied EXISTING continuous beat narration.
 This is a bounded data transformation. Everything needed is supplied below.
 Do not call tools, browse, read files, run commands or edit a workspace.
@@ -46,21 +46,34 @@ def compile_speech(store,j,base):
     folder=store.folder/j['lessonId'];signature=fingerprint(base,narration);target=folder/f'speech-{signature}.json'
     if target.exists():return json.loads(target.read_text())
     chapters=base['chapters'];saved={}
+    def valid_anchors(payload, section):
+        try:
+            return validate_anchors(payload, section)
+        except PlanError:
+            # A stale checkpoint may refer to an earlier narration. Ignore it
+            # and let the current narration be re-anchored.
+            return None
     # Retain completed mappings from the earlier two-beat requests. New work is
     # checkpointed per beat so an interrupted provider never repeats good work.
     for previous in dict.fromkeys([fingerprint(base,narration,2),fingerprint(base,narration,3),signature]):
         for i in range(0,len(chapters),2):
             part=folder/f'speech-anchors-{previous}-{i//2}.json'
             if part.exists():
-                for c in validate_anchors(json.loads(part.read_text()),chapters[i:i+2]):saved[c['id']]=c
+                checked=valid_anchors(json.loads(part.read_text()),chapters[i:i+2])
+                if checked:
+                    for c in checked:saved[c['id']]=c
         for c in chapters:
             part=folder/f'speech-anchor-{previous}-{c["id"]}.json'
-            if part.exists():saved[c['id']]=validate_anchors(json.loads(part.read_text()),[c])[0]
+            if part.exists():
+                checked=valid_anchors(json.loads(part.read_text()),[c])
+                if checked:saved[c['id']]=checked[0]
     j['stage']='Linking objects to phrases in the original beat narration'
     def script(c):
         if c['id'] in saved:return saved[c['id']]
         part=folder/f'speech-anchor-{signature}-{c["id"]}.json'
-        if part.exists():return validate_anchors(json.loads(part.read_text()),[c])[0]
+        if part.exists():
+            checked=valid_anchors(json.loads(part.read_text()),[c])
+            if checked:return checked[0]
         payload={'chapters':[{'id':c['id'],'narration':c['narration'],'objects':[{'id':n['id'],'title':n['title'],'body':n['body']} for n in c['visual']['nodes']]}]}
         raw=store._request(j,lambda:_model_json(store.llm,SCRIPT,payload,lambda r:validate_anchors(r,[c]),tokens=8000))
         pending=part.with_suffix('.'+uuid.uuid4().hex+'.tmp');pending.write_text(json.dumps({'chapters':raw},ensure_ascii=False));pending.replace(part)
@@ -140,15 +153,14 @@ def assemble_lesson(base,plans,piece,alignment):
         c['speechAlignment']={'method':ENGINE,'scriptCoverage':chapter_coverage,'wordCount':len(local['words']),'recording':'whole-lesson'}
     result['duration']=lead+duration+tail
     for i,c in enumerate(result['chapters']):
-        c['visualStart']=lead+bridge_ends[i] if bridge_ends[i] is not None else c['start']
-        if c['visualStart']>=c['end']-.5:raise PlanError('A reasoning bridge leaves no time for its visual explanation; previous lesson preserved.')
-        if bridge_ends[i] is not None:c['continuity']['spokenEnd']=c['visualStart']
-    for i,c in enumerate(result['chapters']):
-        c['visualEnd']=result['chapters'][i+1]['visualStart'] if i+1<len(result['chapters']) else result['duration']
-    # Native scenes are timed to their own audio beat. Keeping the bridge-delayed
-    # visual window would hold the previous scene and then jump into the next.
+        bridge_end=bridge_ends[i]
+        if bridge_end is not None:
+            c['continuity']['spokenEnd']=lead+bridge_end
+    # Navigation, captions and narration all run on one clock. Bridge-delayed
+    # visual windows made the header/beat selection lag behind the spoken chapter
+    # (and overlap the next native chapter), so every chapter uses its audio span.
     for c in result['chapters']:
-        if c.get('renderer')=='manimgl':
-            c['visualStart']=c['start'];c['visualEnd']=c['end']
+        c['visualStart']=c['start']
+        c['visualEnd']=c['end']
     result['narrationScript']=lesson_script(base)
     return bytes(int(lead*RATE)*2)+piece+bytes(int(tail*RATE)*2),result
