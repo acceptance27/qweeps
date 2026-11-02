@@ -12,6 +12,7 @@ from pathlib import Path
 from .manim_code_prompt import manim_code_generation_prompt
 from .native_scenes import scene_id as make_scene_id, write_scene
 from .plan import PlanError
+from .visual_contract import contract_prompt
 
 
 def choose_native_beats(story: dict, limit: int = 5) -> list[str]:
@@ -29,7 +30,8 @@ def choose_native_beats(story: dict, limit: int = 5) -> list[str]:
     return preferred[:limit]
 
 
-def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
+def build_prompt(story: dict, nodes_by_beat: dict | None = None,
+                 contract: dict | None = None) -> str:
     lines = [
         "Create one continuous ManimCE scene that teaches the QWEEPS lesson below.",
         "Follow the lesson's teaching order exactly, beat by beat.",
@@ -39,9 +41,10 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
         f"Lesson: {story.get('title')}",
         f"Question: {story.get('question')}",
         f"Shared representation and encodings: {story.get('representation')}",
-        "",
-        "Beats:",
     ]
+    if contract:
+        lines += contract_prompt(contract)
+    lines += ["", "Beats:"]
     nodes_by_beat = nodes_by_beat or {}
     for beat in story.get("beats") or []:
         lines += [
@@ -121,8 +124,9 @@ def compile_source(interpreter: str, source: Path, folder: Path) -> dict:
 
 
 def generate_scene(llm, story: dict, interpreter: str, folder: Path,
-                   nodes_by_beat: dict | None = None) -> dict:
-    prompt = build_prompt(story, nodes_by_beat)
+                   nodes_by_beat: dict | None = None,
+                   contract: dict | None = None) -> dict:
+    prompt = build_prompt(story, nodes_by_beat, contract=contract)
     system = manim_code_generation_prompt("high")
     try:
         code = llm.compose(prompt, system, max_tokens=40000, reasoning_effort="high")
@@ -250,9 +254,12 @@ def condense_narration(llm, lesson: dict, manifest: dict, native_ids: list[str])
                 chapter["narration"] = text.strip()
     return lesson
 
-def assemble(lesson: dict, story: dict, manifest: dict, native_ids: list[str]) -> dict:
+def assemble(lesson: dict, story: dict, manifest: dict, native_ids: list[str],
+             contract: dict | None = None) -> dict:
     by_id = {chapter["id"]: chapter for chapter in lesson.get("chapters") or []}
     windows = {beat["id"]: beat for beat in manifest["beats"]}
+    transitions = {(row.get("from"), row.get("to")): row
+                   for row in (contract or {}).get("transitions") or []}
     native = set(native_ids)
     clock = 0.0
     chapters = []
@@ -274,7 +281,15 @@ def assemble(lesson: dict, story: dict, manifest: dict, native_ids: list[str]) -
         chapter["finishedAt"] = round(max(chapter["start"], chapter["end"] - 2), 2)
         chapter.pop("visualStart", None)
         chapter.pop("visualEnd", None)
-        if previous is not None:
+        if previous is None:
+            chapter["transition"] = {"type": "fade", "duration": 0.4,
+                                     "shared": list((contract or {}).get("persistent") or [])}
+        else:
+            chapter["transition"] = transitions.get(
+                (previous, chapter["id"]),
+                {"type": "fade", "duration": 0.35,
+                 "shared": list((contract or {}).get("persistent") or [])},
+            )
             chapter["continuity"] = {**(chapter.get("continuity") or {}), "from": previous}
         previous = chapter["id"]
         chapters.append(chapter)

@@ -152,3 +152,6 @@
 
 .live-stage-surface{background:#071117}
 .live-stage-surface .native-production,.live-stage-surface .native-loading{background:#071117}
+.live-stage-wrap{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
+.live-stage-fade{position:absolute;inset:0;background:var(--live-bg);opacity:0;pointer-events:none;z-index:4;transition:opacity .35s ease}
+.live-stage-fade.on{opacity:1;transition:none}

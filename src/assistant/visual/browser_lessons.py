@@ -929,6 +929,10 @@ class BrowserLessonStore:
                         'artwork':'Array of 6–16 SVG primitive objects in 100x100 space (paths, vectors, geometric shapes, equation text labels) constructing the mechanism or proof; never markup or prose.',
                         'motion':'Array of cue-driven motion objects (dx, dy, scale, opacity) animating the interaction across the stage when cued.'},
                      'instruction':'Direct ONLY these one or two beats. Use the shared worked example. Return compact JSON; do not repeat the entire module.'}
+            if j.get('visualContract'):
+                from .visual_contract import layout_contract
+                payload['visualContract']=layout_contract(j['visualContract'])
+                payload['instruction']+=' Use visualContract palette, persistent anchors and transitions; keep the existing browser position contract.'
             if findings:
                 sec_findings=[f for f in findings if f.get('beat') in {b['id'] for b in beats}]
                 if sec_findings:payload['revisionFeedback']=sec_findings
@@ -1249,12 +1253,16 @@ replacements, only those needed.'''
             j["storyboard"] = story
             j["request"] = request
             j["revision"] = 1
+            from .visual_contract import base_contract, enrich_contract
+            j["visualContract"] = base_contract(story)
 
             j["stage"] = "Directing the layout beats"
             candidate = self._direct(j, None)
             candidate.update(id=j["lessonId"], kind="live_generated", storyboard=story,
                              generation={"provider": getattr(self.llm, "provider", type(self.llm).__name__),
                                          "model": getattr(self.llm, "visual_model", None) or getattr(self.llm, "model", None)})
+            contract = enrich_contract(j["visualContract"], candidate)
+            j["visualContract"] = contract
 
             j["stage"] = "Generating and compiling the native ManimGL scene"
             from .native_author import assemble, choose_native_beats, condense_narration, generate_scene
@@ -1262,10 +1270,11 @@ replacements, only those needed.'''
             nodes_by_beat = {c["id"]: [n["id"] for n in (c.get("visual") or {}).get("nodes") or []]
                              for c in candidate.get("chapters") or []}
             manifest = generate_scene(self.llm, story, self._native_interpreter(), folder,
-                                      nodes_by_beat=nodes_by_beat)
+                                      nodes_by_beat=nodes_by_beat, contract=contract)
             j["stage"] = "Fitting native narration to its scene window"
             candidate = condense_narration(self.llm, candidate, manifest, native_ids)
-            lesson = assemble(candidate, story, manifest, native_ids)
+            lesson = assemble(candidate, story, manifest, native_ids, contract=contract)
+            lesson["visualContract"] = contract
             lesson["review"] = {"approved": True, "method": "native-and-layout-hybrid",
                                 "findings": [], "observations": []}
             (folder / "lesson.json").write_text(json.dumps(lesson, ensure_ascii=False, indent=2))

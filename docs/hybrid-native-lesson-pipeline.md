@@ -343,6 +343,30 @@ reported as a collision.
 Further layout fixes (label collisions) should be reported by the audit or
 frame review, not silently rewritten.
 
+### 5.7 Shared visual contract and chapter transitions
+
+`visual_contract.py` gives the native Manim scene and the browser-layout
+chapters one shared description of the lesson:
+
+- palette (`blue`, `gold`, `green`, `coral`, `purple`, ink/muted/background),
+- typography scale,
+- Manim-frame zones (`title`, `left`, `right`, `full`, `caption`),
+- persistent anchors (`title`, and `timeline`/`era_tag` when the story has
+  years),
+- per-beat zone, focal cap, enter/exit object IDs and camera,
+- opening/closing fades and a transition for every chapter boundary.
+
+`_generate_hybrid` builds the base contract before direction and enriches it
+with the layout Director's node IDs. The native prompt receives the contract;
+the layout Director also receives it as `visualContract`. `assemble` attaches a
+fade transition to each chapter and stores the contract on the lesson.
+
+The player fades the stage through the background when the chapter changes, so
+native→layout and layout→native switches do not appear as an instant pop. The
+native prompt additionally requires a short opening fade and a closing hold or
+fade inside the scene itself.
+
+
 ---
 
 ## 6. Scene registry and runtime
