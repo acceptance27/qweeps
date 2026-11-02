@@ -39,14 +39,43 @@ def cmd_visual(args) -> int:
         return 1
 
 
+def _visual_runtime(label: str, env_names: tuple[str, ...], module: str,
+                    default_paths: tuple[Path, ...]) -> None:
+    override = next((os.environ[name] for name in env_names if os.environ.get(name)), None)
+    candidates = [override, *(str(path) for path in default_paths)]
+    python = next((str(path) for path in candidates if path and Path(path).is_file()), None)
+    if not python:
+        print(f"  {label:<12} not found")
+        return
+    try:
+        probe = subprocess.run([python, "-c", f"import {module}"],
+                               capture_output=True, text=True, timeout=20)
+        ready = probe.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        ready = False
+    print(f"  {label:<12} {python} (import {module}: {'yes' if ready else 'no'})")
+
+
 def cmd_doctor(args) -> int:
     cfg = load_config()
     print(f"QWEEPS version: {__version__}")
     print(f"config dir: {cfg.config_dir}")
     print(f"config file: {cfg.config_dir / 'config.toml'} (exists={(cfg.config_dir / 'config.toml').exists()})")
     print("binaries:")
-    for name in ("agy", "mpv", "ffplay", "espeak-ng", "piper", "python3"):
+    for name in ("agy", "mpv", "ffplay", "espeak-ng", "piper", "ffmpeg",
+                 "latex", "dvisvgm", "python3"):
         print(f"  {name:<12} {'yes' if shutil.which(name) else 'no'}")
+    print("native renderers (optional):")
+    _visual_runtime(
+        "ManimGL", ("QWEEPS_MANIMGL_PYTHON",), "manimlib",
+        (Path.home() / ".local/share/qweeps/visual-venv/bin/python",
+         Path.home() / ".local/share/omarchy-assistant/visual-venv/bin/python"),
+    )
+    _visual_runtime(
+        "ManimCE", ("QWEEPS_MANIM_PYTHON", "QWEEPS_MANIM_CE_PYTHON"), "manim",
+        (Path.home() / ".local/share/qweeps/manim-ce/bin/python",
+         Path.home() / ".local/share/omarchy-assistant/manim-ce/bin/python"),
+    )
     print(f"visual provider: {cfg.llm.visual_provider or 'antigravity'}")
     print(f"visual model: {cfg.llm.visual_model}")
     print(f"vision reviewer: {cfg.llm.visual_vision_model}")

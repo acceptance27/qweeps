@@ -38,6 +38,31 @@ python -m pip install -e .
 
 If using the Zenodo ZIP, extract it and run the same environment/install commands from its root instead of cloning. Keep the checkout in place when using the editable installation.
 
+### Optional native Manim and CE export
+
+The bundled lesson and normal browser lessons do not require these. They are
+needed only for native ManimGL chapters, CE text metrics, or MP4 export.
+
+- **ManimGL runtime:** a separate Python environment containing `manimlib` and
+  a working OpenGL context, at `~/.local/share/qweeps/visual-venv` or
+  `~/.local/share/omarchy-assistant/visual-venv`. Override with
+  `QWEEPS_MANIMGL_PYTHON`. Required to compile or play native chapters.
+- **ManimCE runtime:** an optional environment containing `manim`, at
+  `~/.local/share/qweeps/manim-ce` or
+  `~/.local/share/omarchy-assistant/manim-ce`. Override with
+  `QWEEPS_MANIM_PYTHON` (or `QWEEPS_MANIM_CE_PYTHON`). Used for CE text metrics
+  and local CE renders; missing metrics fall back to native Pango metrics.
+- **ffmpeg:** required for new narration synchronization and frame review.
+- **LaTeX (`latex`, `dvisvgm`):** required only for `MathTex`/`Tex` and
+  `DecimalNumber` scenes. The 8080 CE environment may not include it.
+- **Generative Manim service:** optional, only for CE/GL MP4 export through
+  `http://127.0.0.1:8080` (`QWEEPS_GM_URL`, `QWEEPS_GM_API_KEY`,
+  `QWEEPS_GM_RENDERER`). Not required for live native playback.
+
+Run `qweeps doctor` to see which runtimes are present. The detailed setup and
+troubleshooting notes are in [visual learning](docs/visual-learning.md) and
+[native ManimGL runtime](docs/native-manimgl-runtime.md).
+
 With the default generation provider installed and configured, start the studio:
 
 ```bash
