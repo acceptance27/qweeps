@@ -61,6 +61,21 @@ def _tolerant_add_updater(self, func, **kwargs):
 Mobject.add_updater = _tolerant_add_updater
 
 
+# ManimCE names the grid extents `rows`/`cols`; ManimGL uses n_rows/n_cols.
+_orig_arrange_in_grid = Mobject.arrange_in_grid
+
+
+def _ce_arrange_in_grid(self, rows=None, cols=None, **kwargs):
+    if rows is not None:
+        kwargs.setdefault("n_rows", rows)
+    if cols is not None:
+        kwargs.setdefault("n_cols", cols)
+    return _orig_arrange_in_grid(self, **kwargs)
+
+
+Mobject.arrange_in_grid = _ce_arrange_in_grid
+
+
 FPS = 30
 DT = 1.0 / FPS
 
@@ -187,6 +202,76 @@ def CEReplacementTransformFactory(mobject, target_mobject=None, **kwargs):
 
 Transform = CETransform
 ReplacementTransform = CEReplacementTransformFactory
+
+
+class Circumscribe(AnimationGroup):
+    """CE's Circumscribe: draw a box around a mobject, then fade it out."""
+
+    def __init__(self, mobject, color=YELLOW, buff=0.1, fade_out=True,
+                 time_width=0.3, **kwargs):
+        box = SurroundingRectangle(mobject, color=color, buff=buff)
+        animations = [Create(box)]
+        if fade_out:
+            animations.append(FadeOut(box))
+        super().__init__(*animations, lag_ratio=0.5, **kwargs)
+
+
+# ManimCE calls a number line's extent `length`; ManimGL calls it `width`.
+_RealNumberLine = NumberLine
+
+
+def _ce_number_line(*args, **kwargs):
+    if "length" in kwargs:
+        kwargs.setdefault("width", kwargs.pop("length"))
+    if "stroke_color" in kwargs:
+        kwargs.setdefault("color", kwargs.pop("stroke_color"))
+    if "label_size" in kwargs:
+        size = kwargs.pop("label_size")
+        config = dict(kwargs.get("decimal_number_config") or {})
+        config.setdefault("font_size", size)
+        kwargs["decimal_number_config"] = config
+    if "label_direction" in kwargs:
+        kwargs.setdefault("line_to_number_direction", kwargs.pop("label_direction"))
+    if "label_buff" in kwargs:
+        kwargs.setdefault("line_to_number_buff", kwargs.pop("label_buff"))
+    return _RealNumberLine(*args, **kwargs)
+
+
+NumberLine = _ce_number_line
+
+
+# ManimCE's Cross may be constructed with no source mobject; ManimGL requires
+# one.  Build the two strokes directly when no mobject is supplied.
+_RealCross = Cross
+
+
+def _ce_cross(mobject=None, stroke_color=None, stroke_width=6.0,
+              scale_factor=1.0, **kwargs):
+    color = kwargs.pop("color", None) or stroke_color or "#FC6255"
+    cross = VGroup(
+        Line(UP + LEFT, DOWN + RIGHT, color=color, stroke_width=stroke_width),
+        Line(UP + RIGHT, DOWN + LEFT, color=color, stroke_width=stroke_width),
+    )
+    if mobject is not None:
+        cross.replace(mobject, stretch=True)
+    cross.scale(scale_factor)
+    return cross
+
+
+Cross = _ce_cross
+
+
+def _ce_star(n=5, outer_radius=1.0, inner_radius=0.5, density=2,
+             start_angle=PI / 2, **kwargs):
+    points = []
+    for index in range(2 * n):
+        radius = outer_radius if index % 2 == 0 else inner_radius
+        angle = start_angle + index * PI / n
+        points.append([radius * np.cos(angle), radius * np.sin(angle), 0])
+    return Polygon(*points, **kwargs)
+
+
+Star = _ce_star
 
 
 # ------------------------------------------------------------ CE color kwargs
