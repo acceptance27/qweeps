@@ -1,4 +1,4 @@
-from assistant.visual.native_author import assemble, choose_native_beats, clean_code
+from assistant.visual.native_author import assemble, choose_native_beats, clean_code, condense_narration
 
 
 def story():
@@ -79,3 +79,17 @@ class GenScene(Scene):
     assert "caption_rest = cap_dep" in cleaned
     assert "title.set_opacity(0)" in cleaned
     assert 'self.beat("x", "X")' in cleaned
+
+
+class FakeLLM:
+    def compose(self, instruction, system="", max_tokens=None, reasoning_effort=None):
+        return '{"chapters":[{"id":"resting","narration":"Resting charge waits at -70 mV."}]}'
+
+
+def test_condense_native_narration_fits_window():
+    data = lesson()
+    data["chapters"][0]["narration"] = "long " * 40
+    data["chapters"][1]["narration"] = "sum " * 30
+    result = condense_narration(FakeLLM(), data, manifest(), ["resting"])
+    assert result["chapters"][0]["narration"] == "Resting charge waits at -70 mV."
+    assert result["chapters"][1]["narration"] == "sum " * 30

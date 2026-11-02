@@ -1257,12 +1257,14 @@ replacements, only those needed.'''
                                          "model": getattr(self.llm, "visual_model", None) or getattr(self.llm, "model", None)})
 
             j["stage"] = "Generating and compiling the native ManimGL scene"
-            from .native_author import assemble, choose_native_beats, generate_scene
+            from .native_author import assemble, choose_native_beats, condense_narration, generate_scene
             native_ids = choose_native_beats(story)
             nodes_by_beat = {c["id"]: [n["id"] for n in (c.get("visual") or {}).get("nodes") or []]
                              for c in candidate.get("chapters") or []}
             manifest = generate_scene(self.llm, story, self._native_interpreter(), folder,
                                       nodes_by_beat=nodes_by_beat)
+            j["stage"] = "Fitting native narration to its scene window"
+            candidate = condense_narration(self.llm, candidate, manifest, native_ids)
             lesson = assemble(candidate, story, manifest, native_ids)
             lesson["review"] = {"approved": True, "method": "native-and-layout-hybrid",
                                 "findings": [], "observations": []}

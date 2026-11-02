@@ -146,6 +146,57 @@ def generate_scene(llm, story: dict, interpreter: str, folder: Path,
     return write_scene(source, manifest)
 
 
+
+def condense_narration(llm, lesson: dict, manifest: dict, native_ids: list[str]) -> dict:
+    """Fit native-beat narration to the scene window; layout beats keep the detail."""
+    windows = {beat["id"]: beat for beat in manifest.get("beats") or []}
+    requests = []
+    for chapter in lesson.get("chapters") or []:
+        if chapter.get("id") not in native_ids:
+            continue
+        window = windows.get(chapter["id"])
+        if not window:
+            continue
+        seconds = max(2.0, window["end"] - window["start"])
+        budget = max(10, round(seconds * 2.6))
+        words = len(str(chapter.get("narration") or "").split())
+        if words <= budget * 1.2:
+            continue
+        requests.append({
+            "id": chapter["id"],
+            "maxWords": budget,
+            "bridge": (chapter.get("continuity") or {}).get("bridge", ""),
+            "insight": chapter.get("insight", ""),
+            "narration": chapter.get("narration", ""),
+        })
+    if not requests:
+        return lesson
+    prompt = (
+        "Shorten each narration for a native animation beat. Return JSON only as "
+        '{"chapters":[{"id":"...","narration":"..."}]}. '
+        "Keep the continuity bridge at the start verbatim when supplied. Keep the "
+        "mechanism and the specific insight; remove secondary detail. Do not add "
+        "facts, do not mention the runtime, and stay within maxWords."
+    )
+    payload = json.dumps({"chapters": requests})
+    try:
+        raw = llm.compose(prompt + "\n\n" + payload, max_tokens=2500, reasoning_effort="minimal")
+    except TypeError:
+        raw = llm.compose(prompt + "\n\n" + payload)
+    raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw.strip())
+    try:
+        parsed = json.JSONDecoder().raw_decode(raw)[0]
+        shortened = {row["id"]: row["narration"] for row in parsed.get("chapters") or []}
+    except (ValueError, KeyError, TypeError):
+        return lesson
+    changed = False
+    for chapter in lesson.get("chapters") or []:
+        text = shortened.get(chapter.get("id"))
+        if isinstance(text, str) and text.strip():
+            chapter["narration"] = text.strip()
+            changed = True
+    return lesson if changed else lesson
+
 def assemble(lesson: dict, story: dict, manifest: dict, native_ids: list[str]) -> dict:
     by_id = {chapter["id"]: chapter for chapter in lesson.get("chapters") or []}
     windows = {beat["id"]: beat for beat in manifest["beats"]}

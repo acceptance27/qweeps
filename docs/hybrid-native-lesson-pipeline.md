@@ -560,10 +560,11 @@ narration cues share that id, the player maps the cue's audio time to the
 scene cue time (piecewise-linear) instead of stretching uniformly. The current
 test scene predates `self.cue`, so it uses the linear fallback.
 
-Remaining pacing work: native-beat narration is still 50–65 words for a 5–7 s
-scene window. The linear stretch keeps them aligned but makes the animation
-slow; capping native narration or moving detail into the adjacent layout beat
-is still needed.
+Native narration is now condensed to the scene window before assembly:
+`maxWords ≈ window × 2.6` (for example, 18 words for a 7 s beat). The layout
+beats retain the full explanation, so the native animation plays at its natural
+speed. The player still stretches/anchors if a lesson was prepared before the
+condense step.
 
 The initial sync attempt failed because the anchor step asked for 2,000 tokens
 while Muse Spark spent ~2.2k on reasoning and returned empty content. The budget
