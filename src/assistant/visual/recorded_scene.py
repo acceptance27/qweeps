@@ -133,6 +133,25 @@ Create = ShowCreation
 MathTex = Tex
 
 
+# AnimationGroup and its subclasses also call prepare_animation internally.
+# Convert a bare CE mobject to a draw animation there as well.
+_orig_animation_group_init = AnimationGroup.__init__
+
+
+def _ce_animation_group_init(self, *args, **kwargs):
+    def fix(value):
+        if isinstance(value, Mobject):
+            return Create(value)
+        if isinstance(value, (list, tuple)):
+            return type(value)(fix(item) for item in value)
+        return value
+
+    _orig_animation_group_init(self, *(fix(arg) for arg in args), **kwargs)
+
+
+AnimationGroup.__init__ = _ce_animation_group_init
+
+
 # ------------------------------------------------------------ CE text metrics
 # Measured by the compiler in a real ManimCE environment and keyed by
 # (text, font_size, font, weight, slant).  Pango/font differences otherwise
