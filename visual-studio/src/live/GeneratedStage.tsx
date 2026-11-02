@@ -16,8 +16,9 @@ import {diagramMotions} from './diagramMotion';
 const LiveAsset=memo(Asset);
 
 const TextBlock=memo(function TextBlock({font,text,x,y,width,height,size=23,minSize=18,className='node-copy',center=false,halo=false}:{font:Font|null;text:string;x:number;y:number;width:number;height:number;size?:number;minSize?:number;className?:string;center?:boolean;halo?:boolean}){
- const fit=fitCopy(font,text,width,height,size,minSize);
- return <g className={className} data-layout-issue={fit.overflow?`Text needs more space: ${text.slice(0,80)}`:undefined}>{fit.lines.map((line,i)=><text key={i} x={center?x+width/2:x} y={y+i*fit.size*1.36} textAnchor={center?'middle':undefined} fontSize={fit.size} style={{fontFamily:"QweepsTeachingSerif,serif"}} fill="#c9d9dd" stroke={halo?'#071117':undefined} strokeWidth={halo?4:undefined} paintOrder={halo?'stroke':undefined}>{line}</text>)}</g>;
+ const rawText=typeof text==='string'?text:(typeof text==='object'&&text?((text as any).title||(text as any).label||(text as any).text||(text as any).name||JSON.stringify(text)):String(text??''));
+ const fit=fitCopy(font,rawText,width,height,size,minSize);
+ return <g className={className} data-layout-issue={fit.overflow?`Text needs more space: ${rawText.slice(0,80)}`:undefined}>{fit.lines.map((line,i)=><text key={i} x={center?x+width/2:x} y={y+i*fit.size*1.36} textAnchor={center?'middle':undefined} fontSize={fit.size} style={{fontFamily:"QweepsTeachingSerif,serif"}} fill="#c9d9dd" stroke={halo?'#071117':undefined} strokeWidth={halo?4:undefined} paintOrder={halo?'stroke':undefined}>{line}</text>)}</g>;
 });
 function WorkedTitle({font,text,time}:{font:Font|null;text:string;time:number}){
  const fit=useMemo(()=>fitCopy(font,text,530,38,29),[font,text]);
@@ -37,12 +38,12 @@ function edgeLabelPoint(p:{from:{x:number;y:number};to:{x:number;y:number}},offs
  return{x:x+nx*offset,y:y+ny*offset};
 }
 function Chapter({lesson,c,index,font,time,snapshot,role}:{lesson:LiveLesson;c:LiveChapter;index:number;font:Font|null;time:number;snapshot:LiveSnapshot;role:(id:string)=>React.SVGProps<SVGGElement>}){
- if(c.scene)return null;
+ if(c.scene||c.renderer==='manimgl')return null;
  const v=c.visual!,textMode=v.presentation?.textMode||'descriptive',grammar=chapterGrammar(c),boxes=useMemo(()=>grammar==='cards'?nodeBoxes(v):grammarBoxes(v,grammar),[v,grammar]),copies=useMemo(()=>boxes.map(b=>nodeCopy(font,b.node,b.width,b.height,v.layout)),[boxes,font,v.layout]),active=time>=(c.visualStart??c.start)&&time<(c.visualEnd??c.end)||time>=lesson.duration&&index===lesson.chapters.length-1;
  const choice=c.visual?.experiment?.choices[snapshot.experiments?.[c.id]??-1];
  const narrating=speechTarget(c,time),narratingObjects=speechTargets(c,time);
  return <g className={`generated-beat generated-beat-${index}`} data-chapter={c.id} data-beat={index} data-teaching-method={v.presentation?.method} data-text-mode={textMode} data-narration-target={active?narrating:undefined} aria-hidden={!active} style={{pointerEvents:active?'auto':'none'}}>
-  {v.layout==='matrix'&&<g className="table-heading"><path d="M45 136H1395" stroke="#6e94a3" strokeWidth="1.4"/>{v.columns.map((col,i)=><TextBlock key={i} font={font} text={col} x={i===0?65:45+290+(i-1)*(1060/(v.columns.length-1))+18} y={120} width={i===0?250:1060/(v.columns.length-1)-35} height={11} size={22}/>)}</g>}
+  {v.layout==='matrix'&&<g className="table-heading"><path d="M45 136H1395" stroke="#6e94a3" strokeWidth="1.4"/>{v.columns.map((col:any,i)=><TextBlock key={i} font={font} text={typeof col==='string'?col:((col as any)?.title||(col as any)?.label||(col as any)?.id||'')} x={i===0?65:45+290+(i-1)*(1060/(v.columns.length-1))+18} y={120} width={i===0?250:1060/(v.columns.length-1)-35} height={11} size={22}/>)}</g>}
   {v.layout==='concept'&&!conceptUsesGrid(v)&&<g className="concept-center"><rect x="540" y="215" width="360" height="210" rx="16" fill="#182d36" stroke="#d3bd82" strokeWidth="1.5"/><LiveAsset name={lesson.example?.icon||'app'} x={685} y={235} size={70}/><TextBlock font={font} text={lesson.example?.title||'Worked example'} x={565} y={340} width={310} height={75} size={27}/></g>}
   {v.layout==='timeline'&&grammar==='cards'&&<g className="timeline-axis"><path d="M75 177H1365" stroke="#648795" strokeWidth="1.4"/><text x="1365" y="150" textAnchor="end" fill="#91a9b5" fontSize="18">Ordered events · spacing is schematic</text></g>}
   {grammar!=='cards'&&<GrammarDecor v={v} g={grammar} font={font}/>}
@@ -61,11 +62,11 @@ function Chapter({lesson,c,index,font,time,snapshot,role}:{lesson:LiveLesson;c:L
      <TextBlock font={font} text={n.title} {...diagram!.title} center={textMode==='labels'}/>
      {diagram!.showBody&&<TextBlock font={font} text={n.body} {...diagram!.body}/>}
     </>:isTable?<>
-     <g className="object-art"><LiveAsset name={n.icon} x={14} y={Math.max(7,(h-34)/2)} size={34} color={color}/></g>
+     <g className="object-art"><LiveAsset name={n.icon} context={`${n.id} ${n.title}`} x={14} y={Math.max(7,(h-34)/2)} size={34} color={color}/></g>
      <TextBlock font={font} text={n.title} x={60} y={h>62?28:24} width={210} height={h-(h>62?28:24)-5} size={21}/>
-     {n.cells?.map((cell,j)=><TextBlock key={j} font={font} text={cell} x={290+j*(1060/(v.columns.length-1))+18} y={h>62?28:24} width={1060/(v.columns.length-1)-35} height={h-(h>62?28:24)-5} size={21}/>)}
+     {n.cells?.map((cell:any,j)=><TextBlock key={j} font={font} text={typeof cell==='string'?cell:((cell as any)?.text||(cell as any)?.title||(cell as any)?.value||'')} x={290+j*(1060/(v.columns.length-1))+18} y={h>62?28:24} width={1060/(v.columns.length-1)-35} height={h-(h>62?28:24)-5} size={21}/>)}
     </>:<>
-     <g className="object-art"><LiveAsset name={n.icon} x={22} y={24} size={isConcept||v.layout==='loci'?45:62} color={color}/></g>
+     <g className="object-art"><LiveAsset name={n.icon} context={`${n.id} ${n.title}`} x={22} y={24} size={isConcept||v.layout==='loci'?45:62} color={color}/></g>
      <TextBlock font={font} text={n.title} {...copy.title}/>
      {!(v.layout==='fanin'&&textMode==='labels')&&<TextBlock font={font} text={n.body} {...copy.body}/>}
      {n.tag&&(isConcept||v.layout==='loci'?<text x={82} y={17} fontSize={14} fill={color}>{n.tag}</text>:<TextBlock font={font} text={n.tag} x={23} y={h-22} width={w-46} height={28} size={18}/>)}
@@ -82,13 +83,13 @@ export default function GeneratedStage({lesson,snapshot:s,focusRequest,update,pa
  const root=useRef<SVGSVGElement>(null),adapter=useRef<ReturnType<typeof createLessonAdapter>|null>(null),drag=useRef<{x:number;y:number;camera:LiveSnapshot['camera'];kind:'region'|'pan'}|null>(null);
  const {font,error}=useLessonFont();const[region,setRegion]=useState<LiveSnapshot['region']>(null);
  const index=visualBeatIndex(lesson.chapters,s.time),active=lesson.chapters[s.time>=lesson.duration?lesson.chapters.length-1:index],cx=720,cy=300,labelsMode=active.visual?.presentation?.textMode==='labels';
- const role=(id:string)=>({'data-role':id,'data-selected':s.selected.includes(id)?'true':'false',role:'button' as const,tabIndex:interactive&&id in active.roles?0:-1,'aria-label':`Inspect ${active.roles[id]?.split(':')[0]||id}`,
+ const role=(id:string)=>({'data-role':id,'data-selected':s.selected.includes(id)?'true':'false',role:'button' as const,tabIndex:interactive&&active.roles&&id in active.roles?0:-1,'aria-label':`Inspect ${active.roles?.[id]?.split(':')[0]||id}`,
   onKeyDown:(e:React.KeyboardEvent)=>{if(interactive&&(e.key==='Enter'||e.key===' ')){e.preventDefault();pause();update(v=>({...v,selected:[id],region:null}));}}});
  useLayoutEffect(()=>{
   if(!root.current||!font)return;const element=root.current;
   const ctx=gsap.context(()=>{const t=gsap.timeline({paused:true});t.set('.generated-beat',{opacity:0});
    lesson.chapters.forEach((c,i)=>{
-    if(c.scene)return;
+    if(c.scene||c.renderer==='manimgl')return;
     const pacing=generatedPacing(c);
     const selector=`.generated-beat-${i}`;
     const visualStart=c.visualStart??c.start;
@@ -97,7 +98,7 @@ export default function GeneratedStage({lesson,snapshot:s,focusRequest,update,pa
     traceGeometry(t,element,`${selector} .table-heading,${selector} .concept-center,${selector} .timeline-axis,${selector} .comparison-table,${selector} .trace-table,${selector} .procedure-rail`,visualStart+.3,2.5,.5);
     t.fromTo(`${selector} .table-heading text,${selector} .concept-center text,${selector} .timeline-axis text,${selector} .comparison-table text,${selector} .trace-table text,${selector} .procedure-rail text`,{opacity:0},{opacity:1,duration:.45,stagger:.12},visualStart+1);
     t.fromTo(`${selector} .route-path`,{opacity:0},{opacity:1,duration:.9},visualStart+.45);
-    c.visual!.nodes.forEach(n=>{const at=c.start+pacing.nodeAt(n.id),duration=pacing.nodeDuration(n.id),target=`${selector} [data-role="${CSS.escape(n.id)}"]`;traceGeometry(t,element,`${target} .object-frame,${target} .object-art`,at,duration,Math.min(.65,duration*.2));
+    (c.visual?.nodes || (c as any).nodes || []).forEach((n: any)=>{const at=c.start+pacing.nodeAt(n.id),duration=pacing.nodeDuration(n.id),target=`${selector} [data-role="${CSS.escape(n.id)}"]`;traceGeometry(t,element,`${target} .object-frame,${target} .object-art`,at,duration,Math.min(.65,duration*.2));
      t.fromTo(`${target} .node-copy text,${target}>text,${target} .object-art text`,{opacity:0},{opacity:1,duration:.35,stagger:.08},at+.15);
      const drawing=element.querySelector<SVGGElement>(`${target} .diagram-motion`);
      if(drawing){t.set(drawing,{x:0,y:0,scale:1,opacity:1,transformOrigin:'center center'},0);

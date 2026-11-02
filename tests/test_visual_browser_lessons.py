@@ -678,3 +678,18 @@ def test_bundled_massless_light_beats_1_to_4_pass_live_validation(library):
   'mass-energy-foundation','single-photon-barrier','colliding-photons-threshold','quantum-field-pair-creation']
  assert all(c['visual']['layout']=='diagram' for c in validated['chapters'])
 
+
+def test_bundled_p_vs_np_hybrid_lesson_loads_and_has_audio(library):
+ lib,_=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib)
+ lesson=store.lesson('b1b20bea700000000000000000000001')
+ assert lesson['id']=='b1b20bea700000000000000000000001'
+ assert len(lesson['chapters'])==20
+ assert lesson['audioTrack']['url'].startswith('/narration/')
+ master_wav=STUDIO.parent/'bundled-lessons/visual-narration'/lesson['audioTrack']['url'].split('/')[-1]
+ assert master_wav.is_file()
+ for chapter in lesson['chapters']:
+  assert chapter['audio'].startswith('/narration/')
+  chapter_mp3=STUDIO.parent/'bundled-lessons/visual-narration'/chapter['audio'].split('/')[-1]
+  assert chapter_mp3.is_file()
+
+

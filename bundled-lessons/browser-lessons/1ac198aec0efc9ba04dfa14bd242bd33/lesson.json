@@ -1,0 +1,2553 @@
+{
+  "id": "1ac198aec0efc9ba04dfa14bd242bd33",
+  "kind": "live_generated",
+  "title": "Binary Search Algorithm",
+  "question": "How does binary search find a target so quickly in sorted data?",
+  "representation": "Understanding via halving mechanism and worked trace of one array; recall via loci route of 4 steps. Shared encodings: blue sorted bar array, gold mid pointer, green found, red eliminated halves. Chain: why sorted matters -> mid mechanism -> full execution -> speed vs linear -> safe termination -> recall route.",
+  "example": {
+    "title": "Find 23 in [2,5,9,13,18,23,31,40]",
+    "description": "Learner tracks target 23 across three mids: 13 too low, 31 too high, 23 found. Same array reused in every beat.",
+    "icon": "search"
+  },
+  "chapters": [
+    {
+      "id": "sorted-rule",
+      "title": "Sorted Is Required",
+      "question": "Why must the list be sorted first?",
+      "insight": "Sorted order lets one comparison eliminate half the array; unsorted order gives no safe half to discard.",
+      "sourcePages": [],
+      "safeguard": "Do not read as binary search sorts; clarify array is already sorted before starting.",
+      "narration": "We will track 23 in one sorted array to see how binary search can discard half the work with one check. On the left blue card, the sorted row checks mid 13 against 23 and discards the left half, keeping gold 23 on the right. On the right coral card, the shuffled row makes the same discard and loses 23, marked with a cross. Order is what makes the discard safe.",
+      "continuity": {
+        "from": null,
+        "bridge": "We will track 23 in one sorted array to see how binary search can discard half the work with one check."
+      },
+      "teaching": "comparison",
+      "layout": "comparison",
+      "nodes": [
+        {
+          "id": "sorted-ok",
+          "title": "Sorted array keeps target 23",
+          "body": "Sorted [2,5,9,13,18,23,31,40], mid 13 < 23 so discard left half. Right half still holds 23, safe to continue.",
+          "icon": "check",
+          "color": "blue",
+          "at": 1.0,
+          "tag": "sorted"
+        },
+        {
+          "id": "unsorted-fail",
+          "title": "Unsorted array loses 23",
+          "body": "Same values shuffled, same mid check discards a half that actually contains 23. Target is lost, search fails.",
+          "icon": "cross",
+          "color": "coral",
+          "at": 3.0,
+          "tag": "unsorted"
+        }
+      ],
+      "connections": [
+        {
+          "from": "sorted-ok",
+          "to": "unsorted-fail",
+          "label": "contrasts with",
+          "at": 5.7
+        }
+      ],
+      "columns": [],
+      "takeaway": "Only sorted order makes half-elimination safe.",
+      "experiment": {
+        "prompt": "If mid is 13 and target 23 in sorted order, which half can you discard?",
+        "choices": [
+          {
+            "label": "Left half below mid",
+            "target": "sorted-ok",
+            "explanation": "All left values are <=13 <23, so target must be right."
+          },
+          {
+            "label": "Right half above mid",
+            "target": "unsorted-fail",
+            "explanation": "That would discard 23 itself in sorted order."
+          }
+        ]
+      },
+      "presentation": {
+        "method": "Counterfactual comparison of sorted vs unsorted elimination",
+        "why": "Shows the inference that mid < target implies right side only when ordered.",
+        "visualEvidence": "Two dossiers side-by-side: sorted array discards left half correctly; unsorted array discards side containing target, marked with cross.",
+        "textMode": "descriptive"
+      },
+      "duration": 35.27,
+      "roles": {
+        "sorted-ok": "Sorted array keeps target 23: Sorted [2,5,9,13,18,23,31,40], mid 13 < 23 so discard left half. Right half still holds 23, safe to continue.",
+        "unsorted-fail": "Unsorted array loses 23: Same values shuffled, same mid check discards a half that actually contains 23. Target is lost, search fails."
+      },
+      "visual": {
+        "layout": "comparison",
+        "nodes": [
+          {
+            "id": "sorted-ok",
+            "title": "Sorted array keeps target 23",
+            "body": "Sorted [2,5,9,13,18,23,31,40], mid 13 < 23 so discard left half. Right half still holds 23, safe to continue.",
+            "icon": "check",
+            "color": "blue",
+            "at": 1.0,
+            "tag": "sorted"
+          },
+          {
+            "id": "unsorted-fail",
+            "title": "Unsorted array loses 23",
+            "body": "Same values shuffled, same mid check discards a half that actually contains 23. Target is lost, search fails.",
+            "icon": "cross",
+            "color": "coral",
+            "at": 3.0,
+            "tag": "unsorted"
+          }
+        ],
+        "connections": [
+          {
+            "from": "sorted-ok",
+            "to": "unsorted-fail",
+            "label": "contrasts with",
+            "at": 5.7
+          }
+        ],
+        "columns": [],
+        "takeaway": "Only sorted order makes half-elimination safe.",
+        "experiment": {
+          "prompt": "If mid is 13 and target 23 in sorted order, which half can you discard?",
+          "choices": [
+            {
+              "label": "Left half below mid",
+              "target": "sorted-ok",
+              "explanation": "All left values are <=13 <23, so target must be right."
+            },
+            {
+              "label": "Right half above mid",
+              "target": "unsorted-fail",
+              "explanation": "That would discard 23 itself in sorted order."
+            }
+          ]
+        },
+        "presentation": {
+          "method": "Counterfactual comparison of sorted vs unsorted elimination",
+          "why": "Shows the inference that mid < target implies right side only when ordered.",
+          "visualEvidence": "Two dossiers side-by-side: sorted array discards left half correctly; unsorted array discards side containing target, marked with cross.",
+          "textMode": "descriptive"
+        }
+      },
+      "audio": "/narration/6bb821108d5f291048d58cb20d9f3a72c37e8470e4176b6ddb95838697392401.mp3",
+      "start": 0.0,
+      "end": 24.248,
+      "finishedAt": 23.998,
+      "visualStart": 0.0,
+      "visualEnd": 24.248,
+      "targetDuration": 24.248,
+      "narrationAt": 0.0,
+      "cues": [
+        {
+          "at": 0.2,
+          "text": "We will track 23 in one sorted array to see how binary search can discard half the work with one check."
+        },
+        {
+          "at": 7.26,
+          "text": "On the left blue card, the sorted row checks mid 13 against 23 and discards the left half, keeping gold 23 on the right."
+        },
+        {
+          "at": 15.4,
+          "text": "On the right coral card, the shuffled row makes the same discard and loses 23, marked with a cross."
+        },
+        {
+          "at": 21.82,
+          "text": "Order is what makes the discard safe."
+        }
+      ],
+      "transitionOut": 0.25,
+      "transition": {
+        "type": "fade",
+        "duration": 0.35,
+        "shared": []
+      }
+    },
+    {
+      "id": "mid-mechanism",
+      "title": "The Mid Decision",
+      "question": "How does one mid check discard half?",
+      "insight": "Compute mid=(low+high)//2, compare once, keep only the half that can still hold the target.",
+      "sourcePages": [],
+      "safeguard": "Prevent off-by-one reading: low becomes mid+1 not mid, so checked cell is not rechecked.",
+      "narration": "Since sorted order lets us discard safely, how does one mid check decide which half to keep? On the left, the blue bar shows the full window low at 2 to high at 40, and the gold marker drops to mid 13. In the center gold circle, watch the comparison 13 < 23 light up and point right toward 23. On the right, the left cells fade and low slides past mid to 18, so only 18 to 40 remains for the next check.",
+      "continuity": {
+        "from": "sorted-rule",
+        "bridge": "Since sorted order lets us discard safely, how does one mid check decide which half to keep?"
+      },
+      "teaching": "mechanism",
+      "layout": "diagram",
+      "nodes": [
+        {
+          "id": "n-left",
+          "title": "Low-Mid-High window",
+          "body": "Full window low at 2 to high at 40. Gold mid lands on 13 via mid=(low+high)//2. Left cells still lit before comparison.",
+          "icon": "database",
+          "color": "blue",
+          "at": 1,
+          "tag": "low=0 high=7",
+          "position": {
+            "x": 70,
+            "y": 130,
+            "width": 380,
+            "height": 280
+          },
+          "artwork": [
+            {
+              "type": "rect",
+              "x": 8,
+              "y": 40,
+              "width": 84,
+              "height": 22,
+              "rx": 3,
+              "stroke": "blue",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 10,
+              "y": 42,
+              "width": 18,
+              "height": 18,
+              "rx": 2,
+              "stroke": "blue",
+              "fill": "blue",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 31,
+              "y": 42,
+              "width": 18,
+              "height": 18,
+              "rx": 2,
+              "stroke": "blue",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 52,
+              "y": 42,
+              "width": 18,
+              "height": 18,
+              "rx": 2,
+              "stroke": "gold",
+              "fill": "gold",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 73,
+              "y": 42,
+              "width": 17,
+              "height": 18,
+              "rx": 2,
+              "stroke": "blue",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 28,
+              "size": 8,
+              "text": "low mid high",
+              "stroke": "blue",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 78,
+              "size": 10,
+              "text": "13 < 23 ?",
+              "stroke": "blue",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "line",
+              "x1": 25,
+              "y1": 30,
+              "x2": 25,
+              "y2": 40,
+              "stroke": "blue",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "line",
+              "x1": 61,
+              "y1": 30,
+              "x2": 61,
+              "y2": 40,
+              "stroke": "gold",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "path",
+              "d": "M40 30 L50 30 L45 35 Z",
+              "stroke": "gold",
+              "fill": "gold",
+              "strokeWidth": 1.4
+            }
+          ],
+          "motion": [
+            {
+              "cue": "n-mid",
+              "dx": 0,
+              "dy": 0,
+              "scale": 1,
+              "opacity": 0.35,
+              "duration": 1.5,
+              "delay": 0
+            }
+          ]
+        },
+        {
+          "id": "n-mid",
+          "title": "Compare mid 13 < 23",
+          "body": "Gold circle reads value 13 at mid index 3. Test 13<23 is true, so target must be right. Sorted order makes this single check decisive.",
+          "icon": "search",
+          "color": "gold",
+          "at": 3,
+          "tag": "mid=3 val 13",
+          "position": {
+            "x": 530,
+            "y": 130,
+            "width": 380,
+            "height": 280
+          },
+          "artwork": [
+            {
+              "type": "circle",
+              "cx": 50,
+              "cy": 45,
+              "r": 16,
+              "stroke": "gold",
+              "fill": "gold",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 48,
+              "size": 12,
+              "text": "13",
+              "stroke": "white",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 22,
+              "size": 8,
+              "text": "mid=(0+7)//2=3",
+              "stroke": "gold",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "line",
+              "x1": 50,
+              "y1": 61,
+              "x2": 50,
+              "y2": 78,
+              "stroke": "gold",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "path",
+              "d": "M45 78 L55 78 L50 84 Z",
+              "stroke": "gold",
+              "fill": "gold",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 92,
+              "size": 9,
+              "text": "13 < 23 right",
+              "stroke": "gold",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "ellipse",
+              "cx": 75,
+              "cy": 45,
+              "rx": 12,
+              "ry": 12,
+              "stroke": "green",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 75,
+              "y": 48,
+              "size": 9,
+              "text": "23",
+              "stroke": "green",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "line",
+              "x1": 62,
+              "y1": 45,
+              "x2": 66,
+              "y2": 45,
+              "stroke": "coral",
+              "fill": "none",
+              "strokeWidth": 1.4
+            }
+          ],
+          "motion": [
+            {
+              "cue": "n-mid",
+              "dx": 0,
+              "dy": 6,
+              "scale": 1.15,
+              "opacity": 1,
+              "duration": 1.2,
+              "delay": 0.2
+            }
+          ]
+        },
+        {
+          "id": "n-keep",
+          "title": "Keep right, move low",
+          "body": "Left half fades and is dropped. Low jumps to mid+1 at 18. Remaining window 18 to 40 can still hold 23 and is half the size.",
+          "icon": "check",
+          "color": "green",
+          "at": 6,
+          "tag": "low=4",
+          "position": {
+            "x": 990,
+            "y": 130,
+            "width": 380,
+            "height": 280
+          },
+          "artwork": [
+            {
+              "type": "rect",
+              "x": 8,
+              "y": 40,
+              "width": 84,
+              "height": 22,
+              "rx": 3,
+              "stroke": "coral",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 10,
+              "y": 42,
+              "width": 18,
+              "height": 18,
+              "rx": 2,
+              "stroke": "coral",
+              "fill": "coral",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 31,
+              "y": 42,
+              "width": 18,
+              "height": 18,
+              "rx": 2,
+              "stroke": "coral",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 52,
+              "y": 42,
+              "width": 18,
+              "height": 18,
+              "rx": 2,
+              "stroke": "blue",
+              "fill": "blue",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 73,
+              "y": 42,
+              "width": 17,
+              "height": 18,
+              "rx": 2,
+              "stroke": "blue",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 28,
+              "size": 8,
+              "text": "low=mid+1",
+              "stroke": "green",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "line",
+              "x1": 20,
+              "y1": 70,
+              "x2": 80,
+              "y2": 70,
+              "stroke": "coral",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "path",
+              "d": "M60 66 L80 70 L60 74 Z",
+              "stroke": "blue",
+              "fill": "blue",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 88,
+              "size": 9,
+              "text": "keep [18..40]",
+              "stroke": "green",
+              "fill": "none",
+              "strokeWidth": 1.4
+            }
+          ],
+          "motion": [
+            {
+              "cue": "n-keep",
+              "dx": 18,
+              "dy": 0,
+              "scale": 1,
+              "opacity": 1,
+              "duration": 1.5,
+              "delay": 0
+            }
+          ]
+        }
+      ],
+      "connections": [
+        {
+          "from": "n-left",
+          "to": "n-mid",
+          "label": "compute mid",
+          "at": 5.7
+        },
+        {
+          "from": "n-mid",
+          "to": "n-keep",
+          "label": "discard left",
+          "at": 8.7
+        }
+      ],
+      "columns": [],
+      "takeaway": "13<23 discards left half; low moves to mid+1, halving the search.",
+      "experiment": {
+        "prompt": "If mid value 13 < target 23, which half can still hold 23?",
+        "choices": [
+          {
+            "label": "Right half 18..40",
+            "target": "n-keep",
+            "explanation": "Sorted order means all left values <=13 <23, so only right can hold it."
+          },
+          {
+            "label": "Left half 2..9",
+            "target": "n-left",
+            "explanation": "That half is all <23 after the check, already ruled out."
+          }
+        ]
+      },
+      "presentation": {
+        "method": "Mechanism demonstration with low-mid-high pointers",
+        "why": "Makes the three-way branch visible as spatial elimination rather than abstract ifs.",
+        "visualEvidence": "Low, mid, high markers converge; mid 13 < 23 lights up, left half fades and right half remains, low moves past mid.",
+        "textMode": "labels"
+      },
+      "duration": 41.18,
+      "roles": {
+        "n-left": "Low-Mid-High window: Full window low at 2 to high at 40. Gold mid lands on 13 via mid=(low+high)//2. Left cells still lit before comparison.",
+        "n-mid": "Compare mid 13 < 23: Gold circle reads value 13 at mid index 3. Test 13<23 is true, so target must be right. Sorted order makes this single check decisive.",
+        "n-keep": "Keep right, move low: Left half fades and is dropped. Low jumps to mid+1 at 18. Remaining window 18 to 40 can still hold 23 and is half the size."
+      },
+      "visual": {
+        "layout": "diagram",
+        "nodes": [
+          {
+            "id": "n-left",
+            "title": "Low-Mid-High window",
+            "body": "Full window low at 2 to high at 40. Gold mid lands on 13 via mid=(low+high)//2. Left cells still lit before comparison.",
+            "icon": "database",
+            "color": "blue",
+            "at": 1,
+            "tag": "low=0 high=7",
+            "position": {
+              "x": 70,
+              "y": 130,
+              "width": 380,
+              "height": 280
+            },
+            "artwork": [
+              {
+                "type": "rect",
+                "x": 8,
+                "y": 40,
+                "width": 84,
+                "height": 22,
+                "rx": 3,
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 10,
+                "y": 42,
+                "width": 18,
+                "height": 18,
+                "rx": 2,
+                "stroke": "blue",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 31,
+                "y": 42,
+                "width": 18,
+                "height": 18,
+                "rx": 2,
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 52,
+                "y": 42,
+                "width": 18,
+                "height": 18,
+                "rx": 2,
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 73,
+                "y": 42,
+                "width": 17,
+                "height": 18,
+                "rx": 2,
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 28,
+                "size": 8,
+                "text": "low mid high",
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 78,
+                "size": 10,
+                "text": "13 < 23 ?",
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 25,
+                "y1": 30,
+                "x2": 25,
+                "y2": 40,
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 61,
+                "y1": 30,
+                "x2": 61,
+                "y2": 40,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M40 30 L50 30 L45 35 Z",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "n-mid",
+                "dx": 0,
+                "dy": 0,
+                "scale": 1,
+                "opacity": 0.35,
+                "duration": 1.5,
+                "delay": 0
+              }
+            ]
+          },
+          {
+            "id": "n-mid",
+            "title": "Compare mid 13 < 23",
+            "body": "Gold circle reads value 13 at mid index 3. Test 13<23 is true, so target must be right. Sorted order makes this single check decisive.",
+            "icon": "search",
+            "color": "gold",
+            "at": 3,
+            "tag": "mid=3 val 13",
+            "position": {
+              "x": 530,
+              "y": 130,
+              "width": 380,
+              "height": 280
+            },
+            "artwork": [
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 45,
+                "r": 16,
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 48,
+                "size": 12,
+                "text": "13",
+                "stroke": "white",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 22,
+                "size": 8,
+                "text": "mid=(0+7)//2=3",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 50,
+                "y1": 61,
+                "x2": 50,
+                "y2": 78,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M45 78 L55 78 L50 84 Z",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 92,
+                "size": 9,
+                "text": "13 < 23 right",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "ellipse",
+                "cx": 75,
+                "cy": 45,
+                "rx": 12,
+                "ry": 12,
+                "stroke": "green",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 75,
+                "y": 48,
+                "size": 9,
+                "text": "23",
+                "stroke": "green",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 62,
+                "y1": 45,
+                "x2": 66,
+                "y2": 45,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "n-mid",
+                "dx": 0,
+                "dy": 6,
+                "scale": 1.15,
+                "opacity": 1,
+                "duration": 1.2,
+                "delay": 0.2
+              }
+            ]
+          },
+          {
+            "id": "n-keep",
+            "title": "Keep right, move low",
+            "body": "Left half fades and is dropped. Low jumps to mid+1 at 18. Remaining window 18 to 40 can still hold 23 and is half the size.",
+            "icon": "check",
+            "color": "green",
+            "at": 6,
+            "tag": "low=4",
+            "position": {
+              "x": 990,
+              "y": 130,
+              "width": 380,
+              "height": 280
+            },
+            "artwork": [
+              {
+                "type": "rect",
+                "x": 8,
+                "y": 40,
+                "width": 84,
+                "height": 22,
+                "rx": 3,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 10,
+                "y": 42,
+                "width": 18,
+                "height": 18,
+                "rx": 2,
+                "stroke": "coral",
+                "fill": "coral",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 31,
+                "y": 42,
+                "width": 18,
+                "height": 18,
+                "rx": 2,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 52,
+                "y": 42,
+                "width": 18,
+                "height": 18,
+                "rx": 2,
+                "stroke": "blue",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 73,
+                "y": 42,
+                "width": 17,
+                "height": 18,
+                "rx": 2,
+                "stroke": "blue",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 28,
+                "size": 8,
+                "text": "low=mid+1",
+                "stroke": "green",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 20,
+                "y1": 70,
+                "x2": 80,
+                "y2": 70,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M60 66 L80 70 L60 74 Z",
+                "stroke": "blue",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 88,
+                "size": 9,
+                "text": "keep [18..40]",
+                "stroke": "green",
+                "fill": "none",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "n-keep",
+                "dx": 18,
+                "dy": 0,
+                "scale": 1,
+                "opacity": 1,
+                "duration": 1.5,
+                "delay": 0
+              }
+            ]
+          }
+        ],
+        "connections": [
+          {
+            "from": "n-left",
+            "to": "n-mid",
+            "label": "compute mid",
+            "at": 5.7
+          },
+          {
+            "from": "n-mid",
+            "to": "n-keep",
+            "label": "discard left",
+            "at": 8.7
+          }
+        ],
+        "columns": [],
+        "takeaway": "13<23 discards left half; low moves to mid+1, halving the search.",
+        "experiment": {
+          "prompt": "If mid value 13 < target 23, which half can still hold 23?",
+          "choices": [
+            {
+              "label": "Right half 18..40",
+              "target": "n-keep",
+              "explanation": "Sorted order means all left values <=13 <23, so only right can hold it."
+            },
+            {
+              "label": "Left half 2..9",
+              "target": "n-left",
+              "explanation": "That half is all <23 after the check, already ruled out."
+            }
+          ]
+        },
+        "presentation": {
+          "method": "Mechanism demonstration with low-mid-high pointers",
+          "why": "Makes the three-way branch visible as spatial elimination rather than abstract ifs.",
+          "visualEvidence": "Low, mid, high markers converge; mid 13 < 23 lights up, left half fades and right half remains, low moves past mid.",
+          "textMode": "labels"
+        }
+      },
+      "audio": "/narration/3e48af4c4918831cb4e9fe2c3b87d349c92377bedf82ba61440bfbd28ad2b4a9.mp3",
+      "start": 24.248,
+      "end": 51.3,
+      "finishedAt": 51.05,
+      "visualStart": 24.248,
+      "visualEnd": 51.3,
+      "targetDuration": 27.052,
+      "narrationAt": 0.0,
+      "cues": [
+        {
+          "at": 0.0,
+          "text": "Since sorted order lets us discard safely, how does one mid check decide which half to keep?"
+        },
+        {
+          "at": 6.18,
+          "text": "On the left, the blue bar shows the full window low at 2 to high at 40, and the gold marker drops to mid 13."
+        },
+        {
+          "at": 13.04,
+          "text": "In the center gold circle, watch the comparison 13 < 23 light up and point right toward 23."
+        },
+        {
+          "at": 19.64,
+          "text": "On the right, the left cells fade and low slides past mid to 18, so only 18 to 40 remains for the next check."
+        }
+      ],
+      "transitionOut": 0.25,
+      "transition": {
+        "from": "sorted-rule",
+        "to": "mid-mechanism",
+        "type": "fade",
+        "duration": 0.28,
+        "shared": []
+      }
+    },
+    {
+      "id": "worked-trace",
+      "title": "Two Checks to 23",
+      "question": "What happens step by step on our example?",
+      "insight": "Mid 3 is 13 <23 so low becomes 4, then mid 5 is 23 ==23 so return index 5 and stop in 2 checks.",
+      "sourcePages": [],
+      "safeguard": "Do not imply always 2 steps; steps depend on size and position, this is illustrative case.",
+      "narration": "We saw one discard of half, now we follow the same array through both mids until 23 is found. On the left card, the blue row shows 2 to 40 with the gold marker on 13; watch the left four cells fade red as low jumps to 18. In the right card, the narrowed window holds 18, 23, 31, 40 with gold on 23; that cell fills green with a check and the search stops at index 5.",
+      "continuity": {
+        "from": "mid-mechanism",
+        "bridge": "We saw one discard of half, now we follow the same array through both mids until 23 is found."
+      },
+      "teaching": "algorithm",
+      "layout": "timeline",
+      "nodes": [
+        {
+          "id": "s1",
+          "title": "Step 1: mid 13 is too low",
+          "body": "Low 0 high 7 gives mid 3 value 13. Since 13 < 23, discard left half. New low becomes 4. Window is now indices 4 to 7.",
+          "icon": "search",
+          "color": "gold",
+          "at": 1,
+          "tag": "low 0 high 7 mid 3"
+        },
+        {
+          "id": "s2",
+          "title": "Step 2: mid 23 matches target",
+          "body": "Low 4 high 7 gives mid 5 value 23. Since 23 equals target, return index 5 and stop. Found in 2 checks for this case.",
+          "icon": "check",
+          "color": "green",
+          "at": 11,
+          "tag": "low 4 high 7 mid 5"
+        }
+      ],
+      "connections": [
+        {
+          "from": "s1",
+          "to": "s2",
+          "label": "low moves right",
+          "at": 13.7
+        }
+      ],
+      "columns": [],
+      "takeaway": "Two mids 13, 23 narrow window to index 5 and stop on equality.",
+      "experiment": {
+        "prompt": "With the same start, if the target were 31, what happens at the second mid?",
+        "choices": [
+          {
+            "label": "Mid 5 is 23 < 31, so low becomes 6 and continue",
+            "target": "s2",
+            "explanation": "Correct: (4+7)//2=5 value 23 is still too low for 31, so keep right side."
+          },
+          {
+            "label": "Return index 5 as found",
+            "target": "s1",
+            "explanation": "Wrong: index 5 holds 23, not 31, so equality fails and search must continue."
+          }
+        ]
+      },
+      "presentation": {
+        "method": "Worked execution trace",
+        "why": "Executes actual changing low/high/mid state so learner follows the loop, not just the idea.",
+        "visualEvidence": "Timeline stages 1-2 highlight successive mids 13 then 23 with narrowing window; final stage fills 23 green with check.",
+        "textMode": "descriptive"
+      },
+      "duration": 38.45,
+      "roles": {
+        "s1": "Step 1: mid 13 is too low: Low 0 high 7 gives mid 3 value 13. Since 13 < 23, discard left half. New low becomes 4. Window is now indices 4 to 7.",
+        "s2": "Step 2: mid 23 matches target: Low 4 high 7 gives mid 5 value 23. Since 23 equals target, return index 5 and stop. Found in 2 checks for this case."
+      },
+      "visual": {
+        "layout": "timeline",
+        "nodes": [
+          {
+            "id": "s1",
+            "title": "Step 1: mid 13 is too low",
+            "body": "Low 0 high 7 gives mid 3 value 13. Since 13 < 23, discard left half. New low becomes 4. Window is now indices 4 to 7.",
+            "icon": "search",
+            "color": "gold",
+            "at": 1,
+            "tag": "low 0 high 7 mid 3"
+          },
+          {
+            "id": "s2",
+            "title": "Step 2: mid 23 matches target",
+            "body": "Low 4 high 7 gives mid 5 value 23. Since 23 equals target, return index 5 and stop. Found in 2 checks for this case.",
+            "icon": "check",
+            "color": "green",
+            "at": 11,
+            "tag": "low 4 high 7 mid 5"
+          }
+        ],
+        "connections": [
+          {
+            "from": "s1",
+            "to": "s2",
+            "label": "low moves right",
+            "at": 13.7
+          }
+        ],
+        "columns": [],
+        "takeaway": "Two mids 13, 23 narrow window to index 5 and stop on equality.",
+        "experiment": {
+          "prompt": "With the same start, if the target were 31, what happens at the second mid?",
+          "choices": [
+            {
+              "label": "Mid 5 is 23 < 31, so low becomes 6 and continue",
+              "target": "s2",
+              "explanation": "Correct: (4+7)//2=5 value 23 is still too low for 31, so keep right side."
+            },
+            {
+              "label": "Return index 5 as found",
+              "target": "s1",
+              "explanation": "Wrong: index 5 holds 23, not 31, so equality fails and search must continue."
+            }
+          ]
+        },
+        "presentation": {
+          "method": "Worked execution trace",
+          "why": "Executes actual changing low/high/mid state so learner follows the loop, not just the idea.",
+          "visualEvidence": "Timeline stages 1-2 highlight successive mids 13 then 23 with narrowing window; final stage fills 23 green with check.",
+          "textMode": "descriptive"
+        }
+      },
+      "audio": "/narration/9f8c2b90c7fc9d5b88a6acaa5553802a25bd51ffa1a87cf91695794400263c74.mp3",
+      "start": 51.3,
+      "end": 78.117,
+      "finishedAt": 77.867,
+      "visualStart": 51.3,
+      "visualEnd": 78.117,
+      "targetDuration": 26.817,
+      "narrationAt": 0.0,
+      "cues": [
+        {
+          "at": 0.0,
+          "text": "We saw one discard of half, now we follow the same array through both mids until 23 is found."
+        },
+        {
+          "at": 6.58,
+          "text": "On the left card, the blue row shows 2 to 40 with the gold marker on 13; watch the left four cells fade red as low jumps to 18."
+        },
+        {
+          "at": 15.12,
+          "text": "In the right card, the narrowed window holds 18, 23, 31, 40 with gold on 23; that cell fills green with a check and the search stops at index 5."
+        }
+      ],
+      "transitionOut": 0.25,
+      "transition": {
+        "from": "mid-mechanism",
+        "to": "worked-trace",
+        "type": "fade",
+        "duration": 0.28,
+        "shared": []
+      }
+    },
+    {
+      "id": "speed-halving",
+      "title": "Why Halving Is Fast",
+      "question": "How much faster than checking one by one?",
+      "insight": "Each step halves n 8->4->2->1, so worst case 4 checks for n=8; ~log2 n checks, so 1M items need about 20 vs 1M linear.",
+      "sourcePages": [],
+      "safeguard": "Not constant time; checks grow slowly with n and list must already be sorted.",
+      "narration": "We found 23 in 2 checks instead of 6 scans, so how does that saving scale to large lists? On the left, watch the blue 8-cell bar halve to four, then two, then one as gold mid arrows strike, with worst case 40 needing mids 13, 23, 31, 40. In the center, the flat gold log curve stays low while the steep red line climbs. On the right, the tall red 1M bar towers over the tiny green 20 bar.",
+      "continuity": {
+        "from": "worked-trace",
+        "bridge": "We found 23 in 2 checks instead of 6 scans, so how does that saving scale to large lists?"
+      },
+      "teaching": "quantitative",
+      "layout": "diagram",
+      "nodes": [
+        {
+          "id": "halve-8",
+          "title": "n=8 needs at most 4",
+          "body": "Worst case target 40 uses mids 13, 23, 31, 40 as window shrinks 8 to 4 to 2 to 1, four checks total.",
+          "icon": "database",
+          "color": "blue",
+          "at": 1.0,
+          "tag": "8 items",
+          "position": {
+            "x": 70,
+            "y": 140,
+            "width": 420,
+            "height": 300
+          },
+          "artwork": [
+            {
+              "type": "rect",
+              "x": 6,
+              "y": 12,
+              "width": 88,
+              "height": 12,
+              "rx": 2,
+              "stroke": "blue",
+              "fill": "blue",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 8,
+              "size": 8,
+              "text": "8 cells",
+              "stroke": "none",
+              "fill": "blue",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 52,
+              "y": 30,
+              "width": 42,
+              "height": 12,
+              "rx": 2,
+              "stroke": "blue",
+              "fill": "blue",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 6,
+              "y": 30,
+              "width": 42,
+              "height": 12,
+              "rx": 2,
+              "stroke": "coral",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "line",
+              "x1": 35,
+              "y1": 12,
+              "x2": 35,
+              "y2": 30,
+              "stroke": "gold",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "path",
+              "d": "M 31 26 L 39 26 L 35 30 Z",
+              "stroke": "gold",
+              "fill": "gold",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 63,
+              "y": 48,
+              "width": 20,
+              "height": 12,
+              "rx": 2,
+              "stroke": "blue",
+              "fill": "blue",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 52,
+              "y": 48,
+              "width": 9,
+              "height": 12,
+              "rx": 2,
+              "stroke": "coral",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 70,
+              "size": 7,
+              "text": "13 < 23 < 31 path",
+              "stroke": "none",
+              "fill": "gold",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 78,
+              "y": 76,
+              "width": 10,
+              "height": 10,
+              "rx": 2,
+              "stroke": "green",
+              "fill": "green",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 94,
+              "size": 8,
+              "text": "8→4→2→1 = 4 max",
+              "stroke": "none",
+              "fill": "green",
+              "strokeWidth": 1.4
+            }
+          ],
+          "motion": [
+            {
+              "cue": "halve-8",
+              "dx": 0,
+              "dy": 0,
+              "scale": 1,
+              "opacity": 1,
+              "duration": 1.5,
+              "delay": 0
+            }
+          ]
+        },
+        {
+          "id": "halve-log",
+          "title": "log2 n stays flat",
+          "body": "Doubling n adds only one check, so gold log curve stays flat while red linear scan climbs steeply with n.",
+          "icon": "zap",
+          "color": "gold",
+          "at": 3.0,
+          "tag": "log2 n",
+          "position": {
+            "x": 510,
+            "y": 140,
+            "width": 420,
+            "height": 300
+          },
+          "artwork": [
+            {
+              "type": "line",
+              "x1": 10,
+              "y1": 88,
+              "x2": 90,
+              "y2": 88,
+              "stroke": "muted",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "line",
+              "x1": 10,
+              "y1": 88,
+              "x2": 10,
+              "y2": 10,
+              "stroke": "muted",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "path",
+              "d": "M 10 83 Q 30 60 50 45 T 90 20",
+              "stroke": "coral",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "path",
+              "d": "M 10 83 Q 32 32 52 24 T 90 16",
+              "stroke": "gold",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 96,
+              "size": 9,
+              "text": "n",
+              "stroke": "none",
+              "fill": "muted",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 70,
+              "y": 32,
+              "size": 7,
+              "text": "n linear",
+              "stroke": "none",
+              "fill": "coral",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 70,
+              "y": 12,
+              "size": 7,
+              "text": "log2 n",
+              "stroke": "none",
+              "fill": "gold",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "circle",
+              "cx": 50,
+              "cy": 30,
+              "r": 3,
+              "stroke": "gold",
+              "fill": "white",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "circle",
+              "cx": 50,
+              "cy": 45,
+              "r": 3,
+              "stroke": "coral",
+              "fill": "white",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "line",
+              "x1": 50,
+              "y1": 30,
+              "x2": 50,
+              "y2": 45,
+              "stroke": "muted",
+              "fill": "none",
+              "strokeWidth": 1.4
+            }
+          ],
+          "motion": [
+            {
+              "cue": "halve-log",
+              "dx": 0,
+              "dy": 0,
+              "scale": 1,
+              "opacity": 1,
+              "duration": 1.8,
+              "delay": 0.5
+            }
+          ]
+        },
+        {
+          "id": "big-compare",
+          "title": "1M: 20 vs 1,000,000",
+          "body": "One million sorted items need about 20 halving checks, while one-by-one scan needs up to one million checks.",
+          "icon": "search",
+          "color": "green",
+          "at": 5.0,
+          "tag": "n=1M",
+          "position": {
+            "x": 950,
+            "y": 140,
+            "width": 420,
+            "height": 300
+          },
+          "artwork": [
+            {
+              "type": "rect",
+              "x": 12,
+              "y": 10,
+              "width": 18,
+              "height": 75,
+              "rx": 2,
+              "stroke": "coral",
+              "fill": "coral",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "rect",
+              "x": 60,
+              "y": 77,
+              "width": 18,
+              "height": 8,
+              "rx": 2,
+              "stroke": "green",
+              "fill": "green",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 21,
+              "y": 93,
+              "size": 8,
+              "text": "1M",
+              "stroke": "none",
+              "fill": "coral",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 69,
+              "y": 93,
+              "size": 8,
+              "text": "20",
+              "stroke": "none",
+              "fill": "green",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 50,
+              "y": 6,
+              "size": 8,
+              "text": "linear vs binary",
+              "stroke": "none",
+              "fill": "muted",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "line",
+              "x1": 35,
+              "y1": 40,
+              "x2": 55,
+              "y2": 72,
+              "stroke": "muted",
+              "fill": "none",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "path",
+              "d": "M 52 68 L 58 72 L 53 76 Z",
+              "stroke": "muted",
+              "fill": "muted",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "text",
+              "x": 21,
+              "y": 25,
+              "size": 9,
+              "text": "◉",
+              "stroke": "none",
+              "fill": "white",
+              "strokeWidth": 1.4
+            },
+            {
+              "type": "circle",
+              "cx": 69,
+              "cy": 65,
+              "r": 4,
+              "stroke": "green",
+              "fill": "white",
+              "strokeWidth": 1.4
+            }
+          ],
+          "motion": [
+            {
+              "cue": "big-compare",
+              "dx": 0,
+              "dy": -10,
+              "scale": 1,
+              "opacity": 1,
+              "duration": 1.5,
+              "delay": 1
+            }
+          ]
+        }
+      ],
+      "connections": [
+        {
+          "from": "halve-8",
+          "to": "halve-log",
+          "label": "halves to log",
+          "at": 5.7
+        },
+        {
+          "from": "halve-log",
+          "to": "big-compare",
+          "label": "scales to 1M",
+          "at": 7.7
+        }
+      ],
+      "columns": [],
+      "takeaway": "8 needs at most 4, 1M about 20, not 1M.",
+      "experiment": {
+        "prompt": "Finding 40 in the 8-array needs how many checks?",
+        "choices": [
+          {
+            "label": "4 checks",
+            "target": "halve-8",
+            "explanation": "Mids 13, 23, 31, 40 shrink 8 to 4 to 2 to 1."
+          },
+          {
+            "label": "8 checks",
+            "target": "big-compare",
+            "explanation": "That is linear scanning, not halving."
+          }
+        ]
+      },
+      "presentation": {
+        "method": "Quantitative halving bar visualization",
+        "why": "Turns repeated halving into shrinking bars to justify logarithmic growth.",
+        "visualEvidence": "Left blue bar halves 8 to 4 to 2 to 1 with gold mids; center flat gold log curve vs steep red linear; right tall red 1M bar vs tiny green 20 bar.",
+        "textMode": "labels"
+      },
+      "duration": 39.359999999999985,
+      "roles": {
+        "halve-8": "n=8 needs at most 4: Worst case target 40 uses mids 13, 23, 31, 40 as window shrinks 8 to 4 to 2 to 1, four checks total.",
+        "halve-log": "log2 n stays flat: Doubling n adds only one check, so gold log curve stays flat while red linear scan climbs steeply with n.",
+        "big-compare": "1M: 20 vs 1,000,000: One million sorted items need about 20 halving checks, while one-by-one scan needs up to one million checks."
+      },
+      "visual": {
+        "layout": "diagram",
+        "nodes": [
+          {
+            "id": "halve-8",
+            "title": "n=8 needs at most 4",
+            "body": "Worst case target 40 uses mids 13, 23, 31, 40 as window shrinks 8 to 4 to 2 to 1, four checks total.",
+            "icon": "database",
+            "color": "blue",
+            "at": 1.0,
+            "tag": "8 items",
+            "position": {
+              "x": 70,
+              "y": 140,
+              "width": 420,
+              "height": 300
+            },
+            "artwork": [
+              {
+                "type": "rect",
+                "x": 6,
+                "y": 12,
+                "width": 88,
+                "height": 12,
+                "rx": 2,
+                "stroke": "blue",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 8,
+                "size": 8,
+                "text": "8 cells",
+                "stroke": "none",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 52,
+                "y": 30,
+                "width": 42,
+                "height": 12,
+                "rx": 2,
+                "stroke": "blue",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 6,
+                "y": 30,
+                "width": 42,
+                "height": 12,
+                "rx": 2,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 35,
+                "y1": 12,
+                "x2": 35,
+                "y2": 30,
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M 31 26 L 39 26 L 35 30 Z",
+                "stroke": "gold",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 63,
+                "y": 48,
+                "width": 20,
+                "height": 12,
+                "rx": 2,
+                "stroke": "blue",
+                "fill": "blue",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 52,
+                "y": 48,
+                "width": 9,
+                "height": 12,
+                "rx": 2,
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 70,
+                "size": 7,
+                "text": "13 < 23 < 31 path",
+                "stroke": "none",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 78,
+                "y": 76,
+                "width": 10,
+                "height": 10,
+                "rx": 2,
+                "stroke": "green",
+                "fill": "green",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 94,
+                "size": 8,
+                "text": "8→4→2→1 = 4 max",
+                "stroke": "none",
+                "fill": "green",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "halve-8",
+                "dx": 0,
+                "dy": 0,
+                "scale": 1,
+                "opacity": 1,
+                "duration": 1.5,
+                "delay": 0
+              }
+            ]
+          },
+          {
+            "id": "halve-log",
+            "title": "log2 n stays flat",
+            "body": "Doubling n adds only one check, so gold log curve stays flat while red linear scan climbs steeply with n.",
+            "icon": "zap",
+            "color": "gold",
+            "at": 3.0,
+            "tag": "log2 n",
+            "position": {
+              "x": 510,
+              "y": 140,
+              "width": 420,
+              "height": 300
+            },
+            "artwork": [
+              {
+                "type": "line",
+                "x1": 10,
+                "y1": 88,
+                "x2": 90,
+                "y2": 88,
+                "stroke": "muted",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 10,
+                "y1": 88,
+                "x2": 10,
+                "y2": 10,
+                "stroke": "muted",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M 10 83 Q 30 60 50 45 T 90 20",
+                "stroke": "coral",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M 10 83 Q 32 32 52 24 T 90 16",
+                "stroke": "gold",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 96,
+                "size": 9,
+                "text": "n",
+                "stroke": "none",
+                "fill": "muted",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 70,
+                "y": 32,
+                "size": 7,
+                "text": "n linear",
+                "stroke": "none",
+                "fill": "coral",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 70,
+                "y": 12,
+                "size": 7,
+                "text": "log2 n",
+                "stroke": "none",
+                "fill": "gold",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 30,
+                "r": 3,
+                "stroke": "gold",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 50,
+                "cy": 45,
+                "r": 3,
+                "stroke": "coral",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 50,
+                "y1": 30,
+                "x2": 50,
+                "y2": 45,
+                "stroke": "muted",
+                "fill": "none",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "halve-log",
+                "dx": 0,
+                "dy": 0,
+                "scale": 1,
+                "opacity": 1,
+                "duration": 1.8,
+                "delay": 0.5
+              }
+            ]
+          },
+          {
+            "id": "big-compare",
+            "title": "1M: 20 vs 1,000,000",
+            "body": "One million sorted items need about 20 halving checks, while one-by-one scan needs up to one million checks.",
+            "icon": "search",
+            "color": "green",
+            "at": 5.0,
+            "tag": "n=1M",
+            "position": {
+              "x": 950,
+              "y": 140,
+              "width": 420,
+              "height": 300
+            },
+            "artwork": [
+              {
+                "type": "rect",
+                "x": 12,
+                "y": 10,
+                "width": 18,
+                "height": 75,
+                "rx": 2,
+                "stroke": "coral",
+                "fill": "coral",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "rect",
+                "x": 60,
+                "y": 77,
+                "width": 18,
+                "height": 8,
+                "rx": 2,
+                "stroke": "green",
+                "fill": "green",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 21,
+                "y": 93,
+                "size": 8,
+                "text": "1M",
+                "stroke": "none",
+                "fill": "coral",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 69,
+                "y": 93,
+                "size": 8,
+                "text": "20",
+                "stroke": "none",
+                "fill": "green",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 50,
+                "y": 6,
+                "size": 8,
+                "text": "linear vs binary",
+                "stroke": "none",
+                "fill": "muted",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "line",
+                "x1": 35,
+                "y1": 40,
+                "x2": 55,
+                "y2": 72,
+                "stroke": "muted",
+                "fill": "none",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "path",
+                "d": "M 52 68 L 58 72 L 53 76 Z",
+                "stroke": "muted",
+                "fill": "muted",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "text",
+                "x": 21,
+                "y": 25,
+                "size": 9,
+                "text": "◉",
+                "stroke": "none",
+                "fill": "white",
+                "strokeWidth": 1.4
+              },
+              {
+                "type": "circle",
+                "cx": 69,
+                "cy": 65,
+                "r": 4,
+                "stroke": "green",
+                "fill": "white",
+                "strokeWidth": 1.4
+              }
+            ],
+            "motion": [
+              {
+                "cue": "big-compare",
+                "dx": 0,
+                "dy": -10,
+                "scale": 1,
+                "opacity": 1,
+                "duration": 1.5,
+                "delay": 1
+              }
+            ]
+          }
+        ],
+        "connections": [
+          {
+            "from": "halve-8",
+            "to": "halve-log",
+            "label": "halves to log",
+            "at": 5.7
+          },
+          {
+            "from": "halve-log",
+            "to": "big-compare",
+            "label": "scales to 1M",
+            "at": 7.7
+          }
+        ],
+        "columns": [],
+        "takeaway": "8 needs at most 4, 1M about 20, not 1M.",
+        "experiment": {
+          "prompt": "Finding 40 in the 8-array needs how many checks?",
+          "choices": [
+            {
+              "label": "4 checks",
+              "target": "halve-8",
+              "explanation": "Mids 13, 23, 31, 40 shrink 8 to 4 to 2 to 1."
+            },
+            {
+              "label": "8 checks",
+              "target": "big-compare",
+              "explanation": "That is linear scanning, not halving."
+            }
+          ]
+        },
+        "presentation": {
+          "method": "Quantitative halving bar visualization",
+          "why": "Turns repeated halving into shrinking bars to justify logarithmic growth.",
+          "visualEvidence": "Left blue bar halves 8 to 4 to 2 to 1 with gold mids; center flat gold log curve vs steep red linear; right tall red 1M bar vs tiny green 20 bar.",
+          "textMode": "labels"
+        }
+      },
+      "audio": "/narration/914eed781f342a032423a75c276fdc4633e5fb5d0c71e06d3fa3d95eb91f9c54.mp3",
+      "start": 78.117,
+      "end": 106.71,
+      "finishedAt": 106.46,
+      "visualStart": 78.117,
+      "visualEnd": 106.71,
+      "targetDuration": 28.593,
+      "narrationAt": 0.0,
+      "cues": [
+        {
+          "at": 0.0,
+          "text": "We found 23 in 2 checks instead of 6 scans, so how does that saving scale to large lists?"
+        },
+        {
+          "at": 6.42,
+          "text": "On the left, watch the blue 8-cell bar halve to four, then two, then one as gold mid arrows strike, with worst case 40 needing mids 13, 23, 31, 40."
+        },
+        {
+          "at": 18.42,
+          "text": "In the center, the flat gold log curve stays low while the steep red line climbs."
+        },
+        {
+          "at": 23.62,
+          "text": "On the right, the tall red 1M bar towers over the tiny green 20 bar."
+        }
+      ],
+      "transitionOut": 0.25,
+      "transition": {
+        "from": "worked-trace",
+        "to": "speed-halving",
+        "type": "fade",
+        "duration": 0.28,
+        "shared": []
+      }
+    },
+    {
+      "id": "termination",
+      "title": "When to Stop",
+      "question": "When do we stop and report not found?",
+      "insight": "Stop on equality found, or when low>high meaning window empty; update with mid+1/mid-1 to guarantee progress.",
+      "sourcePages": [],
+      "safeguard": "Keep (low+high)//2 and low<=high loop; always use mid+1/mid-1 to guarantee progress and avoid infinite loop.",
+      "narration": "Halving is fast only if it always ends, so what guarantees binary search terminates correctly? On the left, the blue Compare card computes mid equals low plus high over two, next the gold card shows 13 less than 23 pushing low to 4, next the coral card shows the too-high shrink for absent 7, and on the right the green exit card lights when mid hits 23 at index 5 while low passing high signals empty for 7 after 13, 5, 9.",
+      "continuity": {
+        "from": "speed-halving",
+        "bridge": "Halving is fast only if it always ends, so what guarantees binary search terminates correctly?"
+      },
+      "teaching": "procedure",
+      "layout": "process",
+      "nodes": [
+        {
+          "id": "t-compare",
+          "title": "Compare at Mid",
+          "body": "Compute mid=(low+high)//2 and compare a[mid] to target. One check decides keep left, keep right, or stop found.",
+          "icon": "search",
+          "color": "blue",
+          "at": 1,
+          "tag": "low<=high"
+        },
+        {
+          "id": "t-low",
+          "title": "Too Low: low=mid+1",
+          "body": "If 13<23, discard left half including mid. Move low to 4 so window shrinks right and next mid hits 23.",
+          "icon": "route",
+          "color": "gold",
+          "at": 4,
+          "tag": "a[mid]<target"
+        },
+        {
+          "id": "t-high",
+          "title": "Too High: high=mid-1",
+          "body": "If mid>target like 13>7, discard right half including mid. Move high to mid-1 so window shrinks left.",
+          "icon": "route",
+          "color": "coral",
+          "at": 8,
+          "tag": "a[mid]>target"
+        },
+        {
+          "id": "t-exit",
+          "title": "Found or Empty",
+          "body": "Equal returns index 5 for 23 in 2 checks. For 7: 13>7 high=2, 5<7 low=2, 9>7 high=1 then 2>1 empty so not found.",
+          "icon": "check",
+          "color": "green",
+          "at": 12,
+          "tag": "exit"
+        }
+      ],
+      "connections": [
+        {
+          "from": "t-compare",
+          "to": "t-low",
+          "label": "then",
+          "at": 6.7
+        },
+        {
+          "from": "t-low",
+          "to": "t-high",
+          "label": "then",
+          "at": 10.7
+        },
+        {
+          "from": "t-high",
+          "to": "t-exit",
+          "label": "then",
+          "at": 14.7
+        }
+      ],
+      "columns": [],
+      "takeaway": "Equality returns 23 at index 5; low>high proves absent.",
+      "experiment": {
+        "prompt": "Target 7 is absent. After mids 13 then 5 then 9, what happens next?",
+        "choices": [
+          {
+            "label": "low>high so report not found",
+            "target": "t-exit",
+            "explanation": "After 9>7 high becomes 1 with low 2, so window is empty."
+          },
+          {
+            "label": "Check the same mid again",
+            "target": "t-compare",
+            "explanation": "Repeating same mid without moving bounds loops; must shrink window."
+          },
+          {
+            "label": "Return last mid as match",
+            "target": "t-exit",
+            "explanation": "Last value 9 is not 7, so equality fails and exit must be not-found."
+          }
+        ]
+      },
+      "presentation": {
+        "method": "Decision chain with found vs empty-window exits",
+        "why": "Separates the two exit conditions and shows loop must shrink to avoid infinite loop.",
+        "visualEvidence": "Process steps in order: compare then shrink low then shrink high then exit; final card shows return index or low>high not-found.",
+        "textMode": "descriptive"
+      },
+      "duration": 40.27000000000001,
+      "roles": {
+        "t-compare": "Compare at Mid: Compute mid=(low+high)//2 and compare a[mid] to target. One check decides keep left, keep right, or stop found.",
+        "t-low": "Too Low: low=mid+1: If 13<23, discard left half including mid. Move low to 4 so window shrinks right and next mid hits 23.",
+        "t-high": "Too High: high=mid-1: If mid>target like 13>7, discard right half including mid. Move high to mid-1 so window shrinks left.",
+        "t-exit": "Found or Empty: Equal returns index 5 for 23 in 2 checks. For 7: 13>7 high=2, 5<7 low=2, 9>7 high=1 then 2>1 empty so not found."
+      },
+      "visual": {
+        "layout": "process",
+        "nodes": [
+          {
+            "id": "t-compare",
+            "title": "Compare at Mid",
+            "body": "Compute mid=(low+high)//2 and compare a[mid] to target. One check decides keep left, keep right, or stop found.",
+            "icon": "search",
+            "color": "blue",
+            "at": 1,
+            "tag": "low<=high"
+          },
+          {
+            "id": "t-low",
+            "title": "Too Low: low=mid+1",
+            "body": "If 13<23, discard left half including mid. Move low to 4 so window shrinks right and next mid hits 23.",
+            "icon": "route",
+            "color": "gold",
+            "at": 4,
+            "tag": "a[mid]<target"
+          },
+          {
+            "id": "t-high",
+            "title": "Too High: high=mid-1",
+            "body": "If mid>target like 13>7, discard right half including mid. Move high to mid-1 so window shrinks left.",
+            "icon": "route",
+            "color": "coral",
+            "at": 8,
+            "tag": "a[mid]>target"
+          },
+          {
+            "id": "t-exit",
+            "title": "Found or Empty",
+            "body": "Equal returns index 5 for 23 in 2 checks. For 7: 13>7 high=2, 5<7 low=2, 9>7 high=1 then 2>1 empty so not found.",
+            "icon": "check",
+            "color": "green",
+            "at": 12,
+            "tag": "exit"
+          }
+        ],
+        "connections": [
+          {
+            "from": "t-compare",
+            "to": "t-low",
+            "label": "then",
+            "at": 6.7
+          },
+          {
+            "from": "t-low",
+            "to": "t-high",
+            "label": "then",
+            "at": 10.7
+          },
+          {
+            "from": "t-high",
+            "to": "t-exit",
+            "label": "then",
+            "at": 14.7
+          }
+        ],
+        "columns": [],
+        "takeaway": "Equality returns 23 at index 5; low>high proves absent.",
+        "experiment": {
+          "prompt": "Target 7 is absent. After mids 13 then 5 then 9, what happens next?",
+          "choices": [
+            {
+              "label": "low>high so report not found",
+              "target": "t-exit",
+              "explanation": "After 9>7 high becomes 1 with low 2, so window is empty."
+            },
+            {
+              "label": "Check the same mid again",
+              "target": "t-compare",
+              "explanation": "Repeating same mid without moving bounds loops; must shrink window."
+            },
+            {
+              "label": "Return last mid as match",
+              "target": "t-exit",
+              "explanation": "Last value 9 is not 7, so equality fails and exit must be not-found."
+            }
+          ]
+        },
+        "presentation": {
+          "method": "Decision chain with found vs empty-window exits",
+          "why": "Separates the two exit conditions and shows loop must shrink to avoid infinite loop.",
+          "visualEvidence": "Process steps in order: compare then shrink low then shrink high then exit; final card shows return index or low>high not-found.",
+          "textMode": "descriptive"
+        }
+      },
+      "audio": "/narration/4703e175aba27933952f2dd8738e7f1162efe02c7a3d3ab1042a2c34c53db3e6.mp3",
+      "start": 106.71,
+      "end": 135.407,
+      "finishedAt": 135.157,
+      "visualStart": 106.71,
+      "visualEnd": 135.407,
+      "targetDuration": 28.697,
+      "narrationAt": 0.0,
+      "cues": [
+        {
+          "at": 0.34,
+          "text": "Halving is fast only if it always ends, so what guarantees binary search terminates correctly?"
+        },
+        {
+          "at": 6.44,
+          "text": "On the left, the blue Compare card computes mid equals low plus high over two, next the gold card shows 13 less than 23 pushing low to 4, next the coral card shows the too-high shrink for absent 7, and on the right the green exit card lights when mid hits 23 at index 5 while low passing high signals empty for 7 after 13, 5, 9."
+        }
+      ],
+      "transitionOut": 0.25,
+      "transition": {
+        "from": "speed-halving",
+        "to": "termination",
+        "type": "fade",
+        "duration": 0.28,
+        "shared": []
+      }
+    },
+    {
+      "id": "recall-route",
+      "title": "Remember the Four Stops",
+      "question": "How to recall the steps in order?",
+      "insight": "Retrace gate->scale->fork->flag: sort gate, mid scale, fork decision, found/empty flag to retrieve procedure.",
+      "sourcePages": [],
+      "safeguard": "Cues aid retrieval only, not proof; vivid landmarks do not replace sorted precondition and bounds logic.",
+      "narration": "We now have the full rule and its exits, so we anchor the four steps on a short route to retrieve them later. From left to right, the blue gate lights first for sorted order, then the gold scale tips to mid 13, then the coral fork splits to keep the half with 23, then the green flag plants on 23 while the empty-window cross marks not found. Walk gate to flag again to lock the order.",
+      "continuity": {
+        "from": "termination",
+        "bridge": "We now have the full rule and its exits, so we anchor the four steps on a short route to retrieve them later."
+      },
+      "teaching": "recall",
+      "layout": "loci",
+      "nodes": [
+        {
+          "id": "r-gate",
+          "title": "1 Sort Gate",
+          "body": "Blue gate only lets sorted arrays enter. If unsorted, you cannot safely discard half. Check order for [2,5,9,13,18,23,31,40].",
+          "icon": "checklist",
+          "color": "blue",
+          "at": 1.0,
+          "tag": "sort first"
+        },
+        {
+          "id": "r-scale",
+          "title": "2 Mid Scale",
+          "body": "Gold scale balances low and high to mid=(low+high)//2. First mid is 13, the balance point of the full window.",
+          "icon": "scale",
+          "color": "gold",
+          "at": 5.0,
+          "tag": "find mid"
+        },
+        {
+          "id": "r-fork",
+          "title": "3 Branch Fork",
+          "body": "Fork road: <23 go right, >23 go left, =23 stop. Discard red half and move low=mid+1 or high=mid-1.",
+          "icon": "route",
+          "color": "coral",
+          "at": 9.0,
+          "tag": "branch"
+        },
+        {
+          "id": "r-flag",
+          "title": "4 Stop Flag",
+          "body": "Green flag for found at 23, red cross flag for low>high empty. Walk gate-scale-fork-flag to retrieve order.",
+          "icon": "pin",
+          "color": "green",
+          "at": 13.0,
+          "tag": "stop rule"
+        }
+      ],
+      "connections": [
+        {
+          "from": "r-gate",
+          "to": "r-scale",
+          "label": "then",
+          "at": 7.7
+        },
+        {
+          "from": "r-scale",
+          "to": "r-fork",
+          "label": "then",
+          "at": 11.7
+        },
+        {
+          "from": "r-fork",
+          "to": "r-flag",
+          "label": "then",
+          "at": 15.7
+        }
+      ],
+      "columns": [],
+      "takeaway": "Retrace gate-scale-fork-flag to recall sort, mid, branch, stop.",
+      "experiment": {
+        "prompt": "At the fork, mid 31 >23. Which way do you go?",
+        "choices": [
+          {
+            "label": "Left, high=mid-1",
+            "target": "r-fork",
+            "explanation": "Greater means target is left, so shrink high."
+          },
+          {
+            "label": "Right, low=mid+1",
+            "target": "r-fork",
+            "explanation": "Right is for mid<target; here 31>23 so right discards the side with 23."
+          },
+          {
+            "label": "Stop and report found",
+            "target": "r-flag",
+            "explanation": "Found needs equality; 31 is not 23 so continue to empty-or-found flag later."
+          }
+        ]
+      },
+      "presentation": {
+        "method": "Spatial mnemonic route with paired cues",
+        "why": "Gives stable landmarks for ordered retrieval after understanding is built.",
+        "visualEvidence": "Four landmarks light in fixed order, each cue reveals its step label; learner retraces without labels then checks.",
+        "textMode": "descriptive"
+      },
+      "duration": 38.0,
+      "roles": {
+        "r-gate": "1 Sort Gate: Blue gate only lets sorted arrays enter. If unsorted, you cannot safely discard half. Check order for [2,5,9,13,18,23,31,40].",
+        "r-scale": "2 Mid Scale: Gold scale balances low and high to mid=(low+high)//2. First mid is 13, the balance point of the full window.",
+        "r-fork": "3 Branch Fork: Fork road: <23 go right, >23 go left, =23 stop. Discard red half and move low=mid+1 or high=mid-1.",
+        "r-flag": "4 Stop Flag: Green flag for found at 23, red cross flag for low>high empty. Walk gate-scale-fork-flag to retrieve order."
+      },
+      "visual": {
+        "layout": "loci",
+        "nodes": [
+          {
+            "id": "r-gate",
+            "title": "1 Sort Gate",
+            "body": "Blue gate only lets sorted arrays enter. If unsorted, you cannot safely discard half. Check order for [2,5,9,13,18,23,31,40].",
+            "icon": "checklist",
+            "color": "blue",
+            "at": 1.0,
+            "tag": "sort first"
+          },
+          {
+            "id": "r-scale",
+            "title": "2 Mid Scale",
+            "body": "Gold scale balances low and high to mid=(low+high)//2. First mid is 13, the balance point of the full window.",
+            "icon": "scale",
+            "color": "gold",
+            "at": 5.0,
+            "tag": "find mid"
+          },
+          {
+            "id": "r-fork",
+            "title": "3 Branch Fork",
+            "body": "Fork road: <23 go right, >23 go left, =23 stop. Discard red half and move low=mid+1 or high=mid-1.",
+            "icon": "route",
+            "color": "coral",
+            "at": 9.0,
+            "tag": "branch"
+          },
+          {
+            "id": "r-flag",
+            "title": "4 Stop Flag",
+            "body": "Green flag for found at 23, red cross flag for low>high empty. Walk gate-scale-fork-flag to retrieve order.",
+            "icon": "pin",
+            "color": "green",
+            "at": 13.0,
+            "tag": "stop rule"
+          }
+        ],
+        "connections": [
+          {
+            "from": "r-gate",
+            "to": "r-scale",
+            "label": "then",
+            "at": 7.7
+          },
+          {
+            "from": "r-scale",
+            "to": "r-fork",
+            "label": "then",
+            "at": 11.7
+          },
+          {
+            "from": "r-fork",
+            "to": "r-flag",
+            "label": "then",
+            "at": 15.7
+          }
+        ],
+        "columns": [],
+        "takeaway": "Retrace gate-scale-fork-flag to recall sort, mid, branch, stop.",
+        "experiment": {
+          "prompt": "At the fork, mid 31 >23. Which way do you go?",
+          "choices": [
+            {
+              "label": "Left, high=mid-1",
+              "target": "r-fork",
+              "explanation": "Greater means target is left, so shrink high."
+            },
+            {
+              "label": "Right, low=mid+1",
+              "target": "r-fork",
+              "explanation": "Right is for mid<target; here 31>23 so right discards the side with 23."
+            },
+            {
+              "label": "Stop and report found",
+              "target": "r-flag",
+              "explanation": "Found needs equality; 31 is not 23 so continue to empty-or-found flag later."
+            }
+          ]
+        },
+        "presentation": {
+          "method": "Spatial mnemonic route with paired cues",
+          "why": "Gives stable landmarks for ordered retrieval after understanding is built.",
+          "visualEvidence": "Four landmarks light in fixed order, each cue reveals its step label; learner retraces without labels then checks.",
+          "textMode": "descriptive"
+        }
+      },
+      "audio": "/narration/83776534ecdedd860778e06486a706056ca48a245511329bbb72342131728bd1.mp3",
+      "start": 135.407,
+      "end": 158.445,
+      "finishedAt": 158.196,
+      "visualStart": 135.407,
+      "visualEnd": 158.445,
+      "targetDuration": 23.039,
+      "narrationAt": 0.0,
+      "cues": [
+        {
+          "at": 0.0,
+          "text": "We now have the full rule and its exits, so we anchor the four steps on a short route to retrieve them later."
+        },
+        {
+          "at": 6.34,
+          "text": "From left to right, the blue gate lights first for sorted order, then the gold scale tips to mid 13, then the coral fork splits to keep the half with 23, then the green flag plants on 23 while the empty-window cross marks not found."
+        },
+        {
+          "at": 19.98,
+          "text": "Walk gate to flag again to lock the order."
+        }
+      ],
+      "transitionOut": 0.25,
+      "transition": {
+        "from": "termination",
+        "to": "recall-route",
+        "type": "fade",
+        "duration": 0.28,
+        "shared": []
+      }
+    }
+  ],
+  "duration": 158.445,
+  "documentId": null,
+  "documentTitle": null,
+  "sources": [],
+  "audioTrack": {
+    "url": "/narration/5d864412b12fc47037eb34ffa1281bd446876074f9a0e1075b9530dcbe3d385e.wav",
+    "key": "5d864412b12fc47037eb34ffa1281bd446876074f9a0e1075b9530dcbe3d385e",
+    "duration": 158.445,
+    "clock": "audio"
+  },
+  "speechSynchronization": {
+    "version": 5,
+    "baseFingerprint": "5d864412b12fc47037eb34ffa1281bd446876074f9a0e1075b9530dcbe3d385e",
+    "method": "one-lesson-recording-with-measured-word-anchors",
+    "scriptSource": "binary search synchronized script",
+    "recordingCount": 1
+  },
+  "review": {
+    "approved": true,
+    "method": "teaching-review-and-word-sync",
+    "findings": [],
+    "observations": []
+  }
+}

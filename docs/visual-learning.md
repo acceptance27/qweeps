@@ -247,9 +247,9 @@ ordinary browser, browser restrictions may leave a closed-session page visible.
 - Generated diagram objects can be dragged to experiment with their layout.
   These diagrams do not automatically simulate the underlying subject.
 - Right-drag pans the camera. Generated diagrams also support wheel zoom.
-- Ask normally for a contextual answer; use Branch for a new visual explanation.
-  Each branch saves its parent time, camera, selection, source plan, and edits.
-  Return to lesson restores that complete checkpoint. Branches can nest.
+- **Ask Qweeps**:
+  - **Text reply**: provides instant contextual answers and spoken explanation in the chat drawer without interrupting or resetting the active lesson.
+  - **Branch mini-lesson**: generates a dedicated 3-beat visual sub-lesson (via native ManimGL or layout) diving into the question in depth. Each branch saves its parent time, camera, selection, source plan, and edits. The interactive return breadcrumb restores that complete parent checkpoint. Branches can nest.
 - Use New lesson to replace the lesson with a new topic. The conversation remains.
 - Paste relevant code or an excerpt into Source context for project-specific
   questions. There is no automatic repository/document retrieval or web research.
@@ -299,7 +299,15 @@ beat recordings. Completed-beat arrow targets still contain the finished illustr
 rewinding reconstructs the same paced drawing. These rules apply to live browser
 playback; the separate legacy/native player retains its own speech timing.
 
-Alignment runs locally using the existing cached faster-whisper small model and
+### Audio-visual scene contract and iconography
+
+The generation pipeline enforces a strict Audio-Visual Scene Contract (`src/assistant/visual/scene_contract.py`):
+- **Narration-visual coupling**: verifies that each beat's spoken narration explicitly refers to the visual objects and actions introduced on that beat. Disconnected, vague, or "blind" voiceovers are flagged and rejected before synthesis.
+- **Cue alignment**: narration cue timestamps are matched against measured audio timing, ensuring that visual reveals, arrows, and outlines occur synchronously with the spoken referents.
+- **Pacing and elastic duration**: beat durations are elastically stretched to match speech pacing up to a strict 1.20x ceiling (`max_stretch`). If speech exceeds this cap, a surgical condensation pass trims narration to the scene's visual time budget without regenerating unaffected beats.
+- **Lucide animated vector icons**: iconography integrates with Lucide vector icons (`visual-studio/src/live/LiveAssets.tsx`) with dynamic fallback to prevent missing icons or placeholder question marks.
+
+### Alignment and runtime
 runtime. `QWEEPS_ALIGNMENT_PYTHON` and `QWEEPS_ALIGNMENT_MODEL` can select another
 installed runtime/model. It does not download weights automatically or use paid
 transcription as a silent fallback. Word-timing caches are keyed by actual audio

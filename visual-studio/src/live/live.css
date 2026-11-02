@@ -155,3 +155,14 @@
 .live-stage-wrap{position:relative;flex:1;min-height:0;display:flex;flex-direction:column}
 .live-stage-fade{position:absolute;inset:0;background:var(--live-bg);opacity:0;pointer-events:none;z-index:4;transition:opacity .35s ease}
 .live-stage-fade.on{opacity:1;transition:none}
+
+/* lucide-animated style icon micro-animations */
+@keyframes lucide-float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-2.5px) scale(1.05)}}
+@keyframes lucide-pulse-glow{0%,100%{transform:scale(1);filter:drop-shadow(0 0 0px transparent)}50%{transform:scale(1.08);filter:drop-shadow(0 0 6px rgba(237,202,130,.38))}}
+@keyframes lucide-rock{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+@keyframes lucide-spin-subtle{0%,100%{transform:rotate(0deg) scale(1)}35%{transform:rotate(14deg) scale(1.05)}70%{transform:rotate(-10deg) scale(1.03)}}
+.lucide-animated{transform-box:fill-box;transform-origin:center;animation:lucide-float 3.8s ease-in-out infinite}
+.lucide-anim-zap,.lucide-anim-sparkles,.lucide-anim-flame,.lucide-anim-crown{animation:lucide-pulse-glow 2.8s ease-in-out infinite}
+.lucide-anim-compass,.lucide-anim-wrench,.lucide-anim-tools,.lucide-anim-sliders{animation:lucide-spin-subtle 4.2s ease-in-out infinite}
+.lucide-anim-git-branch,.lucide-anim-branch,.lucide-anim-network,.lucide-anim-route{animation:lucide-float 3.2s ease-in-out infinite}
+.generated-object[data-narrating="true"] .lucide-animated,.generated-object:hover .lucide-animated{animation:lucide-rock 1.4s ease-in-out infinite;filter:drop-shadow(0 0 8px rgba(237,202,130,.5))}

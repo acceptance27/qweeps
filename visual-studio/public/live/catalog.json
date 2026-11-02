@@ -48,6 +48,15 @@
     "zap": "electricity, high-energy, shock, spark",
     "sparkles": "reaction, detonation effect, transformation",
     "skull": "toxic, hazard, lethal, extreme danger",
-    "factory": "industry, manufacturing, chemical plant, production"
+    "factory": "industry, manufacturing, chemical plant, production",
+    "grid": "matrix, puzzle grid, 2D coordinates, board",
+    "sliders": "parameters, thresholds, bounds, controls",
+    "layers": "stacks, abstraction levels, complexity classes, sets",
+    "crown": "summit, supreme problem, NP-complete, peak",
+    "compass": "direction, orientation, navigation, search",
+    "binary": "boolean logic, binary digits, SAT formulas, bits",
+    "workflow": "reduction pipeline, sequence of transforms, process",
+    "shield-alert": "security warning, barrier, hazard, violation",
+    "lock-open": "decrypted, unlocked, polynomial solver, access granted"
   }
 }

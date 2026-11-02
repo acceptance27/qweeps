@@ -2,6 +2,7 @@ import React,{memo,useEffect,useMemo,useRef,useState} from 'react';
 import {api} from '../learning/types';
 import {initialLiveSnapshot} from './geometry';
 import GeneratedStage from './GeneratedStage';
+import {NativeLessonCanvas} from '../learning/NativeLessonCanvas';
 import type {LiveChapter,LiveLesson} from './lessonTypes';
 import './live.css';
 
@@ -32,12 +33,16 @@ const GateSurface=memo(function GateSurface({target,plan,onReady}:{
 });
 
 export default function ChapterStream({topic,replay,methods=false}:{topic?:string;replay?:string;methods?:boolean}){
+ const params=new URLSearchParams(location.search);
+ const nativeParam=params.get('native')!=='0';
  const[plan,setPlan]=useState<Plan|null>(null);
  const[chapters,setChapters]=useState<LiveChapter[]>([]);
  const[active,setActive]=useState(0);
  const[status,setStatus]=useState('Starting a streaming lesson…');
  const[error,setError]=useState('');
  const[done,setDone]=useState(false);
+ const[lessonId,setLessonId]=useState<string>('');
+ const[sessionId,setSessionId]=useState<string>('');
  const[started]=useState(()=>Date.now());
  const[elapsed,setElapsed]=useState(0);
  const[snapshot,setSnapshot]=useState(initialLiveSnapshot());
@@ -50,22 +55,27 @@ export default function ChapterStream({topic,replay,methods=false}:{topic?:strin
  const clock=()=>Math.round((Date.now()-started)/1000);
 
  useEffect(()=>{const timer=setInterval(()=>setElapsed(clock()),1000);return()=>clearInterval(timer)},[started]);
+ useEffect(()=>{void api<{sessionId:string}>('session',{}).then(s=>setSessionId(s.sessionId)).catch(()=>{});},[]);
  useEffect(()=>{
   let source:EventSource|null=null,cancelled=false;
   if(replay){
    void api<LiveLesson>(`live/stream-lesson/${replay}`).then(lesson=>{
     if(cancelled)return;
+    setLessonId(lesson.id||'');
     setPlan({title:lesson.title,question:lesson.question,representation:lesson.representation||'',
      example:lesson.example||{title:'',description:'',icon:'app'},
      beats:lesson.chapters.map(c=>({id:c.id,title:c.title,teaching:c.teaching,
-      layout:c.visual?.layout||'diagram'}))});
-    setChapters(lesson.chapters);setActive(lesson.chapters.length-1);setDone(true);
-    setGateQueue(lesson.chapters);
-    setStatus(`Replay of a completed stream · ${lesson.duration.toFixed(1)}s`);
+      layout:c.renderer==='manimgl'?'manimgl':(c.visual?.layout||'diagram')}))});
+    setChapters(lesson.chapters);setActive(0);setDone(true);
+    const initialChecks:Record<string,Check>={};
+    for(const c of lesson.chapters){if(c.renderer==='manimgl')initialChecks[c.id]={status:'ready',findings:[],at:0};}
+    setChecks(initialChecks);
+    setGateQueue(lesson.chapters.filter(c=>c.renderer!=='manimgl'));
+    setStatus(`Replay of a completed hybrid stream · ${lesson.duration.toFixed(1)}s`);
    }).catch((err:Error)=>setError(err.message));
    return()=>{cancelled=true};
   }
-  void api<{id:string}>('live/stream',{question:topic||DEFAULT_TOPIC,methods}).then(job=>{
+  void api<{id:string}>('live/stream',{question:topic||DEFAULT_TOPIC,methods,native:nativeParam}).then(job=>{
    if(cancelled)return;
    source=new EventSource(`/api/visual/live/stream/${job.id}`);
    source.onmessage=event=>{
@@ -76,16 +86,31 @@ export default function ChapterStream({topic,replay,methods=false}:{topic?:strin
     if(payload.type==='plan'){
      setPlan({title:payload.title||'',question:payload.question||'',representation:payload.representation||'',
       example:payload.example||{title:'',description:'',icon:'app'},beats:payload.beats||[]});
-     setStatus('Plan ready; directing the first chapter…');
+     setStatus('Plan ready; streaming chapters & compiling 3b1b Manim scenes in parallel…');
     }
     if(payload.type==='chapter'&&payload.chapter){
-     setChapters(previous=>[...previous,payload.chapter!]);
-     setArrivals(previous=>({...previous,[payload.chapter!.id]:payload.elapsed??clock()}));
-     setGateQueue(previous=>[...previous,payload.chapter!]);
-     setStatus(`Chapter ${(payload.index||0)+1} authored in ${payload.elapsed??elapsed}s · checking frame`);
+     const ch=payload.chapter!;
+     setChapters(previous=>{
+      const idx=previous.findIndex(x=>x.id===ch.id);
+      if(idx>=0){const copy=[...previous];copy[idx]=ch;return copy;}
+      return [...previous,ch];
+     });
+     setArrivals(previous=>({...previous,[ch.id]:payload.elapsed??clock()}));
+     if(ch.renderer==='manimgl'){
+      setChecks(previous=>({...previous,[ch.id]:{status:'ready',findings:[],at:payload.elapsed??clock()}}));
+      setStatus(`Chapter ${(payload.index||0)+1} (3b1b ManimGL) compiled & audited in ${payload.elapsed??elapsed}s`);
+     }else{
+      setGateQueue(previous=>[...previous,ch]);
+      setStatus(`Chapter ${(payload.index||0)+1} authored in ${payload.elapsed??elapsed}s · checking frame`);
+     }
     }
     if(payload.type==='error'){setError(payload.message||'The stream stopped.');source?.close();}
-    if(payload.type==='done'){setDone(true);setStatus('Stream authored; checking each chapter frame');source?.close();}
+    if(payload.type==='done'){
+     setDone(true);
+     if(payload.lessonId)setLessonId(payload.lessonId);
+     setStatus('Hybrid stream authored; ready for interactive playback');
+     source?.close();
+    }
    };
    source.onerror=()=>{if(!done)setStatus('Stream connection closed; waiting for the final event…')};
   }).catch((err:Error)=>setError(err.message));
@@ -169,6 +194,7 @@ export default function ChapterStream({topic,replay,methods=false}:{topic?:strin
     <h1>{plan?.title||'Preparing a lesson stream'}</h1>
    </div>
    <div className="stream-meta">
+    {lessonId&&<a href={`/?lesson=${lessonId}&nosync=1`} style={{color:'#6ee7b7',fontSize:'0.82rem',textDecoration:'none',padding:'4px 10px',borderRadius:6,background:'rgba(110,231,183,0.12)',border:'1px solid rgba(110,231,183,0.3)',marginRight:8}}>Open in Live Hybrid Player →</a>}
     <i className={blockedCount?'blocked':done&&!checkingCount&&!gateTargets.length&&!gateQueue.length?'done':''}/>
     <span>{headline}</span>
     <strong>{elapsed}s</strong>
@@ -184,7 +210,7 @@ export default function ChapterStream({topic,replay,methods=false}:{topic?:strin
      return <button key={beat.id} className={index===active&&available?'active':''} disabled={!available}
       onClick={()=>setActive(index)}>
       <span>{String(index+1).padStart(2,'0')}</span>
-      <div><strong>{beat.title}</strong><small>{beat.teaching||'teaching'} · {beat.layout}</small>
+      <div><strong>{beat.title}</strong><small>{beat.teaching||'teaching'} · {chapters[index]?.renderer==='manimgl'?'manimgl':beat.layout}</small>
        {available&&<small className="stream-arrival">arrived {arrived??'…'}s{checked!==undefined?` · ready ${checked}s`:''}</small>}
       </div>
       <em className={state}>{stateLabel(state)}</em>
@@ -198,8 +224,8 @@ export default function ChapterStream({topic,replay,methods=false}:{topic?:strin
    </aside>
    <main className="stream-main">
     {lesson?<div className="stream-stage">
-      <GeneratedStage lesson={lesson} snapshot={snapshot} focusRequest={0} update={setSnapshot}
-       pause={()=>{}} onReady={()=>{}} interactive={false}/>
+      {current?.renderer==='manimgl'?<NativeLessonCanvas sessionId={sessionId||'stream'} snapshot={{sceneId:current.nativeScene||'wbc',plan:null,time:(current.nativeOffset??0)+Math.max(1.2,(current.nativeDuration??6)*0.55),nodes:{},positions:{},camera:snapshot.camera,selected:snapshot.selected,region:null}} update={fn=>setSnapshot(s=>{const n=fn({sceneId:current.nativeScene||'wbc',plan:null,time:(current.nativeOffset??0)+2,nodes:{},positions:{},camera:s.camera,selected:s.selected,region:null});return{...s,selected:n.selected,camera:n.camera,region:n.region};})} pause={()=>{}} onReady={()=>{}} onFrame={()=>{}}/>:<GeneratedStage lesson={lesson} snapshot={snapshot} focusRequest={0} update={setSnapshot}
+       pause={()=>{}} onReady={()=>{}} interactive={false}/>}
      </div>:<div className="stream-wait">
       <div className="stream-pulse"/>
       <h2>{error?'Stream stopped':'Building the first chapter'}</h2>

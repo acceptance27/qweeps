@@ -25,7 +25,11 @@ class _NativePass(ast.NodeTransformer):
             if isinstance(base, ast.Name) and base.id in SCENE_BASES:
                 node.bases[index] = ast.Name(id="RecordedScene", ctx=ast.Load())
         for item in node.body:
-            if isinstance(item, ast.FunctionDef) and item.name == "construct":
+            if isinstance(item, ast.FunctionDef) and (
+                item.name == "construct"
+                or item.name.startswith("_run_act_")
+                or item.name.startswith("animate_")
+            ):
                 item.body.append(
                     ast.Expr(
                         value=ast.Call(

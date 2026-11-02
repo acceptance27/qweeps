@@ -16,12 +16,14 @@ export function generatedPacing(c:LiveChapter){
  const v=c.visual!;
  const cues=c.narrationCues;
  if(cues?.length){
-  const cue=(id:string)=>cues.find(q=>q.target===id)!;
+  const span=Math.max(2,c.end-c.start);
+  const fallback={target:'fallback',start:0.3,end:Math.max(1.2,span-0.4),text:'',phrase:''};
+  const cue=(id:string)=>cues.find(q=>q.target===id)||cues[0]||fallback;
   const revealFloor=(c.visualStart??c.start)-c.start;
   const nodeAt=(id:string)=>Math.max(revealFloor,cue(id).start);
   const speechEnd=Math.max(...cues.map(q=>q.end));
   const nodeDuration=(id:string)=>Math.max(.15,Math.min(3,Math.max(.8,(cue(id).end-cue(id).start)*.72),(speechEnd-cue(id).start-.08)/1.2));
-  return{at:(original:number)=>nodeAt(v.nodes.find(n=>n.at===original)?.id||v.nodes[0].id),nodeAt,nodeDuration,
+  return{at:(original:number)=>nodeAt(v.nodes.find(n=>n.at===original)?.id||v.nodes[0]?.id||'fallback'),nodeAt,nodeDuration,
    linkAt:(from:string|undefined,to:string|undefined,_original:number)=>Math.max(from?nodeAt(from):0,to?nodeAt(to):0)+.15,
    linkDuration:(from:string|undefined,to:string|undefined)=>Math.min(2.8,...[from,to].filter(Boolean).map(id=>(cue(id!).end-cue(id!).start)*.65)),
    conclusionAt:Math.max(revealFloor,cue('takeaway').start),conclusionDuration:Math.min(1.4,(cue('takeaway').end-cue('takeaway').start)*.7),

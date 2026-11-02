@@ -11,13 +11,36 @@ QWEEPS is an experimental local teaching system that turns a question or supplie
 
 Learners can pause, move through the explanation, inspect objects or a selected region, ask questions, and request a focused visual branch. The browser scenes use SVG, GSAP and a Hyperframes adapter. **Live playback does not require baking an MP4.** Native Manim export and rendering are separate, optional paths.
 
+## Demos
+
+### 1. Live Interactive Browser Lesson Playback
+Real-time browser playback of an AI-generated lesson (**Binary Search Algorithm**, 6 beats) with synchronized speech narration, dynamic SVG/GSAP visual synthesis, Lucide animated icons, and interactive seek controls.
+
+![Demo 1: Live Interactive Browser Lesson Playback](demos/demo1-browser-lesson.gif)
+
+> [!NOTE]
+> High-definition video with speech audio is available at [`demos/demo1-browser-lesson.mp4`](demos/demo1-browser-lesson.mp4).
+
+### 2. "Ask Qweeps" Contextual Branch Mini-Lesson
+Interactive Q&A exploration on Beat 7 of the *P vs NP* lesson. Selecting **Branch mini-lesson** generates and streams a dedicated 3-beat visual explanation rendered with ManimGL, with persistent return breadcrumb navigation back to the parent lesson state.
+
+![Demo 2: Ask Qweeps Contextual Branch Mini-Lesson](demos/demo2-ask-qweeps-branch.gif)
+
+> [!NOTE]
+> High-definition video with speech audio is available at [`demos/demo2-ask-qweeps-branch.mp4`](demos/demo2-ask-qweeps-branch.mp4).
+
 ## Project status
 
 This is a research and development prototype. Automated review can miss factual, visual and teaching errors; it is not independent expert review or evidence of improved learning outcomes. External providers can time out or become unavailable.
 
-The archive includes **How Massless Light Materializes into Matter**, a saved interactive lesson with narration audio. Its saved review records approval by QWEEPS's automated content and rendered-frame checks. This is a reproducible demonstration artifact, not a guarantee that every new request will produce an equally good lesson.
+The archive includes three fully bundled, offline-playable interactive lessons with narration audio:
+1. **P vs NP: The $1,000,000 Question of Computer Science** (`b1b20bea700000000000000000000001`): A full 20-beat hybrid lesson combining native ManimGL mathematical animations with SVG/GSAP explanatory layouts, complete with master continuous narration and per-beat audio fallbacks.
+2. **Binary Search Algorithm** (`1ac198aec0efc9ba04dfa14bd242bd33`): An interactive 6-beat algorithm walkthrough featuring Lucide vector icons, dynamic interval halving, and cue-synchronized speech.
+3. **How Massless Light Materializes into Matter** (`61d56323819e14949204a5e95f1214fc`): A 4-beat interactive lesson with full narration audio and complete rendered-frame review verification receipts.
 
-## Try the bundled lesson
+These are reproducible demonstration artifacts, not a guarantee that every new request will produce an equally good lesson.
+
+## Try the bundled lessons
 
 ### Requirements
 
@@ -69,18 +92,25 @@ With the default generation provider installed and configured, start the studio:
 python -m assistant.visual.server
 ```
 
-Open [the studio](http://127.0.0.1:4174), or [the bundled lesson](http://127.0.0.1:4174/?lesson=61d56323819e14949204a5e95f1214fc).
+Open [the studio](http://127.0.0.1:4174), or launch any of the bundled lessons:
+- [P vs NP: The $1,000,000 Question (20 beats hybrid)](http://127.0.0.1:4174/?lesson=b1b20bea700000000000000000000001)
+- [Binary Search Algorithm (6 beats walkthrough)](http://127.0.0.1:4174/?lesson=1ac198aec0efc9ba04dfa14bd242bd33)
+- [How Massless Light Materializes into Matter (4 beats)](http://127.0.0.1:4174/?lesson=61d56323819e14949204a5e95f1214fc)
 
 The supplied build requires no npm command for playback. Provider construction happens at server startup, so the default configuration still requires `agy` even when opening a saved lesson.
 
-**Replay without provider access:** in `~/.config/qweeps/config.toml` (or local `.env`), set `enabled = false` under `[llm]` and `provider = "none"` under `[tts]` before starting the server. Retain the other settings for later use. This disables new AI generation, AI answers and speech synthesis; the bundled lesson and its saved audio remain available. Re-enable the relevant providers for live questions or new lessons.
+**Replay without provider access:** in `~/.config/qweeps/config.toml` (or local `.env`), set `enabled = false` under `[llm]` and `provider = "none"` under `[tts]` before starting the server. Retain the other settings for later use. This disables new AI generation, AI answers and speech synthesis; the bundled lessons and their saved audio remain available. Re-enable the relevant providers for live questions or new lessons.
 
 ### Controls
 
+- **Space:** toggle play / pause.
 - **Left / Right:** move to the previous or next beat at its completed state.
 - **Shift + Left / Right:** move to the start of the previous or next beat.
-- Pause or seek to revisit a construction; select objects or a region to provide question context.
-- **Ask & Explore:** ask about the current scene or request a visual branch, then return to the saved parent state.
+- **Scrubber:** seek smoothly across the measured audio-visual timeline.
+- **Inspect & Region:** click any labeled visual element or drag a rectangle to focus question context.
+- **Ask Qweeps:**
+  - **Text reply:** provides instant contextual answers and speech without altering or interrupting the scene.
+  - **Branch mini-lesson:** generates a focused multi-beat visual sub-lesson (using native ManimGL or layout) diving into the queried concept, with breadcrumb navigation returning seamlessly to the saved parent timestamp, camera, and selection.
 
 See [setup, controls, architecture and limitations](docs/visual-learning.md) for details.
 
@@ -90,21 +120,25 @@ See [setup, controls, architecture and limitations](docs/visual-learning.md) for
 flowchart TD
     Input[Question or supplied document] --> Plan[Connected teaching plan]
     Plan --> Direction[Per-beat presentation and scene data]
-    Direction --> Content[Content and narrative checks]
+    Direction --> Contract[Audio-visual scene contract validation]
+    Contract --> Content[Content, factual and narrative checks]
     Content --> Frames[Browser-rendered frame capture]
     Frames --> Review[Automated visual review]
     Review -->|Approved| Live[Live interactive lesson]
-    Review -->|Needs revision| Repair[Bounded targeted revision]
-    Repair --> Content
+    Review -->|Needs revision| Repair[Surgical slot and layout revision]
+    Repair --> Contract
     Live --> Ask[Contextual questions and visual branches]
     Ask --> Return[Return to saved parent state]
 ```
 
 - **Choose methods per beat:** geometric construction, descriptive infographic, worked execution, comparison or another approach appropriate to the inference. A lesson need not repeat one layout throughout.
-- **Keep reasoning connected:** preserve object identities and explain why the next question follows from the previous result.
-- **Validate scene data:** reject unsupported fields or incomplete outputs rather than inventing missing geometry.
+- **Audio-visual scene contract (`scene_contract.py`):** strictly enforces that narration explicitly names and describes visible elements created on that beat, eliminating disconnected or "blind" voiceovers.
+- **Speech-to-geometry cue alignment:** maps narration phrases to measured word timing so visual reveals, arrows, and attention outlines trigger at the exact instant they are spoken.
+- **Dynamic Lucide animated vector icons:** automatically provides clean, animated SVG iconography with instant Lucide fallback, ensuring no missing or question-mark placeholders.
+- **Keep reasoning connected:** preserve object identities and explain why the next question follows from the previous result via spoken bridges.
+- **Elastic duration and pacing:** stretches beat windows up to 1.20x max stretch cap to fit spoken narration, or triggers surgical slot condensing if narration exceeds budget.
+- **Validate scene data:** reject unsupported fields, AABB collisions, or incomplete outputs rather than inventing missing geometry.
 - **Inspect actual frames:** review early and completed states, plus intermediate states for diagrams. Failed candidates remain unapproved after the bounded revision allowance is exhausted.
-- **Synchronize to generated speech:** map exact narration phrases to measured word timing, rather than asking the model to guess audio timestamps.
 - **Preserve exploration context:** include the parent scene, time, selection, camera and experiment state when branching.
 
 The maintained teaching skill draws on PDF Explainer, Math 01, A* Pathfinding & Heuristics and the accepted Rizal reference. These are authoring references, not evidence of equivalence to their visual quality or to 3Blue1Brown's work.
@@ -208,7 +242,8 @@ Author: **Rayven Pahignalo** · [ORCID 0009-0003-2325-7968](https://orcid.org/00
 
 - **Application code:** [PolyForm Noncommercial License 1.0.0](LICENSE).
 - **Technical report and QWEEPS-authored documentation/lesson content:** [CC BY-NC 4.0](LICENSE-DOCUMENTATION), subject to the exclusions in [LICENSING.md](LICENSING.md).
-- **Third-party materials:** retain their own licenses and attribution notices.
+- **Third-party notices:** [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), with full license texts in [LICENSES/](LICENSES/).
+- **Visual asset provenance:** [visual-studio/public/live/assets/SOURCES.md](visual-studio/public/live/assets/SOURCES.md).
 
 This release is source-available with noncommercial restrictions. PolyForm defines
 its permitted purposes, including specified organizational uses; commercial uses

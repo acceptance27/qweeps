@@ -1,6 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {api,Snapshot} from './types';import {productionDefaults} from './production';
-type Bounds={id:string;x1:number;x2:number;y1:number;y2:number};
+type Bounds={id:string;role?:string;dataRole?:string;x1:number;x2:number;y1:number;y2:number};
 export type NativeFrame={revision?:string;expectedRevision?:string;ready:boolean;backend:string;time:number;renderMs:number;frames:number;camera:{x:number;y:number;width:number};bounds:Bounds[];experiment?:Record<string,unknown>};
 type Props={sessionId:string|null;snapshot:Snapshot;update:(fn:(s:Snapshot)=>Snapshot)=>void;pause:()=>void;onReady:(ready:boolean)=>void;onFrame:(frame:NativeFrame)=>void};
 export function NativeLessonCanvas({sessionId,snapshot,update,pause,onReady,onFrame}:Props){
@@ -24,6 +24,6 @@ export function NativeLessonCanvas({sessionId,snapshot,update,pause,onReady,onFr
   {!ready&&!error&&frameNumber===0&&<div className="native-loading">Preparing the native Manim scene…</div>}
   {error&&<div className="native-loading native-error">{error}</div>}
   {region&&<svg className="native-region-overlay" viewBox="0 0 1280 720"><rect x={region.left*12.8} y={region.top*7.2} width={region.width*12.8} height={region.height*7.2} stroke="#58c4dd" fill="#58c4dd" fillOpacity=".1"/></svg>}
-  <div className="native-accessibility">{[...new Set(bounds.map(b=>b.id))].map(id=><button key={id} onClick={()=>{pause();update(s=>({...s,selected:[id],region:null}));}}>Inspect {id}</button>)}</div>
+  <div className="native-accessibility">{[...new Set(bounds.map(b=>b.id))].map(id=><button key={id} data-role={id} onClick={()=>{pause();update(s=>({...s,selected:[id],region:null}));}}>Inspect {id}</button>)}</div>
  </div>;
 }

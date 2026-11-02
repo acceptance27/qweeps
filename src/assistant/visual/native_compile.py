@@ -32,6 +32,8 @@ def main() -> None:
         audit = audit_scene(scene)
     target.write_text(json.dumps({"duration": round(float(scene.duration), 3),
                                   "beats": windows, "cues": cues,
+                                  "roles": sorted(getattr(scene, "roles", {}).keys()),
+                                  "boundIds": sorted(getattr(scene, "bound_objects", {}).keys()),
                                   "tracks": len(scene.tracks), "audit": audit}, indent=1))
 
 

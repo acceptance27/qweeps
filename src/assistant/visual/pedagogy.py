@@ -148,7 +148,8 @@ def _extract_json(raw: str) -> dict | None:
 
 
 TRANSIENT = ("timeout", "timed out", "did not finish", "deadline",
-             "connection reset", "temporarily unavailable", "rate limit")
+             "connection reset", "temporarily unavailable", "rate limit",
+             "no complete response")
 
 
 def _call_model(llm: Any, system: str, prompt: str, tokens: int) -> str:

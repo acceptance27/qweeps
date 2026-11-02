@@ -131,9 +131,10 @@ class VisualService:
         # The paused snapshot is captured before generation; later viewport changes
         # cannot silently alter the question the model is answering.
         context = json.loads(json.dumps(context))
-        if context.get('sceneId')=='live_generated' and payload.get('mode','question') in {'question','branch'}:
+        scene_id = context.get('sceneId') or ('live_generated' if context.get('lessonId') else 'rizal_live')
+        if scene_id=='live_generated' and payload.get('mode','question') in {'question','branch'}:
             reply=self.live.answer(payload,context,list(session['history']))
-        elif context.get('sceneId') in {'jose_rizal','rizal_live'} and payload.get('mode','question') in {'question','branch'}:
+        elif scene_id in {'jose_rizal','rizal_live'} and payload.get('mode','question') in {'question','branch'}:
             if context.get('sceneId')=='rizal_live':
                 from .browser_rizal import reply as rizal_reply
             else:
@@ -290,6 +291,9 @@ class Handler(SimpleHTTPRequestHandler):
             except (BrokenPipeError, ConnectionResetError):
                 pass  # Seeking cancels the browser's previous stream.
 
+    def do_HEAD(self):
+        self.do_GET()
+
     def do_GET(self):
         if not self.allowed():
             self.send_json(403, {"error": "Only local studio requests are accepted."})
@@ -389,7 +393,13 @@ class Handler(SimpleHTTPRequestHandler):
                         time.sleep(1/30)
                 except (BrokenPipeError, ConnectionResetError, FileNotFoundError): pass
             elif re.fullmatch(r"/narration/[0-9a-f]{64}\.mp3", parsed.path):
-                self.send_video(self.service.narration.folder / parsed.path.rsplit('/',1)[-1], 'audio/mpeg')
+                filename = parsed.path.rsplit('/', 1)[-1]
+                mp3_path = self.service.narration.folder / filename
+                if not mp3_path.is_file():
+                    bundled_mp3 = Path(__file__).resolve().parents[3] / 'bundled-lessons/visual-narration' / filename
+                    if bundled_mp3.is_file():
+                        mp3_path = bundled_mp3
+                self.send_video(mp3_path, 'audio/mpeg')
             elif re.fullmatch(r"/narration/[0-9a-f]{64}\.wav", parsed.path):
                 filename = parsed.path.rsplit('/', 1)[-1]
                 wav_path = self.service.narration.folder / filename

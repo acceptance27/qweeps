@@ -53,7 +53,8 @@ export function grammarBoxes(v:LiveVisual,g:Grammar):NodeBox[]{
 }
 
 const Copy=memo(function Copy({font,text,x,y,width,height,size,minSize=14,color='#c9d9dd',center=false}:{font:Font|null;text:string;x:number;y:number;width:number;height:number;size:number;minSize?:number;color?:string;center?:boolean}){
- const fit=useMemo(()=>fitCopy(font,text,width,height,size,minSize),[font,text,width,height,size,minSize]);
+ const raw=typeof text==='string'?text:(typeof text==='object'&&text?((text as any).title||(text as any).label||(text as any).text||(text as any).name||JSON.stringify(text)):String(text??''));
+ const fit=useMemo(()=>fitCopy(font,raw,width,height,size,minSize),[font,raw,width,height,size,minSize]);
  return <g>{fit.lines.map((line,i)=><text key={i} x={center?x+width/2:x} y={y+i*fit.size*1.36} textAnchor={center?'middle':undefined} fontSize={fit.size} fill={color} style={{fontFamily:'QweepsTeachingSerif,serif'}}>{line}</text>)}</g>;
 });
 
@@ -108,7 +109,7 @@ export function GrammarNode({v,g,node,box,index,font,chosen}:{v:LiveVisual;g:Gra
  if(g==='comparison'){
   return <g>
    <rect className="object-frame" width={w} height={h} rx="5" fill={chosen?'#2c3a2a':'transparent'} fillOpacity={.5} stroke={color} strokeOpacity={.22}/>
-   <g className="object-art"><LiveAsset name={node.icon} x={18} y={18} size={44} color={color}/></g>
+   <g className="object-art"><LiveAsset name={node.icon} context={`${node.id} ${node.title}`} x={18} y={18} size={44} color={color}/></g>
    <Copy font={font} text={node.title} x={76} y={40} width={w-92} height={40} size={27} color="#e6eef0"/>
    <text x="18" y="118" fill={color} fontSize="30" style={{fontFamily:'QweepsTeachingSerif,serif'}}>{node.tag||''}</text>
    <Copy font={font} text={node.body} x={18} y={208} width={w-36} height={104} size={21}/>
@@ -122,7 +123,7 @@ export function GrammarNode({v,g,node,box,index,font,chosen}:{v:LiveVisual;g:Gra
    <Copy font={font} text={node.title} x={104} y={34} width={600} height={30} size={24} color="#e6eef0"/>
    <Copy font={font} text={node.body} x={104} y={64} width={600} height={26} size={18}/>
    <text x="760" y={h/2+10} fill={color} fontSize="28" style={{fontFamily:'QweepsTeachingSerif,serif'}}>{node.tag||''}</text>
-   <g className="object-art"><LiveAsset name={node.icon} x={1290} y={h/2-18} size={36} color={color}/></g>
+   <g className="object-art"><LiveAsset name={node.icon} context={`${node.id} ${node.title}`} x={1290} y={h/2-18} size={36} color={color}/></g>
   </g>;
  }
  if(g==='chronology'){
@@ -135,14 +136,13 @@ export function GrammarNode({v,g,node,box,index,font,chosen}:{v:LiveVisual;g:Gra
   </g>;
  }
  if(g==='route'){
-  const letter=(node.title.match(/^[A-Za-z]/)?.[0]||String(index+1)).toUpperCase();
   return <g>
    <rect className="object-frame" width={w} height={h} fill="transparent" stroke="none"/>
    <g className="object-art"><circle cx={w/2} cy="100" r="64" fill="#0e2028" stroke={color} strokeWidth="2.4"/><circle cx={w/2} cy="100" r="51" fill="none" stroke={color} strokeOpacity=".45" strokeWidth="1"/></g>
    {node.tag&&<text x={w/2} y="20" textAnchor="middle" fill={color} fontSize="16" fontFamily="Arial,sans-serif">{(node.tag||'').toUpperCase()}</text>}
    <g className="object-art"><circle cx={w/2+47} cy="53" r="16" fill={color}/></g>
    <text x={w/2+47} y="59" textAnchor="middle" fill="#071117" fontSize="16" fontWeight="bold">{index+1}</text>
-   <text x={w/2} y="118" textAnchor="middle" fill={color} fontSize="56" style={{fontFamily:'QweepsTeachingSerif,serif'}}>{letter}</text>
+   <g className="object-art"><LiveAsset name={node.icon} context={`${node.id} ${node.title}`} x={w/2-28} y={72} size={56} color={color}/></g>
    <Copy font={font} text={node.title} x={14} y={192} width={w-28} height={32} size={25} color="#e6eef0" center/>
    <Copy font={font} text={node.body} x={22} y={222} width={w-44} height={62} size={19} center/>
   </g>;

@@ -32,6 +32,7 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
  const stageKey=useRef('');
  const current=useRef(state);current.current=state;
  const voices=useRef(voice);voices.current=voice;
+ const audioStateRef=useRef(audioState);audioStateRef.current=audioState;
  const playingRef=useRef(playing);playingRef.current=playing;
  const sourceInput=useRef<HTMLTextAreaElement>(null),transcript=useRef<HTMLDivElement>(null);
  const request=useRef<AbortController|null>(null),parentRef=useRef(parents);parentRef.current=parents;
@@ -88,7 +89,7 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
    const f=hi.x===lo.x?0:(p-lo.x)/(hi.x-lo.x);
    return lo.y+f*(hi.y-lo.y);
  };
- const selectedDetails=chapter.visual?.presentation?.textMode==='labels'?chapter.visual.nodes.filter(n=>state.selected.includes(n.id)):[];
+ const selectedDetails=state.selected.map(id=>{const node=chapter.visual?.nodes.find(n=>n.id===id);if(node)return node;const desc=chapter.roles?.[id];return{id,title:desc?desc.split(':')[0]:id.replaceAll('-',' '),body:desc?(desc.split(':').slice(1).join(':').trim()||desc):`${chapter.title} — ${chapter.insight}`};});
  const choice=chapter.visual?.experiment?.choices[state.experiments?.[chapter.id]??-1];
  const caption=(narrationIndex===index?choice?.explanation:undefined)||((narratingChapter.narrationCues||!generic)?[...narratingChapter.cues].reverse().find(c=>state.time-narratingChapter.start>=c.at)?.text:(state.time-narratingChapter.start>=generatedPacing(narratingChapter).conclusionAt?narratingChapter.visual!.takeaway:narratingChapter.question))||narratingChapter.question;
  const bridge=(narrationIndex!==index?narratingChapter:chapter).continuity?.bridge;
@@ -101,9 +102,15 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
  const viewContext=(s=current.current)=>{const m=manifestRef.current;return{sceneId:m.kind==='live_generated'?'live_generated':'rizal_live',lessonId:m.id,documentId:m.documentId,title:m.title,focused:document.hasFocus(),time:s.time,camera:s.camera,selection:s.selected,region:s.region,experiments:s.experiments,
    lessonContext:{chapter:visualBeatIndex(m.chapters,s.time),narrationChapter:m.chapters.findIndex(c=>s.time<c.end),sources:m.sources,representation:m.representation},browserRenderer:{backend:'SVG/GSAP',live:true,focus:s.focus},sourceContext:'',branchDepth:parentRef.current.length};};
  async function speakAnswer(text:string){if(!voices.current)return;try{await answerAudio.current!.prepare(text);await answerAudio.current!.playFrom(0);}catch{setStatus('Answer shown · voice unavailable');}}
- function applyResponse(reply:Response,origin:LiveSnapshot,label:string,audioPosition=lessonAudio.current?.position||0,originLesson=manifestRef.current){
-  setMessages(m=>[...m,{role:'assistant',text:reply.answer,sources:reply.sources}]);
-  if(reply.liveBranch){setPendingBranch({jobId:reply.liveBranch.jobId,snapshot:checkpoint(origin),lesson:originLesson,label,audioPosition});}
+ function applyResponse(reply:Response,origin:LiveSnapshot,label:string,audioPosition=lessonAudio.current?.position||0,originLesson=manifestRef.current,mode:'question'|'branch'='question'){
+  if(mode==='question'||(!reply.liveBranch&&!reply.browserBranch)){
+   setMessages(m=>[...m,{role:'assistant',text:reply.answer,sources:reply.sources}]);
+   void speakAnswer(reply.answer);
+  }
+  if(reply.liveBranch){
+   setPanel(false);
+   setPendingBranch({jobId:reply.liveBranch.jobId,snapshot:checkpoint(origin),lesson:originLesson,label,audioPosition});
+  }
   else if(reply.browserBranch){const b=reply.browserBranch,m=manifestRef.current;
    const ci=typeof b.chapter==='number'?b.chapter:m.chapters.findIndex(c=>c.id===b.chapter),c=m.chapters[ci];
    if(!c||(b.lessonId&&b.lessonId!==m.id)){setError('The requested visual branch is unavailable.');return;}
@@ -112,16 +119,19 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
    const time=b.focus&&roleTime[b.focus]!==undefined?roleTime[b.focus]:Math.min(c.end-1,c.start+Math.max(2,c.cues[1]?.at||5));
    setState({...initialLiveSnapshot(),time,chapter:ci,selected:b.focus?[b.focus]:[],focus:b.focus});
    setSeekVersion(v=>v+1);setFocusRequest(v=>v+1);setBranchReason(b.visualReason);setStatus('Focused exploration · your previous place is saved');
+   setPanel(false);
   }else setStatus(reply.researchAvailable===false?'Answered · source lookup unavailable':'Answered at your paused position');
-  void speakAnswer(reply.answer);
  }
  async function ask(mode:'question'|'branch'='question',text=question){
-  if(!text.trim()||!session||busy)return;pause();setPanel(true);setBusy(true);setError('');setQuestion('');
+  if(!text.trim()||!session||busy)return;pause();
+  if(mode==='question')setPanel(true);
+  setBusy(true);setError('');setQuestion('');
   const origin=checkpoint(current.current),originLesson=manifestRef.current,originAudioPosition=lessonAudio.current?.position||0,q=text.trim(),controller=new AbortController();request.current=controller;
-  setMessages(m=>[...m,{role:'user',text:q}]);setStatus('QWEEPS is considering your question…');
+  if(mode==='question')setMessages(m=>[...m,{role:'user',text:q}]);
+  setStatus(mode==='branch'?'QWEEPS is building a visual branch…':'QWEEPS is considering your question…');
   const timeout=setTimeout(()=>controller.abort(),180000);
-  try{const reply=await api<Response>('ask',{sessionId:session,question:q,mode,context:viewContext(origin)},controller.signal);if(!controller.signal.aborted)applyResponse(reply,origin,q,originAudioPosition,originLesson);}
-  catch(e){setError(controller.signal.aborted?'Request stopped. Your paused view is preserved.':(e as Error).message);setQuestion(q);}
+  try{const reply=await api<Response>('ask',{sessionId:session,question:q,mode,context:viewContext(origin)},controller.signal);if(!controller.signal.aborted)applyResponse(reply,origin,q,originAudioPosition,originLesson,mode);}
+  catch(e){setError(controller.signal.aborted?'Request stopped. Your paused view is preserved.':(e as Error).message);if(mode==='question')setQuestion(q);}
   finally{clearTimeout(timeout);request.current=null;setBusy(false);}
  }
  function returnToParent(){const p=parentRef.current.at(-1);if(!p)return;pause();setManifest(p.lesson);setState(checkpoint(p.snapshot));setParents(old=>old.slice(0,-1));resumeOffset.current=p.audioPosition;setSeekVersion(v=>v+1);setBranchReason('');setStatus('Returned to your saved time, camera, selection and narration position');}
@@ -149,7 +159,8 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
   const tick=(now:number)=>{const dt=Math.min(.08,(now-previous)/1000);previous=now;setState(s=>{
     const limit=s.chapter===null?manifest.duration:manifest.chapters[s.chapter].end;
     const master=voices.current&&manifest.audioTrack&&lessonAudio.current?.isReady?lessonAudio.current.position:undefined;
-    const next=synchronizedTime(s.time,dt,limit,master);if(next>=limit){setPlaying(false);lessonAudio.current?.pause();}return{...s,time:next};});id=requestAnimationFrame(tick);};
+    const next=synchronizedTime(s.time,dt,limit,master);
+    if(next>=limit){setPlaying(false);lessonAudio.current?.pause();}return{...s,time:next};});id=requestAnimationFrame(tick);};
   id=requestAnimationFrame(tick);return()=>cancelAnimationFrame(id);
  },[playing,ready,closed,busy,manifest.id]);
  useEffect(()=>{if(chapter.clip)setReady(true);},[chapter.id,chapter.clip?.video]);
@@ -172,7 +183,7 @@ useEffect(()=>{transcript.current?.scrollTo({top:transcript.current.scrollHeight
    {selectedDetails.length>0&&<section className="live-selection-details" aria-label="Selected object explanations">{selectedDetails.map(n=><article key={n.id}><h3>{n.title}</h3><p>{n.body}</p></article>)}</section>}
    {chapter.visual?.experiment&&<div className="live-experiment"><strong>Explore a case</strong><p>{chapter.visual.experiment.prompt}</p>{chapter.visual.experiment.choices.map((c,i)=><button key={i} className={state.experiments?.[chapter.id]===i?'active':''} onClick={()=>{pause();setState(s=>({...s,experiments:{...s.experiments,[chapter.id]:i},selected:[c.target],focus:'',camera:{x:0,y:0,zoom:1}}));}}>{c.label}</button>)}</div>}<div className="live-messages" ref={transcript}>{!messages.length&&<div className="live-chat-welcome"><p>Your question keeps its place in the lesson.</p><button onClick={()=>void ask('question',generic?`Explain ${chapter.title}, using the source and this view.`:'Why was José Rizal executed?')}>{generic?'Explain this part':'Why was Rizal executed?'} <ArrowUpRight size={14}/></button><button onClick={()=>void ask('branch',generic?`Make a focused visual explanation of ${chapter.title}, resolving the selected detail.`:'Did Rizal’s execution start the revolution? Show the dates.')}>{generic?'Explore visually':'Explore the chronology'} <ArrowUpRight size={14}/></button></div>}{messages.map((m,i)=><article key={i} className={`live-message ${m.role}`}><span>{m.role==='user'?'YOU':'QWEEPS'}</span><p>{m.text}</p>{m.sources?.length?<div className="live-source-links">{m.sources.map(x=><a key={x.url} href={x.url} target="_blank" rel="noreferrer">{x.title}<ArrowUpRight size={11}/></a>)}</div>:null}</article>)}{busy&&<div className="live-thinking"><i/>Consulting the lesson and its sources…</div>}</div>
    {error&&<div className="live-error" role="alert">{error}</div>}
-   <form className="live-composer" onSubmit={e=>{e.preventDefault();void ask();}}><label htmlFor="live-question-input">{state.selected.length?`About ${state.selected.join(', ')}`:`At ${state.time.toFixed(1)}s · ${chapter.title}`}</label><textarea ref={sourceInput} id="live-question-input" aria-label="Ask QWEEPS about this lesson" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="Ask why, compare, or follow a detail…" rows={3} disabled={busy} maxLength={4000}/><div>{busy?<button type="button" onClick={()=>request.current?.abort()}>Stop request</button>:<><button type="button" disabled={!session||!question.trim()} onClick={()=>void ask('branch')}><GitBranch size={14}/>Ask &amp; explore</button><button type="submit" aria-label="Send live lesson question" disabled={!session||!question.trim()}><Send size={15}/></button></>}</div></form>
+   <form className="live-composer" onSubmit={e=>{e.preventDefault();void ask(generic?'branch':'question');}}><label htmlFor="live-question-input">{state.selected.length?`About ${state.selected.join(', ')}`:`At ${state.time.toFixed(1)}s · ${chapter.title}`}</label><textarea ref={sourceInput} id="live-question-input" aria-label="Ask QWEEPS about this lesson" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="Ask why, compare, or follow a detail…" rows={3} disabled={busy} maxLength={4000}/><div>{busy?<button type="button" onClick={()=>request.current?.abort()}>Stop request</button>:<><button type="button" disabled={!session||!question.trim()} onClick={()=>void ask('question')}><MessageCircle size={14}/>Text reply</button><button type="submit" aria-label="Send live lesson question" disabled={!session||!question.trim()}><GitBranch size={14}/>Branch mini-lesson</button></>}</div></form>
    <details className="live-evidence"><summary>Lesson sources &amp; visual conventions</summary><p>{generic?`AI-generated from ${manifest.documentTitle||'general knowledge'}. Source page references and the chosen presentation are retained with this lesson. SVG assets come from the bundled catalog; the scene passed browser-frame review.`:<>Modern coastlines: Natural Earth. Eye anatomy: adapted from MesserWoland’s Wikimedia SVG. Quill and ink: Lorc / Game-icons. Other symbols use Lucide; the clinic is schematic. Branches focus authored views; answers come from the configured AI.</>}</p>{manifest.sources.map(s=><a key={s.id} href={s.url} target="_blank" rel="noreferrer">{s.title}</a>)}</details>
   </aside></div>
  {pendingBranch&&<LivePreparation jobId={pendingBranch.jobId} onCancel={()=>setPendingBranch(null)} onReady={lesson=>{pause();setParents(p=>[...p,{snapshot:pendingBranch.snapshot,label:pendingBranch.label,audioPosition:pendingBranch.audioPosition,lesson:pendingBranch.lesson}]);setManifest(lesson);setState(initialLiveSnapshot());resumeOffset.current=null;setSeekVersion(v=>v+1);setPendingBranch(null);setBranchReason('A focused explanation of your question · return to your saved place at any time.');setStatus('Focused live lesson ready');}}/>}

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QWEEPS · Live Interactive Visual Learning</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #090e12;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .browser-frame {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      background: #0d151c;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+    }
+    .browser-titlebar {
+      height: 42px;
+      background: #111a22;
+      border-bottom: 1px solid #1e2c38;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 16px;
+      user-select: none;
+    }
+    .window-controls {
+      display: flex;
+      gap: 8px;
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot.close { background: #ff5f56; border: 1px solid #e0443e; }
+    .dot.min { background: #ffbd2e; border: 1px solid #dea123; }
+    .dot.max { background: #27c93f; border: 1px solid #1aab29; }
+    .browser-tab {
+      background: #18242f;
+      padding: 6px 14px;
+      border-radius: 6px 6px 0 0;
+      font-size: 12px;
+      font-weight: 500;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #1e2c38;
+      border-bottom: none;
+    }
+    .browser-tab.active {
+      color: #38bdf8;
+      background: #15202a;
+    }
+    .url-bar-wrap {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+    }
+    .url-bar {
+      background: #0b1117;
+      border: 1px solid #1e2d3d;
+      border-radius: 6px;
+      padding: 4px 14px;
+      font-size: 12px;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 580px;
+      width: 100%;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .url-bar svg { color: #10b981; }
+    .url-bar .host { color: #f1f5f9; font-weight: 500; }
+    .url-bar .query { color: #38bdf8; }
+    .browser-viewport {
+      flex: 1;
+      width: 100%;
+      height: calc(100% - 42px);
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="browser-frame">
+    <div class="browser-titlebar">
+      <div class="window-controls">
+        <span class="dot close"></span>
+        <span class="dot min"></span>
+        <span class="dot max"></span>
+      </div>
+      <div class="browser-tab active">
+        <span>🎬</span>
+        <span id="tab-title">QWEEPS · Live Visual Learning</span>
+      </div>
+      <div class="url-bar-wrap">
+        <div class="url-bar">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <span>https://<span class="host">qweeps.local</span><span id="url-path" class="query">/?lesson=...</span></span>
+        </div>
+      </div>
+      <div style="width: 60px;"></div>
+    </div>
+    <iframe id="app-frame" class="browser-viewport" src="about:blank"></iframe>
+  </div>
+
+  <script>
+    const search = window.location.search;
+    const targetUrl = '/' + (search || '');
+    document.getElementById('app-frame').src = targetUrl;
+    document.getElementById('url-path').textContent = search || '/';
+    
+    // Auto update tab title if iframe title changes
+    const iframe = document.getElementById('app-frame');
+    iframe.onload = () => {
+      try {
+        const title = iframe.contentDocument.title;
+        if (title) document.getElementById('tab-title').textContent = title;
+      } catch (e) {}
+    };
+  </script>
+</body>
+</html>

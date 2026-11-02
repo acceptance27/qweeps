@@ -16,6 +16,6 @@ export function DiagramArtwork({node,width,height}:{node:LiveNode;width:number;h
     case 'line':return <line {...common} x1={p.x1} y1={p.y1} x2={p.x2} y2={p.y2}/>;
     case 'text':return <text key={i} x={p.x} y={p.y} fontSize={Math.max(Number(p.size),18*100/Math.max(1,size))} textAnchor="middle" fill={paints[p.fill==='none'?p.stroke:p.fill]} fontFamily="QweepsTeachingSerif,serif">{p.text}</text>;
    }})}
-  </g></svg>:<g className="object-art"><LiveAsset name={node.icon} x={(width-size*.7)/2} y={(height-size*.7)/2} size={size*.7} color={palette[node.color]}/></g>}
+  </g></svg>:<g className="object-art"><LiveAsset name={node.icon} context={`${node.id} ${node.title}`} x={(width-size*.7)/2} y={(height-size*.7)/2} size={size*.7} color={palette[node.color]}/></g>}
  </g>;
 }

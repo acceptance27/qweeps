@@ -15,8 +15,9 @@ def _visible_texts(scene, t):
     scene.evaluate(t, [], None)
     found = {}
     tops = list(scene.mobjects)
-    for mobs in getattr(scene, "roles", {}).values():
-        tops.extend(mobs)
+    if not getattr(scene, "scene_baked", None):
+        for mobs in getattr(scene, "roles", {}).values():
+            tops.extend(mobs)
     for top in tops:
         try:
             family = top.get_family()
@@ -167,7 +168,7 @@ def audit_scene(scene, collision_threshold: float = 0.32,
                 continue
             span = end - start
             frames = [_frame(scene, start + span * fraction)
-                      for fraction in (0.2, 0.5, 0.8)]
+                      for fraction in (0.06, 0.2, 0.5, 0.8, 0.96)]
             frames = [frame for frame in frames if frame is not None]
             if len(frames) < 2:
                 continue
@@ -188,10 +189,16 @@ def audit_scene(scene, collision_threshold: float = 0.32,
                 })
 
     # Collapse repeats while keeping order.
+    if getattr(scene, "_contract", None) is not None or getattr(scene, "CONTRACT", None) is not None:
+        from .scene_contract import audit_contract_scene
+
+        findings.extend(audit_contract_scene(scene))
+
     unique = []
     seen_findings = set()
     for finding in findings:
-        key = (finding["code"], finding.get("beat"), finding.get("detail"))
+        key = (finding["code"], finding.get("beat"), finding.get("field"),
+               finding.get("zone"), finding.get("detail"))
         if key not in seen_findings:
             seen_findings.add(key)
             unique.append(finding)

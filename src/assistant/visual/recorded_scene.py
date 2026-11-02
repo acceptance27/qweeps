@@ -17,6 +17,16 @@ from manimlib import *
 from manimlib.animation.animation import prepare_animation
 
 from .native_timing import choose_baked_frame
+from .scene_contract import (
+    CONTRACT_ZONES,
+    CardParts,
+    CompositeCardTransform,
+    _min_font_floors,
+    _normalize_zone_bounds,
+    composite_card_transform,
+    validate_card_parts,
+)
+from contextlib import contextmanager
 
 # ManimCE's YELLOW is a softer gold (#F7D96F); ManimGL's is pure yellow.
 # Override the shared palette constants so compiled CE sources keep CE colors.
@@ -101,6 +111,24 @@ def _ce_arrange_in_grid(self, rows=None, cols=None, **kwargs):
 Mobject.arrange_in_grid = _ce_arrange_in_grid
 
 
+if "ParametricCurve" in globals():
+    _orig_param_init = ParametricCurve.__init__
+
+    def _ce_param_init(self, *args, **kwargs):
+        tr = kwargs.get("t_range")
+        if isinstance(tr, (list, tuple)) and len(tr) == 2:
+            step = max(0.01, abs(float(tr[1]) - float(tr[0])) / 100.0)
+            kwargs["t_range"] = [float(tr[0]), float(tr[1]), step]
+        elif len(args) >= 2 and isinstance(args[1], (list, tuple)) and len(args[1]) == 2:
+            tr = args[1]
+            step = max(0.01, abs(float(tr[1]) - float(tr[0])) / 100.0)
+            args = (args[0], [float(tr[0]), float(tr[1]), step], *args[2:])
+        _orig_param_init(self, *args, **kwargs)
+
+    ParametricCurve.__init__ = _ce_param_init
+    ParametricFunction = ParametricCurve
+
+
 FPS = 30
 DT = 1.0 / FPS
 
@@ -114,13 +142,29 @@ _VMobject_base = VMobject
 # different positional parameter (a shift vector, a point, etc.). Wrap the
 # constructors so ordinary CE code keeps its meaning: multiple mobjects become
 # an AnimationGroup of per-mobject animations.
-def _variadic_animation(cls):
-    def factory(*args, **kwargs):
-        if len(args) > 1 and all(isinstance(arg, Mobject) for arg in args):
-            return AnimationGroup(*[cls(arg, **kwargs) for arg in args])
-        return cls(*args, **kwargs)
+def _unwrap_card_arg(cls_name, arg):
+    if isinstance(arg, CardParts):
+        if cls_name in {"FadeIn", "FadeOut", "ShowCreation", "Create", "Uncreate", "Write", "DrawBorderThenFill"}:
+            parts = [arg.frame, arg.text]
+            if getattr(arg.extras, "submobjects", None):
+                parts.append(arg.extras)
+            return parts
+        return [arg.as_group()]
+    return [arg]
 
-    factory.__name__ = getattr(cls, "__name__", "animation")
+
+def _variadic_animation(cls):
+    cls_name = getattr(cls, "__name__", "animation")
+
+    def factory(*args, **kwargs):
+        expanded = []
+        for arg in args:
+            expanded.extend(_unwrap_card_arg(cls_name, arg))
+        if len(expanded) > 1 and all(isinstance(arg, Mobject) for arg in expanded):
+            return AnimationGroup(*[cls(arg, **kwargs) for arg in expanded])
+        return cls(*expanded, **kwargs)
+
+    factory.__name__ = cls_name
     factory.__qualname__ = factory.__name__
     factory._ce_animation = cls
     return factory
@@ -192,10 +236,15 @@ def _ce_text_factory(*args, **kwargs):
     explicit = kwargs.get("height") is not None or kwargs.get("width") is not None
     color = kwargs.pop("color", None)
     obj = _Text_base(*args, **kwargs)
+    obj._ce_font_size = float(font_size) if isinstance(font_size, (int, float)) else 48.0
     if color is not None:
         obj.set_color(color)
     if not explicit:
         _apply_text_metric(obj, text, font_size, font, weight, slant)
+    try:
+        obj._initial_height = float(obj.get_height())
+    except Exception:
+        obj._initial_height = 0.0
     return obj
 
 
@@ -253,7 +302,8 @@ class Circumscribe(AnimationGroup):
 
     def __init__(self, mobject, color=YELLOW, buff=0.1, fade_out=True,
                  time_width=0.3, **kwargs):
-        box = SurroundingRectangle(mobject, color=color, buff=buff)
+        target = mobject.as_group() if isinstance(mobject, CardParts) else mobject
+        box = SurroundingRectangle(target, color=color, buff=buff)
         animations = [Create(box)]
         if fade_out:
             animations.append(FadeOut(box))
@@ -423,15 +473,16 @@ NumberPlane = _ce_number_plane
 
 # ------------------------------------------------------------ CE color kwargs
 def _wrap_color(cls):
-    def factory(*args, **kwargs):
-        color = kwargs.pop("color", None)
-        obj = cls(*args, **kwargs)
-        if color is not None:
-            obj.set_color(color)
-        return obj
+    class Wrapped(cls):
+        def __init__(self, *args, **kwargs):
+            color = kwargs.pop("color", None)
+            super().__init__(*args, **kwargs)
+            if color is not None:
+                self.set_color(color)
 
-    factory.__name__ = getattr(cls, "__name__", "wrapped")
-    return factory
+    Wrapped.__name__ = getattr(cls, "__name__", "wrapped")
+    Wrapped.__qualname__ = Wrapped.__name__
+    return Wrapped
 
 
 for _name in ("Circle", "Ellipse", "Dot", "Tex", "Line", "Arrow", "Triangle",
@@ -519,17 +570,139 @@ class RecordedScene(Scene):
         self.beats = []             # {"id","title","time"} markers from the CE source
         self.cues = []              # {"id","time"} sub-beat anchors for narration sync
         self.roles = {}
+        self.bound_objects = {}
+        self.bound_cards = {}
+        self.bound_kinds = {}
+        self._active_budget_deadline = None
         self.settings = None
         self.build()
 
     # ------------------------------------------------------------- recording
+    def _setup_contract_runtime(self):
+        contract = getattr(self, "_contract", None) or getattr(self, "CONTRACT", None)
+        if isinstance(contract, dict):
+            self._contract = contract
+
     def beat(self, name, title=None):
         """Marker the generated CE source calls at a teaching-beat boundary."""
         self.beats.append({"id": str(name), "title": str(title or name), "time": round(self.clock, 3)})
 
-    def cue(self, name):
+    def cue(self, name, mobject=None):
         """Marker for a semantic object the narration can anchor to."""
+        if mobject is not None:
+            self.bind(str(name), mobject)
         self.cues.append({"id": str(name), "time": round(self.clock, 3)})
+
+    def bind(self, object_id, mobject, kind=None, zone=None):
+        """Bind a contract object ID to its runtime Mobject or CardParts."""
+        oid = str(object_id)
+        contract = getattr(self, "_contract", None) or getattr(self, "CONTRACT", None) or {}
+        zone = str(zone or "")
+        if not zone:
+            for beat in contract.get("beats") or []:
+                zmap = beat.get("zone_bindings") or {}
+                if oid in zmap:
+                    zone = zmap[oid]
+                    break
+        if not zone and oid in (contract.get("persistent_enter") or {}):
+            zone = (contract["persistent_enter"][oid] or {}).get("zone", "")
+
+        is_card = kind == "card" or isinstance(mobject, CardParts)
+        if not is_card and kind is None:
+            for beat in contract.get("beats") or []:
+                if (beat.get("object_kinds") or {}).get(oid) == "card":
+                    is_card = True
+                    break
+
+        if is_card:
+            validate_card_parts(mobject, object_id=oid, zone=zone)
+            grp = mobject.as_group()
+            self.bound_cards[oid] = mobject
+            self.bound_kinds[oid] = "card"
+            self.bound_objects[oid] = grp
+            self.roles[oid] = [grp]
+            return mobject
+
+        if not isinstance(mobject, Mobject):
+            raise ValueError(f"Contract object '{oid}' must be a Mobject, got {type(mobject).__name__}")
+        self.bound_kinds[oid] = kind or "mobject"
+        self.bound_objects[oid] = mobject
+        self.roles[oid] = [mobject]
+        return mobject
+
+    def zone_box(self, zone_name):
+        contract = getattr(self, "_contract", None) or getattr(self, "CONTRACT", None) or {}
+        zones = contract.get("zones") or CONTRACT_ZONES
+        if zone_name not in zones:
+            raise ValueError(f"Unknown contract zone '{zone_name}'")
+        return _normalize_zone_bounds(zones[zone_name])
+
+    def zone_center(self, zone_name):
+        x1, x2, y1, y2 = self.zone_box(zone_name)
+        return np.array([(x1 + x2) / 2.0, (y1 + y2) / 2.0, 0.0])
+
+    def place_in_zone(self, mobject, zone_name, buff=0.35, fit=True):
+        """Center `mobject` inside `zone_name`; only fit-scale if every Text stays >= min_font_size."""
+        x1, x2, y1, y2 = self.zone_box(zone_name)
+        max_w = max(0.2, (x2 - x1) - 0.1)
+        max_h = max(0.2, (y2 - y1) - 0.1)
+        target_center = self.zone_center(zone_name)
+        mobject.move_to(target_center)
+        if not fit:
+            return mobject
+        try:
+            w = float(mobject.get_width())
+            h = float(mobject.get_height())
+        except Exception:
+            return mobject
+        if w <= max_w and h <= max_h:
+            return mobject
+        scale_factor = min(max_w / max(w, 1e-6), max_h / max(h, 1e-6))
+        if scale_factor >= 1.0:
+            return mobject
+
+        contract = getattr(self, "_contract", None) or getattr(self, "CONTRACT", None) or {}
+        label_floor, title_floor = _min_font_floors(contract)
+        can_fit = True
+        for part in mobject.get_family():
+            txt = getattr(part, "text", None)
+            if not isinstance(txt, str) or not txt.strip():
+                continue
+            authored = float(getattr(part, "_ce_font_size", 48.0))
+            init_h = float(getattr(part, "_initial_height", 0.0) or 0.0)
+            curr_h = float(part.get_height()) if init_h > 1e-4 else init_h
+            eff = authored * (curr_h / init_h) if init_h > 1e-4 else authored
+            req = title_floor if getattr(part, "_is_title", False) else label_floor
+            if eff * scale_factor < req - 1e-3:
+                can_fit = False
+                break
+        if can_fit:
+            mobject.scale(scale_factor)
+            mobject.move_to(target_center)
+        return mobject
+
+    @contextmanager
+    def _animation_budget(self, budget_seconds: float):
+        prev = self._active_budget_deadline
+        self._active_budget_deadline = self.clock + max(0.4, float(budget_seconds))
+        try:
+            yield
+        finally:
+            self._active_budget_deadline = prev
+
+    def _hold_until(self, target_clock: float, min_hold: float = 1.0):
+        remaining = float(target_clock) - self.clock
+        if remaining > 1e-3:
+            self.wait(remaining)
+        elif min_hold > 0 and remaining < -0.5:
+            self.wait(min_hold)
+
+    def reset_scene(self):
+        """Explicit scene reset at the end of construct()."""
+        for mob in list(self.mobjects):
+            if mob is not self.select_group:
+                self.remove(mob)
+        self._snapshot()
 
     # ManimCE ThreeDScene API
     def set_camera_orientation(self, phi=70 * DEGREES, theta=-30 * DEGREES, zoom=1.0,
@@ -580,9 +753,11 @@ class RecordedScene(Scene):
         # Exact scene graph, so a seek restores which mobjects exist at that
         # moment. Fade bookkeeping alone cannot: a later FadeOut(Group(...))
         # adds a wrapper that keeps already-hidden children alive.
-        self.scene_baked.append(
-            (self.clock, tuple(m for m in self.mobjects if m is not self.select_group))
-        )
+        entry = (self.clock, tuple(m for m in self.mobjects if m is not self.select_group))
+        if self.scene_baked and abs(self.scene_baked[-1][0] - self.clock) < 1e-9:
+            self.scene_baked[-1] = entry
+        else:
+            self.scene_baked.append(entry)
         for mob in self.mobjects:
             if not getattr(mob, "has_updaters", lambda: False)():
                 continue
@@ -651,29 +826,52 @@ class RecordedScene(Scene):
         self._snapshot()
 
     def play(self, *animations, run_time=1.0, **kwargs):
+        deadline = getattr(self, "_active_budget_deadline", None)
+        if deadline is not None:
+            remaining = deadline - self.clock
+            if remaining <= 1e-6:
+                return
+            run_time = min(float(run_time), remaining)
         # Some CE code writes `self.play(SomeMobject(...))` and expects it to
         # appear.  Real ManimCE rejects that, but the native pipeline can be
         # forgiving: draw the bare mobject rather than crashing the whole lesson.
-        prepared = [prepare_animation(Create(a) if isinstance(a, Mobject) else a)
-                    for a in animations]
+        prepared = [
+            prepare_animation(
+                Create(a.as_group()) if isinstance(a, CardParts)
+                else (Create(a) if isinstance(a, Mobject) else a)
+            )
+            for a in animations
+        ]
         rate_func = kwargs.get("rate_func")
+
+        def _leaf_animations(anim_obj):
+            subs = getattr(anim_obj, "animations", None)
+            if subs:
+                out = []
+                for sub in subs:
+                    out.extend(_leaf_animations(sub))
+                return out
+            return [anim_obj]
+
         for anim in prepared:
             anim.set_run_time(run_time)
             if rate_func is not None:
                 anim.rate_func = rate_func
             anim.begin()
-            if anim.mobject is not self.frame:
-                self.add(anim.mobject)
+            for leaf in _leaf_animations(anim):
+                if leaf.mobject is not self.frame:
+                    self.add(leaf.mobject)
         self._checkpoint()
         start = self.clock
         for anim in prepared:
-            target = anim.mobject
-            for mobs in self.roles.values():
-                for role_mob in mobs:
-                    family = role_mob.get_family()
-                    if target is role_mob or target in family or role_mob in target.get_family():
-                        previous = self.role_reveal.get(id(role_mob))
-                        self.role_reveal[id(role_mob)] = start if previous is None else min(previous, start)
+            for leaf in _leaf_animations(anim):
+                target = leaf.mobject
+                for mobs in self.roles.values():
+                    for role_mob in mobs:
+                        family = role_mob.get_family()
+                        if target is role_mob or target in family or role_mob in target.get_family():
+                            previous = self.role_reveal.get(id(role_mob))
+                            self.role_reveal[id(role_mob)] = start if previous is None else min(previous, start)
         steps = max(1, int(round(run_time * FPS)))
         for k in range(1, steps + 1):
             self._step(DT, prepared, k / steps)
@@ -685,6 +883,14 @@ class RecordedScene(Scene):
         self._snapshot()
 
     def wait(self, run_time=1.0):
+        deadline = getattr(self, "_active_budget_deadline", None)
+        if deadline is not None:
+            remaining = deadline - self.clock
+            if remaining <= 1e-6:
+                return
+            run_time = min(float(run_time), remaining)
+        if run_time <= 1e-6:
+            return
         steps = max(1, int(round(run_time * FPS)))
         for _ in range(steps):
             self._step(DT)
@@ -704,6 +910,10 @@ class RecordedScene(Scene):
         self.beats = []
         self.cues = []
         self.roles = {}
+        self.bound_objects = {}
+        self.bound_cards = {}
+        self.bound_kinds = {}
+        self._active_budget_deadline = None
         self.clock = 0.0
         self.frame.move_to(ORIGIN).set_width(14.22)
         self.chrome = "chapter_titles" in type(self).__dict__
@@ -870,6 +1080,13 @@ class RecordedScene(Scene):
         highlights = []
         for key in selected:
             for mob in self.roles.get(key, []):
+                if self.scene_baked and not self._in_graph(mob, self.mobjects):
+                    continue
+                if t + 1e-6 < self.role_reveal.get(id(mob), 0):
+                    continue
+                hide = self.role_hide.get(id(mob))
+                if hide is not None and t >= hide - 1e-6:
+                    continue
                 highlights.append(SurroundingRectangle(mob, buff=.12).set_stroke("#FFFF00", 2).set_fill(opacity=0))
         if highlights or self.select_group.submobjects:
             self.remove(self.select_group)
@@ -886,6 +1103,13 @@ class RecordedScene(Scene):
 
     def autoregister(self, names):
         """Register a deliberate click map from the scene's own variables."""
+        if getattr(self, "bound_objects", None):
+            # Contract scenes bind roles strictly by contract IDs via self.bind(...)
+            for oid, mob in self.bound_objects.items():
+                if isinstance(mob, Mobject):
+                    self.roles[oid] = [mob]
+            return
+
         def add(key, mob):
             if isinstance(mob, Mobject):
                 self.roles.setdefault(key, []).append(mob)
@@ -969,9 +1193,9 @@ class RecordedScene(Scene):
             except (AttributeError, ValueError):
                 continue
             key = re.sub(r"[^a-z0-9]+", "-", low).strip("-")
-            if not key or key in self.roles:
+            if not key:
                 continue
-            self.roles[key] = [mob]
+            self.roles.setdefault(key, []).append(mob)
             registered.add(id(mob))
 
     def metadata(self, t):
@@ -985,6 +1209,8 @@ class RecordedScene(Scene):
                 if id(mob) in seen:
                     continue
                 seen.add(id(mob))
+                if self.scene_baked and not self._in_graph(mob, self.mobjects):
+                    continue
                 if mob.get_width() < .003:
                     continue
                 if t + 1e-6 < self.role_reveal.get(id(mob), 0):
@@ -1000,6 +1226,8 @@ class RecordedScene(Scene):
                     continue
                 bounds.append({
                     "id": key,
+                    "role": key,
+                    "dataRole": key,
                     "x1": float(((lo[0] - center[0]) / width + .5) * 1280),
                     "x2": float(((hi[0] - center[0]) / width + .5) * 1280),
                     "y1": float((.5 - (hi[1] - center[1]) / height) * 720),

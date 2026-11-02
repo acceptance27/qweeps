@@ -158,6 +158,8 @@ def validate_svg(value: Any, name: str = 'SVG') -> str:
 
 
 def _text(value: Any, name: str, limit: int = 500) -> str:
+    if isinstance(value, dict):
+        value = value.get("title") or value.get("label") or value.get("text") or value.get("id") or ""
     if not isinstance(value, str) or not value.strip():
         raise PlanError(f"{name} must be nonempty text")
     return value.strip()[:limit]

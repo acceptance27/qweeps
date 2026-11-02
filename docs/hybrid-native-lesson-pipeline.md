@@ -599,7 +599,12 @@ Implemented on this branch:
   coverage are checked after compile; findings fail the job.
 - **Runtime** — registry manifests, worker keep-alive, first-scene prewarm,
   registry experiment handling, generic semantic roles for generated scenes.
-- **UI** — “Include native ManimGL beats” in the live lesson loader.
+- **Continuous native mode** — continuous native worker mode where ManimGL scenes run smoothly across contiguous beats without interruption or rebuilding.
+- **Scene direction contract (`scene_contract.py`)** — strict AST lock, lifecycle validation (zero focal or persistent leaks), AABB zone collision checks with slot splitting (`right_top`/`right_bottom`), and elastic duration stretching (capped at 1.20x max stretch) with surgical slot repair.
+- **Audio-visual synchronization contract** — verified semantic coupling ensuring narration explicitly names and describes visible entities and actions on that beat, eliminating disconnected voiceovers.
+- **Archived 20-beat hybrid reference** — `b1b20bea700000000000000000000001` (*P vs NP: The $1,000,000 Question of Computer Science*), archived in `bundled-lessons/browser-lessons/` with continuous master audio and 20 per-beat MP3 fallbacks in `bundled-lessons/visual-narration/`.
+- **Ask Qweeps branch mini-lessons** — interactive Q&A lets learners launch a focused 3-beat sub-lesson from any beat with persistent return breadcrumb navigation back to parent state.
+- **UI** — “Include native ManimGL beats” and composition mode selection in the live lesson loader.
 
 Still to build before this is production-ready:
 

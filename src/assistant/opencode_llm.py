@@ -147,15 +147,17 @@ class OpenCodeLLM:
                     messages.append({"role": "user", "content": content})
                 else:
                     messages.append({"role": "user", "content": instruction})
+                effective_max_tokens = max(max_tokens or 16000, 16000)
                 payload = {
                     "model": api_model,
                     "messages": messages,
-                    "max_tokens": max_tokens or 9000,
+                    "max_tokens": effective_max_tokens,
                     "temperature": 0.2,
                 }
                 if reasoning_effort:
                     payload["reasoning_effort"] = reasoning_effort
                 else:
+                    payload["reasoning_effort"] = "low"
                     payload["provider_options"] = {"thinking": {"type": "disabled"}}
                 data = post_json(
                     "https://opencode.ai/inference/go/openai/v1/chat/completions",
@@ -165,6 +167,17 @@ class OpenCodeLLM:
                 )
                 choices = data.get("choices") or []
                 text = (choices[0].get("message", {}).get("content") or "").strip() if choices else ""
+                if not text:
+                    payload["max_tokens"] = max(effective_max_tokens, 24000)
+                    payload["reasoning_effort"] = "low"
+                    data = post_json(
+                        "https://opencode.ai/inference/go/openai/v1/chat/completions",
+                        payload,
+                        headers=headers,
+                        timeout=self.timeout,
+                    )
+                    choices = data.get("choices") or []
+                    text = (choices[0].get("message", {}).get("content") or "").strip() if choices else ""
         except HTTPError as exc:
             if exc.status == 429:
                 self._error(model, {"status": 429, "retryAfterMs": 60_000})

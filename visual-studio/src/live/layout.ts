@@ -58,22 +58,24 @@ export function nodeBoxes(v:LiveVisual):NodeBox[]{
  return v.nodes.map((node,i)=>({node,x:45+i*(w+gap),y:v.layout==='timeline'?200:125,width:w,height:v.layout==='timeline'?280:365}));
 }
 export function wrapCopy(font:Font|null,text:string,width:number,size:number){
- const measure=(s:string)=>font?font.getAdvanceWidth(s,size):s.length*size*.52;
+ const s=typeof text==='string'?text:(typeof text==='object'&&text?((text as any).title||(text as any).label||(text as any).text||(text as any).name||JSON.stringify(text)):String(text??''));
+ const measure=(str:string)=>font?font.getAdvanceWidth(str,size):str.length*size*.52;
  const lines:string[]=[];let line='';
- for(const word of text.split(/\s+/)){const next=line?line+' '+word:word;if(line&&measure(next)>width){lines.push(line);line=word;}else line=next;}
+ for(const word of s.split(/\s+/)){const next=line?line+' '+word:word;if(line&&measure(next)>width){lines.push(line);line=word;}else line=next;}
  if(line)lines.push(line);return lines;
 }
 export function fitCopy(font:Font|null,text:string,width:number,height:number,preferred=23,min=18){
+ const raw=typeof text==='string'?text:(typeof text==='object'&&text?((text as any).title||(text as any).label||(text as any).text||(text as any).name||JSON.stringify(text)):String(text??''));
  // SVG y positions are baselines. Height is space below the first baseline,
  // not the height of an additional invisible line above it.
  const descent=font?Math.max(0,-font.descender/font.unitsPerEm):.3;
  for(let size=preferred;size>=min;size--){
-  const lines=wrapCopy(font,text,width,size);
+  const lines=wrapCopy(font,raw,width,size);
   const heightFits=Math.max(0,lines.length-1)*size*1.36+size*descent<=height;
   const widthFits=!lines.some(line=>(font?font.getAdvanceWidth(line,size):line.length*size*.52)>width);
   if(heightFits&&widthFits)return{lines,size,overflow:false};
  }
- return{lines:wrapCopy(font,text,width,min),size:min,overflow:true};
+ return{lines:wrapCopy(font,raw,width,min),size:min,overflow:true};
 }
 
 export function diagramCopy(font:Font|null,node:LiveNode,width:number,height:number,textMode:'labels'|'descriptive'='descriptive'){

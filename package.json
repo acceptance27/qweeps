@@ -9,7 +9,8 @@
   "scripts": {
     "postinstall": "ln -sfn ../node_modules visual-studio/node_modules",
     "dev": "vite visual-studio --config visual-studio/vite.config.ts --port=3000 --host=0.0.0.0",
-    "build": "vite build visual-studio --config visual-studio/vite.config.ts && rm -rf dist && cp -r visual-studio/dist dist",
+    "build": "vite build visual-studio --config visual-studio/vite.config.ts && node visual-studio/scripts/copy_notices.mjs && rm -rf dist && cp -r visual-studio/dist dist",
+    "notices": "node visual-studio/scripts/copy_notices.mjs",
     "lint": "tsc -p visual-studio/tsconfig.json --noEmit",
     "test": "npm --prefix visual-studio test"
   },
