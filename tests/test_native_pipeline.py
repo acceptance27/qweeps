@@ -56,6 +56,8 @@ def test_assemble_maps_native_windows_and_rebuilds_clock():
     assert chapters[0]["renderer"] == "manimgl"
     assert chapters[0]["nativeOffset"] == 2.0
     assert chapters[1]["nativeOffset"] == 8.0
+    assert chapters[0]["nativeDuration"] == 6.0
+    assert chapters[1]["nativeDuration"] == 6.0
     assert chapters[2].get("renderer") is None
     assert result["nativeScenes"]["gen_test"]["sceneId"] == "gen_test"
 

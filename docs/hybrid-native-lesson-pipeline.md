@@ -542,12 +542,28 @@ Narration, after synchronization:
 | output | 85.4 s continuous WAV, 5/6/6/4 cues |
 | lesson clock | 50.95 s |
 
-**Pacing mismatch:** the four chapters carry 50–65 words of narration each,
-while a native window is 5–7 s. The one-track narration is 85.4 s but the
-lesson clock is 51 s. The player advances chapters on the lesson clock, so the
-stage changes before the narration finishes. Native-beat narration must be
-capped to roughly `window × 3` words, or that explanation must move into the
-adjacent layout beat.
+**Native pacing:** synchronization re-times every chapter to its spoken span
+(for example, resting becomes 20.1 s while its native window is 7.0 s). The
+player therefore scales the native scene into the audio span:
+
+```
+sceneTime = nativeOffset
+          + (lessonTime - chapter.start)
+          / (chapter.end - chapter.start)
+          * nativeDuration
+```
+
+At lesson 10 s the resting beat requests scene time 6.08 s, not 12.6 s, so the
+scene no longer runs into the next beat. Generated scenes also call
+`self.cue("<object-id>")` at each semantic object's first mention; when
+narration cues share that id, the player maps the cue's audio time to the
+scene cue time (piecewise-linear) instead of stretching uniformly. The current
+test scene predates `self.cue`, so it uses the linear fallback.
+
+Remaining pacing work: native-beat narration is still 50–65 words for a 5–7 s
+scene window. The linear stretch keeps them aligned but makes the animation
+slow; capping native narration or moving detail into the adjacent layout beat
+is still needed.
 
 The initial sync attempt failed because the anchor step asked for 2,000 tokens
 while Muse Spark spent ~2.2k on reasoning and returned empty content. The budget

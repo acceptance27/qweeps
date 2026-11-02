@@ -22,8 +22,10 @@ def main() -> None:
         end = scene.beats[index + 1]["time"] if index + 1 < len(scene.beats) else scene.duration
         windows.append({"id": beat["id"], "title": beat["title"],
                         "start": round(float(beat["time"]), 3), "end": round(float(end), 3)})
+    cues = [{"id": cue["id"], "time": round(float(cue["time"]), 3)}
+            for cue in getattr(scene, "cues", [])]
     target.write_text(json.dumps({"duration": round(float(scene.duration), 3),
-                                  "beats": windows, "tracks": len(scene.tracks)}, indent=1))
+                                  "beats": windows, "cues": cues, "tracks": len(scene.tracks)}, indent=1))
 
 
 if __name__ == "__main__":

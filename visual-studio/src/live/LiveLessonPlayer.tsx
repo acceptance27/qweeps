@@ -40,7 +40,26 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
  const narrationIndex=foundIndex<0?last:foundIndex,narratingChapter=manifest.chapters[narrationIndex];
  const index=visualBeatIndex(manifest.chapters,state.time);
  const chapter=manifest.chapters[state.time>=manifest.duration?last:index];
- const nativeTime=(c:LiveChapter,t:number)=>c.renderer==='manimgl'?(c.nativeOffset??c.start)+(t-c.start):t;
+ const nativeTime=(c:LiveChapter,t:number)=>{
+   if(c.renderer!=='manimgl')return t;
+   const offset=c.nativeOffset??c.start;
+   const duration=c.nativeDuration??(c.end-c.start);
+   const span=Math.max(.01,c.end-c.start);
+   const points=[{x:0,y:offset}];
+   const cues=(manifest.nativeScenes?.[c.nativeScene||'']?.cues)||[];
+   for(const q of c.narrationCues||[]){
+     const hit=cues.find(x=>x.id===q.target);
+     if(hit)points.push({x:Math.max(0,Math.min(span,q.start)),y:Math.max(offset,Math.min(offset+duration,hit.time))});
+   }
+   points.push({x:span,y:offset+duration});
+   points.sort((a,b)=>a.x-b.x||a.y-b.y);
+   for(let i=1;i<points.length;i++)if(points[i].y<points[i-1].y)points[i].y=points[i-1].y;
+   const p=Math.max(0,Math.min(span,t-c.start));
+   let lo=points[0],hi=points[points.length-1];
+   for(let i=0;i<points.length-1;i++)if(p>=points[i].x&&p<=points[i+1].x){lo=points[i];hi=points[i+1];break;}
+   const f=hi.x===lo.x?0:(p-lo.x)/(hi.x-lo.x);
+   return lo.y+f*(hi.y-lo.y);
+ };
  const selectedDetails=chapter.visual?.presentation?.textMode==='labels'?chapter.visual.nodes.filter(n=>state.selected.includes(n.id)):[];
  const choice=chapter.visual?.experiment?.choices[state.experiments?.[chapter.id]??-1];
  const caption=(narrationIndex===index?choice?.explanation:undefined)||((narratingChapter.narrationCues||!generic)?[...narratingChapter.cues].reverse().find(c=>state.time-narratingChapter.start>=c.at)?.text:(state.time-narratingChapter.start>=generatedPacing(narratingChapter).conclusionAt?narratingChapter.visual!.takeaway:narratingChapter.question))||narratingChapter.question;

@@ -28,7 +28,7 @@ def choose_native_beats(story: dict, limit: int = 5) -> list[str]:
     return preferred[:limit]
 
 
-def build_prompt(story: dict) -> str:
+def build_prompt(story: dict, nodes_by_beat: dict | None = None) -> str:
     lines = [
         "Create one continuous ManimCE scene that teaches the QWEEPS lesson below.",
         "Follow the lesson's teaching order exactly, beat by beat.",
@@ -41,6 +41,7 @@ def build_prompt(story: dict) -> str:
         "",
         "Beats:",
     ]
+    nodes_by_beat = nodes_by_beat or {}
     for beat in story.get("beats") or []:
         lines += [
             f'- id "{beat["id"]}" — {beat.get("title")}',
@@ -48,6 +49,10 @@ def build_prompt(story: dict) -> str:
             f'  insight to make visible: {beat.get("insight")}',
             f'  visible operation: {beat.get("visibleOperation")}',
         ]
+        nodes = nodes_by_beat.get(beat["id"]) or []
+        if nodes:
+            lines.append("  semantic objects (call self.cue(id) when each first matters): "
+                         + ", ".join(nodes))
     lines += [
         "",
         "Make the mechanism legible without narration: label the parts and the change. "
@@ -105,8 +110,9 @@ def compile_source(interpreter: str, source: Path, folder: Path) -> dict:
         raise PlanError("Native compile returned invalid beat windows") from exc
 
 
-def generate_scene(llm, story: dict, interpreter: str, folder: Path) -> dict:
-    prompt = build_prompt(story)
+def generate_scene(llm, story: dict, interpreter: str, folder: Path,
+                   nodes_by_beat: dict | None = None) -> dict:
+    prompt = build_prompt(story, nodes_by_beat)
     system = manim_code_generation_prompt("high")
     try:
         code = llm.compose(prompt, system, max_tokens=40000, reasoning_effort="high")
@@ -134,6 +140,7 @@ def generate_scene(llm, story: dict, interpreter: str, folder: Path) -> dict:
         "sourceHash": scene[4:],
         "duration": round(duration, 3),
         "beats": compiled["beats"],
+        "cues": compiled.get("cues") or [],
         "tracks": compiled.get("tracks"),
     }
     return write_scene(source, manifest)
@@ -154,7 +161,8 @@ def assemble(lesson: dict, story: dict, manifest: dict, native_ids: list[str]) -
             window = windows[beat["id"]]
             duration = round(window["end"] - window["start"], 2)
             chapter.update(renderer="manimgl", nativeScene=manifest["sceneId"],
-                           nativeOffset=round(window["start"], 3))
+                           nativeOffset=round(window["start"], 3),
+                           nativeDuration=round(duration, 3))
         else:
             duration = round(chapter["end"] - chapter["start"], 2)
         chapter["start"] = round(clock, 2)

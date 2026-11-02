@@ -138,6 +138,7 @@ class RecordedScene(Scene):
         self.scene_baked = []       # (t, tuple(top-level mobjects))
         self.checkpoints = []       # (t, graph, {id: (mob, family data)}) at play starts
         self.beats = []             # {"id","title","time"} markers from the CE source
+        self.cues = []              # {"id","time"} sub-beat anchors for narration sync
         self.roles = {}
         self.settings = None
         self.build()
@@ -146,6 +147,10 @@ class RecordedScene(Scene):
     def beat(self, name, title=None):
         """Marker the generated CE source calls at a teaching-beat boundary."""
         self.beats.append({"id": str(name), "title": str(title or name), "time": round(self.clock, 3)})
+
+    def cue(self, name):
+        """Marker for a semantic object the narration can anchor to."""
+        self.cues.append({"id": str(name), "time": round(self.clock, 3)})
 
     # ManimCE ThreeDScene API
     def set_camera_orientation(self, phi=70 * DEGREES, theta=-30 * DEGREES, zoom=1.0,
@@ -299,6 +304,7 @@ class RecordedScene(Scene):
         self.scene_baked = []
         self.checkpoints = []
         self.beats = []
+        self.cues = []
         self.roles = {}
         self.clock = 0.0
         self.frame.move_to(ORIGIN).set_width(14.22)
