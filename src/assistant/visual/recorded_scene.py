@@ -41,6 +41,29 @@ _CE_COLOR_ALIASES = {
 }
 globals().update(_CE_COLOR_ALIASES)
 
+
+class ManimColor(str):
+    """Minimal ManimCE color wrapper accepted anywhere ManimGL wants a hex."""
+
+    @classmethod
+    def from_hex(cls, value, *args, **kwargs):
+        return cls(str(value))
+
+    @classmethod
+    def from_rgb(cls, red, green, blue, *args, **kwargs):
+        return cls(f"#{int(red):02X}{int(green):02X}{int(blue):02X}")
+
+    @classmethod
+    def from_rgba(cls, red, green, blue, alpha=255, *args, **kwargs):
+        return cls(f"#{int(red):02X}{int(green):02X}{int(blue):02X}")
+
+    @classmethod
+    def parse(cls, value, *args, **kwargs):
+        return cls(str(value))
+
+    def to_hex(self, *args, **kwargs):
+        return str(self)
+
 import inspect
 
 
@@ -607,7 +630,11 @@ class RecordedScene(Scene):
         self._snapshot()
 
     def play(self, *animations, run_time=1.0, **kwargs):
-        prepared = [prepare_animation(a) for a in animations]
+        # Some CE code writes `self.play(SomeMobject(...))` and expects it to
+        # appear.  Real ManimCE rejects that, but the native pipeline can be
+        # forgiving: draw the bare mobject rather than crashing the whole lesson.
+        prepared = [prepare_animation(Create(a) if isinstance(a, Mobject) else a)
+                    for a in animations]
         rate_func = kwargs.get("rate_func")
         for anim in prepared:
             anim.set_run_time(run_time)
