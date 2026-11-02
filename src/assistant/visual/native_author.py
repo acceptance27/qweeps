@@ -31,6 +31,13 @@ def choose_native_beats(story: dict, limit: int = 5) -> list[str]:
     return preferred[:limit]
 
 
+def native_beats_for(story: dict, mode: str = "per_beat") -> list[str]:
+    """Choose one continuous native run or the hybrid per-beat native slices."""
+    if mode == "continuous":
+        return [beat["id"] for beat in story.get("beats") or []]
+    return choose_native_beats(story)
+
+
 def build_prompt(story: dict, nodes_by_beat: dict | None = None,
                  contract: dict | None = None) -> str:
     lines = [

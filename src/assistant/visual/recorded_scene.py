@@ -10,6 +10,8 @@ are re-applied so a compiled CE file keeps its palette.
 """
 from __future__ import annotations
 
+import re
+
 import numpy as np
 from manimlib import *
 from manimlib.animation.animation import prepare_animation
@@ -943,14 +945,46 @@ class RecordedScene(Scene):
             elif "hillock" in low: key = "hillock"
             if key and key not in self.roles:
                 add(key, mob)
+        # Generated scenes beyond the neuron/immune vocabulary still need
+        # clickable objects. Register remaining named scene objects, excluding
+        # labels, captions, helper groups and zero-height lines.
+        registered = {id(part) for mobs in self.roles.values() for part in mobs}
+        excluded = ("label", "text", "tag", "caption", "title", "framing",
+                    "stage", "scene", "root", "hud", "frame", "background",
+                    "curtain", "axis", "axes", "grid", "takeaway", "note")
+        for name, mob in names.items():
+            if not isinstance(mob, Mobject) or id(mob) in registered:
+                continue
+            low = str(name).lower()
+            if low.startswith("_") or any(token in low for token in excluded):
+                continue
+            if low.endswith("_all") or low.endswith("_group"):
+                continue
+            if type(mob).__name__ in {"Text", "Tex", "MathTex", "DecimalNumber",
+                                      "MarkupText", "SVGMobject"}:
+                continue
+            try:
+                if mob.get_width() < .12 or mob.get_height() < .06:
+                    continue
+            except (AttributeError, ValueError):
+                continue
+            key = re.sub(r"[^a-z0-9]+", "-", low).strip("-")
+            if not key or key in self.roles:
+                continue
+            self.roles[key] = [mob]
+            registered.add(id(mob))
 
     def metadata(self, t):
         center = self.frame.get_center()
         width = self.frame.get_width()
         height = self.frame.get_height()
         bounds = []
+        seen = set()
         for key, mobs in self.roles.items():
             for mob in mobs:
+                if id(mob) in seen:
+                    continue
+                seen.add(id(mob))
                 if mob.get_width() < .003:
                     continue
                 if t + 1e-6 < self.role_reveal.get(id(mob), 0):

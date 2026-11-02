@@ -1,4 +1,4 @@
-from assistant.visual.native_author import assemble, choose_native_beats, clean_code, condense_narration, _repair_prompt
+from assistant.visual.native_author import assemble, choose_native_beats, clean_code, condense_narration, native_beats_for, _repair_prompt
 from assistant.visual.native_timing import native_map, choose_baked_frame
 from assistant.visual.ce_text_metrics import collect_text_specs, metric_key
 from assistant.visual.native_audit import _iou, _overlap
@@ -48,6 +48,11 @@ def test_choose_native_keeps_at_least_one_layout_beat():
     assert 2 <= len(ids) < 4
     assert "resting" in ids and "sum" in ids
     assert "threshold" not in ids
+
+
+def test_continuous_mode_uses_every_beat_in_one_native_run():
+    assert native_beats_for(story(), "continuous") == ["resting", "sum", "threshold", "propagate"]
+    assert native_beats_for(story(), "per_beat") == choose_native_beats(story())
 
 
 def test_assemble_maps_native_windows_and_rebuilds_clock():

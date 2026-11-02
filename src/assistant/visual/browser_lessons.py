@@ -570,11 +570,14 @@ class BrowserLessonStore:
             return result
     def start(self,payload,context=None):
         native=bool(payload.get('native'))
+        native_mode=str(payload.get('nativeMode') or 'per_beat')
+        if native_mode not in {'continuous','per_beat'}:
+            raise PlanError("nativeMode must be 'continuous' or 'per_beat'")
         question=_text(payload.get('question') or payload.get('topic'),'lesson request',4000)
         document=self.documents.resolve(question,payload.get('documentId'))
         context=copy.deepcopy(context or payload.get('context') or {})
         if context.get('documentId') and not document:document=self.documents.get(context['documentId'])
-        signature=json.dumps({'engine':7,'native':native,'question':question,'document':document['id'] if document else None,'context':context,
+        signature=json.dumps({'engine':7,'native':native,'nativeMode':native_mode,'question':question,'document':document['id'] if document else None,'context':context,
                              'model':{'provider':getattr(self.llm,'provider',type(self.llm).__name__),
                                       'generation':getattr(self.llm,'visual_model',None) or getattr(self.llm,'model',None),
                                       'vision':getattr(self.llm,'vision_model',None)},
@@ -604,7 +607,7 @@ class BrowserLessonStore:
                 finished=next((k for k,j in self.jobs.items() if j['status'] in {'ready','failed'}),None)
                 if finished:self.jobs.pop(finished)
                 else:raise PlanError('Too many lessons are preparing. Wait for one to finish.')
-            job={'id':job_id,'lessonId':key,'status':'preparing','stage':'Reading source material','revision':0,'question':question,'document':document,'context':context,'native':native}
+            job={'id':job_id,'lessonId':key,'status':'preparing','stage':'Reading source material','revision':0,'question':question,'document':document,'context':context,'native':native,'nativeMode':native_mode}
             self.jobs[job_id]=job
             folder=self.folder/key;folder.mkdir(exist_ok=True)
             (folder/'request.json').write_text(json.dumps({'question':question,'documentId':document['id'] if document else None,'context':context},ensure_ascii=False))
@@ -1257,8 +1260,9 @@ replacements, only those needed.'''
             j["visualContract"] = contract
 
             j["stage"] = "Generating and compiling the native ManimGL scene"
-            from .native_author import assemble, choose_native_beats, condense_narration, generate_scene
-            native_ids = choose_native_beats(story)
+            from .native_author import assemble, condense_narration, generate_scene, native_beats_for
+            mode = j.get("nativeMode") or "per_beat"
+            native_ids = native_beats_for(story, mode)
             nodes_by_beat = {c["id"]: [n["id"] for n in (c.get("visual") or {}).get("nodes") or []]
                              for c in candidate.get("chapters") or []}
             manifest = generate_scene(self.llm, story, self._native_interpreter(), folder,
@@ -1267,6 +1271,14 @@ replacements, only those needed.'''
             candidate = condense_narration(self.llm, candidate, manifest, native_ids)
             lesson = assemble(candidate, story, manifest, native_ids, contract=contract)
             lesson["visualContract"] = contract
+            lesson["nativeMode"] = mode
+            if mode == "continuous":
+                for index, chapter in enumerate(lesson.get("chapters") or []):
+                    chapter["transition"] = ({
+                        "type": "fade", "duration": 0.4, "shared": []
+                    } if index == 0 else {
+                        "type": "none", "duration": 0, "shared": []
+                    })
             if self.narration is not None:
                 j["stage"] = "Recording and measuring the lesson narration"
                 from .synchronization import compile_speech

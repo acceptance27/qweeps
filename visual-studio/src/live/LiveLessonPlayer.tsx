@@ -42,7 +42,7 @@ export default function LiveLessonPlayer({initialLesson,initialTime=0}:{initialL
  const narrationIndex=foundIndex<0?last:foundIndex,narratingChapter=manifest.chapters[narrationIndex];
  const index=visualBeatIndex(manifest.chapters,state.time);
  const chapter=manifest.chapters[state.time>=manifest.duration?last:index];
- useLayoutEffect(()=>{if(stageKey.current===chapter.id)return;stageKey.current=chapter.id;setStageFading(true);const timer=setTimeout(()=>setStageFading(false),70);return()=>clearTimeout(timer);},[chapter.id]);
+ useLayoutEffect(()=>{if(chapter.transition?.type==='none'){stageKey.current=chapter.id;setStageFading(false);return;}if(stageKey.current===chapter.id)return;stageKey.current=chapter.id;setStageFading(true);const timer=setTimeout(()=>setStageFading(false),70);return()=>clearTimeout(timer);},[chapter.id,chapter.transition?.type]);
  const nativeTime=(c:LiveChapter,t:number)=>{
    if(c.renderer!=='manimgl')return t;
    if(c.nativeMap?.length){

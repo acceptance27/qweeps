@@ -21,6 +21,7 @@ export function chronologySpots(n:number){
  return Array.from({length:n},(_,i)=>240+(i*(1200-240))/Math.max(1,n-1));
 }
 export function routeSpots(n:number){
+ if(n===4)return [[195,250],[540,250],[885,250],[1230,250]];
  const fixed=[[230,290],[720,210],[1210,290],[720,390]];
  if(n<=fixed.length)return fixed.slice(0,n);
  return Array.from({length:n},(_,i)=>[160+(i*(1120))/Math.max(1,n-1),i%2?230:330]);
@@ -41,8 +42,8 @@ export function grammarBoxes(v:LiveVisual,g:Grammar):NodeBox[]{
   return v.nodes.map((node,i)=>({node,x:spots[i]-190,y:180,width:380,height:280}));
  }
  if(g==='route'){
-  const spots=routeSpots(n);
-  return v.nodes.map((node,i)=>({node,x:spots[i][0]-180,y:spots[i][1]-110,width:360,height:300}));
+  const spots=routeSpots(n), width=n===4?320:360;
+  return v.nodes.map((node,i)=>({node,x:spots[i][0]-width/2,y:spots[i][1]-110,width,height:300}));
  }
  if(g==='procedure'){
   const gap=100,width=(1350-gap*(n-1))/n;

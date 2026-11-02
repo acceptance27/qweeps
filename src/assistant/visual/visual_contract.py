@@ -125,6 +125,8 @@ def contract_prompt(contract: dict) -> list[str]:
         f"Persistent anchors across chapters: {persistent}.",
         "Do not add a lesson title; the player header supplies it.",
         "Keep at most three focal groups plus one caption at a time. "
+        "Native diagrams should fill at least 60% of the frame width or height; "
+        "use font_size >= 20 and avoid tiny cards or labels. "
         "At each beat, fade out the previous beat's focal group before adding the next "
         "unless it is a persistent anchor.",
     ]
