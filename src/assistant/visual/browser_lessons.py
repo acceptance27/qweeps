@@ -925,19 +925,23 @@ class BrowserLessonStore:
         bundled=getattr(self,'bundled_folder',None)
         if bundled and bundled.is_dir():roots.append(bundled)
         resolved=base
+        matched_speech=False
         for root in roots:
             target = root / lesson_id
             if not target.is_dir(): continue
             if self.narration:
                 from .synchronization import fingerprint
                 base_for_fp={k:v for k,v in base.items() if k!='quiz'}
-                path=target/f'speech-{fingerprint(base_for_fp,self.narration)}.json'
+                fp = fingerprint(base_for_fp,self.narration)
+                path=target/f'speech-{fp}.json'
                 if path.exists():
                     resolved=json.loads(path.read_text())
+                    matched_speech=True
                     break
                 path_direct=target/f'speech-{fingerprint(base,self.narration)}.json'
                 if path_direct.exists():
                     resolved=json.loads(path_direct.read_text())
+                    matched_speech=True
                     break
             # The published lesson.json is authoritative. Do not fall back to
             # an arbitrary older speech-*.json: that reintroduced stale visual
@@ -995,9 +999,13 @@ class BrowserLessonStore:
                'document':self.documents.get(base['documentId']) if base.get('documentId') else None}
             self.jobs[j['id']]=j
         current=self.lesson(lesson_id)
-        from .synchronization import VERSION
-        if current.get('speechSynchronization',{}).get('version')==VERSION:j.update(status='ready',stage='Synchronized lesson ready')
-        else:threading.Thread(target=self._synchronization_worker,args=(j,base),daemon=True).start()
+        from .synchronization import VERSION, fingerprint
+        sig = fingerprint({k:v for k,v in base.items() if k!='quiz'}, self.narration) if self.narration else None
+        current_fp = current.get('speechSynchronization',{}).get('baseFingerprint')
+        if current.get('speechSynchronization',{}).get('version')==VERSION and sig and current_fp==sig:
+            j.update(status='ready',stage='Synchronized lesson ready')
+        else:
+            threading.Thread(target=self._synchronization_worker,args=(j,base),daemon=True).start()
         return self.status(j['id'])
     def _synchronization_worker(self,j,base):
         try:
