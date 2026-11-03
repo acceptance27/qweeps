@@ -154,8 +154,9 @@ class OpenCodeLLM:
                     "max_tokens": effective_max_tokens,
                     "temperature": 0.2,
                 }
-                if reasoning_effort:
-                    payload["reasoning_effort"] = reasoning_effort
+                effort = reasoning_effort or getattr(self.cfg.llm, "reasoning_effort", None)
+                if effort and effort != "none":
+                    payload["reasoning_effort"] = effort
                 else:
                     payload["reasoning_effort"] = "low"
                     payload["provider_options"] = {"thinking": {"type": "disabled"}}
@@ -169,7 +170,10 @@ class OpenCodeLLM:
                 text = (choices[0].get("message", {}).get("content") or "").strip() if choices else ""
                 if not text:
                     payload["max_tokens"] = max(effective_max_tokens, 24000)
-                    payload["reasoning_effort"] = "low"
+                    if effort and effort != "none":
+                        payload["reasoning_effort"] = effort
+                    else:
+                        payload["reasoning_effort"] = "low"
                     data = post_json(
                         "https://opencode.ai/inference/go/openai/v1/chat/completions",
                         payload,
