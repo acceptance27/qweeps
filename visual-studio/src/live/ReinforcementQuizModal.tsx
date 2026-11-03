@@ -24,6 +24,8 @@ export interface ActiveCard extends QuizQuestion {
   roundNumber: number;
   attemptNumber: number;
   isReinforcement: boolean;
+  isSpacedRecall?: boolean;
+  priorTrapOptionText?: string;
 }
 
 export interface QuizProgressState {
@@ -550,7 +552,7 @@ export function ReinforcementQuizModal({
 
     if (isHit) {
       const nextStreak = streak + 1;
-      playCorrectSound(nextStreak, currentCard.isReinforcement, soundEnabled);
+      playCorrectSound(nextStreak, currentCard.isReinforcement || Boolean(currentCard.isSpacedRecall), soundEnabled);
       setState(prev => ({
         ...prev,
         selectedOption: optionIdx,
@@ -559,31 +561,48 @@ export function ReinforcementQuizModal({
         masteredIds: prev.masteredIds.includes(currentCard.id)
           ? prev.masteredIds
           : [...prev.masteredIds, currentCard.id],
+        reinforcementQueue: prev.reinforcementQueue.filter(rc => rc.id !== currentCard.id),
         streak: nextStreak,
         bestStreak: Math.max(prev.bestStreak, nextStreak),
       }));
     } else {
       playWrongSound(soundEnabled);
       const reshuffled = shuffleQuestionOptions(currentCard, totalSubmissions + round + cursor + 1);
-      setState(prev => ({
-        ...prev,
-        selectedOption: optionIdx,
-        totalSubmissions: prev.totalSubmissions + 1,
-        attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
-        streak: 0,
-        everMissedIds: prev.everMissedIds.includes(currentCard.id)
-          ? prev.everMissedIds
-          : [...prev.everMissedIds, currentCard.id],
-        reinforcementQueue: [
-          ...prev.reinforcementQueue,
-          {
-            ...reshuffled,
-            roundNumber: prev.round + 1,
-            attemptNumber: nextAttemptCount + 1,
-            isReinforcement: true,
-          },
-        ],
-      }));
+      const priorTrap = currentCard.options[optionIdx] || '';
+
+      const retryCard: ActiveCard = {
+        ...reshuffled,
+        roundNumber: currentCard.roundNumber,
+        attemptNumber: nextAttemptCount + 1,
+        isReinforcement: true,
+        isSpacedRecall: true,
+        priorTrapOptionText: priorTrap,
+      };
+
+      // 3-Card Short-Horizon Spaced Recall: re-enters queue exactly 3 cards later
+      setState(prev => {
+        const insertPos = Math.min(prev.queue.length, prev.cursor + 3);
+        const nextQueue = [
+          ...prev.queue.slice(0, insertPos),
+          retryCard,
+          ...prev.queue.slice(insertPos),
+        ];
+        return {
+          ...prev,
+          queue: nextQueue,
+          selectedOption: optionIdx,
+          totalSubmissions: prev.totalSubmissions + 1,
+          attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
+          streak: 0,
+          everMissedIds: prev.everMissedIds.includes(currentCard.id)
+            ? prev.everMissedIds
+            : [...prev.everMissedIds, currentCard.id],
+          reinforcementQueue: [
+            ...prev.reinforcementQueue,
+            retryCard,
+          ],
+        };
+      });
     }
   };
 
@@ -598,7 +617,7 @@ export function ReinforcementQuizModal({
 
     if (result.hit) {
       const nextStreak = streak + 1;
-      playCorrectSound(nextStreak, currentCard.isReinforcement, soundEnabled);
+      playCorrectSound(nextStreak, currentCard.isReinforcement || Boolean(currentCard.isSpacedRecall), soundEnabled);
       setState(prev => ({
         ...prev,
         selectedOption: currentCard.correctIndex,
@@ -608,6 +627,7 @@ export function ReinforcementQuizModal({
         masteredIds: prev.masteredIds.includes(currentCard.id)
           ? prev.masteredIds
           : [...prev.masteredIds, currentCard.id],
+        reinforcementQueue: prev.reinforcementQueue.filter(rc => rc.id !== currentCard.id),
         streak: nextStreak,
         bestStreak: Math.max(prev.bestStreak, nextStreak),
       }));
@@ -615,26 +635,40 @@ export function ReinforcementQuizModal({
       playWrongSound(soundEnabled);
       const reshuffled = shuffleQuestionOptions(currentCard, totalSubmissions + round + cursor + 1);
       const expected = currentCard.acceptedAnswers?.[0] || currentCard.options[currentCard.correctIndex];
-      setState(prev => ({
-        ...prev,
-        selectedOption: -1,
-        typedFeedback: { status: 'wrong', userText: rawInput, matchedText: expected },
-        totalSubmissions: prev.totalSubmissions + 1,
-        attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
-        streak: 0,
-        everMissedIds: prev.everMissedIds.includes(currentCard.id)
-          ? prev.everMissedIds
-          : [...prev.everMissedIds, currentCard.id],
-        reinforcementQueue: [
-          ...prev.reinforcementQueue,
-          {
-            ...reshuffled,
-            roundNumber: prev.round + 1,
-            attemptNumber: nextAttemptCount + 1,
-            isReinforcement: true,
-          },
-        ],
-      }));
+
+      const retryCard: ActiveCard = {
+        ...reshuffled,
+        roundNumber: currentCard.roundNumber,
+        attemptNumber: nextAttemptCount + 1,
+        isReinforcement: true,
+        isSpacedRecall: true,
+        priorTrapOptionText: rawInput,
+      };
+
+      setState(prev => {
+        const insertPos = Math.min(prev.queue.length, prev.cursor + 3);
+        const nextQueue = [
+          ...prev.queue.slice(0, insertPos),
+          retryCard,
+          ...prev.queue.slice(insertPos),
+        ];
+        return {
+          ...prev,
+          queue: nextQueue,
+          selectedOption: -1,
+          typedFeedback: { status: 'wrong', userText: rawInput, matchedText: expected },
+          totalSubmissions: prev.totalSubmissions + 1,
+          attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
+          streak: 0,
+          everMissedIds: prev.everMissedIds.includes(currentCard.id)
+            ? prev.everMissedIds
+            : [...prev.everMissedIds, currentCard.id],
+          reinforcementQueue: [
+            ...prev.reinforcementQueue,
+            retryCard,
+          ],
+        };
+      });
     }
   };
 
@@ -706,26 +740,40 @@ export function ReinforcementQuizModal({
     const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
     playWrongSound(soundEnabled);
     const reshuffled = shuffleQuestionOptions(currentCard, totalSubmissions + round + cursor + 1);
-    setState(prev => ({
-      ...prev,
-      selectedOption: -1,
-      multiItemRevealed: true,
-      totalSubmissions: prev.totalSubmissions + 1,
-      attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
-      streak: 0,
-      everMissedIds: prev.everMissedIds.includes(currentCard.id)
-        ? prev.everMissedIds
-        : [...prev.everMissedIds, currentCard.id],
-      reinforcementQueue: [
-        ...prev.reinforcementQueue,
-        {
-          ...reshuffled,
-          roundNumber: prev.round + 1,
-          attemptNumber: nextAttemptCount + 1,
-          isReinforcement: true,
-        },
-      ],
-    }));
+
+    const retryCard: ActiveCard = {
+      ...reshuffled,
+      roundNumber: currentCard.roundNumber,
+      attemptNumber: nextAttemptCount + 1,
+      isReinforcement: true,
+      isSpacedRecall: true,
+      priorTrapOptionText: 'Incomplete recall',
+    };
+
+    setState(prev => {
+      const insertPos = Math.min(prev.queue.length, prev.cursor + 3);
+      const nextQueue = [
+        ...prev.queue.slice(0, insertPos),
+        retryCard,
+        ...prev.queue.slice(insertPos),
+      ];
+      return {
+        ...prev,
+        queue: nextQueue,
+        selectedOption: -1,
+        multiItemRevealed: true,
+        totalSubmissions: prev.totalSubmissions + 1,
+        attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
+        streak: 0,
+        everMissedIds: prev.everMissedIds.includes(currentCard.id)
+          ? prev.everMissedIds
+          : [...prev.everMissedIds, currentCard.id],
+        reinforcementQueue: [
+          ...prev.reinforcementQueue,
+          retryCard,
+        ],
+      };
+    });
   };
 
   const advanceNext = () => {
@@ -1013,7 +1061,7 @@ export function ReinforcementQuizModal({
                 <span className="mastery-beat-tag">
                   Beat {currentCard.chapterIndex + 1} of {lesson.chapters.length} · {currentCard.chapterTitle}
                 </span>
-                {currentCard.isReinforcement && (
+                {currentCard.isReinforcement && !currentCard.isSpacedRecall && (
                   <span className="mastery-reinforce-pill">
                     <Repeat size={11} /> Reinforcement Retry #{currentCard.attemptNumber}
                   </span>
@@ -1059,6 +1107,16 @@ export function ReinforcementQuizModal({
                 )}
               </div>
             </div>
+
+            {/* 3-Card Short-Horizon Spaced Recall Banner (Memory Cue Anchor removed as requested) */}
+            {currentCard.isSpacedRecall && (
+              <div className="mastery-spaced-banner">
+                <div className="mastery-spaced-badge">
+                  <RotateCcw size={13} className="spin-slow" />
+                  <span>3-CARD SPACED RECALL</span>
+                </div>
+              </div>
+            )}
 
             {/* Prompt */}
             <h3 className="mastery-prompt">{currentCard.prompt}</h3>
@@ -1195,6 +1253,12 @@ export function ReinforcementQuizModal({
                 {currentCard.options.map((opt, idx) => {
                   const isThisSelected = selectedOption === idx;
                   const isThisCorrect = idx === currentCard.correctIndex;
+                  const isPriorTrap = Boolean(
+                    currentCard.isSpacedRecall &&
+                    currentCard.priorTrapOptionText &&
+                    (opt === currentCard.priorTrapOptionText ||
+                     normalizeAnswer(opt) === normalizeAnswer(currentCard.priorTrapOptionText))
+                  );
                   let state = 'idle';
                   if (isAnswered) {
                     if (isThisCorrect) state = 'correct';
@@ -1210,12 +1274,17 @@ export function ReinforcementQuizModal({
                       type="button"
                       disabled={isAnswered}
                       onClick={() => submitAnswer(idx)}
-                      className={`mastery-option-btn ${state} ${isThisCorrect && memoryLocked ? 'memory-locked' : ''}`}
+                      className={`mastery-option-btn ${state} ${isPriorTrap ? 'prior-trap' : ''} ${isThisCorrect && memoryLocked ? 'memory-locked' : ''}`}
                     >
                       <span className="mastery-option-key">{letter}</span>
                       <div className="mastery-option-content">
                         <div className="mastery-option-lead-row">
                           <span className="mastery-option-lead-hook">{leadHook}</span>
+                          {isPriorTrap && !isAnswered && (
+                            <span className="mastery-prior-trap-tag" title="You selected this option on your previous attempt">
+                              ⚠️ Prior Trap (Avoid)
+                            </span>
+                          )}
                         </div>
                         {!rapidScan && supportingText && (
                           <div className="mastery-option-supporting">{supportingText}</div>
@@ -1254,7 +1323,9 @@ export function ReinforcementQuizModal({
                       <>
                         <CheckCircle2 size={18} />
                         <strong>
-                          {currentCard.isReinforcement
+                          {currentCard.isSpacedRecall
+                            ? '🎯 Spaced Recall Mastered! Trap Avoided.'
+                            : currentCard.isReinforcement
                             ? 'Reinforced & Mastered! Concept Locked In.'
                             : 'Correct — Concept Mastered!'}
                         </strong>
@@ -1262,7 +1333,7 @@ export function ReinforcementQuizModal({
                     ) : (
                       <>
                         <Repeat size={18} />
-                        <strong>Missed — Queued for Reinforcement</strong>
+                        <strong>Missed — Queued for 3-Card Spaced Recall</strong>
                       </>
                     )}
                   </div>
@@ -1330,7 +1401,7 @@ export function ReinforcementQuizModal({
 
             {!isAnswered && !isHardMode && (
               <div className="mastery-keyboard-tip">
-                Press <kbd>A</kbd>–<kbd>D</kbd> or <kbd>1</kbd>–<kbd>4</kbd> to answer · Missed questions automatically repeat until mastered
+                Press <kbd>A</kbd>–<kbd>D</kbd> or <kbd>1</kbd>–<kbd>4</kbd> to answer · Missed questions return 3 cards later for spaced recall
               </div>
             )}
             {isAnswered && !isCorrect && (

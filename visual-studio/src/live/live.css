@@ -348,10 +348,20 @@
 .mastery-rapid-scan-btn.active{border-color:#f59e0b;background:rgba(245,158,11,.18);color:#fbbf24;box-shadow:0 0 10px rgba(245,158,11,.2)}
 .mastery-rapid-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.04em;background:rgba(245,158,11,.16);color:#fbbf24;border:1px solid rgba(245,158,11,.45);text-transform:uppercase}
 
+/* Prior Trap Warning on Spaced Recall Cards */
+.mastery-option-btn.prior-trap{border-style:dashed!important;border-color:rgba(224,108,83,.7)!important;background:rgba(224,108,83,.08)!important}
+.mastery-prior-trap-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.04em;background:rgba(224,108,83,.22);color:#fca591;border:1px solid rgba(224,108,83,.5);text-transform:uppercase}
+
 /* Tap to Lock In Memory Button */
 .mastery-lock-memory-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;margin-top:5px;border-radius:6px;background:rgba(237,202,130,.18);border:1px solid rgba(237,202,130,.45);color:#f7dda2;font-size:11px;font-weight:700;cursor:pointer;width:fit-content;transition:all .15s ease}
 .mastery-lock-memory-btn:hover{background:rgba(237,202,130,.32);border-color:#edca82;transform:translateY(-1px)}
 .mastery-lock-memory-btn.locked{background:rgba(82,199,153,.22);border-color:rgba(82,199,153,.6);color:#a7f3d0;cursor:default}
+
+/* 3-Card Short-Horizon Spaced Recall Banner (Without Memory Cue Anchor) */
+.mastery-spaced-banner{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:8px;background:linear-gradient(90deg,rgba(237,202,130,.14) 0%,rgba(13,30,40,.6) 100%);border:1px solid rgba(237,202,130,.35);box-sizing:border-box;width:fit-content}
+.mastery-spaced-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.08em;font-weight:800;color:#edca82;text-transform:uppercase;flex-shrink:0}
+@keyframes spinSlow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.spin-slow{animation:spinSlow 8s linear infinite}
 
 /* Landscape and Desktop Monitor Ergonomics: comfortable 740px width + 2x2 option grid (fits completely without vertical scrolling) */
 @media(min-width:640px){
