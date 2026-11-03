@@ -790,5 +790,57 @@ def test_reinforcement_quiz_generation_covers_nodes_multi_item_and_balanced_leng
  assert longest_count < len(quiz), "Correct answer should not always be the longest option"
 
 
+def test_catalog_time_based_sorting(library, tmp_path):
+    import os
+    lib, _ = library
+    folder = tmp_path / 'lessons'
+    store = BrowserLessonStore(Model(), STUDIO, folder, lib)
+    store.bundled_folder = tmp_path / 'bundled'
+
+    # Create lesson A (older, longer duration, title 'Alpha')
+    id_a = 'a' * 32
+    path_a = folder / id_a
+    path_a.mkdir(parents=True)
+    (path_a / 'lesson.json').write_text(json.dumps({
+        'id': id_a, 'title': 'Alpha Lesson', 'duration': 120.0,
+        'chapters': [{'id': 'c1', 'title': 'C1'}]
+    }))
+    os.utime(path_a / 'lesson.json', (1000, 1000))
+
+    # Create lesson B (newer, shorter duration, title 'Beta')
+    id_b = 'b' * 32
+    path_b = folder / id_b
+    path_b.mkdir(parents=True)
+    (path_b / 'lesson.json').write_text(json.dumps({
+        'id': id_b, 'title': 'Beta Lesson', 'duration': 45.0,
+        'chapters': [{'id': 'c2', 'title': 'C2'}]
+    }))
+    os.utime(path_b / 'lesson.json', (2000, 2000))
+
+    # Default / newest sorting
+    items_newest = store.catalog(sort_by='newest')
+    assert len(items_newest) == 2
+    assert items_newest[0]['id'] == id_b
+    assert items_newest[1]['id'] == id_a
+    assert items_newest[0]['mtime'] == 2000.0
+    assert 'updatedAt' in items_newest[0]
+
+    # Oldest sorting
+    items_oldest = store.catalog(sort_by='oldest')
+    assert items_oldest[0]['id'] == id_a
+    assert items_oldest[1]['id'] == id_b
+
+    # Duration sorting
+    items_dur = store.catalog(sort_by='duration')
+    assert items_dur[0]['id'] == id_a
+    assert items_dur[1]['id'] == id_b
+
+    # Title sorting
+    items_title = store.catalog(sort_by='title')
+    assert items_title[0]['id'] == id_a
+    assert items_title[1]['id'] == id_b
+
+
+
 
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 import base64
 import copy
+import datetime
 import hashlib
 import json
 import queue
@@ -944,7 +945,7 @@ class BrowserLessonStore:
         if base.get('quiz') and not resolved.get('quiz'):
             resolved={**resolved,'quiz':base['quiz']}
         return resolved
-    def catalog(self):
+    def catalog(self, sort_by='newest'):
         seen=set()
         items=[]
         roots=[self.folder]
@@ -961,6 +962,7 @@ class BrowserLessonStore:
                     if not chapters:continue
                     seen.add(lid)
                     has_native=bool(data.get('nativeScenes') or any(c.get('renderer')=='manimgl' or c.get('clip') for c in chapters))
+                    mtime=round(path.stat().st_mtime,2)
                     items.append({
                         'id':lid,
                         'title':data.get('title') or lid,
@@ -970,9 +972,19 @@ class BrowserLessonStore:
                         'hasNative':has_native,
                         'quizCount':len(data.get('quiz') or []) or len(chapters),
                         'bundled':root==bundled,
+                        'mtime':mtime,
+                        'updatedAt':datetime.datetime.fromtimestamp(mtime).isoformat(),
                     })
                 except Exception:
                     continue
+        if sort_by == 'oldest':
+            items.sort(key=lambda x: x.get('mtime', 0))
+        elif sort_by == 'duration':
+            items.sort(key=lambda x: x.get('duration', 0), reverse=True)
+        elif sort_by == 'title':
+            items.sort(key=lambda x: (x.get('title') or '').lower())
+        else:
+            items.sort(key=lambda x: x.get('mtime', 0), reverse=True)
         return items
     def start_synchronization(self,payload):
         base=self._base_lesson(payload.get('lessonId'));lesson_id=base['id']

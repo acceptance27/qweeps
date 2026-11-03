@@ -355,7 +355,9 @@ class Handler(SimpleHTTPRequestHandler):
             elif re.fullmatch(r'/api/visual/live/jobs/[0-9a-f]{32}',parsed.path):
                 self.send_json(200,self.service.live.status(parsed.path.rsplit('/',1)[-1]))
             elif parsed.path == '/api/visual/live/lessons':
-                self.send_json(200,{'lessons':self.service.live.catalog()})
+                qs = parse_qs(parsed.query)
+                sort_by = qs.get('sort', ['newest'])[0]
+                self.send_json(200,{'lessons':self.service.live.catalog(sort_by=sort_by)})
             elif re.fullmatch(r'/api/visual/live/lessons/[A-Za-z0-9_-]+',parsed.path):
                 self.send_json(200,self.service.live.lesson(parsed.path.rsplit('/',1)[-1]))
             elif parsed.path == "/api/visual/native/frame":
