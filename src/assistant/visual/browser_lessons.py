@@ -962,6 +962,8 @@ class BrowserLessonStore:
                 if lid in seen or not ID.fullmatch(lid):continue
                 try:
                     data=json.loads(path.read_text())
+                    if data.get('quizOnly') or data.get('kind') == 'standalone_quiz':
+                        continue
                     chapters=data.get('chapters') or []
                     if not chapters:continue
                     seen.add(lid)
@@ -1156,6 +1158,15 @@ Rules:
         else:
             raise PlanError('Provide a lesson ID or lesson object to generate a quiz')
 
+        # Resolve document from topic/query if doc_id was not explicitly passed
+        if not target_doc_id and target_q:
+            try:
+                resolved_doc = self.documents.resolve(target_q)
+                if resolved_doc:
+                    target_doc_id = resolved_doc.get('id')
+            except Exception:
+                pass
+
         # Check existing lessons if lesson_id was not explicitly given or had no chapters
         if (not lesson_id or not (lesson and lesson.get('chapters'))) and (target_doc_id or target_q):
             try:
@@ -1196,18 +1207,9 @@ Rules:
                     'title': title,
                     'question': target_q or f"Mastery quiz on {title}",
                     'duration': 30.0,
-                    'kind': 'live_generated',
-                    'chapters': [{
-                        'id': 'quiz-beat-1',
-                        'title': title,
-                        'question': target_q or f"Mastery quiz on {title}",
-                        'insight': f"Comprehensive reinforcement quiz for {title}",
-                        'start': 0.0,
-                        'end': 30.0,
-                        'narration': f"Interactive reinforcement quiz on {title}.",
-                        'cues': [],
-                        'visual': {'takeaway': title, 'nodes': []},
-                    }],
+                    'kind': 'standalone_quiz',
+                    'quizOnly': True,
+                    'chapters': [],
                     'quiz': questions,
                 }
                 if persist:
@@ -1218,6 +1220,7 @@ Rules:
                         'question': target_q,
                         'documentId': target_doc_id,
                         'generateQuiz': True,
+                        'quizOnly': True,
                     }, ensure_ascii=False))
                 self._last_quiz_lesson_id = lesson_id
                 return questions

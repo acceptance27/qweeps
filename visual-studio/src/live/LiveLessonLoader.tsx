@@ -1,7 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { api } from '../learning/types';
 import LiveLessonPlayer from './LiveLessonPlayer';
 import LivePreparation from './LivePreparation';
+import {
+  ReinforcementQuizModal,
+  ReinforcementQuizNavbar,
+  createInitialQuizState,
+  type QuizProgressState,
+} from './ReinforcementQuizModal';
 import type { LiveJob, LiveLesson } from './lessonTypes';
 import './live.css';
 
@@ -54,11 +61,67 @@ function formatDuration(sec?: number): string {
   return `${m}m ${s}s`;
 }
 
+function StandaloneQuizPlayer({
+  lesson,
+  onExit,
+}: {
+  lesson: LiveLesson;
+  onExit: () => void;
+}) {
+  const [quizState, setQuizState] = useState<QuizProgressState>(() =>
+    createInitialQuizState(lesson, true)
+  );
+
+  return (
+    <main className="standalone-quiz-container">
+      <header className="standalone-quiz-top-bar">
+        <button
+          type="button"
+          className="standalone-quiz-exit-btn"
+          onClick={onExit}
+          title="Return to main menu"
+        >
+          <ArrowLeft size={16} />
+          <span>Exit to Main Menu</span>
+        </button>
+        <div className="standalone-quiz-title-box">
+          <span className="standalone-quiz-kicker">🧠 REINFORCEMENT MASTERY QUIZ</span>
+          <h2>{lesson.title}</h2>
+        </div>
+        <div className="standalone-quiz-meta-info">
+          <span>{lesson.quiz?.length || 0} Mastery Cards</span>
+        </div>
+      </header>
+
+      <div className="standalone-quiz-navbar-wrapper">
+        <ReinforcementQuizNavbar
+          lesson={lesson}
+          quizState={quizState}
+          setQuizState={setQuizState}
+          className="live-replaced-quiz-navbar"
+        />
+      </div>
+
+      <div className="standalone-quiz-stage-body">
+        <ReinforcementQuizModal
+          embedded
+          hideHeader
+          lesson={lesson}
+          quizState={quizState}
+          setQuizState={setQuizState}
+          onClose={onExit}
+        />
+      </div>
+    </main>
+  );
+}
+
 export default function LiveLessonLoader() {
   const params = new URLSearchParams(location.search);
   const defaultPvpLesson = !params.get('lesson') && !params.get('job') && !params.get('topic') && params.get('home') !== '1';
 
   const [lesson, setLesson] = useState<LiveLesson | null>(null);
+  const [standaloneQuiz, setStandaloneQuiz] = useState<LiveLesson | null>(null);
   const [documents, setDocuments] = useState<DocumentMeta[]>([]);
   const [catalogLessons, setCatalogLessons] = useState<CatalogLesson[]>([]);
   const [selected, setSelected] = useState(params.get('document') || '');
@@ -118,52 +181,35 @@ export default function LiveLessonLoader() {
         throw new Error('No quiz questions were returned.');
       }
 
-      setOpenQuizOnLoad(true);
-      setGenerateQuiz(true);
+      const titleText = (res.lesson?.title) || (existing?.title) || q.trim() || 'Reinforcement Quiz';
+      const chapters = (res.lesson?.chapters?.length)
+        ? res.lesson.chapters
+        : res.quiz.map((item: any, i: number) => ({
+            id: item.chapterId || `beat-${i + 1}`,
+            title: item.chapterTitle || `Card ${i + 1}`,
+            question: item.prompt,
+            insight: item.explanation,
+            start: 0,
+            end: 30,
+            narration: '',
+            cues: [],
+            visual: { takeaway: item.chapterTitle || `Card ${i + 1}`, nodes: [] },
+          }));
 
-      let targetLesson: LiveLesson | null = res.lesson || null;
-      if (!targetLesson && res.lessonId) {
-        try {
-          targetLesson = await api<LiveLesson>(`live/lessons/${res.lessonId}`);
-        } catch {
-          // ignore
-        }
-      }
-      if (!targetLesson && existing) {
-        try {
-          targetLesson = await api<LiveLesson>(`live/lessons/${existing.id}`);
-        } catch {
-          // ignore
-        }
-      }
+      const quizLesson: LiveLesson = {
+        id: res.lessonId || existing?.id || 'standalone_quiz',
+        title: titleText,
+        question: q.trim() || `Mastery Quiz: ${titleText}`,
+        duration: 30,
+        kind: 'standalone_quiz',
+        chapters,
+        quiz: res.quiz,
+      };
 
-      if (targetLesson) {
-        ready({ ...targetLesson, quiz: res.quiz }, true);
-      } else {
-        const titleText = q.trim() || 'Reinforcement Quiz';
-        const virtualLesson: LiveLesson = {
-          id: res.lessonId || 'standalone_quiz',
-          title: titleText,
-          question: q.trim() || `Mastery Quiz: ${titleText}`,
-          duration: 30,
-          kind: 'live_generated',
-          chapters: [
-            {
-              id: 'quiz-beat-1',
-              title: titleText,
-              question: q.trim() || `Mastery Quiz: ${titleText}`,
-              insight: 'Interactive reinforcement mastery quiz',
-              start: 0,
-              end: 30,
-              narration: 'Begin the interactive reinforcement quiz.',
-              cues: [],
-              visual: { takeaway: titleText, nodes: [] },
-            },
-          ],
-          quiz: res.quiz,
-        };
-        ready(virtualLesson, true);
-      }
+      setStandaloneQuiz(quizLesson);
+      setLesson(null);
+      setJob(null);
+      history.replaceState(null, '', `/?quiz_only=1&doc=${docId || ''}`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -187,13 +233,19 @@ export default function LiveLessonLoader() {
         throw new Error('Could not generate quiz for this lesson.');
       }
 
-      setOpenQuizOnLoad(true);
-      setGenerateQuiz(true);
       let targetLesson = res.lesson;
       if (!targetLesson) {
         targetLesson = await api<LiveLesson>(`live/lessons/${lessonId}`);
       }
-      ready({ ...targetLesson, quiz: res.quiz }, true);
+      const quizLesson: LiveLesson = {
+        ...targetLesson,
+        quiz: res.quiz,
+      };
+
+      setStandaloneQuiz(quizLesson);
+      setLesson(null);
+      setJob(null);
+      history.replaceState(null, '', `/?quiz_only=1&lesson=${lessonId}`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -253,6 +305,40 @@ export default function LiveLessonLoader() {
     void api('health')
       .then(h => {
         syncAvailable.current = h.tts === 'openrouter';
+        if (params.get('quiz_only') === '1') {
+          const qLessonId = params.get('lesson');
+          const qDocId = params.get('doc');
+          if (qLessonId || qDocId) {
+            void api<{ quiz: any[]; lesson?: LiveLesson }>('live/quiz', { lessonId: qLessonId, documentId: qDocId })
+              .then(res => {
+                if (res?.quiz?.length) {
+                  const title = res.lesson?.title || 'Reinforcement Quiz';
+                  const chapters = (res.lesson?.chapters?.length) ? res.lesson.chapters : res.quiz.map((item: any, i: number) => ({
+                    id: item.chapterId || `beat-${i + 1}`,
+                    title: item.chapterTitle || `Card ${i + 1}`,
+                    question: item.prompt,
+                    insight: item.explanation,
+                    start: 0,
+                    end: 30,
+                    narration: '',
+                    cues: [],
+                    visual: { takeaway: item.chapterTitle || `Card ${i + 1}`, nodes: [] },
+                  }));
+                  setStandaloneQuiz({
+                    id: qLessonId || 'standalone_quiz',
+                    title,
+                    question: `Mastery Quiz: ${title}`,
+                    duration: 30,
+                    kind: 'standalone_quiz',
+                    chapters,
+                    quiz: res.quiz,
+                  });
+                }
+              })
+              .catch(() => {});
+            return;
+          }
+        }
         const id = params.get('lesson') || (defaultPvpLesson ? 'b1b20bea700000000000000000000001' : null);
         if (id) return api<LiveLesson>(`live/lessons/${id}`).then(ready);
         else if (params.get('job')) setJob(params.get('job')!);
@@ -326,7 +412,15 @@ export default function LiveLessonLoader() {
 
   return (
     <>
-      {lesson ? (
+      {standaloneQuiz ? (
+        <StandaloneQuizPlayer
+          lesson={standaloneQuiz}
+          onExit={() => {
+            setStandaloneQuiz(null);
+            history.replaceState(null, '', '/?home=1');
+          }}
+        />
+      ) : lesson ? (
         <LiveLessonPlayer
           initialLesson={lesson}
           initialTime={Number(params.get('t') || 0)}
@@ -412,13 +506,15 @@ export default function LiveLessonLoader() {
                           </div>
                         </a>
                         {item.quizCount > 0 ? (
-                          <a
-                            href={`/?lesson=${item.id}&quiz=1&beat=quiz`}
+                          <button
+                            type="button"
                             className="live-generated-lesson-quiz-btn"
+                            disabled={busyQuiz || busyLessonQuizId === item.id}
+                            onClick={() => void generateQuizForLesson(item.id)}
                             title={`Take ${item.quizCount}-Question Reinforcement Quiz`}
                           >
                             🧠 Quiz ({item.quizCount})
-                          </a>
+                          </button>
                         ) : (
                           <button
                             type="button"
