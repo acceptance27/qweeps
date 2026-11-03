@@ -693,3 +693,39 @@ def test_bundled_p_vs_np_hybrid_lesson_loads_and_has_audio(library):
   assert chapter_mp3.is_file()
 
 
+def test_validate_lesson_matrix_cell_alignment_and_tolerance(library):
+ lib,d=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib);_,raw=sample()
+ ch=raw['chapters'][0]
+ ch['layout']='matrix'
+ ch['teaching']='comparison'
+ ch['columns']=['Adds','Check']
+ ch['nodes'][0]['cells']=['nothing added','rejection rate']
+ ch['nodes'][1]['cells']=['perimeter ports','crossings checked']
+ validated=validate_lesson(raw,d,store.icons)
+ v=validated['chapters'][0]['visual']
+ assert v['columns']==['Item','Adds','Check']
+ assert v['nodes'][0]['cells']==['nothing added','rejection rate']
+ assert v['nodes'][1]['cells']==['perimeter ports','crossings checked']
+
+ # Test node title repeated in cell 0
+ ch['columns']=['Item','Check']
+ ch['nodes'][0]['cells']=[ch['nodes'][0]['title'],'rejection rate']
+ ch['nodes'][1]['cells']=[ch['nodes'][1]['title'],'crossings checked']
+ validated2=validate_lesson(raw,d,store.icons)
+ v2=validated2['chapters'][0]['visual']
+ assert v2['columns']==['Item','Check']
+ assert v2['nodes'][0]['cells']==['rejection rate']
+ assert v2['nodes'][1]['cells']==['crossings checked']
+
+ # Test too few cells and missing cells pad gracefully
+ ch['columns']=['Item','Col 1','Col 2','Col 3']
+ ch['nodes'][0]['cells']=['val 1']
+ ch['nodes'][1]['cells']=[]
+ validated3=validate_lesson(raw,d,store.icons)
+ v3=validated3['chapters'][0]['visual']
+ assert v3['columns']==['Item','Col 1','Col 2','Col 3']
+ assert v3['nodes'][0]['cells']==['val 1','—','—']
+ assert v3['nodes'][1]['cells']==['—','—','—']
+
+
+

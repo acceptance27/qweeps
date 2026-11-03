@@ -196,8 +196,40 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
         if not document and pages:
             if fallback_icons:pages=[]
             else:raise PlanError('Do not invent PDF page numbers: no source document was provided for this topic. Use sourcePages: []')
-        columns=[_text(v,'column heading',65) for v in _list(c.get('columns',[]),'matrix columns',0,5)]
-        if layout=='matrix' and not 2<=len(columns)<=5:raise PlanError('A matrix needs 2–5 labeled columns, including the first object column')
+        raw_cols = c.get('columns')
+        if not isinstance(raw_cols, list):
+            raw_cols = []
+        if layout == 'matrix':
+            raw_nodes = [n for n in c.get('nodes', []) if isinstance(n, dict)]
+            repeats_title = any(
+                isinstance(n.get('cells'), list) and n['cells'] and (
+                    str(n['cells'][0]).strip().casefold() == str(n.get('title', '')).strip().casefold()
+                    or str(n['cells'][0]).strip().casefold() == str(n.get('tag', '')).strip().casefold()
+                )
+                for n in raw_nodes
+            )
+            if repeats_title:
+                for n in raw_nodes:
+                    if isinstance(n.get('cells'), list) and n['cells'] and (
+                        str(n['cells'][0]).strip().casefold() == str(n.get('title', '')).strip().casefold()
+                        or str(n['cells'][0]).strip().casefold() == str(n.get('tag', '')).strip().casefold()
+                    ):
+                        n['cells'] = n['cells'][1:]
+            cells_lens = [len(n['cells']) for n in raw_nodes if isinstance(n.get('cells'), list)]
+            if cells_lens and all(l == len(raw_cols) for l in cells_lens) and 1 <= len(raw_cols) <= 4:
+                raw_cols = ['Item', *raw_cols]
+            elif len(raw_cols) < 2:
+                if cells_lens and max(cells_lens) >= 1:
+                    raw_cols = ['Item'] + [f'Col {i+1}' for i in range(min(max(cells_lens), 4))]
+                else:
+                    raw_cols = ['Item', 'Details']
+            elif len(raw_cols) > 5:
+                raw_cols = raw_cols[:5]
+            columns = [_text(v if (isinstance(v, (str, int, float)) and str(v).strip()) else f'Col {idx+1}', 'column heading', 65) for idx, v in enumerate(raw_cols)]
+            if not 2 <= len(columns) <= 5:
+                columns = (columns + ['Details'] * max(0, 2 - len(columns)))[:5]
+        else:
+            columns = [_text(v, 'column heading', 65) for v in _list(raw_cols, 'matrix columns', 0, 5)]
         nodes=[];node_ids=set()
         for node in _list(c.get('nodes'),'semantic objects',2,6):
             nid=_id(node.get('id'))
@@ -229,7 +261,15 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
                 from .diagrams import validate_diagram
                 n.update(validate_diagram(node))
             if layout=='matrix':
-                n['cells']=[_text(v,'matrix cell',155) for v in _list(node.get('cells'),'matrix cells',len(columns)-1,len(columns)-1)]
+                expected = max(1, len(columns) - 1)
+                raw_cells = node.get('cells')
+                if not isinstance(raw_cells, list):
+                    raw_cells = []
+                if len(raw_cells) > expected:
+                    raw_cells = raw_cells[:expected]
+                elif len(raw_cells) < expected:
+                    raw_cells = raw_cells + ['—'] * (expected - len(raw_cells))
+                n['cells'] = [_text(v if (isinstance(v, (str, int, float)) and str(v).strip()) else '—', 'matrix cell', 155) for v in raw_cells]
             nodes.append(n)
         if layout in {'diagram','fanin'}:
             from .diagrams import resolve_diagram_clearance
@@ -428,7 +468,9 @@ Matrix headings should be 1–3 words and cells usually 2–8 words. Non-matrix
 columns must be []. A cell is text, not another nested object.
 Diversify representations when the relationship changes; do not use one layout for every beat.
 A matrix is a meaningful comparison with 2–5 columns INCLUDING the first object
-column. Keep cells concise enough for their row height. Links need a named relationship;
+column (e.g. columns: ["Item", "Feature 1", "Feature 2"]). Each node's cells array must
+contain exactly len(columns) - 1 entries for the data columns (e.g. 2 cells if 3 columns).
+Keep cells concise enough for their row height. Links need a named relationship;
 chronological order is not proof of causation. Do not encode unmeasured importance as a number.
 The source outranks the storyboard: correct any unsupported assertion in the plan.
 Do not turn cautions or possible obligations into automatic verdicts, guaranteed
