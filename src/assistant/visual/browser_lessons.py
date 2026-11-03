@@ -424,7 +424,8 @@ guarantee ownership, compliance or infringement from an illustrative scenario.''
 DIRECT='''Direct the supplied storyboard into a live SVG/GSAP lesson. Return JSON only, no code.
 All source pages and permitted assets are supplied. Do not call tools, read files,
 browse, run commands or edit a project. Produce only the final JSON.
-Use the exact schema below. For card/infographic layouts, choose appropriate supplied SVG catalog icons. For diagram layouts, compose rich multi-primitive custom vector artwork in each node's 100x100 artwork array instead of falling back to catalog icons.
+Use the exact schema below. For card/infographic layouts, choose appropriate supplied SVG catalog icons. For diagram layouts, compose rich multi-primitive custom vector artwork in each node's 100x100 artwork array instead of falling back to catalog icons. Never use fill='white' on container or card rectangles in artwork; the stage background is dark (#071117), so container cards must use fill='none' (or 'ink'). White is only for text and small highlights.
+For matrix layouts: narrate the rows comparing cases from top to bottom (e.g. 'Row by row, common shortcuts map to their exposure...'), rather than saying 'on the left and right' as if they were separate cards.
 Keep descriptions useful for someone unfamiliar with the topic. Titles <=40 characters where
 possible, bodies roughly 12–30 words. Include a concrete example and define terms on-screen.
 Use compact prose: representation <=900 characters; shared example title <=55,

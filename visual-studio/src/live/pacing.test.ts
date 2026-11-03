@@ -60,3 +60,32 @@ test('new geometry waits for the visual handoff instead of finishing unseen duri
  assert.ok(pacing.linkAt('new-part',undefined,1)>=6);
  assert.ok(pacing.nodeAt('new-part')+pacing.nodeDuration('new-part')<=19);
 });
+
+test('matrix rows cannot reveal in reverse order even when later rows share an earlier collective cue',()=>{
+ const c={id:'matrix-test',title:'Matrix Test',years:'',question:'Order check',roles:{},sources:[],safeguard:'',narration:'Six rows fill one by one: first row, second row, then the rest.',
+  narrationAt:0,audio:'',cues:[],start:10,end:35,visualStart:10,finishedAt:34,
+  visual:{layout:'matrix',columns:['A','B'],takeaway:'All rows',connections:[],nodes:[
+   {id:'row-0',title:'Row 0',body:'',icon:'app',color:'blue',at:1},
+   {id:'row-1',title:'Row 1',body:'',icon:'app',color:'blue',at:4},
+   {id:'row-2',title:'Row 2',body:'',icon:'app',color:'blue',at:7},
+   {id:'row-3',title:'Row 3',body:'',icon:'app',color:'blue',at:10},
+   {id:'row-4',title:'Row 4',body:'',icon:'app',color:'blue',at:13},
+   {id:'row-5',title:'Row 5',body:'',icon:'app',color:'blue',at:16},
+  ]},narrationCues:[
+   {target:'context',start:0,end:2,text:'Intro',phrase:'Intro'},
+   {target:'row-3',start:2,end:4,text:'Six rows fill',phrase:'Six rows fill',attention:false},
+   {target:'row-4',start:2,end:4,text:'Six rows fill',phrase:'Six rows fill',attention:false},
+   {target:'row-5',start:2,end:4,text:'Six rows fill',phrase:'Six rows fill',attention:false},
+   {target:'row-0',start:4,end:6,text:'first row',phrase:'first row',attention:true},
+   {target:'row-1',start:6,end:8,text:'second row',phrase:'second row',attention:true},
+   {target:'row-2',start:8,end:10,text:'then the rest',phrase:'then the rest',attention:true},
+   {target:'takeaway',start:10,end:12,text:'All rows',phrase:'All rows'},
+  ]} as LiveChapter;
+ const p=generatedPacing(c);
+ assert.equal(p.nodeAt('row-0'),4);
+ assert.equal(p.nodeAt('row-1'),6);
+ assert.equal(p.nodeAt('row-2'),8);
+ assert.ok(p.nodeAt('row-3')>=p.nodeAt('row-2'),'row 3 must not appear before row 2');
+ assert.ok(p.nodeAt('row-4')>=p.nodeAt('row-3'),'row 4 must not appear before row 3');
+ assert.ok(p.nodeAt('row-5')>=p.nodeAt('row-4'),'row 5 must not appear before row 4');
+});

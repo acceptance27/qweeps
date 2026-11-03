@@ -47,6 +47,8 @@ def validate_diagram(node):
             paint=part.get(key,default)
             if paint not in PAINTS:raise PlanError('Use named palette paints, not URLs or SVG markup')
             out[key]=paint
+        if kind=='rect' and out['fill']=='white' and out.get('width',0)>=30 and out.get('height',0)>=30:
+            out['fill']='none'
         out['strokeWidth']=number(part.get('strokeWidth',1.4),'stroke width',0,6)
         drawings.append(out)
     motions=[]

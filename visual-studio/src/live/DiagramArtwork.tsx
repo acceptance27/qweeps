@@ -8,7 +8,11 @@ export function DiagramArtwork({node,width,height}:{node:LiveNode;width:number;h
  const size=Math.min(width,height),x=(width-size)/2,y=(height-size)/2;
  return <g className="diagram-motion">
   {node.artwork?.length?<svg x={x} y={y} width={size} height={size} viewBox="0 0 100 100" overflow="visible"><g className="object-art">
-   {node.artwork.map((p,i)=>{const common={key:i,stroke:paints[p.stroke],fill:paints[p.fill],strokeWidth:p.strokeWidth,strokeLinecap:'round' as const,strokeLinejoin:'round' as const};switch(p.type){
+   {node.artwork.map((p,i)=>{
+    const isWhiteFill=p.fill==='white'||p.fill==='#ffffff'||p.fill==='#fff'||p.fill==='#e6eef0';
+    const isContainerRect=p.type==='rect'&&(p.width??0)>=30&&(p.height??0)>=30;
+    const fill=isContainerRect&&isWhiteFill?'none':paints[p.fill]||p.fill;
+    const common={key:i,stroke:paints[p.stroke]||p.stroke,fill,strokeWidth:p.strokeWidth,strokeLinecap:'round' as const,strokeLinejoin:'round' as const};switch(p.type){
     case 'path':return <path {...common} d={p.d}/>;
     case 'circle':return <circle {...common} cx={p.cx} cy={p.cy} r={p.r}/>;
     case 'ellipse':return <ellipse {...common} cx={p.cx} cy={p.cy} rx={p.rx} ry={p.ry}/>;

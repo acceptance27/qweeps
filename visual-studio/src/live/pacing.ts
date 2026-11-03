@@ -20,7 +20,16 @@ export function generatedPacing(c:LiveChapter){
   const fallback={target:'fallback',start:0.3,end:Math.max(1.2,span-0.4),text:'',phrase:''};
   const cue=(id:string)=>cues.find(q=>q.target===id)||cues[0]||fallback;
   const revealFloor=(c.visualStart??c.start)-c.start;
-  const nodeAt=(id:string)=>Math.max(revealFloor,cue(id).start);
+  const isOrdered=v.layout==='matrix'||v.layout==='process'||v.layout==='timeline';
+  const nodeAtTimes=new Map<string,number>();
+  let lastAt=revealFloor;
+  for(const n of v.nodes){
+   const t=Math.max(revealFloor,cue(n.id).start);
+   const resolved=isOrdered?Math.max(lastAt,t):t;
+   nodeAtTimes.set(n.id,resolved);
+   if(isOrdered)lastAt=resolved;
+  }
+  const nodeAt=(id:string)=>nodeAtTimes.get(id)??Math.max(revealFloor,cue(id).start);
   const speechEnd=Math.max(...cues.map(q=>q.end));
   const nodeDuration=(id:string)=>Math.max(.15,Math.min(3,Math.max(.8,(cue(id).end-cue(id).start)*.72),(speechEnd-cue(id).start-.08)/1.2));
   return{at:(original:number)=>nodeAt(v.nodes.find(n=>n.at===original)?.id||v.nodes[0]?.id||'fallback'),nodeAt,nodeDuration,
