@@ -260,7 +260,7 @@ export default function LearningPlayer() {
   function close() {
     pause(); stopSpeech(); requestRef.current?.abort(); recognitionRef.current?.stop(); setClosed(true);
     if (sessionId) void api('closed', { sessionId, desktop: params.get('desktop') === '1' }).catch(() => {});
-    window.close();
+    window.location.href = '/';
   }
 
   useEffect(() => {
@@ -341,7 +341,7 @@ export default function LearningPlayer() {
   if (closed) return <main className="lesson-closed"><p>Visual session closed.</p><button onClick={() => location.reload()}>Open a new session</button><small>You can close this browser tab.</small></main>;
   return <main className={`learning-player ${nativeLesson ? "production-lesson" : ""}`}>
     <header className="lesson-header">
-      <div><span className="qweeps-wordmark">QWEEPS <span>VISUAL LAB</span></span><h1>{title}</h1></div>
+      <div><a href="/" className="qweeps-wordmark" title="Return to main menu" style={{textDecoration:'none',color:'inherit'}}>QWEEPS <span>VISUAL LAB</span></a><h1>{title}</h1></div>
       <div className="header-actions"><a href="/?scene=alu&paused=1" style={{fontSize:11,alignSelf:"center"}}>ALU</a><a href="/?scene=jose_rizal&paused=1" style={{fontSize:11,alignSelf:"center"}}>José Rizal</a><a href="/?scene=manim_production&paused=1" style={{fontSize:11,alignSelf:"center"}}>Time & cost</a><a href="/?examples=1" style={{fontSize:11,alignSelf:"center"}}>5 method examples</a><button aria-label="Toggle conversation" onClick={() => setChatOpen(open => !open)}>Ask QWEEPS</button><button title={voice ? 'Mute voice' : 'Enable voice'} aria-label={voice ? 'Mute voice' : 'Enable voice'} onClick={() => { stopSpeech(); lastNarrated.current = ''; setVoice(v => !v); }}>{voice ? <Volume2 size={17} /> : <VolumeX size={17} />}</button><button title="Close (Esc)" aria-label="Close visual" onClick={close}><X size={18} /></button></div>
     </header>
     <div className={`lesson-workspace ${chatOpen ? 'conversation-open' : 'cinema-mode'}`}>
