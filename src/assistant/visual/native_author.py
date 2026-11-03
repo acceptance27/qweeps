@@ -414,9 +414,10 @@ def condense_narration(llm, lesson: dict, manifest: dict, native_ids: list[str])
             "Rewrite each narration to one consistent teaching voice and a strict "
             'word budget. Return JSON only as {"chapters":[{"id":"...","narration":"..."}]}. '
             "When a bridge is supplied, begin the narration with that bridge verbatim. "
-            "Maintain direct 3Blue1Brown kinetic audio-visual grounding: explicitly describe the on-screen "
-            "objects, colors, spatial positions (left, right, center), and kinetic actions as they happen "
-            "(e.g. 'On the left, watch the green curve... while on the right, five bars swap into place...'). "
+            "Teaching the user about the topic is the #1 priority: explain the core concepts, mechanisms, and practical "
+            "distinctions clearly and intuitively so the learner gains real understanding. "
+            "Do NOT describe what is visually happening on the screen (never say 'card lights up', 'blue card', 'box glows', "
+            "'on the left card', or describe UI graphics/layout). Instead, explain what the domain concepts and mechanisms mean. "
             "Do not revert to abstract textbook prose. Keep the mechanism and the specific insight; remove secondary detail. "
             "Do not add facts, do not mention the runtime, and stay within maxWords."
         )

@@ -450,16 +450,15 @@ language across beats while adapting how each question is answered. Narration de
 visible relationship instead of reading a page of supporting copy verbatim.
 Write each beat's narration as a passage within ONE connected lesson, developing
 the shared example and inference.
-KINETIC AUDIO-VISUAL GROUNDING (3Blue1Brown Principle):
-Every beat's narration MUST directly narrate the physical objects, colors, shapes, spatial positions (e.g. 'On the left...', 'On the right card...', 'In the center box...'), and kinetic actions happening on screen.
-Never write detached, abstract textbook narration that ignores what is physically visible.
-When an animation plays, the narration must speak the visual cues as they occur (e.g., 'On the left, watch the green curve trace out polynomial work... while on the right, five bars swap positions in place...').
-For layout beats, walk through the cards or nodes by name and color.
-Use the supplied lesson progression to bridge
-from the preceding idea into why the next question matters. Keep one narrator's
-conversational thread; don't restart, greet, announce a new topic, recap or close
-the explanation at every visual checkpoint. Do not turn narration into independent
-descriptions of each card. Beats divide visual reasoning and navigation, not voice performances.
+TEACHING THE TOPIC IS THE #1 PRIORITY:
+The number one priority of narration is to TEACH the user about the topic so they gain deep conceptual understanding and practical knowledge. Describing what is visually happening on the screen is NOT the goal. Visuals are merely supporting visual aids; the narration must be an exceptional educational explanation that stands on its own.
+1. TEACH, DEFINE, AND EXPLAIN: Explain the actual principles, definitions, causal mechanisms, and distinctions of the subject matter. When introducing concepts (like Responsibility, Accountability, Liability, and Blame), do not merely recite them or say where they appear—explain what each one fundamentally means in practice, how they differ, and why understanding that distinction matters. Give the learner concrete understanding they can remember and apply.
+2. ABSOLUTELY NO VISUAL PLAY-BY-PLAY OR UI META-COMMENTARY:
+   Never treat the narration as an audio description of the screen or slide. Do not narrate graphics, layout positions, or animations.
+   FORBIDDEN: Never say 'card lights up', 'cards light up', 'box lights up', 'cards appear', 'on the left card', 'blue card', 'green card', 'purple shield rises', 'in the center box', 'watch this highlight', 'pulses', or describe what is visually happening.
+   Instead, explain the real-world domain concepts directly: 'Responsibility asks who had the causal power and duty to prevent the defect...', 'Accountability requires the system owner to answer for the outcome...', 'Therac-25 warnings were absorbed through compounding cognitive biases...'.
+3. NATURAL INTEGRATION: Use the names of key terms and concepts naturally as part of your teaching sentences so speech-to-visual alignment can synchronize smoothly with on-screen labels without awkward or artificial phrasing.
+4. Keep one continuous conversational teaching thread across beats; don't restart, greet, announce a new topic, recap or close the explanation at every visual checkpoint. Do not turn narration into independent descriptions of each card. Beats divide visual reasoning and navigation, not voice performances.
 Speak continuity.bridge verbatim at the beginning of its narration. The previous
 diagram stays visible through that whole spoken connection; the new visual starts
 after its final word. Do not put the bridge after the new subject's explanation.

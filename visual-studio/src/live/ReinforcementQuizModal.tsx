@@ -111,8 +111,8 @@ export function ReinforcementQuizNavbar({
             <Repeat size={13} />
             <span>
               {round === 1
-                ? 'Round 1 · Initial Pass'
-                : `Round ${round} · Reinforcing Missed (${queue.length})`}
+                ? 'Round 1'
+                : `Round ${round} (${queue.length})`}
             </span>
           </div>
           <div className={`mastery-streak-tag ${streak >= 2 ? 'hot' : ''}`} title="Current consecutive correct answers">
@@ -464,8 +464,10 @@ export function ReinforcementQuizModal({
         return;
       }
       if (completed || !currentCard) return;
-      if (!isAnswered && ['1', '2', '3', '4'].includes(e.key)) {
-        const idx = Number(e.key) - 1;
+      if (!isAnswered) {
+        const numIdx = ['1', '2', '3', '4'].indexOf(e.key);
+        const letterIdx = ['a', 'b', 'c', 'd', 'A', 'B', 'C', 'D'].indexOf(e.key);
+        const idx = numIdx !== -1 ? numIdx : letterIdx !== -1 ? letterIdx % 4 : -1;
         if (idx >= 0 && idx < currentCard.options.length) {
           e.preventDefault();
           submitAnswer(idx);
@@ -674,6 +676,7 @@ export function ReinforcementQuizModal({
                   else if (isThisSelected) state = 'wrong';
                   else state = 'dimmed';
                 }
+                const letter = String.fromCharCode(65 + idx);
                 return (
                   <button
                     key={`${currentCard.id}-opt-${idx}`}
@@ -682,7 +685,7 @@ export function ReinforcementQuizModal({
                     onClick={() => submitAnswer(idx)}
                     className={`mastery-option-btn ${state}`}
                   >
-                    <span className="mastery-option-key">{idx + 1}</span>
+                    <span className="mastery-option-key">{letter}</span>
                     <span className="mastery-option-text">{opt}</span>
                     {isAnswered && isThisCorrect && <CheckCircle2 size={18} className="mastery-opt-icon ok" />}
                     {isAnswered && isThisSelected && !isThisCorrect && (
@@ -735,7 +738,7 @@ export function ReinforcementQuizModal({
 
             {!isAnswered && (
               <div className="mastery-keyboard-tip">
-                Press <kbd>1</kbd>–<kbd>4</kbd> to answer · Failed answers automatically repeat until 100% mastery
+                Press <kbd>A</kbd>–<kbd>D</kbd> or <kbd>1</kbd>–<kbd>4</kbd> to answer · Missed questions automatically repeat until mastered
               </div>
             )}
           </div>

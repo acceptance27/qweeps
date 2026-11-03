@@ -32,8 +32,14 @@ class DocumentLibrary:
     def ingest(self,payload):
         if payload.get('path'):
             path=Path(str(payload['path'])).expanduser()
-            if path.suffix.casefold()!='.pdf' or not path.is_file():raise PlanError('Choose an existing PDF file.')
-            if path.stat().st_size>25_000_000:raise PlanError('The PDF must be smaller than 25 MB.')
+            if not path.is_file():raise PlanError('Choose an existing document file.')
+            if path.suffix.casefold() in {'.pptx','.ppt'}:
+                pdf_target=path.with_suffix('.pdf')
+                if not pdf_target.is_file() or pdf_target.stat().st_mtime<path.stat().st_mtime:
+                    subprocess.run(['soffice','--headless','--convert-to','pdf','--outdir',str(path.parent),str(path)],check=True,timeout=40)
+                path=pdf_target
+            if path.suffix.casefold()!='.pdf' or not path.is_file():raise PlanError('Choose an existing PDF or presentation file.')
+            if path.stat().st_size>25_000_000:raise PlanError('The file must be smaller than 25 MB.')
             data=path.read_bytes();name=path.name
         else:
             name=Path(str(payload.get('filename','document.pdf'))).name
@@ -63,7 +69,7 @@ class DocumentLibrary:
         (folder/'document.json').write_text(json.dumps(out,ensure_ascii=False));return {k:out[k] for k in ('id','title','filename','pageCount','aliases')}
     def resolve(self,question,doc_id=None):
         if doc_id:return self.get(doc_id)
-        path=re.search(r'(/[^\n]*?\.pdf)(?=$|[\s\"\'])',question,re.I)
+        path=re.search(r'(/[^\n]*?\.(?:pdf|pptx))(?=$|[\s\"\'])',question,re.I)
         if path and Path(path[1]).is_file():return self.get(self.ingest({'path':path[1]})['id'])
         matched=[];query=words(question)
         for meta in self.catalog():
