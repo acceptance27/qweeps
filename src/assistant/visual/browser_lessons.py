@@ -940,6 +940,9 @@ class BrowserLessonStore:
             target=folder/f"direction-{j['revision']}-{index}{suffix}.json"
             attempt_prefix=f"attempt-{j['revision']}-{index}{suffix}"
             def check(raw, fallback_icons=False):
+                if isinstance(raw, dict) and not isinstance(raw.get('chapters'), list):
+                    if 'nodes' in raw or 'teaching' in raw or 'layout' in raw or 'id' in raw:
+                        raw = {'chapters': [raw]}
                 if old and isinstance(raw,dict):
                     # A targeted revision owns chapter changes, not the shared
                     # header. Preserve immutable metadata directly rather than
@@ -959,6 +962,10 @@ class BrowserLessonStore:
                     for key in ('title','question','representation','example'):
                         if not raw.get(key) and story.get(key) is not None:
                             raw[key]=copy.deepcopy(story[key])
+                    if len(raw['chapters']) == len(beats):
+                        for idx, ch in enumerate(raw['chapters']):
+                            if isinstance(ch, dict) and ch.get('id') not in {b['id'] for b in beats}:
+                                ch['id'] = beats[idx]['id']
                     for idx, ch in enumerate(raw['chapters']):
                         if isinstance(ch,dict):
                             bmatch=next((b for b in beats if b.get('id')==ch.get('id')),beats[idx] if idx<len(beats) else None)
@@ -995,6 +1002,14 @@ class BrowserLessonStore:
                 attempted=None
                 try:
                     attempted=json.loads(attempt.read_text())
+                    if isinstance(attempted, dict) and not isinstance(attempted.get('chapters'), list):
+                        if 'nodes' in attempted or 'teaching' in attempted or 'layout' in attempted or 'id' in attempted:
+                            attempted = {'chapters': [attempted]}
+                    if isinstance(attempted, dict) and isinstance(attempted.get('chapters'), list):
+                        if len(attempted['chapters']) == len(beats):
+                            for idx, ch in enumerate(attempted['chapters']):
+                                if isinstance(ch, dict) and ch.get('id') not in {b['id'] for b in beats}:
+                                    ch['id'] = beats[idx]['id']
                     # Older checkpoints may have batched these beats differently.
                     # Do not ask the model to repair an unrelated batch into this one.
                     if {c.get('id') for c in attempted.get('chapters',[])}!={b['id'] for b in beats}:continue
@@ -1006,7 +1021,8 @@ class BrowserLessonStore:
             pages={p for b in beats for p in b.get('sourcePages',[])}
             source={'title':document['title'],'pages':[p for p in document['pages'] if p['page'] in pages]} if document else None
             short_story={**story,'beats':beats}
-            payload={**request,'source':source,'storyboard':short_story,'section':index+1,
+            target_ids = [b['id'] for b in beats]
+            payload={**request,'source':source,'storyboard':short_story,'targetBeatIds':target_ids,'section':index+1,
                      'lessonProgression':[{'id':b['id'],'question':b['question'],'insight':b['insight'],'continuity':b.get('continuity'),'presentation':b.get('presentation')} for b in story['beats']],
                      'nodeContract':{'required':['id','title','body','icon','color','at','tag'],
                         'colors':sorted(COLORS),'titleMaxCharacters':65,'bodyMaxCharacters':250,'bodyTargetCharacters':160,
@@ -1016,7 +1032,7 @@ class BrowserLessonStore:
                             'clearance':'Maintain at least 15px clearance between diagram objects without overlap.'},
                         'artwork':'Array of 6–16 SVG primitive objects in 100x100 space (paths, vectors, geometric shapes, equation text labels) constructing the mechanism or proof; never markup or prose.',
                         'motion':'Array of cue-driven motion objects (dx, dy, scale, opacity) animating the interaction across the stage when cued.'},
-                     'instruction':'Direct ONLY these one or two beats. Use the shared worked example. Return compact JSON; do not repeat the entire module.'}
+                     'instruction':f"Direct ONLY the requested beat(s) in storyboard.beats: {', '.join(target_ids)}. Return a JSON object with 'chapters' containing exactly {len(target_ids)} chapter(s) with matching id: {', '.join(target_ids)}. Use the shared worked example; do not repeat the entire module."}
             if j.get('visualContract'):
                 from .visual_contract import layout_contract
                 payload['visualContract']=layout_contract(j['visualContract'])
@@ -1025,8 +1041,8 @@ class BrowserLessonStore:
                 sec_findings=[f for f in findings if f.get('beat') in {b['id'] for b in beats}]
                 if sec_findings:payload['revisionFeedback']=sec_findings
             if previous_attempt:
-                payload['previousAttempt']=previous_attempt;payload['validationFeedback']=validation_error
-                payload['instruction']+=' Correct the saved attempt using the validator feedback, preserving its already-valid content. Return the complete corrected section.'
+                payload['previousAttempt']=previous_attempt;payload['validationFeedback']=f"{validation_error}. Required beat ID(s) for this section: {', '.join(target_ids)}."
+                payload['instruction']+=f" Correct the saved attempt using the validator feedback. Ensure your chapter id is one of: {', '.join(target_ids)}."
             if old:
                 payload['previousDirectedSection']=old
                 flagged_in_section=[b['id'] for b in beats if b['id'] in affected]
