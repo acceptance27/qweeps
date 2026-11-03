@@ -147,10 +147,41 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
     const takeaway = (ch.visual?.takeaway || insight).trim();
     const safeguard = cleanSafeguardForStudent(ch.safeguard || '');
 
+    const roleEntries = Object.entries(ch.roles || {})
+      .map(([id, text]) => {
+        if (!text) return null;
+        const sep = text.indexOf(':');
+        return sep > 0
+          ? { id, title: text.slice(0, sep).trim(), body: text.slice(sep + 1).trim() }
+          : null;
+      })
+      .filter((x): x is { id: string; title: string; body: string } => Boolean(x && x.body.length >= 16));
+
+    const nodes = (ch.visual?.nodes || []).filter(n => n.title && n.body && n.body.trim().length >= 16);
+    const candidates = nodes.length ? nodes : roleEntries;
+
     if (insight) {
       const qid = `q-${ch.id}-concept`;
-      const distractors = pickDistractors(insight, [...allInsights, ...allSafeguards], qid);
-      const options = hashSort([insight, ...distractors], `${qid}-opts`);
+      let conceptDistractors: string[] = (ch as unknown as { conceptDistractors?: string[] }).conceptDistractors || [];
+      if (!conceptDistractors.length || conceptDistractors.length < 3) {
+        if (candidates.length >= 2) {
+          const t0 = candidates[0].title;
+          const t1 = candidates[1].title;
+          const tLast = candidates[candidates.length - 1].title;
+          conceptDistractors = [
+            `${t0} and ${t1} are functionally identical in this framework, requiring no operational distinction between them.`,
+            `${tLast} is the sole required condition, guaranteeing system success without addressing ${t0}.`,
+            `Following ${t0} in isolation guarantees complete protection without establishing whole-system accountability.`,
+          ];
+        } else {
+          conceptDistractors = [
+            `Treats "${cTitle}" as an unverified informal assumption rather than an active verifiable constraint.`,
+            `Assumes individual local adherence to "${cTitle}" automatically guarantees end-to-end reliability.`,
+            `Confines "${cTitle}" to post-hoc reporting while treating forward prevention as an optional feature.`,
+          ];
+        }
+      }
+      const options = hashSort([insight, ...conceptDistractors.slice(0, 3)], `${qid}-opts`);
       questions.push({
         id: qid,
         chapterId: ch.id,
@@ -166,19 +197,6 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
         acceptedAnswers: [cTitle, insight.split(/[,.;]/)[0].trim()],
       });
     }
-
-    const roleEntries = Object.entries(ch.roles || {})
-      .map(([id, text]) => {
-        if (!text) return null;
-        const sep = text.indexOf(':');
-        return sep > 0
-          ? { id, title: text.slice(0, sep).trim(), body: text.slice(sep + 1).trim() }
-          : null;
-      })
-      .filter((x): x is { id: string; title: string; body: string } => Boolean(x && x.body.length >= 16));
-
-    const nodes = (ch.visual?.nodes || []).filter(n => n.title && n.body && n.body.trim().length >= 16);
-    const candidates = nodes.length ? nodes : roleEntries;
     
     // Generate questions for candidate rows/nodes in this beat
     for (let nIdx = 0; nIdx < candidates.length; nIdx++) {
@@ -253,6 +271,44 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
         expectedItems,
         itemAliases: aliases,
         itemLabel: 'components',
+      });
+    }
+
+    // Misconception safeguard question with strictly on-topic distractors
+    if (safeguard && safeguard.length >= 24 && !safeguard.startsWith('Focused mini-lesson')) {
+      const qidSafeguard = `q-${ch.id}-safeguard`;
+      let safeguardDistractors: string[] = (ch as unknown as { safeguardDistractors?: string[] }).safeguardDistractors || [];
+      if (!safeguardDistractors.length || safeguardDistractors.length < 3) {
+        if (candidates.length >= 2) {
+          const t0 = candidates[0].title;
+          const t1 = candidates[1].title;
+          safeguardDistractors = [
+            `Assume that achieving ${t0} automatically fulfills ${t1} without independent verification.`,
+            `Treat failures in ${t0} as intentional misconduct rather than systemic organizational gaps.`,
+            `Rely on informal verbal consensus rather than documenting explicit ${t1} agreements.`,
+          ];
+        } else {
+          safeguardDistractors = [
+            `Assume that local procedural compliance in "${cTitle}" guarantees systemic reliability.`,
+            `Treat diagnostic warning signals in "${cTitle}" as harmless noise if immediate tests pass.`,
+            `Rely on retrospective memory after incidents occur rather than recording choices at the time.`,
+          ];
+        }
+      }
+      const safeguardOptions = hashSort([safeguard, ...safeguardDistractors.slice(0, 3)], `${qidSafeguard}-opts`);
+      questions.push({
+        id: qidSafeguard,
+        chapterId: ch.id,
+        chapterIndex: cIdx,
+        chapterTitle: ch.title,
+        kind: 'safeguard',
+        prompt: `Which critical safeguard or boundary condition applies when interpreting "${cTitle}"?`,
+        options: safeguardOptions,
+        correctIndex: safeguardOptions.indexOf(safeguard),
+        explanation: `Safeguard for ${cTitle}: ${safeguard}`,
+        safeguardNote: insight || null,
+        hint: `Think about the common misreading warned against in Beat ${cIdx + 1}.`,
+        acceptedAnswers: [cTitle, safeguard.split('.')[0].trim()],
       });
     }
   }

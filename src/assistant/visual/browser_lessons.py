@@ -622,6 +622,51 @@ def _clean_safeguard_for_student(raw: str) -> str:
     return t
 
 
+def _generate_beat_concept_distractors(ch: dict, clean_title: str, insight: str, nodes: list[dict]) -> list[str]:
+    """Generate on-topic distractors tightly grounded in the beat's own concepts and semantic nodes."""
+    explicit = ch.get("conceptDistractors")
+    if isinstance(explicit, list) and len(explicit) >= 3:
+        return explicit[:3]
+
+    if nodes and len(nodes) >= 2:
+        t0 = nodes[0]["title"]
+        t1 = nodes[1]["title"]
+        t_last = nodes[-1]["title"]
+        return [
+            f"{t0} and {t1} are functionally identical in this framework, requiring no operational distinction between them.",
+            f"{t_last} is the sole required condition, guaranteeing system success without addressing {t0}.",
+            f"Following {t0} in isolation guarantees complete protection without establishing whole-system accountability.",
+        ]
+
+    return [
+        f"Treats {clean_title} as an unverified informal assumption rather than an active verifiable constraint.",
+        f"Assumes individual local adherence to {clean_title} automatically guarantees end-to-end reliability.",
+        f"Confines {clean_title} to post-hoc reporting while treating forward prevention as an optional feature.",
+    ]
+
+
+def _generate_beat_safeguard_distractors(ch: dict, clean_title: str, safeguard: str, nodes: list[dict]) -> list[str]:
+    """Generate on-topic safeguard distractors grounded in the beat's specific subject domain."""
+    explicit = ch.get("safeguardDistractors")
+    if isinstance(explicit, list) and len(explicit) >= 3:
+        return explicit[:3]
+
+    if nodes and len(nodes) >= 2:
+        t0 = nodes[0]["title"]
+        t1 = nodes[1]["title"]
+        return [
+            f"Assume that achieving {t0} automatically fulfills {t1} without independent verification.",
+            f"Treat failures in {t0} as intentional misconduct rather than systemic organizational gaps.",
+            f"Rely on informal verbal consensus rather than documenting explicit {t1} agreements.",
+        ]
+
+    return [
+        f"Assume that local procedural compliance in {clean_title} guarantees systemic reliability.",
+        f"Treat diagnostic warning signals in {clean_title} as harmless noise if immediate tests pass.",
+        f"Rely on retrospective memory after incidents occur rather than recording choices at the time.",
+    ]
+
+
 def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
     """Synthesize a mastery reinforcement quiz grounded in the lesson's beats, mechanisms, and safeguards."""
     chapters = lesson.get("chapters") or []
@@ -656,20 +701,6 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
                 if len(b_part) >= 18:
                     all_node_bodies.append(b_part)
 
-    generic_insight_fallbacks = [
-        "It relies on an unconstrained brute-force enumeration without structural bounds or conservation laws.",
-        "It bypasses intermediate verification steps by assuming every local transition is automatically reversible.",
-        "It treats the representation as a static label rather than an active transformation with measurable invariants.",
-        "It treats isolated component successes as a substitute for verifying total end-to-end system reliability.",
-        "It assumes local procedural adherence automatically resolves structural accountability across institutional boundaries.",
-    ]
-    generic_safeguard_fallbacks = [
-        "Assume that any necessary condition automatically guarantees the final outcome in every reference frame.",
-        "Treat illustrative schematic arrows as literal physical trajectories without checking conservation thresholds.",
-        "Conflate verifying a proposed candidate solution with searching the entire state space from scratch.",
-        "Treat an unowned aggregate process as self-correcting without establishing explicit individual answerability.",
-    ]
-
     questions: list[dict] = []
 
     for c_idx, ch in enumerate(chapters):
@@ -680,12 +711,23 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
         takeaway = ((ch.get("visual") or {}).get("takeaway") or insight).strip()
         safeguard = _clean_safeguard_for_student(ch.get("safeguard") or "")
 
-        # 1. Beat-level concept / conclusion question
+        # 1. Extract candidate semantic objects / roles for this beat
+        nodes: list[dict] = []
+        for n in ((ch.get("visual") or {}).get("nodes") or []):
+            if isinstance(n, dict) and (n.get("title") or "").strip() and len((n.get("body") or "").strip()) >= 16:
+                nodes.append({"id": n.get("id", ""), "title": n["title"].strip(), "body": n["body"].strip()})
+        if not nodes and isinstance(ch.get("roles"), dict):
+            for r_id, r_val in ch["roles"].items():
+                if isinstance(r_val, str) and ":" in r_val:
+                    t_part, b_part = r_val.split(":", 1)
+                    if t_part.strip() and len(b_part.strip()) >= 16:
+                        nodes.append({"id": r_id, "title": t_part.strip(), "body": b_part.strip()})
+
+        # 2. Beat-level concept / conclusion question with strictly on-topic distractors
         if insight:
             qid = f"q-{cid}-concept"
-            other_insights = [x for i, x in enumerate(all_insights) if i != c_idx] + all_safeguards
-            distractors = _pick_distractors(insight, other_insights, 3, qid, generic_insight_fallbacks)
-            options = _deterministic_shuffle([insight, *distractors], qid + "-opts")
+            distractors = _generate_beat_concept_distractors(ch, clean_title, insight, nodes)
+            options = _deterministic_shuffle([insight, *distractors[:3]], qid + "-opts")
             questions.append({
                 "id": qid,
                 "chapterId": cid,
@@ -701,25 +743,12 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
                 "acceptedAnswers": [clean_title, insight.split(".")[0].strip()],
             })
 
-        # 2. Extract candidate semantic objects / roles for this beat
-        nodes: list[dict] = []
-        for n in ((ch.get("visual") or {}).get("nodes") or []):
-            if isinstance(n, dict) and (n.get("title") or "").strip() and len((n.get("body") or "").strip()) >= 16:
-                nodes.append({"id": n.get("id", ""), "title": n["title"].strip(), "body": n["body"].strip()})
-        if not nodes and isinstance(ch.get("roles"), dict):
-            for r_id, r_val in ch["roles"].items():
-                if isinstance(r_val, str) and ":" in r_val:
-                    t_part, b_part = r_val.split(":", 1)
-                    if t_part.strip() and len(b_part.strip()) >= 16:
-                        nodes.append({"id": r_id, "title": t_part.strip(), "body": b_part.strip()})
-
         # 3. Generate individual row/node questions for each element in the beat
         for n_idx, target_node in enumerate(nodes):
             n_title = target_node["title"]
             n_body = target_node["body"]
             qid_m = f"q-{cid}-node-{n_idx}"
 
-            # Options are concise titles (e.g. Responsibility vs Accountability vs Liability vs Blame)
             other_titles = [other["title"] for j, other in enumerate(nodes) if j != n_idx]
             for ot in all_node_titles:
                 if len(other_titles) >= 3:
@@ -729,7 +758,6 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
 
             options_m = _deterministic_shuffle([n_title, *other_titles[:3]], qid_m + "-opts")
             
-            # Clean title aliases for Hard Mode text matching
             base_title = re.sub(r"\s*\(.*?\)", "", n_title).strip()
             if ":" in base_title:
                 base_title = base_title.split(":", 1)[0].strip()
@@ -763,7 +791,6 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
             expected_items = [n["title"] for n in nodes]
             correct_joined = ", ".join(expected_items)
 
-            # Generate length-matched distractors for multi-item list
             distractor_lists: list[str] = []
             perturb_substitutes = [
                 "Unverified heuristic",
@@ -809,17 +836,11 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
                 "itemLabel": item_label,
             })
 
-        # 5. Misconception safeguard question for beats with substantial safeguards
+        # 5. Misconception safeguard question with strictly on-topic distractors
         if safeguard and len(safeguard) >= 24 and not safeguard.startswith("Focused mini-lesson"):
             qid_s = f"q-{cid}-safeguard"
-            distractors_s = _pick_distractors(
-                safeguard,
-                [s for s in all_safeguards if s != safeguard] + generic_safeguard_fallbacks,
-                3,
-                qid_s,
-                generic_safeguard_fallbacks,
-            )
-            options_s = _deterministic_shuffle([safeguard, *distractors_s], qid_s + "-opts")
+            distractors_s = _generate_beat_safeguard_distractors(ch, clean_title, safeguard, nodes)
+            options_s = _deterministic_shuffle([safeguard, *distractors_s[:3]], qid_s + "-opts")
             questions.append({
                 "id": qid_s,
                 "chapterId": cid,
