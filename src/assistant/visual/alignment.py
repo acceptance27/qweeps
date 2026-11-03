@@ -61,6 +61,16 @@ def validate_anchors(raw,chapters):
             phrase_range(c['narration'],a['phrase'],a.get('occurrence',1))
     return raw['chapters']
 
+def detect_language(text):
+    if not text:
+        return 'en'
+    words = set(tokens(text))
+    tl_words = {'ang', 'mga', 'ng', 'sa', 'ay', 'na', 'si', 'ni', 'ito', 'natin', 'namin', 'hindi', 'kung', 'dahil', 'kaya', 'may', 'bilang', 'at'}
+    es_words = {'el', 'la', 'los', 'las', 'de', 'del', 'en', 'un', 'una', 'por', 'con', 'para', 'es', 'son', 'como'}
+    scores = {'tl': len(words & tl_words), 'es': len(words & es_words)}
+    best = max(scores, key=scores.get)
+    return best if scores[best] >= 3 else 'en'
+
 def script_word_times(script,alignment,duration):
     reference=tokens(script);heard=[];timings=[];previous=0
     for w in alignment.get('words',[]):
@@ -69,8 +79,42 @@ def script_word_times(script,alignment,duration):
         previous=start
         for token in tokens(w.get('text','')):heard.append(token);timings.append((start,min(duration,end)))
     matches={}
-    for block in difflib.SequenceMatcher(None,reference,heard,autojunk=False).get_matching_blocks():
+    blocks=difflib.SequenceMatcher(None,reference,heard,autojunk=False).get_matching_blocks()
+    for block in blocks:
         for offset in range(block.size):matches[block.a+offset]=block.b+offset
+    prev_a,prev_b=0,0
+    for block in blocks:
+        gap_a_start,gap_a_end=prev_a,block.a
+        gap_b_start,gap_b_end=prev_b,block.b
+        prev_a=block.a+block.size
+        prev_b=block.b+block.size
+        if gap_a_start<gap_a_end and gap_b_start<gap_b_end:
+            sub_a=reference[gap_a_start:gap_a_end]
+            sub_b=heard[gap_b_start:gap_b_end]
+            ia,ib=0,0
+            while ia<len(sub_a) and ib<len(sub_b):
+                ra,hb=sub_a[ia],sub_b[ib]
+                if ia+1<len(sub_a) and (sub_a[ia]+sub_a[ia+1]==hb or (len(hb)>=4 and difflib.SequenceMatcher(None,sub_a[ia]+sub_a[ia+1],hb).ratio()>=0.75)):
+                    matches[gap_a_start+ia]=gap_b_start+ib;matches[gap_a_start+ia+1]=gap_b_start+ib;ia+=2;ib+=1;continue
+                if ia+2<len(sub_a) and (sub_a[ia]+sub_a[ia+1]+sub_a[ia+2]==hb or (len(hb)>=6 and difflib.SequenceMatcher(None,sub_a[ia]+sub_a[ia+1]+sub_a[ia+2],hb).ratio()>=0.75)):
+                    matches[gap_a_start+ia]=gap_b_start+ib;matches[gap_a_start+ia+1]=gap_b_start+ib;matches[gap_a_start+ia+2]=gap_b_start+ib;ia+=3;ib+=1;continue
+                if ib+1<len(sub_b) and (ra==hb+sub_b[ib+1] or (len(ra)>=4 and difflib.SequenceMatcher(None,ra,hb+sub_b[ib+1]).ratio()>=0.75)):
+                    matches[gap_a_start+ia]=gap_b_start+ib;ia+=1;ib+=2;continue
+                sim=difflib.SequenceMatcher(None,ra,hb).ratio()
+                if sim>=0.65 or (min(len(ra),len(hb))>=4 and (ra in hb or hb in ra)):
+                    matches[gap_a_start+ia]=gap_b_start+ib;ia+=1;ib+=1;continue
+                best_k=None
+                for k in range(1,min(8,len(sub_b)-ib)):
+                    hk=sub_b[ib+k];sim_k=difflib.SequenceMatcher(None,ra,hk).ratio()
+                    if sim_k>=0.65 or (min(len(ra),len(hk))>=4 and (ra in hk or hk in ra)):
+                        best_k=k;break
+                if best_k is not None:
+                    if ra.isdigit():matches[gap_a_start+ia]=gap_b_start+ib+best_k-1
+                    ib+=best_k;matches[gap_a_start+ia]=gap_b_start+ib;ia+=1;ib+=1;continue
+                if ra.isdigit():matches[gap_a_start+ia]=gap_b_start+ib;ia+=1;continue
+                if len(sub_a)-ia>len(sub_b)-ib:ia+=1
+                elif len(sub_b)-ib>len(sub_a)-ia:ib+=1
+                else:ia+=1;ib+=1
     coverage=len(matches)/max(1,len(reference))
     if coverage<.8:raise PlanError(f'The recording does not match its narration closely enough ({coverage:.0%}); no guessed cue times were published.')
     return [timings[matches[i]] if i in matches else None for i in range(len(reference))],coverage
@@ -115,8 +159,11 @@ def align_recordings(narration,clips,progress,*,timeout=None):
     outputs=[];pending=[]
     for clip in clips:
         audio=narration.folder/(clip['key']+'.mp3')
-        key=hashlib.sha256(audio.read_bytes()+ENGINE.encode()).hexdigest();output=narration.folder/(key+'.words.json');outputs.append(output)
-        if not output.exists():pending.append({'audio':str(audio),'output':str(output)})
+        lang=clip.get('language') or detect_language(clip.get('text',''))
+        prompt=clip.get('prompt') or clip.get('text','')
+        sig=ENGINE if lang=='en' and not prompt else f"{ENGINE}:{lang}:{prompt[:100]}"
+        key=hashlib.sha256(audio.read_bytes()+sig.encode()).hexdigest();output=narration.folder/(key+'.words.json');outputs.append(output)
+        if not output.exists():pending.append({'audio':str(audio),'output':str(output),'language':lang,'prompt':prompt})
     if pending:
         python,model=runtime()
         with tempfile.TemporaryDirectory(prefix='qweeps-word-alignment-') as folder:

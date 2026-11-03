@@ -91,7 +91,8 @@ def compile_speech(store,j,base):
         raise
     else:pool.shutdown(wait=True)
     j['stage']='Recording the whole lesson as one connected explanation'
-    clip=narration.prepare_lesson(lesson_script(base))
+    script_text=lesson_script(base)
+    clip=narration.prepare_lesson(script_text)
     def decode(clip):
         audio=narration.folder/(clip['key']+'.mp3');pcm=narration.folder/(clip['key']+'.pcm')
         if pcm.exists():data=pcm.read_bytes()
@@ -102,7 +103,7 @@ def compile_speech(store,j,base):
         if not data or len(data)%2:raise PlanError('Narration must contain complete audio samples')
         return data
     piece=decode(clip);duration=len(piece)/(RATE*2)
-    alignment=align_recordings(narration,[clip],lambda stage:j.update(stage=stage),timeout=min(900,max(180,int(duration*1.5))))[0]
+    alignment=align_recordings(narration,[{**clip,'text':script_text}],lambda stage:j.update(stage=stage),timeout=min(900,max(180,int(duration*1.5))))[0]
     j['stage']='Matching spoken phrases to measured word times'
     track,candidate=assemble_lesson(base,plans,piece,alignment)
     key=hashlib.sha256(signature.encode()+track).hexdigest();audio=narration.folder/(key+'.wav');pending=audio.with_suffix('.'+uuid.uuid4().hex+'.tmp')

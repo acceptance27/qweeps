@@ -11,7 +11,12 @@ def main():
     model=WhisperModel(args.model,device='cpu',compute_type='int8',cpu_threads=4,local_files_only=True)
     items=json.loads(Path(args.batch).read_text())
     for i,item in enumerate(items):
-        segments,info=model.transcribe(item['audio'],language='en',word_timestamps=True,beam_size=3,condition_on_previous_text=False)
+        language=item.get('language') or 'en'
+        prompt=item.get('prompt')
+        kwargs={'word_timestamps':True,'beam_size':5,'condition_on_previous_text':False}
+        if language:kwargs['language']=language
+        if prompt:kwargs['initial_prompt']=prompt[:400]
+        segments,info=model.transcribe(item['audio'],**kwargs)
         words=[{'text':w.word,'start':float(w.start),'end':float(w.end),'probability':float(w.probability)} for s in segments for w in s.words or []]
         output=Path(item['output']);pending=output.with_suffix(f'.{os.getpid()}.tmp')
         pending.write_text(json.dumps({'words':words,'duration':float(info.duration)}));pending.replace(output)

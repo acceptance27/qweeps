@@ -2318,7 +2318,7 @@ replacements, only those needed.'''
                                 pcm_chunks.append(pcm_data)
                                 pcm_chunks.append(bytes(int(pause_after*24000)*2))
                         from .alignment import align_recordings, spoken_sentence_cues
-                        [alignment]=align_recordings(self.narration,[clip],lambda msg:None)
+                        [alignment]=align_recordings(self.narration,[{**clip,'text':narr}],lambda msg:None)
                         spoken_cues=spoken_sentence_cues(narr,alignment,speech_dur)
                     except Exception:
                         pass
