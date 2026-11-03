@@ -453,3 +453,26 @@ def test_p_vs_np_20beat_contract_parallel_act_chunking_and_surgical_repair():
     assert validate_filled_ast(repaired_code, act1) == []
     assert len(extract_slot_methods(repaired_code, contract=act1)) == len(methods) == 13
 
+
+def test_vector_brace_and_double_arrow_compile_without_latex():
+    script = """
+import json
+from assistant.visual.recorded_scene import DoubleArrow, VectorBrace, Rectangle, LEFT, RIGHT, DOWN, GREEN, RED
+
+box = Rectangle(width=2, height=1)
+brace = VectorBrace(box, direction=DOWN, color=RED)
+d_arrow = DoubleArrow(box.get_left(), box.get_right(), color=GREEN, buff=0.1)
+
+res = {
+    "brace_tip": list(brace.get_tip()),
+    "arrow_start": list(d_arrow.get_start()),
+    "arrow_end": list(d_arrow.get_end()),
+}
+print(json.dumps(res))
+"""
+    data = _run_visual_python(script)
+    assert len(data["brace_tip"]) == 3
+    assert len(data["arrow_start"]) == 3
+    assert len(data["arrow_end"]) == 3
+
+

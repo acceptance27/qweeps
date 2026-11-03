@@ -171,11 +171,15 @@ def _variadic_animation(cls):
 
 
 for _name in ("FadeIn", "FadeOut", "ShowCreation", "Uncreate", "Write",
-              "DrawBorderThenFill", "Indicate", "GrowFromCenter", "GrowArrow"):
+              "DrawBorderThenFill", "Indicate", "GrowFromCenter", "GrowArrow",
+              "Unwrite", "Wiggle", "Circumscribe"):
     if _name in globals():
         globals()[_name] = _variadic_animation(globals()[_name])
 
 Create = ShowCreation
+Unwrite = Uncreate
+Wiggle = Indicate
+Circumscribe = Indicate
 
 
 class VectorBrace(VMobject):
@@ -239,6 +243,62 @@ class VectorBrace(VMobject):
 
 
 Brace = VectorBrace
+
+
+class DoubleArrow(VMobject):
+    """Bidirectional arrow with tips at both endpoints, matching ManimCE."""
+
+    def __init__(
+        self,
+        start=LEFT,
+        end=RIGHT,
+        buff=0.0,
+        color=WHITE,
+        stroke_width=4.0,
+        tip_length=0.25,
+        tip_width=0.2,
+        **kwargs,
+    ):
+        color = kwargs.pop("color", color)
+        fill_color = kwargs.pop("fill_color", color)
+        fill_opacity = kwargs.pop("fill_opacity", 1.0)
+        stroke_width = kwargs.pop("stroke_width", stroke_width)
+        buff = kwargs.pop("buff", buff)
+        tip_length = kwargs.pop("tip_length", tip_length)
+        tip_width = kwargs.pop("tip_width", tip_width)
+        super().__init__(color=color, stroke_width=stroke_width, **kwargs)
+
+        temp_line = Line(start, end)
+        s = np.array(temp_line.get_start(), dtype=float)
+        e = np.array(temp_line.get_end(), dtype=float)
+        vect = e - s
+        length = np.linalg.norm(vect)
+        unit = vect / (length if length > 1e-6 else 1.0)
+        if buff > 0:
+            s = s + unit * buff
+            e = e - unit * buff
+
+        self.start_point = s
+        self.end_point = e
+
+        stem = Line(s, e, color=color, stroke_width=stroke_width)
+        angle_end = math.atan2(unit[1], unit[0])
+        tip_end = ArrowTip(angle=angle_end, length=tip_length, width=tip_width,
+                           fill_color=fill_color, fill_opacity=fill_opacity)
+        tip_end.shift(e - tip_end.get_tip_point())
+
+        angle_start = math.atan2(-unit[1], -unit[0])
+        tip_start = ArrowTip(angle=angle_start, length=tip_length, width=tip_width,
+                             fill_color=fill_color, fill_opacity=fill_opacity)
+        tip_start.shift(s - tip_start.get_tip_point())
+
+        self.add(stem, tip_start, tip_end)
+
+    def get_start(self):
+        return self.start_point
+
+    def get_end(self):
+        return self.end_point
 
 import shutil as _shutil
 
