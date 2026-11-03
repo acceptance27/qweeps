@@ -300,6 +300,194 @@ class DoubleArrow(VMobject):
     def get_end(self):
         return self.end_point
 
+
+class Paragraph(VGroup):
+    """Multi-line text block, matching ManimCE."""
+
+    def __init__(self, *text_lines, font_size=32, buff=0.2, **kwargs):
+        super().__init__(**kwargs)
+        lines = []
+        for line in text_lines:
+            if isinstance(line, str):
+                for sub in line.split("\n"):
+                    lines.append(Text(sub, font_size=font_size, **kwargs))
+            elif isinstance(line, Mobject):
+                lines.append(line)
+        if lines:
+            self.add(*lines)
+            self.arrange(DOWN, buff=buff, aligned_edge=LEFT)
+
+
+class LabeledDot(VMobject):
+    """Dot with centered text label, matching ManimCE."""
+
+    def __init__(self, label, radius=0.3, point=ORIGIN, color=WHITE, **kwargs):
+        super().__init__(**kwargs)
+        dot_color = kwargs.pop("dot_color", color)
+        dot = Dot(point=point, radius=radius, color=dot_color, **kwargs)
+        if isinstance(label, str):
+            text = Text(label, font_size=int(radius * 50))
+            text.move_to(dot.get_center())
+        elif isinstance(label, Mobject):
+            text = label
+            text.move_to(dot.get_center())
+        else:
+            text = VMobject()
+        self.dot = dot
+        self.label = text
+        self.add(dot, text)
+
+
+class LabeledLine(VMobject):
+    """Line with text label, matching ManimCE."""
+
+    def __init__(self, start=LEFT, end=RIGHT, label="label", buff=0.2, **kwargs):
+        super().__init__(**kwargs)
+        line = Line(start, end, **kwargs)
+        text = Text(label, font_size=24) if isinstance(label, str) else label
+        text.next_to(line.get_center(), UP, buff=buff)
+        self.line = line
+        self.label = text
+        self.add(line, text)
+
+
+class LabeledArrow(VMobject):
+    """Arrow with text label, matching ManimCE."""
+
+    def __init__(self, start=LEFT, end=RIGHT, label="label", buff=0.2, **kwargs):
+        super().__init__(**kwargs)
+        arrow = Arrow(start, end, **kwargs)
+        text = Text(label, font_size=24) if isinstance(label, str) else label
+        text.next_to(arrow.get_center(), UP, buff=buff)
+        self.arrow = arrow
+        self.label = text
+        self.add(arrow, text)
+
+
+class BraceBetweenPoints(VectorBrace):
+    """Curly brace between two arbitrary points, matching ManimCE."""
+
+    def __init__(self, point_1, point_2, direction=UP, **kwargs):
+        line = Line(point_1, point_2)
+        super().__init__(line, direction=direction, **kwargs)
+
+
+class ArcBrace(VectorBrace):
+    """Curly brace along an arc, matching ManimCE."""
+
+    def __init__(self, arc, direction=UP, **kwargs):
+        super().__init__(arc, direction=direction, **kwargs)
+
+
+class Angle(VMobject):
+    """Angle arc between two intersecting lines, matching ManimCE."""
+
+    def __init__(self, line1, line2, radius=0.5, **kwargs):
+        super().__init__(**kwargs)
+        p1 = line1.get_start()
+        vertex = line1.get_end()
+        p2 = line2.get_end()
+        v1 = p1 - vertex
+        v2 = p2 - vertex
+        a1 = math.atan2(v1[1], v1[0])
+        a2 = math.atan2(v2[1], v2[0])
+        arc = Arc(start_angle=a1, angle=(a2 - a1) % (2 * math.pi),
+                  radius=radius, arc_center=vertex, **kwargs)
+        self.add(arc)
+
+
+class RightAngle(Angle):
+    """Right angle indicator, matching ManimCE."""
+
+    def __init__(self, line1, line2, length=0.3, **kwargs):
+        super().__init__(line1, line2, radius=length, **kwargs)
+
+
+class Table(VGroup):
+    """2D Grid table of text or mobjects, matching ManimCE."""
+
+    def __init__(self, table_entries, **kwargs):
+        super().__init__()
+        rows = []
+        for row in table_entries:
+            row_group = VGroup()
+            for cell in row:
+                cell_mob = cell if isinstance(cell, Mobject) else Text(str(cell), font_size=24)
+                row_group.add(cell_mob)
+            row_group.arrange(RIGHT, buff=0.5)
+            rows.append(row_group)
+        if rows:
+            self.add(*rows)
+            self.arrange(DOWN, buff=0.3, aligned_edge=LEFT)
+
+
+MathTable = Table
+IntegerTable = Table
+DecimalTable = Table
+MobjectTable = Table
+
+
+class VDict(VGroup):
+    """Key-value dictionary container for VMobjects, matching ManimCE."""
+
+    def __init__(self, mapping=None, **kwargs):
+        super().__init__()
+        self._dict = {}
+        if mapping:
+            for k, v in mapping.items():
+                self[k] = v
+
+    def __setitem__(self, key, value):
+        self._dict[key] = value
+        self.add(value)
+
+    def __getitem__(self, key):
+        return self._dict[key]
+
+
+class Variable(VGroup):
+    """Tracked numerical variable with label, matching ManimCE."""
+
+    def __init__(self, var, label="x", num_decimal_places=2, **kwargs):
+        super().__init__()
+        label_mob = Text(f"{label} = ", font_size=28)
+        val_mob = DecimalNumber(var, num_decimal_places=num_decimal_places, font_size=28)
+        val_mob.next_to(label_mob, RIGHT)
+        self.label = label_mob
+        self.tracker = val_mob
+        self.add(label_mob, val_mob)
+
+
+# ManimCE arrow tip aliases
+ArrowTriangleFilledTip = ArrowTip
+ArrowTriangleTip = ArrowTip
+ArrowCircleFilledTip = ArrowTip
+ArrowCircleTip = ArrowTip
+ArrowSquareFilledTip = ArrowTip
+ArrowSquareTip = ArrowTip
+StealthTip = ArrowTip
+
+# ManimCE animation aliases
+AddTextLetterByLetter = Write
+RemoveTextLetterByLetter = Uncreate
+TypeWithCursor = Write
+UntypeWithCursor = Uncreate
+SpinInFromNothing = GrowFromCenter
+SpiralIn = GrowFromCenter
+Blink = Indicate
+ClockwiseTransform = Transform
+CounterclockwiseTransform = Transform
+ShowPassingFlashWithThinningStrokeWidth = Flash
+
+# ManimCE typography & layout constants
+DEFAULT_FONT_SIZE = 48
+LIGHT = "LIGHT"
+MEDIUM = "MEDIUM"
+SEMIBOLD = "SEMIBOLD"
+BOLD = "BOLD"
+THIN = "THIN"
+ULTRABOLD = "ULTRABOLD"
+
 import shutil as _shutil
 
 if not _shutil.which("latex"):
@@ -1382,3 +1570,12 @@ class RecordedScene(Scene):
         if raw not in ({}, None):
             raise ValueError("This lesson has no experiment controls")
         return {}
+
+
+# ManimCE scene type aliases
+MovingCameraScene = RecordedScene
+VectorScene = RecordedScene
+LinearTransformationScene = RecordedScene
+ZoomedScene = RecordedScene
+ThreeDScene = RecordedScene
+SpecialThreeDScene = RecordedScene
