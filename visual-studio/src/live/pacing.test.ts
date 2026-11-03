@@ -65,12 +65,12 @@ test('matrix rows cannot reveal in reverse order even when later rows share an e
  const c={id:'matrix-test',title:'Matrix Test',years:'',question:'Order check',roles:{},sources:[],safeguard:'',narration:'Six rows fill one by one: first row, second row, then the rest.',
   narrationAt:0,audio:'',cues:[],start:10,end:35,visualStart:10,finishedAt:34,
   visual:{layout:'matrix',columns:['A','B'],takeaway:'All rows',connections:[],nodes:[
-   {id:'row-0',title:'Row 0',body:'',icon:'app',color:'blue',at:1},
-   {id:'row-1',title:'Row 1',body:'',icon:'app',color:'blue',at:4},
-   {id:'row-2',title:'Row 2',body:'',icon:'app',color:'blue',at:7},
-   {id:'row-3',title:'Row 3',body:'',icon:'app',color:'blue',at:10},
-   {id:'row-4',title:'Row 4',body:'',icon:'app',color:'blue',at:13},
-   {id:'row-5',title:'Row 5',body:'',icon:'app',color:'blue',at:16},
+   {id:'row-0',title:'Row 0',body:'',icon:'app',color:'blue',tag:'',at:1},
+   {id:'row-1',title:'Row 1',body:'',icon:'app',color:'blue',tag:'',at:4},
+   {id:'row-2',title:'Row 2',body:'',icon:'app',color:'blue',tag:'',at:7},
+   {id:'row-3',title:'Row 3',body:'',icon:'app',color:'blue',tag:'',at:10},
+   {id:'row-4',title:'Row 4',body:'',icon:'app',color:'blue',tag:'',at:13},
+   {id:'row-5',title:'Row 5',body:'',icon:'app',color:'blue',tag:'',at:16},
   ]},narrationCues:[
    {target:'context',start:0,end:2,text:'Intro',phrase:'Intro'},
    {target:'row-3',start:2,end:4,text:'Six rows fill',phrase:'Six rows fill',attention:false},

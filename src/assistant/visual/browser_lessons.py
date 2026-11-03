@@ -809,8 +809,8 @@ class BrowserLessonStore:
             # The published lesson.json is authoritative. Do not fall back to
             # an arbitrary older speech-*.json: that reintroduced stale visual
             # windows and stale narration after a sync-version change.
-        if not resolved.get('quiz'):
-            resolved={**resolved,'quiz':base.get('quiz') or _build_reinforcement_quiz(resolved)}
+        if base.get('quiz') and not resolved.get('quiz'):
+            resolved={**resolved,'quiz':base['quiz']}
         return resolved
     def catalog(self):
         seen=set()

@@ -10,7 +10,7 @@ export function DiagramArtwork({node,width,height}:{node:LiveNode;width:number;h
   {node.artwork?.length?<svg x={x} y={y} width={size} height={size} viewBox="0 0 100 100" overflow="visible"><g className="object-art">
    {node.artwork.map((p,i)=>{
     const isWhiteFill=p.fill==='white'||p.fill==='#ffffff'||p.fill==='#fff'||p.fill==='#e6eef0';
-    const isContainerRect=p.type==='rect'&&(p.width??0)>=30&&(p.height??0)>=30;
+    const isContainerRect=p.type==='rect'&&(Number(p.width)||0)>=30&&(Number(p.height)||0)>=30;
     const fill=isContainerRect&&isWhiteFill?'none':paints[p.fill]||p.fill;
     const common={key:i,stroke:paints[p.stroke]||p.stroke,fill,strokeWidth:p.strokeWidth,strokeLinecap:'round' as const,strokeLinejoin:'round' as const};switch(p.type){
     case 'path':return <path {...common} d={p.d}/>;

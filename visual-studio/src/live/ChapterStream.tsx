@@ -224,7 +224,7 @@ export default function ChapterStream({topic,replay,methods=false}:{topic?:strin
    </aside>
    <main className="stream-main">
     {lesson?<div className="stream-stage">
-      {current?.renderer==='manimgl'?<NativeLessonCanvas sessionId={sessionId||'stream'} snapshot={{sceneId:current.nativeScene||'wbc',plan:null,time:(current.nativeOffset??0)+Math.max(1.2,(current.nativeDuration??6)*0.55),nodes:{},positions:{},camera:snapshot.camera,selected:snapshot.selected,region:null}} update={fn=>setSnapshot(s=>{const n=fn({sceneId:current.nativeScene||'wbc',plan:null,time:(current.nativeOffset??0)+2,nodes:{},positions:{},camera:s.camera,selected:s.selected,region:null});return{...s,selected:n.selected,camera:n.camera,region:n.region};})} pause={()=>{}} onReady={()=>{}} onFrame={()=>{}}/>:<GeneratedStage lesson={lesson} snapshot={snapshot} focusRequest={0} update={setSnapshot}
+      {current?.renderer==='manimgl'?<NativeLessonCanvas sessionId={sessionId||'stream'} snapshot={{sceneId:current.nativeScene||'wbc',plan:null,time:(current.nativeOffset??0)+Math.max(1.2,(current.nativeDuration??6)*0.55),nodes:{},positions:{},camera:snapshot.camera,selected:snapshot.selected,region:null}} update={fn=>setSnapshot(s=>{const n=fn({sceneId:current.nativeScene||'wbc',plan:null,time:(current.nativeOffset??0)+2,nodes:{},positions:{},camera:s.camera,selected:s.selected,region:null});return{...s,selected:n.selected,camera:n.camera??s.camera,region:n.region};})} pause={()=>{}} onReady={()=>{}} onFrame={()=>{}}/>:<GeneratedStage lesson={lesson} snapshot={snapshot} focusRequest={0} update={setSnapshot}
        pause={()=>{}} onReady={()=>{}} interactive={false}/>}
      </div>:<div className="stream-wait">
       <div className="stream-pulse"/>
