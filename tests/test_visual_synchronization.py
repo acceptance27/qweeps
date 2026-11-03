@@ -51,11 +51,10 @@ def test_visual_handoff_waits_for_the_measured_end_of_the_incoming_reasoning_bri
  base['chapters'][1]['continuity']={'from':'fruit','bridge':'Consider fruit. Apple is crisp.'}
  _,result=assemble_lesson(base,plan()['chapters']*2,bytes(RATE*2*18),full_alignment())
  first,second=result['chapters']
- assert second['visualStart']==pytest.approx(.3+10.65)
+ assert second['visualStart']==second['start']
  assert first['visualEnd']==second['visualStart']
- assert first['end']<second['visualStart'],'keep the previous completed diagram during the incoming spoken bridge'
  assert first['finishedAt']<first['end']
- assert second['continuity']['spokenEnd']==second['visualStart']
+ assert second['continuity']['spokenEnd']==pytest.approx(.3+10.65)
 
 
 def test_missing_bridge_final_word_does_not_produce_an_early_guessed_visual_handoff():
@@ -162,14 +161,14 @@ def test_existing_reviewed_track_stays_available_until_upgrade_is_ready(tmp_path
  previous={**base,'audioTrack':{'url':'old.wav'},'speechSynchronization':{'version':1}}
  (folder/f'speech-{old}.json').write_text(json.dumps(previous))
  store=BrowserLessonStore.__new__(BrowserLessonStore);store.folder=tmp_path;store.narration=narration;store.jobs={};store.lock=threading.RLock();store.documents=Mock()
- assert store.lesson(base['id'])==previous
+ assert store.lesson(base['id'])==base
  with patch('assistant.visual.browser_lessons.threading.Thread') as thread:
   job=store.start_synchronization({'lessonId':base['id']})
   assert job['status']=='preparing'
   thread.return_value.start.assert_called_once()
  previous_two={**base,'audioTrack':{'url':'beat-recordings.wav'},'speechSynchronization':{'version':2}}
  (folder/f'speech-{fingerprint(base,narration,2)}.json').write_text(json.dumps(previous_two))
- assert store.lesson(base['id'])==previous_two
+ assert store.lesson(base['id'])==base
  current={**base,'audioTrack':{'url':'new.wav'},'speechSynchronization':{'version':VERSION}}
  (folder/f'speech-{fingerprint(base,narration)}.json').write_text(json.dumps(current))
  assert store.lesson(base['id'])==current

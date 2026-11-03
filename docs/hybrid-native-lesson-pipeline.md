@@ -571,9 +571,8 @@ Ordered, smallest safe increments:
 7. Lesson clock 40.0 s, no gaps.
 8. Player prewarms `gen_…`; switching to a layout beat and back only seeks.
 
-`bundled-lessons/browser-lessons/2b7bfbc8f976b6ff69081baefb0d9cb4/lesson.json`
-is the current reference; `src/assistant/visual/scenes/qweeps_neuron_lesson.py`
-is the generated ManimCE source.
+`bundled-lessons/browser-lessons/b1b20bea700000000000000000000001/lesson.json`
+is the current hybrid reference lesson combining 12 native ManimGL scenes with 8 layout chapters.
 
 ---
 

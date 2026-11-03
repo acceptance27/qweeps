@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-BUILTIN = {"wbc", "blood3d", "neuron"}
+BUILTIN: set[str] = set()
 
 
 def registry_root() -> Path:

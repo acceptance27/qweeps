@@ -248,10 +248,9 @@ Lifecycle:
 
 Constraints:
 
-- lesson ids must be whitelisted in `NativeHost` (`manim_production`,
-  `jose_rizal`, `alu`, `generated`, `wbc`);
-- generated/compiled lessons need a manifest with `duration`
-  (`visual-studio/public/lessons/wbc_native.json`);
+- lesson ids must be registered or whitelisted in `NativeHost` (`manim_production`,
+  `jose_rizal`, `alu`, `generated`, or `gen_<hash>`);
+- generated/compiled lessons need a manifest with `duration`;
 - frames are 1280×720 JPEG; there is no audio track (narration is separate);
 - workers live in `/dev/shm/qweeps-manim-*` with `worker.log`, `error.txt`,
   `frame.jpg`, `state.json`.
@@ -327,11 +326,11 @@ elif lesson_id == "mybeat":
 7. Test the worker without the browser:
 
 ```bash
-printf '{"lessonId":"wbc","time":6,"experiment":{},"selected":[],"camera":null}\n' \
+printf '{"lessonId":"alu","time":6,"experiment":{},"selected":[],"camera":null}\n' \
   | PYTHONPATH=src ~/.local/share/omarchy-assistant/visual-venv/bin/python \
-    -m assistant.visual.native_live /tmp/wbc \
-    visual-studio/public/lessons/wbc_native.json \
-    visual-studio/public/production/stopwatch.svg wbc
+    -m assistant.visual.native_live /tmp/alu \
+    visual-studio/public/lessons/alu.json \
+    visual-studio/public/production/stopwatch.svg alu
 ```
 
 Look for `frame.jpg` and `state.json`.
