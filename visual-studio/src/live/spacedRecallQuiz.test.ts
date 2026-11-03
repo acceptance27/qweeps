@@ -73,7 +73,7 @@ test('getCardKeyHook extracts exact anchor phrase for memory retry', () => {
   assert.equal(getCardKeyHook(conceptCard), 'Responsibility asks who could act');
 });
 
-test('3-Card Short-Horizon Spaced Recall inserts missed card 3 steps later in the queue', () => {
+test('round reinforcement collects missed cards for end-of-round replay', () => {
   const dummyQuestions: QuizQuestion[] = Array.from({ length: 6 }, (_, i) => ({
     id: `q-${i}`,
     chapterId: `ch-${i}`,
@@ -102,42 +102,21 @@ test('3-Card Short-Horizon Spaced Recall inserts missed card 3 steps later in th
   assert.equal(state.cursor, 0);
   assert.equal(state.rapidScan, false);
   assert.equal(state.memoryLocked, false);
+  assert.equal(state.reinforcementQueue.length, 0);
 
-  // Suppose user misses card at cursor 0 and selected option index 2 ('Gamma')
+  // When a card is missed, active queue is not polluted with premature duplicates;
+  // instead it is cleanly placed in reinforcementQueue for the next round
   const missedCard = state.queue[state.cursor];
-  const priorTrap = missedCard.options[2];
-  const keyHook = getCardKeyHook(missedCard);
-
   const retryCard: ActiveCard = {
     ...missedCard,
+    roundNumber: state.round + 1,
+    attemptNumber: 2,
     isReinforcement: true,
-    isSpacedRecall: true,
-    memoryCue: keyHook,
-    priorTrapOptionText: priorTrap,
   };
-
-  const insertPos = Math.min(state.queue.length, state.cursor + 3);
-  assert.equal(insertPos, 3);
-
-  const nextQueue = [
-    ...state.queue.slice(0, insertPos),
-    retryCard,
-    ...state.queue.slice(insertPos),
-  ];
-
-  // Original indices:
-  // 0: q-0 (missed now)
-  // 1: q-1 (1 card later)
-  // 2: q-2 (2 cards later)
-  // 3: retryCard for q-0 (EXACTLY 3 cards later!)
-  // 4: q-3
-  assert.equal(nextQueue.length, 7);
-  assert.equal(nextQueue[0].id, 'q-0');
-  assert.equal(nextQueue[1].id, 'q-1');
-  assert.equal(nextQueue[2].id, 'q-2');
-  assert.equal(nextQueue[3].id, 'q-0');
-  assert.equal(nextQueue[3].isSpacedRecall, true);
-  assert.equal(nextQueue[3].memoryCue, 'Alpha');
-  assert.equal(nextQueue[3].priorTrapOptionText, 'Gamma');
-  assert.equal(nextQueue[4].id, 'q-3');
+  const nextReinforcementQueue = [...state.reinforcementQueue, retryCard];
+  assert.equal(nextReinforcementQueue.length, 1);
+  assert.equal(nextReinforcementQueue[0].id, 'q-0');
+  assert.equal(nextReinforcementQueue[0].isReinforcement, true);
+  // Queue remains clean 6 cards in linear sequence
+  assert.equal(state.queue.length, 6);
 });
