@@ -5,6 +5,8 @@ import {
   getCardKeyHook,
   createInitialQuizState,
   partitionQuizSets,
+  getQuizSets,
+  type QuizSet,
   type ActiveCard,
 } from './ReinforcementQuizModal';
 import type { LiveLesson, QuizQuestion } from './lessonTypes';
@@ -193,12 +195,12 @@ test('partitionQuizSets divides by 10 and increments up to 5 when the next quiz 
   }
 });
 
-test('createInitialQuizState focuses on Set 1 of partitioned sets for large quizzes', () => {
+test('createInitialQuizState focuses on Set 1 of generic partitioned sets for large quizzes', () => {
   const dummy48: QuizQuestion[] = Array.from({ length: 48 }, (_, i) => ({
     id: `q-${i}`,
     chapterId: `ch-${i}`,
     chapterIndex: i,
-    chapterTitle: `Beat ${i + 1}`,
+    chapterTitle: `Generic Beat ${i + 1}`,
     kind: 'concept' as const,
     prompt: `Question ${i + 1}`,
     options: ['A', 'B', 'C', 'D'],
@@ -207,8 +209,8 @@ test('createInitialQuizState focuses on Set 1 of partitioned sets for large quiz
   }));
 
   const lesson: LiveLesson = {
-    id: 'reviewer_48',
-    title: 'Rizal Morga Reviewer',
+    id: 'generic_48',
+    title: 'Generic Large Quiz',
     chapters: [],
     quiz: dummy48,
   };
@@ -219,6 +221,133 @@ test('createInitialQuizState focuses on Set 1 of partitioned sets for large quiz
   assert.equal(state.queue.length, 10); // First set has 10 cards
   assert.equal(state.queue[0].id, 'q-0');
   assert.equal(state.queue[9].id, 'q-9');
+  assert.equal(state.viewingQuestionId, null);
+  assert.equal(state.setCompleted, false);
+});
+
+test('getQuizSets partitions 48-question Rizal Morga reviewer into 4 thematic units', () => {
+  const chapterSpecs = [
+    { chapterId: 'bakit-morga', title: 'Why Morga Was Chosen', count: 6 },
+    { chapterId: 'sucesos-1609', title: 'Who Was Morga and What Was Sucesos?', count: 7 },
+    { chapterId: 'london-loci', title: 'London: Three Reasons, Three Landmarks', count: 8 },
+    { chapterId: 'tripartite', title: 'Bipartite vs. Tripartite View of History', count: 6 },
+    { chapterId: 'apat-anotasyon', title: "Rizal's Four Core Annotations", count: 7 },
+    { chapterId: 'paris-samahan', title: 'Kidlat Club, Indios Bravos, and R.D.L.M.', count: 7 },
+    { chapterId: 'tugon-kritiko', title: 'How Rizal Answered His Critics', count: 7 },
+  ];
+
+  let qCount = 0;
+  const questions: QuizQuestion[] = [];
+  chapterSpecs.forEach((spec, cIdx) => {
+    for (let i = 0; i < spec.count; i++) {
+      qCount++;
+      questions.push({
+        id: `q-${spec.chapterId}-${i}`,
+        chapterId: spec.chapterId,
+        chapterIndex: cIdx,
+        chapterTitle: spec.title,
+        kind: 'concept',
+        prompt: `Question ${qCount}`,
+        options: ['A', 'B', 'C', 'D'],
+        correctIndex: 0,
+        explanation: 'Exp',
+      });
+    }
+  });
+
+  assert.equal(questions.length, 48);
+
+  const units = getQuizSets(questions);
+  assert.equal(units.length, 4, 'Must create exactly 4 thematic units');
+
+  // Unit 1: The Source & The Jurist (13 Qs: 6 bakit-morga + 7 sucesos-1609)
+  assert.equal(units[0].title, 'Unit 1: The Source & The Jurist');
+  assert.equal(units[0].shortTitle, '1. Source & Jurist');
+  assert.equal(units[0].subtitle, 'Why Morga Was Chosen & Sucesos 1609');
+  assert.equal(units[0].questions.length, 13);
+  assert.equal(units[0].startNumber, 1);
+  assert.equal(units[0].endNumber, 13);
+  assert.equal(units[0].questions[0].id, 'q-bakit-morga-0');
+  assert.equal(units[0].questions[12].id, 'q-sucesos-1609-6');
+
+  // Unit 2: Historical Method & Tripartite Framework (14 Qs: 8 london-loci + 6 tripartite)
+  assert.equal(units[1].title, 'Unit 2: Historical Method & Tripartite Framework');
+  assert.equal(units[1].shortTitle, '2. Historical Method');
+  assert.equal(units[1].subtitle, 'London Research, British Museum & Bipartite vs Tripartite History');
+  assert.equal(units[1].questions.length, 14);
+  assert.equal(units[1].startNumber, 14);
+  assert.equal(units[1].endNumber, 27);
+  assert.equal(units[1].questions[0].id, 'q-london-loci-0');
+  assert.equal(units[1].questions[13].id, 'q-tripartite-5');
+
+  // Unit 3: Pre-Colonial Culture & Annotations (7 Qs: 7 apat-anotasyon)
+  assert.equal(units[2].title, 'Unit 3: Pre-Colonial Culture & Annotations');
+  assert.equal(units[2].shortTitle, '3. Culture & Annotations');
+  assert.equal(units[2].subtitle, "Rizal's Four Core Historical Corrections");
+  assert.equal(units[2].questions.length, 7);
+  assert.equal(units[2].startNumber, 28);
+  assert.equal(units[2].endNumber, 34);
+  assert.equal(units[2].questions[0].id, 'q-apat-anotasyon-0');
+  assert.equal(units[2].questions[6].id, 'q-apat-anotasyon-6');
+
+  // Unit 4: Propaganda Societies & Defense Against Critics (14 Qs: 7 paris-samahan + 7 tugon-kritiko)
+  assert.equal(units[3].title, 'Unit 4: Propaganda Societies & Defense Against Critics');
+  assert.equal(units[3].shortTitle, '4. Propaganda & Defense');
+  assert.equal(units[3].subtitle, 'Paris Samahan (Kidlat, Indios Bravos, RDLM) & Rebutting Spanish Critics');
+  assert.equal(units[3].questions.length, 14);
+  assert.equal(units[3].startNumber, 35);
+  assert.equal(units[3].endNumber, 48);
+  assert.equal(units[3].questions[0].id, 'q-paris-samahan-0');
+  assert.equal(units[3].questions[13].id, 'q-tugon-kritiko-6');
+
+  // Total questions across units
+  const totalInUnits = units.reduce((acc, u) => acc + u.questions.length, 0);
+  assert.equal(totalInUnits, 48);
+});
+
+test('createInitialQuizState focuses on Unit 1 (13 cards) for the Rizal Morga reviewer', () => {
+  const chapterSpecs = [
+    { chapterId: 'bakit-morga', title: 'Why Morga Was Chosen', count: 6 },
+    { chapterId: 'sucesos-1609', title: 'Who Was Morga and What Was Sucesos?', count: 7 },
+    { chapterId: 'london-loci', title: 'London: Three Reasons, Three Landmarks', count: 8 },
+    { chapterId: 'tripartite', title: 'Bipartite vs. Tripartite View of History', count: 6 },
+    { chapterId: 'apat-anotasyon', title: "Rizal's Four Core Annotations", count: 7 },
+    { chapterId: 'paris-samahan', title: 'Kidlat Club, Indios Bravos, and R.D.L.M.', count: 7 },
+    { chapterId: 'tugon-kritiko', title: 'How Rizal Answered His Critics', count: 7 },
+  ];
+
+  let qCount = 0;
+  const questions: QuizQuestion[] = [];
+  chapterSpecs.forEach((spec, cIdx) => {
+    for (let i = 0; i < spec.count; i++) {
+      qCount++;
+      questions.push({
+        id: `q-${spec.chapterId}-${i}`,
+        chapterId: spec.chapterId,
+        chapterIndex: cIdx,
+        chapterTitle: spec.title,
+        kind: 'concept',
+        prompt: `Question ${qCount}`,
+        options: ['A', 'B', 'C', 'D'],
+        correctIndex: 0,
+        explanation: 'Exp',
+      });
+    }
+  });
+
+  const lesson: LiveLesson = {
+    id: 'rizal_morga_reviewer',
+    title: "Who May Tell the Philippines' Past? Rizal Annotates Morga",
+    chapters: [],
+    quiz: questions,
+  };
+
+  const state = createInitialQuizState(lesson);
+  assert.equal(state.baseQuestions.length, 48);
+  assert.equal(state.activeSetIndex, 0);
+  assert.equal(state.queue.length, 13); // Unit 1 has 13 cards!
+  assert.equal(state.queue[0].id, 'q-bakit-morga-0');
+  assert.equal(state.queue[12].id, 'q-sucesos-1609-6');
   assert.equal(state.viewingQuestionId, null);
   assert.equal(state.setCompleted, false);
 });

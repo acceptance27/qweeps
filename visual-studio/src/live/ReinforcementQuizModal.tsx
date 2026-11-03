@@ -100,6 +100,144 @@ export function partitionQuizSets<T>(
   return result;
 }
 
+export interface QuizSet {
+  id: string;
+  index: number;
+  title: string;
+  shortTitle: string;
+  subtitle?: string;
+  questions: QuizQuestion[];
+  startNumber: number;
+  endNumber: number;
+}
+
+export interface ThematicUnitSpec {
+  id: string;
+  title: string;
+  shortTitle: string;
+  subtitle: string;
+  chapterIds: string[];
+  titleKeywords?: string[];
+}
+
+export const RIZAL_THEMATIC_UNITS: ThematicUnitSpec[] = [
+  {
+    id: 'unit-1-source-jurist',
+    title: 'Unit 1: The Source & The Jurist',
+    shortTitle: '1. Source & Jurist',
+    subtitle: 'Why Morga Was Chosen & Sucesos 1609',
+    chapterIds: ['bakit-morga', 'sucesos-1609', 'why-morga', 'rizal-test'],
+    titleKeywords: ['morga', 'sucesos', 'jurist', '1609'],
+  },
+  {
+    id: 'unit-2-historical-method',
+    title: 'Unit 2: Historical Method & Tripartite Framework',
+    shortTitle: '2. Historical Method',
+    subtitle: 'London Research, British Museum & Bipartite vs Tripartite History',
+    chapterIds: ['london-loci', 'tripartite', 'two-histories'],
+    titleKeywords: ['london', 'tripartite', 'bipartite', 'civilization'],
+  },
+  {
+    id: 'unit-3-precolonial-culture',
+    title: 'Unit 3: Pre-Colonial Culture & Annotations',
+    shortTitle: '3. Culture & Annotations',
+    subtitle: "Rizal's Four Core Historical Corrections",
+    chapterIds: ['apat-anotasyon', 'four-corrections'],
+    titleKeywords: ['apat', 'four annotations', 'core annotations', 'prove it'],
+  },
+  {
+    id: 'unit-4-propaganda-defense',
+    title: 'Unit 4: Propaganda Societies & Defense Against Critics',
+    shortTitle: '4. Propaganda & Defense',
+    subtitle: 'Paris Samahan (Kidlat, Indios Bravos, RDLM) & Rebutting Spanish Critics',
+    chapterIds: ['paris-samahan', 'tugon-kritiko', 'paris-organize', 'answering-critics', 'who-narrates'],
+    titleKeywords: ['paris', 'kidlat', 'indios bravos', 'r.d.l.m.', 'rdlm', 'critics', 'tugon'],
+  },
+];
+
+export function getQuizSets(questions: QuizQuestion[]): QuizSet[] {
+  if (!questions || questions.length === 0) return [];
+
+  // Check if questions match the Rizal Morga reviewer thematic curriculum
+  const isRizalThematic = questions.some(q => {
+    const cid = (q.chapterId || '').toLowerCase();
+    const ctitle = (q.chapterTitle || '').toLowerCase();
+    return (
+      ['bakit-morga', 'sucesos-1609', 'london-loci', 'tripartite', 'apat-anotasyon', 'paris-samahan', 'tugon-kritiko'].includes(cid) ||
+      ctitle.includes('morga') ||
+      ctitle.includes('sucesos') ||
+      ctitle.includes('tripartite') ||
+      ctitle.includes('indios bravos')
+    );
+  });
+
+  if (isRizalThematic) {
+    let currentOffset = 1;
+    const units: QuizSet[] = [];
+    const usedIds = new Set<string>();
+
+    for (const spec of RIZAL_THEMATIC_UNITS) {
+      const unitQuestions = questions.filter(q => {
+        if (usedIds.has(q.id)) return false;
+        const cid = (q.chapterId || '').toLowerCase();
+        const ctitle = (q.chapterTitle || '').toLowerCase();
+        if (spec.chapterIds.includes(cid)) return true;
+        if (spec.titleKeywords && spec.titleKeywords.some(k => ctitle.includes(k) || cid.includes(k))) {
+          return true;
+        }
+        return false;
+      });
+
+      if (unitQuestions.length > 0) {
+        unitQuestions.forEach(q => usedIds.add(q.id));
+        const startNumber = currentOffset;
+        const endNumber = currentOffset + unitQuestions.length - 1;
+        currentOffset = endNumber + 1;
+        units.push({
+          id: spec.id,
+          index: units.length,
+          title: spec.title,
+          shortTitle: spec.shortTitle,
+          subtitle: spec.subtitle,
+          questions: unitQuestions,
+          startNumber,
+          endNumber,
+        });
+      }
+    }
+
+    if (units.length > 0 && usedIds.size === questions.length) {
+      return units;
+    }
+
+    if (units.length > 0 && usedIds.size < questions.length) {
+      const remainingQuestions = questions.filter(q => !usedIds.has(q.id));
+      const lastUnit = units[units.length - 1];
+      lastUnit.questions = [...lastUnit.questions, ...remainingQuestions];
+      lastUnit.endNumber = lastUnit.startNumber + lastUnit.questions.length - 1;
+      return units;
+    }
+  }
+
+  // Fallback: Partition generically into 10-question focus sets (incrementing up to 5)
+  const partitioned = partitionQuizSets(questions, 10, 5);
+  let runningCount = 1;
+  return partitioned.map((chunk, idx) => {
+    const startNumber = runningCount;
+    const endNumber = runningCount + chunk.length - 1;
+    runningCount = endNumber + 1;
+    return {
+      id: `set-${idx + 1}`,
+      index: idx,
+      title: `Set ${idx + 1}`,
+      shortTitle: `Set ${idx + 1}`,
+      questions: chunk,
+      startNumber,
+      endNumber,
+    };
+  });
+}
+
 export interface OptionHookSplit {
   leadHook: string;
   supportingText: string;
@@ -192,9 +330,9 @@ export function createInitialQuizState(
   rapidScan = false
 ): QuizProgressState {
   const baseQuestions = ensureLessonQuiz(lesson);
-  const sets = partitionQuizSets(baseQuestions, 10, 5);
+  const sets = getQuizSets(baseQuestions);
   const initialSetIndex = sets.length > 1 ? 0 : -1;
-  const initialQuestions = initialSetIndex >= 0 ? sets[initialSetIndex] : baseQuestions;
+  const initialQuestions = initialSetIndex >= 0 ? sets[initialSetIndex].questions : baseQuestions;
 
   return {
     lessonId: lesson.id,
@@ -264,15 +402,16 @@ export function ReinforcementQuizNavbar({
     viewingQuestionId,
   } = quizState;
 
-  const sets = useMemo(() => partitionQuizSets(baseQuestions, 10, 5), [baseQuestions]);
+  const sets = useMemo(() => getQuizSets(baseQuestions), [baseQuestions]);
   const currentSetIdx = activeSetIndex !== undefined ? activeSetIndex : (sets.length > 1 ? 0 : -1);
+  const activeSet = currentSetIdx >= 0 && currentSetIdx < sets.length ? sets[currentSetIdx] : undefined;
 
   const displayQuestions = useMemo(() => {
-    if (currentSetIdx >= 0 && currentSetIdx < sets.length) {
-      return sets[currentSetIdx];
+    if (activeSet) {
+      return activeSet.questions;
     }
     return baseQuestions;
-  }, [sets, currentSetIdx, baseQuestions]);
+  }, [activeSet, baseQuestions]);
 
   const liveCard = queue[cursor] as ActiveCard | undefined;
   const totalCount = baseQuestions.length;
@@ -292,9 +431,9 @@ export function ReinforcementQuizNavbar({
   const onSelectSet = (targetSetIdx: number) => {
     setQuizState(prev => {
       if (prev.activeSetIndex === targetSetIdx) return prev;
-      const setsList = partitionQuizSets(prev.baseQuestions, 10, 5);
+      const setsList = getQuizSets(prev.baseQuestions);
       const targetQuestions =
-        targetSetIdx === -1 ? prev.baseQuestions : setsList[targetSetIdx] || prev.baseQuestions;
+        targetSetIdx === -1 ? prev.baseQuestions : setsList[targetSetIdx]?.questions || prev.baseQuestions;
       const mSet = new Set(prev.masteredIds);
       const isAllTargetMastered =
         targetQuestions.length > 0 && targetQuestions.every(q => mSet.has(q.id));
@@ -401,9 +540,9 @@ export function ReinforcementQuizNavbar({
           <div className="mastery-mastery-tag">
             <CheckCircle2 size={14} />
             <span>
-              {sets.length > 1 && currentSetIdx >= 0 ? (
+              {sets.length > 1 && activeSet ? (
                 <>
-                  Set {currentSetIdx + 1}: {currentSetMasteredCount} / {displayQuestions.length} ({currentSetPercent}%)
+                  {activeSet.shortTitle}: {currentSetMasteredCount} / {displayQuestions.length} ({currentSetPercent}%)
                 </>
               ) : (
                 <>
@@ -437,27 +576,27 @@ export function ReinforcementQuizNavbar({
         <div className="mastery-set-selector-bar" role="tablist" aria-label="Quiz question sets">
           {sets.map((setGroup, sIdx) => {
             const isActive = currentSetIdx === sIdx;
-            const setMastered = setGroup.filter(q => masteredSet.has(q.id)).length;
-            const isSetFullyMastered = setMastered === setGroup.length;
-            const startNum = sets.slice(0, sIdx).reduce((acc, s) => acc + s.length, 0) + 1;
-            const endNum = startNum + setGroup.length - 1;
+            const setMastered = setGroup.questions.filter(q => masteredSet.has(q.id)).length;
+            const isSetFullyMastered = setMastered === setGroup.questions.length;
+            const startNum = setGroup.startNumber;
+            const endNum = setGroup.endNumber;
 
             return (
               <button
-                key={`set-${sIdx}`}
+                key={setGroup.id}
                 type="button"
                 role="tab"
                 aria-selected={isActive}
                 className={`mastery-set-pill ${isActive ? 'active' : ''} ${isSetFullyMastered ? 'completed' : ''}`}
                 onClick={() => onSelectSet(sIdx)}
-                title={`Set ${sIdx + 1}: Questions ${startNum}–${endNum} (${setMastered}/${setGroup.length} mastered)`}
+                title={`${setGroup.title}: Questions ${startNum}–${endNum} (${setMastered}/${setGroup.questions.length} mastered)${setGroup.subtitle ? ` — ${setGroup.subtitle}` : ''}`}
               >
                 <span className="mastery-set-title">
-                  Set {sIdx + 1}
+                  {setGroup.shortTitle}
                   <small className="mastery-set-range"> ({startNum}–{endNum})</small>
                 </span>
                 <span className={`mastery-set-status ${isSetFullyMastered ? 'done' : ''}`}>
-                  {isSetFullyMastered ? '✓ 100%' : `${setMastered}/${setGroup.length}`}
+                  {isSetFullyMastered ? '✓ 100%' : `${setMastered}/${setGroup.questions.length}`}
                 </span>
               </button>
             );
@@ -470,7 +609,7 @@ export function ReinforcementQuizNavbar({
             onClick={() => onSelectSet(-1)}
             title={`View all ${baseQuestions.length} questions together`}
           >
-            <span className="mastery-set-title">All</span>
+            <span className="mastery-set-title">All Questions</span>
             <span className="mastery-set-status">{masteredCount}/{totalCount}</span>
           </button>
         </div>
@@ -697,15 +836,16 @@ export function ReinforcementQuizModal({
     multiItemRevealed,
   } = state;
 
-  const sets = useMemo(() => partitionQuizSets(baseQuestions, 10, 5), [baseQuestions]);
+  const sets = useMemo(() => getQuizSets(baseQuestions), [baseQuestions]);
   const currentSetIdx = activeSetIndex !== undefined ? activeSetIndex : (sets.length > 1 ? 0 : -1);
+  const activeSet = currentSetIdx >= 0 && currentSetIdx < sets.length ? sets[currentSetIdx] : undefined;
 
   const displayQuestions = useMemo(() => {
-    if (currentSetIdx >= 0 && currentSetIdx < sets.length) {
-      return sets[currentSetIdx];
+    if (activeSet) {
+      return activeSet.questions;
     }
     return baseQuestions;
-  }, [sets, currentSetIdx, baseQuestions]);
+  }, [activeSet, baseQuestions]);
 
   const liveCard = queue[cursor] as ActiveCard | undefined;
   const isReviewing = Boolean(
@@ -801,9 +941,9 @@ export function ReinforcementQuizModal({
   const onSelectSet = (targetSetIdx: number) => {
     setState(prev => {
       if (prev.activeSetIndex === targetSetIdx) return prev;
-      const setsList = partitionQuizSets(prev.baseQuestions, 10, 5);
+      const setsList = getQuizSets(prev.baseQuestions);
       const targetQuestions =
-        targetSetIdx === -1 ? prev.baseQuestions : setsList[targetSetIdx] || prev.baseQuestions;
+        targetSetIdx === -1 ? prev.baseQuestions : setsList[targetSetIdx]?.questions || prev.baseQuestions;
       const mSet = new Set(prev.masteredIds);
       const isAllTargetMastered =
         targetQuestions.length > 0 && targetQuestions.every(q => mSet.has(q.id));
@@ -843,7 +983,7 @@ export function ReinforcementQuizModal({
   const replaySet = (setIdx: number) => {
     playQuizStartSound(soundEnabled);
     const setQuestions =
-      setIdx >= 0 && setIdx < sets.length ? sets[setIdx] : baseQuestions;
+      setIdx >= 0 && setIdx < sets.length ? sets[setIdx].questions : baseQuestions;
     const freshQueue: ActiveCard[] = setQuestions.map((q, idx) => ({
       ...shuffleQuestionOptions(q, Date.now() + idx),
       roundNumber: 1,
@@ -1533,32 +1673,37 @@ export function ReinforcementQuizModal({
             </button>
           </footer>
         </div>
-      ) : setCompleted && !isReviewing && sets.length > 1 && currentSetIdx >= 0 ? (
+      ) : setCompleted && !isReviewing && sets.length > 1 && activeSet ? (
         <div className="mastery-completion-body set-completion">
           <div className="mastery-trophy-hero">
             <div className="mastery-trophy-ring">
               <Sparkles size={36} />
             </div>
             <span className="mastery-kicker">
-              SET {currentSetIdx + 1} OF {sets.length} COMPLETE
+              UNIT {currentSetIdx + 1} OF {sets.length} COMPLETE
             </span>
-            <h3>Set {currentSetIdx + 1} Mastered!</h3>
+            <h3>{activeSet.title} Mastered!</h3>
+            {activeSet.subtitle && (
+              <p className="mastery-set-subtitle" style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: -4, marginBottom: 8 }}>
+                {activeSet.subtitle}
+              </p>
+            )}
             <p>
-              You have mastered all {displayQuestions.length} concepts in Set {currentSetIdx + 1}.{' '}
+              You have mastered all {displayQuestions.length} concepts in {activeSet.title}.{' '}
               {currentSetIdx + 1 < sets.length
-                ? `Ready to advance to Set ${currentSetIdx + 2}?`
-                : 'All sets in this quiz have been mastered!'}
+                ? `Ready to advance to ${sets[currentSetIdx + 1].shortTitle}?`
+                : 'All units in this reviewer have been mastered!'}
             </p>
           </div>
 
           <div className="mastery-metrics-grid">
             <div className="mastery-metric-card">
-              <span>SET ACCURACY</span>
+              <span>UNIT ACCURACY</span>
               <strong>{setFirstTryAccuracy}%</strong>
               <small>{setFirstTryCount} of {displayQuestions.length} on 1st attempt</small>
             </div>
             <div className="mastery-metric-card">
-              <span>SET REINFORCED</span>
+              <span>UNIT REINFORCED</span>
               <strong>{setReinforcedCount}</strong>
               <small>Retried until 100% correct</small>
             </div>
@@ -1575,7 +1720,7 @@ export function ReinforcementQuizModal({
           </div>
 
           <div className="mastery-breakdown-list">
-            <h4>SET {currentSetIdx + 1} CONCEPT BREAKDOWN</h4>
+            <h4>{activeSet.shortTitle.toUpperCase()} CONCEPT BREAKDOWN</h4>
             <div className="mastery-breakdown-scroll">
               {displayQuestions.map((q, idx) => {
                 const tries = attemptsByQuestion[q.id] || 1;
@@ -1616,7 +1761,7 @@ export function ReinforcementQuizModal({
                 className="mastery-primary-btn"
                 onClick={() => onSelectSet(currentSetIdx + 1)}
               >
-                Continue to Set {currentSetIdx + 2} ({sets[currentSetIdx + 1].length} Qs) <ArrowRight size={15} />
+                Continue to {sets[currentSetIdx + 1].shortTitle} ({sets[currentSetIdx + 1].questions.length} Qs) <ArrowRight size={15} />
               </button>
             ) : (
               <button
@@ -1632,14 +1777,14 @@ export function ReinforcementQuizModal({
               className="mastery-secondary-btn"
               onClick={() => jumpToQuestion(displayQuestions[0].id)}
             >
-              <Eye size={15} /> Review Set Questions
+              <Eye size={15} /> Review Unit Questions
             </button>
             <button
               type="button"
               className="mastery-secondary-btn"
               onClick={() => replaySet(currentSetIdx)}
             >
-              <RotateCcw size={15} /> Replay Set {currentSetIdx + 1}
+              <RotateCcw size={15} /> Replay {activeSet.shortTitle}
             </button>
           </footer>
         </div>
@@ -1716,9 +1861,9 @@ export function ReinforcementQuizModal({
                 <span className="mastery-beat-tag">
                   Beat {currentCard.chapterIndex + 1} of {lesson.chapters.length} · {currentCard.chapterTitle}
                 </span>
-                {sets.length > 1 && currentSetIdx >= 0 && (
+                {sets.length > 1 && activeSet && (
                   <span className="mastery-beat-tag" style={{ color: '#edca82' }}>
-                    Set {currentSetIdx + 1}
+                    {activeSet.shortTitle}
                   </span>
                 )}
                 {currentCard.isReinforcement && !currentCard.isSpacedRecall && (
