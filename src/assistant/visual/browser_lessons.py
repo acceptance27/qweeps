@@ -547,6 +547,186 @@ def _declared_branch(lesson, question):
     return best[1] if best else None
 
 
+def _clean_beat_title(title: str) -> str:
+    return re.sub(r"^\s*\d+[\.\)]\s*", "", (title or "Concept").strip())
+
+
+def _deterministic_shuffle(items: list[str], seed_key: str) -> list[str]:
+    scored = []
+    for idx, item in enumerate(items):
+        digest = hashlib.sha256(f"{seed_key}:{idx}:{item}".encode("utf-8")).hexdigest()
+        scored.append((digest, item))
+    scored.sort(key=lambda pair: pair[0])
+    return [pair[1] for pair in scored]
+
+
+def _pick_distractors(correct: str, pool: list[str], count: int, seed_key: str, fallbacks: list[str]) -> list[str]:
+    norm_correct = " ".join(correct.lower().split())
+    seen = {norm_correct}
+    candidates = []
+    for item in pool:
+        text = (item or "").strip()
+        norm = " ".join(text.lower().split())
+        if len(text) >= 12 and norm not in seen:
+            seen.add(norm)
+            candidates.append(text)
+    shuffled = _deterministic_shuffle(candidates, seed_key)
+    chosen = shuffled[:count]
+    for fb in fallbacks:
+        if len(chosen) >= count:
+            break
+        norm = " ".join(fb.lower().split())
+        if norm not in seen:
+            seen.add(norm)
+            chosen.append(fb)
+    return chosen[:count]
+
+
+def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
+    """Synthesize a mastery reinforcement quiz grounded in the lesson's beats, mechanisms, and safeguards."""
+    chapters = lesson.get("chapters") or []
+    if not chapters:
+        return []
+    all_insights = []
+    all_safeguards = []
+    all_node_bodies = []
+    for ch in chapters:
+        ins = (ch.get("insight") or (ch.get("visual") or {}).get("takeaway") or "").strip()
+        if ins:
+            all_insights.append(ins)
+        sg = (ch.get("safeguard") or "").strip()
+        if sg and not sg.startswith("Focused mini-lesson"):
+            all_safeguards.append(sg)
+        for node in (ch.get("visual") or {}).get("nodes") or []:
+            if isinstance(node, dict) and (node.get("body") or "").strip():
+                all_node_bodies.append(node["body"].strip())
+        for r_id, r_val in (ch.get("roles") or {}).items():
+            if isinstance(r_val, str) and ":" in r_val:
+                body_part = r_val.split(":", 1)[1].strip()
+                if len(body_part) >= 18:
+                    all_node_bodies.append(body_part)
+
+    generic_insight_fallbacks = [
+        "It relies on an unconstrained brute-force enumeration without structural bounds or conservation laws.",
+        "It bypasses intermediate verification steps by assuming every local transition is automatically reversible.",
+        "It treats the representation as a static label rather than an active transformation with measurable invariants.",
+    ]
+    generic_mech_fallbacks = [
+        "Acts only as a decorative boundary label without participating in the underlying transformation.",
+        "Replaces the primary constraint check with an unverified heuristic approximation.",
+        "Merges all independent inputs into a single unindexed constant regardless of scale.",
+    ]
+    generic_safeguard_fallbacks = [
+        "Assume that any necessary condition automatically guarantees the final outcome in every reference frame.",
+        "Treat illustrative schematic arrows as literal physical trajectories without checking conservation thresholds.",
+        "Conflate verifying a proposed candidate solution with searching the entire state space from scratch.",
+    ]
+
+    # Sample chapters evenly if the lesson is very long (e.g. 25-beat P vs NP -> ~10 chapter indices)
+    total_ch = len(chapters)
+    if total_ch <= 8:
+        selected_indices = list(range(total_ch))
+    else:
+        step = max(1, (total_ch - 1) / 7.0)
+        selected_indices = sorted({min(total_ch - 1, int(round(i * step))) for i in range(8)})
+
+    questions: list[dict] = []
+
+    for c_idx in selected_indices:
+        ch = chapters[c_idx]
+        cid = ch.get("id") or f"beat-{c_idx + 1}"
+        clean_title = _clean_beat_title(ch.get("title") or cid)
+        q_text = (ch.get("question") or f"What is the key conclusion established in {clean_title}?").strip()
+        insight = (ch.get("insight") or (ch.get("visual") or {}).get("takeaway") or "").strip()
+        takeaway = ((ch.get("visual") or {}).get("takeaway") or insight).strip()
+        safeguard = (ch.get("safeguard") or "").strip()
+
+        if insight:
+            qid = f"q-{cid}-concept"
+            other_insights = [x for i, x in enumerate(all_insights) if i != c_idx] + all_safeguards
+            distractors = _pick_distractors(insight, other_insights, 3, qid, generic_insight_fallbacks)
+            options = _deterministic_shuffle([insight, *distractors], qid + "-opts")
+            questions.append({
+                "id": qid,
+                "chapterId": cid,
+                "chapterIndex": c_idx,
+                "chapterTitle": ch.get("title") or clean_title,
+                "kind": "concept",
+                "prompt": q_text,
+                "options": options,
+                "correctIndex": options.index(insight),
+                "explanation": f"{insight}" + (f" — Visual takeaway: {takeaway}" if takeaway and takeaway != insight else ""),
+                "safeguardNote": safeguard if safeguard and not safeguard.startswith("Focused mini-lesson") else None,
+                "hint": f"Recall the visual evidence in Beat {c_idx + 1} ({clean_title}).",
+            })
+
+        # Add a mechanism question if the chapter has rich nodes or roles
+        nodes = [
+            n for n in ((ch.get("visual") or {}).get("nodes") or [])
+            if isinstance(n, dict) and (n.get("title") or "").strip() and len((n.get("body") or "").strip()) >= 18
+        ]
+        if not nodes and isinstance(ch.get("roles"), dict):
+            for r_id, r_val in ch["roles"].items():
+                if isinstance(r_val, str) and ":" in r_val:
+                    t_part, b_part = r_val.split(":", 1)
+                    if t_part.strip() and len(b_part.strip()) >= 18:
+                        nodes.append({"id": r_id, "title": t_part.strip(), "body": b_part.strip()})
+
+        if nodes and len(questions) < 12 and (total_ch <= 6 or c_idx in selected_indices[::2]):
+            target_node = nodes[c_idx % len(nodes)]
+            n_title = target_node["title"].strip()
+            n_body = target_node["body"].strip()
+            qid_m = f"q-{cid}-mech"
+            distractors_m = _pick_distractors(n_body, all_node_bodies + all_insights, 3, qid_m, generic_mech_fallbacks)
+            options_m = _deterministic_shuffle([n_body, *distractors_m], qid_m + "-opts")
+            questions.append({
+                "id": qid_m,
+                "chapterId": cid,
+                "chapterIndex": c_idx,
+                "chapterTitle": ch.get("title") or clean_title,
+                "kind": "mechanism",
+                "prompt": f"In \"{clean_title}\", how does \"{n_title}\" function within the visual mechanism?",
+                "options": options_m,
+                "correctIndex": options_m.index(n_body),
+                "explanation": f"In Beat {c_idx + 1} ({clean_title}), {n_title}: {n_body}",
+                "safeguardNote": takeaway if takeaway else None,
+                "hint": f"Inspect the '{n_title}' element in Beat {c_idx + 1}.",
+            })
+
+        # Add a misconception safeguard question for selected beats
+        if (
+            safeguard
+            and len(safeguard) >= 24
+            and not safeguard.startswith("Focused mini-lesson")
+            and len(questions) < 14
+            and c_idx in (selected_indices[1::3] or selected_indices[:1])
+        ):
+            qid_s = f"q-{cid}-safeguard"
+            distractors_s = _pick_distractors(
+                safeguard,
+                [s for s in all_safeguards if s != safeguard] + generic_safeguard_fallbacks,
+                3,
+                qid_s,
+                generic_safeguard_fallbacks,
+            )
+            options_s = _deterministic_shuffle([safeguard, *distractors_s], qid_s + "-opts")
+            questions.append({
+                "id": qid_s,
+                "chapterId": cid,
+                "chapterIndex": c_idx,
+                "chapterTitle": ch.get("title") or clean_title,
+                "kind": "safeguard",
+                "prompt": f"Which critical safeguard or boundary condition applies when interpreting \"{clean_title}\"?",
+                "options": options_s,
+                "correctIndex": options_s.index(safeguard),
+                "explanation": f"Safeguard for {clean_title}: {safeguard}",
+                "safeguardNote": insight if insight else None,
+                "hint": f"Think about the common misreading warned against in Beat {c_idx + 1}.",
+            })
+
+    return questions
+
+
 class BrowserLessonStore:
     def __init__(self,llm,studio,folder=None,documents=None,narration=None):
         self.narration=narration
@@ -611,17 +791,57 @@ class BrowserLessonStore:
         roots=[self.folder]
         bundled=getattr(self,'bundled_folder',None)
         if bundled and bundled.is_dir():roots.append(bundled)
+        resolved=base
         for root in roots:
             target = root / lesson_id
             if not target.is_dir(): continue
             if self.narration:
                 from .synchronization import fingerprint
-                path=target/f'speech-{fingerprint(base,self.narration)}.json'
-                if path.exists():return json.loads(path.read_text())
+                base_for_fp={k:v for k,v in base.items() if k!='quiz'}
+                path=target/f'speech-{fingerprint(base_for_fp,self.narration)}.json'
+                if path.exists():
+                    resolved=json.loads(path.read_text())
+                    break
+                path_direct=target/f'speech-{fingerprint(base,self.narration)}.json'
+                if path_direct.exists():
+                    resolved=json.loads(path_direct.read_text())
+                    break
             # The published lesson.json is authoritative. Do not fall back to
             # an arbitrary older speech-*.json: that reintroduced stale visual
             # windows and stale narration after a sync-version change.
-        return base
+        if not resolved.get('quiz'):
+            resolved={**resolved,'quiz':base.get('quiz') or _build_reinforcement_quiz(resolved)}
+        return resolved
+    def catalog(self):
+        seen=set()
+        items=[]
+        roots=[self.folder]
+        bundled=getattr(self,'bundled_folder',None)
+        if bundled and bundled.is_dir():roots.append(bundled)
+        for root in roots:
+            if not root.is_dir():continue
+            for path in sorted(root.glob('*/lesson.json'),key=lambda p:p.stat().st_mtime,reverse=True):
+                lid=path.parent.name
+                if lid in seen or not ID.fullmatch(lid):continue
+                try:
+                    data=json.loads(path.read_text())
+                    chapters=data.get('chapters') or []
+                    if not chapters:continue
+                    seen.add(lid)
+                    has_native=bool(data.get('nativeScenes') or any(c.get('renderer')=='manimgl' or c.get('clip') for c in chapters))
+                    items.append({
+                        'id':lid,
+                        'title':data.get('title') or lid,
+                        'question':data.get('question') or '',
+                        'beatCount':len(chapters),
+                        'duration':round(float(data.get('duration') or 0),1),
+                        'hasNative':has_native,
+                        'quizCount':len(data.get('quiz') or []) or len(chapters),
+                        'bundled':root==bundled,
+                    })
+                except Exception:
+                    continue
+        return items
     def start_synchronization(self,payload):
         base=self._base_lesson(payload.get('lessonId'));lesson_id=base['id']
         with self.lock:
@@ -643,15 +863,118 @@ class BrowserLessonStore:
     def status(self,job_id):
         with self.lock:
             if job_id not in self.jobs:raise PlanError('The lesson preparation session expired. Try again.')
-            j=self.jobs[job_id];result={k:copy.deepcopy(j[k]) for k in ('id','status','stage','revision','lessonId','error','candidate','speechSync') if k in j}
+            j=self.jobs[job_id];result={k:copy.deepcopy(j[k]) for k in ('id','status','stage','revision','lessonId','error','candidate','speechSync','generateQuiz') if k in j}
             if 'revisedBeats' in j:
                 value=j['revisedBeats']
                 # Internal revision tracking uses a set; the job API is JSON.
                 result['revisedBeats']=sorted(value) if isinstance(value,(set,frozenset)) else value
             if j['status']=='failed':result['canResume']=bool(j.get('speechSync') or (self.folder/j['lessonId']/'working.json').is_file())
             return result
+    def _llm_reinforcement_quiz(self,lesson:dict)->list[dict]:
+        from ..llm import OfflineLLM
+        if self.llm is None or isinstance(self.llm,OfflineLLM):
+            return _build_reinforcement_quiz(lesson)
+        chapters=lesson.get('chapters') or []
+        if not chapters:
+            return []
+        compact_beats=[
+            {
+                'chapterIndex':idx,
+                'chapterId':c.get('id') or f'beat-{idx+1}',
+                'chapterTitle':c.get('title') or f'Beat {idx+1}',
+                'question':c.get('question') or '',
+                'insight':c.get('insight') or '',
+                'safeguard':c.get('safeguard') or '',
+                'takeaway':(c.get('visual') or {}).get('takeaway') or '',
+                'nodes':[
+                    {'id':n.get('id'),'title':n.get('title'),'body':n.get('body')}
+                    for n in ((c.get('visual') or {}).get('nodes') or [])[:4]
+                    if isinstance(n,dict)
+                ],
+            }
+            for idx,c in enumerate(chapters)
+        ]
+        target_count=min(20,max(6,len(chapters)))
+        instruction=f'''You are the QWEEPS visual learning reinforcement quiz generator.
+Generate {target_count} high-rigor multiple-choice mastery questions covering the beats of this lesson.
+Return JSON only; no markdown fences or tools:
+{{"questions":[{{"id":"q-beat-1","chapterId":"beat-id","chapterIndex":0,"chapterTitle":"Beat Title","kind":"concept"|"mechanism"|"safeguard","prompt":"Clear conceptual or visual mechanism question","options":["Option A","Option B","Option C","Option D"],"correctIndex":0,"explanation":"Why the correct answer is right based on the beat's visual evidence","safeguardNote":"Common misreading or boundary condition to avoid","hint":"Short cue pointing to the beat's visual mechanism"}}]}}
+Rules:
+1. Every question MUST have exactly 4 distinct options and a valid correctIndex (0..3).
+2. Ground every question, explanation, and hint in the supplied lesson beats.
+3. Do not mention "Gizmo" anywhere.'''
+        def validate_quiz_response(raw):
+            if not isinstance(raw,dict) or not isinstance(raw.get('questions'),list) or len(raw['questions'])<3:
+                raise PlanError('Model quiz response must contain at least 3 questions')
+            cleaned=[]
+            for idx,q in enumerate(raw['questions']):
+                if not isinstance(q,dict):continue
+                opts=[str(o).strip() for o in (q.get('options') or []) if str(o).strip()]
+                if len(opts)!=4:continue
+                c_idx=int(q.get('chapterIndex',idx%len(chapters)))
+                c_idx=max(0,min(len(chapters)-1,c_idx))
+                ch=chapters[c_idx]
+                correct_idx=int(q.get('correctIndex',0))
+                if not 0<=correct_idx<4:correct_idx=0
+                kind=q.get('kind') if q.get('kind') in {'concept','mechanism','safeguard'} else 'concept'
+                prompt=str(q.get('prompt') or '').strip()
+                explanation=str(q.get('explanation') or ch.get('insight') or '').strip()
+                if not prompt or not explanation:continue
+                cleaned.append({
+                    'id':str(q.get('id') or f"q-{ch.get('id',c_idx+1)}-{idx+1}"),
+                    'chapterId':str(q.get('chapterId') or ch.get('id') or f'beat-{c_idx+1}'),
+                    'chapterIndex':c_idx,
+                    'chapterTitle':str(q.get('chapterTitle') or ch.get('title') or f'Beat {c_idx+1}'),
+                    'kind':kind,
+                    'prompt':prompt,
+                    'options':opts,
+                    'correctIndex':correct_idx,
+                    'explanation':explanation,
+                    'safeguardNote':str(q.get('safeguardNote') or ch.get('safeguard') or '').strip() or None,
+                    'hint':str(q.get('hint') or f"Inspect Beat {c_idx+1} ({ch.get('title','')}).").strip(),
+                })
+            if len(cleaned)<3:
+                raise PlanError('Insufficient valid quiz questions returned by model')
+            return cleaned
+        try:
+            return _model_json(self.llm,instruction,{'title':lesson.get('title'),'question':lesson.get('question'),'beats':compact_beats},validate_quiz_response,tokens=4800)
+        except Exception:
+            return _build_reinforcement_quiz(lesson)
+
+    def generate_quiz(self,lesson_or_id,*,persist=True,force_llm=False):
+        if isinstance(lesson_or_id,str):
+            base=self._base_lesson(lesson_or_id)
+            lesson=self.lesson(lesson_or_id)
+            lesson_id=lesson_or_id
+        elif isinstance(lesson_or_id,dict):
+            base=lesson_or_id
+            lesson=lesson_or_id
+            lesson_id=lesson.get('id')
+        else:
+            raise PlanError('Provide a lesson ID or lesson object to generate a quiz')
+        if not force_llm and isinstance(base.get('quiz'),list) and len(base['quiz'])>=3:
+            return base['quiz']
+        chapters=lesson.get('chapters') or []
+        if not chapters:
+            raise PlanError('Lesson has no chapters to build a quiz from')
+        questions=self._llm_reinforcement_quiz(lesson)
+        lesson['quiz']=questions
+        if persist and lesson_id and isinstance(lesson_id,str) and ID.fullmatch(lesson_id):
+            target_dir=self.folder/lesson_id
+            if target_dir.is_dir():
+                for fname in ('lesson.json','stream-lesson.json'):
+                    fpath=target_dir/fname
+                    if fpath.is_file():
+                        try:
+                            data=json.loads(fpath.read_text())
+                            data['quiz']=questions
+                            fpath.write_text(json.dumps(data,ensure_ascii=False,indent=2))
+                        except Exception:
+                            pass
+        return questions
     def start(self,payload,context=None):
         native=bool(payload.get('native'))
+        generate_quiz=bool(payload.get('generateQuiz'))
         native_mode=str(payload.get('nativeMode') or 'per_beat')
         if native_mode not in {'continuous','per_beat'}:
             raise PlanError("nativeMode must be 'continuous' or 'per_beat'")
@@ -684,21 +1007,29 @@ class BrowserLessonStore:
             key=resume
         with self.lock:
             existing=next((j for j in self.jobs.values() if j['lessonId']==key and j['status']!='failed'),None)
-            if existing and not payload.get('regenerate'):return self.status(existing['id'])
+            if existing and not payload.get('regenerate'):
+                if generate_quiz:existing['generateQuiz']=True
+                return self.status(existing['id'])
             if len(self.jobs)>=24:
                 finished=next((k for k,j in self.jobs.items() if j['status'] in {'ready','failed'}),None)
                 if finished:self.jobs.pop(finished)
                 else:raise PlanError('Too many lessons are preparing. Wait for one to finish.')
-            job={'id':job_id,'lessonId':key,'status':'preparing','stage':'Reading source material','revision':0,'question':question,'document':document,'context':context,'native':native,'nativeMode':native_mode}
+            job={'id':job_id,'lessonId':key,'status':'preparing','stage':'Reading source material','revision':0,'question':question,'document':document,'context':context,'native':native,'nativeMode':native_mode,'generateQuiz':generate_quiz}
             self.jobs[job_id]=job
             folder=self.folder/key;folder.mkdir(exist_ok=True)
-            (folder/'request.json').write_text(json.dumps({'question':question,'documentId':document['id'] if document else None,'context':context},ensure_ascii=False))
+            (folder/'request.json').write_text(json.dumps({'question':question,'documentId':document['id'] if document else None,'context':context,'generateQuiz':generate_quiz},ensure_ascii=False))
             cached=self.folder/key/'lesson.json'
             if cached.is_file() and not payload.get('regenerate'):
                 try: cached_lesson=json.loads(cached.read_text())
                 except ValueError: cached_lesson={}
                 hybrid=any(c.get('renderer')=='manimgl' for c in cached_lesson.get('chapters') or [])
                 if hybrid or not native:
+                    if generate_quiz and cached_lesson and not cached_lesson.get('quiz'):
+                        try:
+                            cached_lesson['quiz']=_build_reinforcement_quiz(cached_lesson)
+                            cached.write_text(json.dumps(cached_lesson,ensure_ascii=False,indent=2))
+                        except Exception:
+                            pass
                     job.update(status='ready',stage='Reviewed live lesson ready');return self.status(job_id)
         is_fast_branch=bool(context and context.get('parentScene') and getattr(self.llm,'provider','') in {'opencode-go','opencode','opencode-free'})
         target=self._generate_branch_mini_lesson if is_fast_branch else (self._generate_hybrid if native else self._generate)
@@ -918,6 +1249,7 @@ class BrowserLessonStore:
                 t_nat.join(timeout=180)
             lesson={'id':j['lessonId'],'kind':'live_generated',**header,'duration':round(clock,2),
                     'chapters':chapters,'nativeScenes':native_manifests,'streamed':True}
+            lesson['quiz']=_build_reinforcement_quiz(lesson)
             (self.folder/j['lessonId']/'stream-lesson.json').write_text(json.dumps(lesson,ensure_ascii=False))
             (self.folder/j['lessonId']/'lesson.json').write_text(json.dumps(lesson,ensure_ascii=False,indent=2))
             j['candidate']=lesson
@@ -1570,6 +1902,7 @@ replacements, only those needed.'''
                 lesson = compile_speech(self, j, lesson)
             lesson["review"] = {"approved": True, "method": "native-and-layout-hybrid",
                                 "findings": [], "observations": []}
+            lesson["quiz"] = _build_reinforcement_quiz(lesson)
             (folder / "lesson.json").write_text(json.dumps(lesson, ensure_ascii=False, indent=2))
             j.update(status="ready", stage="Hybrid native lesson ready")
             j.pop("candidate", None)
@@ -1686,6 +2019,11 @@ replacements, only those needed.'''
             if result['approved']:
                 if result['findings'] or len(result['observations'])<len(j['candidate']['chapters']):raise PlanError('Visual approval needs evidence for every beat and no unresolved findings')
                 lesson=copy.deepcopy(j['candidate']);lesson['review']={**result,'method':'actual-browser-svg-frames-and-vision-model','frames':labels}
+                if j.get('generateQuiz'):
+                    j.update(stage='Generating reinforcement quiz with QWEEPS')
+                    lesson['quiz']=self._llm_reinforcement_quiz(lesson)
+                else:
+                    lesson['quiz']=_build_reinforcement_quiz(lesson)
                 folder=self.folder/j['lessonId'];folder.mkdir(exist_ok=True)
                 (folder/'lesson.json').write_text(json.dumps(lesson,ensure_ascii=False,indent=2))
                 if self.narration:
@@ -1931,6 +2269,7 @@ replacements, only those needed.'''
                     wf.setnchannels(1);wf.setsampwidth(2);wf.setframerate(24000);wf.writeframes(full_pcm)
                 lesson['audioTrack']={'url':f'/narration/{wav_key}.wav','key':wav_key,'duration':total_dur,'clock':'audio'}
                 lesson['speechSynchronization']={'version':5,'baseFingerprint':wav_key,'method':'one-lesson-recording-with-measured-word-anchors','scriptSource':'branch mini-lesson script','recordingCount':1}
+            lesson['quiz']=_build_reinforcement_quiz(lesson)
             folder=self.folder/j['lessonId']
             folder.mkdir(parents=True,exist_ok=True)
             (folder/'lesson.json').write_text(json.dumps(lesson,ensure_ascii=False,indent=2))

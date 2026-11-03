@@ -354,6 +354,8 @@ class Handler(SimpleHTTPRequestHandler):
                     pass
             elif re.fullmatch(r'/api/visual/live/jobs/[0-9a-f]{32}',parsed.path):
                 self.send_json(200,self.service.live.status(parsed.path.rsplit('/',1)[-1]))
+            elif parsed.path == '/api/visual/live/lessons':
+                self.send_json(200,{'lessons':self.service.live.catalog()})
             elif re.fullmatch(r'/api/visual/live/lessons/[A-Za-z0-9_-]+',parsed.path):
                 self.send_json(200,self.service.live.lesson(parsed.path.rsplit('/',1)[-1]))
             elif parsed.path == "/api/visual/native/frame":
@@ -466,6 +468,10 @@ class Handler(SimpleHTTPRequestHandler):
                 result=self.service.beats.start(payload)
             elif route == '/api/visual/live/jobs':
                 result=self.service.live.start(payload)
+            elif route == '/api/visual/live/quiz':
+                target=payload.get('lessonId') or payload.get('lesson')
+                questions=self.service.live.generate_quiz(target)
+                result={'quiz':questions,'count':len(questions)}
             elif route == '/api/visual/live/stream':
                 result=self.service.live.start_stream(payload)
             elif route == '/api/visual/live/check':

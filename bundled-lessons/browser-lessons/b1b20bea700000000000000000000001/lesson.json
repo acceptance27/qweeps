@@ -14,7 +14,7 @@
     {
       "id": "b1-poly-sorting",
       "title": "1. Polynomial Growth O(n^k) & Fast Sorting",
-      "years": "Foundation \u00b7 1965",
+      "years": "Foundation · 1965",
       "question": "What makes an algorithm tractable in the real world?",
       "insight": "Polynomial growth O(n^k) multiplies work by a constant factor as input grows, keeping large tasks solvable.",
       "sourcePages": [],
@@ -231,7 +231,7 @@
     {
       "id": "b2-exp-wall",
       "title": "2. The Combinatorial Wall: n^2 vs 2^n",
-      "years": "Act 1 \u00b7 Scalability",
+      "years": "Act 1 · Scalability",
       "question": "Why does exponential growth quickly surpass all human computing power?",
       "insight": "Exponential algorithms double work with every single additional item, blasting past cosmological limits.",
       "sourcePages": [],
@@ -450,7 +450,7 @@
     {
       "id": "b3-opt-vs-decision",
       "title": "3. Optimization vs Decision Problems",
-      "years": "Act 1 \u00b7 Formalization",
+      "years": "Act 1 · Formalization",
       "question": "How do theoretical computer scientists simplify complex search tasks?",
       "insight": "Binary search reduces searching for the optimal route to answering a sequence of clean YES-or-NO questions.",
       "sourcePages": [],
@@ -568,7 +568,7 @@
     {
       "id": "b4-class-p-wavefront",
       "title": "4. Class P: Polynomial-Time Shortest Path Wavefront",
-      "years": "Act 1 \u00b7 Definition",
+      "years": "Act 1 · Definition",
       "question": "Which problems live inside Class P?",
       "insight": "Class P contains all decision problems solvable by a deterministic algorithm in O(n^k) steps.",
       "sourcePages": [],
@@ -787,7 +787,7 @@
     {
       "id": "b5-brute-force-tree",
       "title": "5. Why Naive Brute Force Fails",
-      "years": "Act 1 \u00b7 The Trap",
+      "years": "Act 1 · The Trap",
       "question": "Why cannot faster hardware save naive brute force search?",
       "insight": "A tree of binary choices generates 2^n paths, quickly exceeding the number of atoms in the observable universe.",
       "sourcePages": [],
@@ -1217,7 +1217,7 @@
     {
       "id": "b6-find-vs-check",
       "title": "6. The Core Asymmetry: Blind Search vs Fast Verification",
-      "years": "Act 2 \u00b7 Asymmetry",
+      "years": "Act 2 · Asymmetry",
       "question": "Why is verifying a solution so much easier than finding one from scratch?",
       "insight": "Finding a needle requires searching 2^n haystacks, but verifying a provided needle takes only polynomial checks.",
       "sourcePages": [],
@@ -1448,7 +1448,7 @@
     {
       "id": "b7-witness-verifier",
       "title": "7. The Witness (Certificate) Protocol V(x, w)",
-      "years": "Act 2 \u00b7 Protocol",
+      "years": "Act 2 · Protocol",
       "question": "How does a mathematical verifier prove an answer without doing the hard search?",
       "insight": "A verifier V(x, w) runs in polynomial time, returning YES if and only if certificate w proves instance x has a YES answer.",
       "sourcePages": [],
@@ -1679,7 +1679,7 @@
     {
       "id": "b8-np-definition",
       "title": "8. Class NP: Nondeterministic Polynomial Time",
-      "years": "Act 2 \u00b7 Definition",
+      "years": "Act 2 · Definition",
       "question": "What is the true technical definition of the class NP?",
       "insight": "NP stands for Nondeterministic Polynomial time: problems where a lucky guess can be verified deterministically in O(n^k).",
       "sourcePages": [],
@@ -1739,12 +1739,12 @@
         ],
         "connections": [],
         "columns": [],
-        "takeaway": "NP does not mean 'Non-Polynomial'; it means 'Nondeterministic Polynomial'\u2014polynomial time checking.",
+        "takeaway": "NP does not mean 'Non-Polynomial'; it means 'Nondeterministic Polynomial'—polynomial time checking.",
         "experiment": null,
         "presentation": {
           "method": "Interactive Comparison Grammar",
           "why": "Structured browser layout with animated Lucide icons and stroke-traced diagrams pairs visual comparison with spoken transitions.",
-          "visualEvidence": "NP does not mean 'Non-Polynomial'; it means 'Nondeterministic Polynomial'\u2014polynomial time checking.",
+          "visualEvidence": "NP does not mean 'Non-Polynomial'; it means 'Nondeterministic Polynomial'—polynomial time checking.",
           "textMode": "descriptive"
         }
       },
@@ -1797,7 +1797,7 @@
     {
       "id": "b9-p-inside-np",
       "title": "9. Why P Is Inside NP (P subseteq NP)",
-      "years": "Act 2 \u00b7 Containment",
+      "years": "Act 2 · Containment",
       "question": "Why is every problem in P automatically inside NP?",
       "insight": "If you can solve a problem in polynomial time, you can verify it simply by solving it directly, ignoring the witness.",
       "sourcePages": [],
@@ -2028,7 +2028,7 @@
     {
       "id": "b10-np-puzzles-matrix",
       "title": "10. Everyday NP Showcase: Sudoku, Routing & Prime Factoring",
-      "years": "Act 2 \u00b7 Real World",
+      "years": "Act 2 · Real World",
       "question": "Where does the verification asymmetry appear in everyday life?",
       "insight": "Sudoku puzzles, delivery logistics, and RSA cryptography all share hard searches paired with instant checks.",
       "sourcePages": [],
@@ -2176,7 +2176,7 @@
     {
       "id": "b11-poly-reduction",
       "title": "11. Polynomial-Time Reductions (A <=_p B)",
-      "years": "Act 3 \u00b7 Tool",
+      "years": "Act 3 · Tool",
       "question": "How do we prove one problem is at least as hard as another?",
       "insight": "A polynomial reduction transforms any instance of A into an instance of B such that YES answers are strictly preserved.",
       "sourcePages": [],
@@ -2419,7 +2419,7 @@
     {
       "id": "b12-hardness-contrapositive",
       "title": "12. Direction of Hardness: Fast Solver vs Hardness Transfer",
-      "years": "Act 3 \u00b7 Logic",
+      "years": "Act 3 · Logic",
       "question": "Which direction does computational difficulty flow across a reduction?",
       "insight": "If A <=_p B, an easy solver for B solves A; by contrapositive, if A is intractable, B must also be intractable.",
       "sourcePages": [],
@@ -2500,12 +2500,12 @@
           }
         ],
         "columns": [],
-        "takeaway": "Reductions do not just share algorithms\u2014they propagate proven lower bounds.",
+        "takeaway": "Reductions do not just share algorithms—they propagate proven lower bounds.",
         "experiment": null,
         "presentation": {
           "method": "Interactive Process Grammar",
           "why": "Structured browser layout with animated Lucide icons and stroke-traced diagrams pairs visual comparison with spoken transitions.",
-          "visualEvidence": "Reductions do not just share algorithms\u2014they propagate proven lower bounds.",
+          "visualEvidence": "Reductions do not just share algorithms—they propagate proven lower bounds.",
           "textMode": "descriptive"
         }
       },
@@ -2566,7 +2566,7 @@
     {
       "id": "b13-cook-levin-sat",
       "title": "13. Boolean Satisfiability (SAT) & The Cook-Levin Theorem",
-      "years": "Act 3 \u00b7 Breakthrough \u00b7 1971",
+      "years": "Act 3 · Breakthrough · 1971",
       "question": "How did Cook and Levin prove that a universal hard problem exists?",
       "insight": "The Cook-Levin theorem proved that the step-by-step operation of ANY polynomial verifier can be encoded as a single SAT formula.",
       "sourcePages": [],
@@ -2797,7 +2797,7 @@
     {
       "id": "b14-np-complete-crown",
       "title": "14. NP-Hard vs NP-Complete: The Domino Crown",
-      "years": "Act 3 \u00b7 The Crown",
+      "years": "Act 3 · The Crown",
       "question": "What does it mean for a problem to be NP-Complete?",
       "insight": "NP-Complete problems sit at the summit: they live inside NP and every other NP problem reduces directly to them.",
       "sourcePages": [],
@@ -3028,7 +3028,7 @@
     {
       "id": "b15-karp-21-web",
       "title": "15. Karp's 21 Problems: The Web of Reductions",
-      "years": "Act 3 \u00b7 Expansion \u00b7 1972",
+      "years": "Act 3 · Expansion · 1972",
       "question": "Was SAT a bizarre mathematical exception or the tip of a giant iceberg?",
       "insight": "Richard Karp proved that 21 foundational combinatorial problems across graphs, numbers, and sets are all NP-Complete.",
       "sourcePages": [],
@@ -3316,12 +3316,12 @@
           }
         ],
         "columns": [],
-        "takeaway": "NP-Completeness is not a rare pathological case\u2014it is the default reality of combinatorial optimization.",
+        "takeaway": "NP-Completeness is not a rare pathological case—it is the default reality of combinatorial optimization.",
         "experiment": null,
         "presentation": {
           "method": "Interactive Diagram Grammar",
           "why": "Structured browser layout with animated Lucide icons and stroke-traced diagrams pairs visual comparison with spoken transitions.",
-          "visualEvidence": "NP-Completeness is not a rare pathological case\u2014it is the default reality of combinatorial optimization.",
+          "visualEvidence": "NP-Completeness is not a rare pathological case—it is the default reality of combinatorial optimization.",
           "textMode": "descriptive"
         }
       },
@@ -3382,7 +3382,7 @@
     {
       "id": "b16-world-p-eq-np",
       "title": "16. World 1: What If P = NP? Verification Becomes Creation",
-      "years": "Act 4 \u00b7 World 1",
+      "years": "Act 4 · World 1",
       "question": "What would human civilization look like if P equaled NP?",
       "insight": "If P = NP, verifying a proof is as easy as finding one; mathematical insight, optimal logistics, and molecular design become automated.",
       "sourcePages": [],
@@ -3601,7 +3601,7 @@
     {
       "id": "b17-crypto-collapse",
       "title": "17. The Dark Side of P = NP: Cryptography Breaks",
-      "years": "Act 4 \u00b7 Consequences",
+      "years": "Act 4 · Consequences",
       "question": "Why would P = NP destroy digital trust and privacy?",
       "insight": "Modern public-key cryptography relies on one-way functions; if P = NP, every public key can be inverted in polynomial time.",
       "sourcePages": [],
@@ -3832,7 +3832,7 @@
     {
       "id": "b18-consensus-p-neq-np",
       "title": "18. World 2: Why Consensus Favors P != NP",
-      "years": "Act 4 \u00b7 World 2",
+      "years": "Act 4 · World 2",
       "question": "Why do over 90% of theoretical computer scientists believe P does not equal NP?",
       "insight": "Decades of relentless algorithmic exploration have failed to produce a polynomial solver for any NP-Complete problem.",
       "sourcePages": [],
@@ -4063,7 +4063,7 @@
     {
       "id": "b19-barriers-and-coping",
       "title": "19. Proof Barriers & How Engineers Cope With NP-Hardness",
-      "years": "Act 4 \u00b7 Reality",
+      "years": "Act 4 · Reality",
       "question": "Why is P vs NP so hard to prove, and how do engineers manage NP-hard problems today?",
       "insight": "Proof barriers (Relativization, Natural Proofs) rule out standard proof techniques, while engineers use heuristics and approximations.",
       "sourcePages": [],
@@ -4096,16 +4096,16 @@
         }
       ],
       "roles": {
-        "baker-gill-solovay": "1975 \u00b7 Relativization Barrier: Baker, Gill, and Solovay prove that diagonalization cannot resolve P vs NP; oracles exist for both outcomes.",
-        "razborov-rudich": "1994 \u00b7 Natural Proofs Barrier: Razborov and Rudich demonstrate that combinatorial circuit lower bound techniques would break pseudorandomness.",
-        "modern-coping": "Modern Engineering \u00b7 Heuristics & SAT: Engineers cope via CDCL SAT solvers, approximation bounds, and fixed-parameter tractability in industrial practice."
+        "baker-gill-solovay": "1975 · Relativization Barrier: Baker, Gill, and Solovay prove that diagonalization cannot resolve P vs NP; oracles exist for both outcomes.",
+        "razborov-rudich": "1994 · Natural Proofs Barrier: Razborov and Rudich demonstrate that combinatorial circuit lower bound techniques would break pseudorandomness.",
+        "modern-coping": "Modern Engineering · Heuristics & SAT: Engineers cope via CDCL SAT solvers, approximation bounds, and fixed-parameter tractability in industrial practice."
       },
       "visual": {
         "layout": "timeline",
         "nodes": [
           {
             "id": "baker-gill-solovay",
-            "title": "1975 \u00b7 Relativization Barrier",
+            "title": "1975 · Relativization Barrier",
             "body": "Baker, Gill, and Solovay prove that diagonalization cannot resolve P vs NP; oracles exist for both outcomes.",
             "color": "coral",
             "shape": "rect",
@@ -4114,7 +4114,7 @@
           },
           {
             "id": "razborov-rudich",
-            "title": "1994 \u00b7 Natural Proofs Barrier",
+            "title": "1994 · Natural Proofs Barrier",
             "body": "Razborov and Rudich demonstrate that combinatorial circuit lower bound techniques would break pseudorandomness.",
             "color": "gold",
             "shape": "rect",
@@ -4123,7 +4123,7 @@
           },
           {
             "id": "modern-coping",
-            "title": "Modern Engineering \u00b7 Heuristics & SAT",
+            "title": "Modern Engineering · Heuristics & SAT",
             "body": "Engineers cope via CDCL SAT solvers, approximation bounds, and fixed-parameter tractability in industrial practice.",
             "color": "green",
             "shape": "circle",
@@ -4163,24 +4163,24 @@
           "target": "baker-gill-solovay",
           "start": 4.46,
           "end": 6.96,
-          "text": "1975 \u00b7 Relativization Barrier",
-          "phrase": "1975 \u00b7 Relativization Barrier",
+          "text": "1975 · Relativization Barrier",
+          "phrase": "1975 · Relativization Barrier",
           "attention": true
         },
         {
           "target": "razborov-rudich",
           "start": 11.52,
           "end": 14.02,
-          "text": "1994 \u00b7 Natural Proofs Barrier",
-          "phrase": "1994 \u00b7 Natural Proofs Barrier",
+          "text": "1994 · Natural Proofs Barrier",
+          "phrase": "1994 · Natural Proofs Barrier",
           "attention": true
         },
         {
           "target": "modern-coping",
           "start": 11.52,
           "end": 14.02,
-          "text": "Modern Engineering \u00b7 Heuristics & SAT",
-          "phrase": "Modern Engineering \u00b7 Heuristics & SAT",
+          "text": "Modern Engineering · Heuristics & SAT",
+          "phrase": "Modern Engineering · Heuristics & SAT",
           "attention": true
         },
         {
@@ -4199,7 +4199,7 @@
     {
       "id": "b20-complexity-atlas",
       "title": "20. Synthesis: The Complexity Atlas & Millennium Takeaway",
-      "years": "Act 4 \u00b7 Millennium Synthesis",
+      "years": "Act 4 · Millennium Synthesis",
       "question": "Where does P vs NP sit in the ultimate map of computational reality?",
       "insight": "P vs NP is not merely an algorithm puzzle; it asks whether human creativity can be automated by mechanical checking.",
       "sourcePages": [],
@@ -4336,17 +4336,17 @@
   "sources": [
     {
       "id": "cook-1971",
-      "title": "S. A. Cook (1971) \u2014 The Complexity of Theorem-Proving Procedures",
+      "title": "S. A. Cook (1971) — The Complexity of Theorem-Proving Procedures",
       "url": "https://doi.org/10.1145/800157.805047"
     },
     {
       "id": "karp-1972",
-      "title": "R. M. Karp (1972) \u2014 Reducibility Among Combinatorial Problems",
+      "title": "R. M. Karp (1972) — Reducibility Among Combinatorial Problems",
       "url": "https://doi.org/10.1007/978-1-4684-2001-2_9"
     },
     {
       "id": "clay-pvsnp",
-      "title": "Clay Mathematics Institute \u2014 P vs NP Millennium Prize Problem",
+      "title": "Clay Mathematics Institute — P vs NP Millennium Prize Problem",
       "url": "https://www.claymath.org/millennium/p-vs-np/"
     }
   ],
@@ -4517,7 +4517,7 @@
         "presentation": {
           "method": "Interactive Comparison Grammar",
           "why": "Structured browser layout with animated Lucide icons and stroke-traced diagrams pairs visual comparison with spoken transitions.",
-          "visualEvidence": "NP does not mean 'Non-Polynomial'; it means 'Nondeterministic Polynomial'\u2014polynomial time checking.",
+          "visualEvidence": "NP does not mean 'Non-Polynomial'; it means 'Nondeterministic Polynomial'—polynomial time checking.",
           "textMode": "descriptive"
         },
         "continuity": {
@@ -4601,7 +4601,7 @@
         "presentation": {
           "method": "Interactive Process Grammar",
           "why": "Structured browser layout with animated Lucide icons and stroke-traced diagrams pairs visual comparison with spoken transitions.",
-          "visualEvidence": "Reductions do not just share algorithms\u2014they propagate proven lower bounds.",
+          "visualEvidence": "Reductions do not just share algorithms—they propagate proven lower bounds.",
           "textMode": "descriptive"
         },
         "continuity": {
@@ -4664,7 +4664,7 @@
         "presentation": {
           "method": "Interactive Diagram Grammar",
           "why": "Structured browser layout with animated Lucide icons and stroke-traced diagrams pairs visual comparison with spoken transitions.",
-          "visualEvidence": "NP-Completeness is not a rare pathological case\u2014it is the default reality of combinatorial optimization.",
+          "visualEvidence": "NP-Completeness is not a rare pathological case—it is the default reality of combinatorial optimization.",
           "textMode": "descriptive"
         },
         "continuity": {
@@ -4803,7 +4803,7 @@
   "nativeScenes": {
     "gen_e3276006ebb8": {
       "sceneId": "gen_e3276006ebb8",
-      "title": "P vs NP \u2014 3b1b Native Mechanism Beats",
+      "title": "P vs NP — 3b1b Native Mechanism Beats",
       "sceneClass": "GenScene",
       "sourceHash": "e3276006ebb8",
       "duration": 115.9,
@@ -5655,5 +5655,367 @@
     "method": "native-and-layout-hybrid",
     "findings": [],
     "observations": []
-  }
+  },
+  "quiz": [
+    {
+      "id": "pnp-q01-poly-sorting",
+      "chapterId": "b1-poly-sorting",
+      "chapterIndex": 0,
+      "chapterTitle": "1. Polynomial Growth O(n^k) & Fast Sorting",
+      "kind": "concept",
+      "prompt": "Why is an algorithm with polynomial time complexity O(n^k) considered tractable in practice?",
+      "options": [
+        "Doubling the input size n multiplies the total work by a fixed constant factor (2^k) rather than exploding exponentially.",
+        "It guarantees the algorithm finishes in a single CPU clock cycle regardless of input size n.",
+        "It explores every possible permutation of the input simultaneously using nondeterministic hardware.",
+        "It requires the exponent k to shrink toward zero as the input size n increases."
+      ],
+      "correctIndex": 0,
+      "explanation": "In polynomial growth O(n^k), scaling input size from n to 2n scales work by (2n)^k = 2^k * n^k—a predictable constant multiplier—which keeps large sorting and graph tasks tractable.",
+      "safeguardNote": "While huge exponents like n^100 are theoretically in P, almost all natural polynomial algorithms discovered in practice have small exponents (k = 1, 2, or 3).",
+      "hint": "Compare what happens to n^2 versus 2^n when you double n."
+    },
+    {
+      "id": "pnp-q02-exp-wall",
+      "chapterId": "b2-exp-wall",
+      "chapterIndex": 1,
+      "chapterTitle": "2. The Combinatorial Wall: n^2 vs 2^n",
+      "kind": "mechanism",
+      "prompt": "In the comparison between O(n^2) and O(2^n), what happens to an O(2^n) algorithm each time you add just ONE more element to the input?",
+      "options": [
+        "The total computational work doubles with every single additional item, rapidly surpassing the number of atoms in the universe.",
+        "The total computational work increases by a fixed additive constant of 2 operations.",
+        "The runtime grows quadratically by 2n + 1 steps, which modern GPUs can absorb.",
+        "The memory footprint halves while the clock speed requirement increases linearly."
+      ],
+      "correctIndex": 0,
+      "explanation": "Because 2^(n+1) = 2 * 2^n, adding a single item doubles the entire search space. By n = 100, 2^100 (~1.26 x 10^30) operations is far beyond cosmological computing limits.",
+      "safeguardNote": "Building a 1,000x faster supercomputer only lets an O(2^n) algorithm handle roughly 10 more input items (since 2^10 = 1,024).",
+      "hint": "Look at how 2^(n+1) relates mathematically to 2^n."
+    },
+    {
+      "id": "pnp-q03-opt-vs-decision",
+      "chapterId": "b3-opt-vs-decision",
+      "chapterIndex": 2,
+      "chapterTitle": "3. Optimization vs Decision Problems",
+      "kind": "mechanism",
+      "prompt": "How do complexity theorists convert an optimization problem (like finding the shortest Traveling Salesperson tour) into a decision problem?",
+      "options": [
+        "By introducing a threshold budget B and asking a YES/NO question: \"Does there exist a valid tour of total length <= B?\"",
+        "By rounding all edge weights to 0 or 1 so the graph becomes unweighted.",
+        "By discarding all suboptimal tours using a randomized hash function.",
+        "By restricting the graph to at most three vertices so the answer is binary."
+      ],
+      "correctIndex": 0,
+      "explanation": "Framing the task as \"Is there a tour of length <= B?\" turns optimization into a clean YES/NO decision problem. Using binary search over B, a fast decision solver can pinpoint the exact optimum in polynomially many calls.",
+      "safeguardNote": "The decision version and optimization version are polynomially equivalent—neither one hides the exponential difficulty.",
+      "hint": "Think about how binary search uses a threshold budget B."
+    },
+    {
+      "id": "pnp-q04-class-p",
+      "chapterId": "b4-class-p-wavefront",
+      "chapterIndex": 3,
+      "chapterTitle": "4. Class P: Polynomial-Time Shortest Path Wavefront",
+      "kind": "concept",
+      "prompt": "Why does finding the shortest path between two nodes S and T (e.g., via Dijkstra or BFS wavefronts) belong to Class P?",
+      "options": [
+        "Dynamic programming reuses optimal substructure at each vertex, visiting edges and nodes in O(V + E) or O(V^2) deterministic steps instead of enumerating all paths.",
+        "A graph with V vertices only has a polynomial number of possible simple paths between S and T.",
+        "Shortest path algorithms guess the correct path using a witness certificate supplied by the user.",
+        "Shortest path only works on trees where no cycles exist."
+      ],
+      "correctIndex": 0,
+      "explanation": "Even though a graph can contain exponentially many paths between S and T, shortest-path wavefront algorithms only keep the best distance to each vertex, solving the problem deterministically in polynomial time.",
+      "safeguardNote": "Do not confuse Shortest Path (in P) with Longest Simple Path or Hamiltonian Path (NP-Complete), where visited-vertex history prevents simple wavefront merging!",
+      "hint": "How does the expanding wavefront avoid checking every possible path individually?"
+    },
+    {
+      "id": "pnp-q05-brute-force-tree",
+      "chapterId": "b5-brute-force-tree",
+      "chapterIndex": 4,
+      "chapterTitle": "5. Why Naive Brute Force Fails",
+      "kind": "safeguard",
+      "prompt": "Why can faster hardware or Moore's Law never rescue a naive brute-force search over a binary decision tree of depth n?",
+      "options": [
+        "A binary choice tree of depth n produces 2^n leaves; at n = 300, the number of leaves (~10^90) exceeds the ~10^80 atoms in the observable universe.",
+        "Hardware clock speeds are capped by software compilers to O(n log n) instructions per second.",
+        "Binary decision trees cannot be represented in digital memory without floating-point rounding errors.",
+        "Brute-force search fails to find the optimal solution even if given infinite time."
+      ],
+      "correctIndex": 0,
+      "explanation": "Brute force is always correct given infinite time, but a depth-n binary tree has 2^n leaves. Physical reality runs out of atoms and seconds long before brute force finishes even moderate input sizes.",
+      "safeguardNote": "This physical barrier is why finding clever polynomial structure—or proving none exists—is central to computer science.",
+      "hint": "Count the number of leaves at depth n = 300."
+    },
+    {
+      "id": "pnp-q06-find-vs-check",
+      "chapterId": "b6-find-vs-check",
+      "chapterIndex": 5,
+      "chapterTitle": "6. The Core Asymmetry: Blind Search vs Fast Verification",
+      "kind": "concept",
+      "prompt": "What is the core computational asymmetry that motivates the entire P vs NP question?",
+      "options": [
+        "Searching for a valid solution from scratch appears to require exploring an exponential space, whereas checking a proposed solution takes only polynomial time.",
+        "Multiplying two numbers takes exponential time, whereas factoring a composite number into primes takes linear time.",
+        "Deterministic computers can verify NO answers instantly, but cannot verify YES answers.",
+        "Sorting a list is exponentially harder than checking whether a list is sorted."
+      ],
+      "correctIndex": 0,
+      "explanation": "Across puzzles, logic, and routing, we repeatedly see a stark gap: finding a needle from scratch searches 2^n possibilities, while verifying a handed-to-you needle requires only fast local polynomial checks.",
+      "safeguardNote": "In cryptography (like RSA), multiplying two primes is easy (in P), while factoring their product back into primes is the hard search!",
+      "hint": "Compare the work of solving a blank puzzle vs checking a completed puzzle."
+    },
+    {
+      "id": "pnp-q07-witness-verifier",
+      "chapterId": "b7-witness-verifier",
+      "chapterIndex": 6,
+      "chapterTitle": "7. The Witness (Certificate) Protocol V(x, w)",
+      "kind": "mechanism",
+      "prompt": "In the formal definition of Class NP, what two strict mathematical conditions must the verifier V(x, w) and witness certificate w satisfy?",
+      "options": [
+        "The witness w must have polynomial length (|w| <= |x|^k) AND the deterministic verifier V(x, w) must halt in polynomial time O(|x|^k).",
+        "The witness w can be exponentially long as long as V(x, w) only reads a random sample of its bits.",
+        "The verifier V(x, w) must find w on its own without receiving w as an input.",
+        "The witness w must prove that NO other valid solution exists for instance x."
+      ],
+      "correctIndex": 0,
+      "explanation": "A decision problem is in NP if every YES instance x has a polynomially short certificate w (|w| <= |x|^k) that a deterministic verifier V(x, w) can check in polynomial time O(|x|^k).",
+      "safeguardNote": "If w were allowed to be exponentially long, a verifier could not even read the certificate in polynomial time!",
+      "hint": "Think about both the size of the certificate w and the runtime of the checker V(x, w)."
+    },
+    {
+      "id": "pnp-q08-np-definition",
+      "chapterId": "b8-np-definition",
+      "chapterIndex": 7,
+      "chapterTitle": "8. Class NP: Nondeterministic Polynomial Time",
+      "kind": "safeguard",
+      "prompt": "What does the abbreviation \"NP\" actually stand for in complexity theory?",
+      "options": [
+        "Nondeterministic Polynomial time — problems solvable in polynomial time by a nondeterministic machine (equivalently, verifiable in deterministic polynomial time).",
+        "Not Polynomial — problems that have been proven impossible to solve in polynomial time.",
+        "Nearly Polynomial — problems whose runtime is O(n^{log n}) on average.",
+        "Numerical Precision — problems that require arbitrary-precision floating-point arithmetic."
+      ],
+      "correctIndex": 0,
+      "explanation": "One of the most common misconceptions is thinking NP means \"Not Polynomial.\" NP stands for Nondeterministic Polynomial time, and it includes all of Class P!",
+      "safeguardNote": "Never say \"NP means Not Polynomial\"—every polynomial-time problem in P is also inside NP.",
+      "hint": "What do the letters N and P literally abbreviate?"
+    },
+    {
+      "id": "pnp-q09-p-inside-np",
+      "chapterId": "b9-p-inside-np",
+      "chapterIndex": 8,
+      "chapterTitle": "9. Why P Is Inside NP (P subseteq NP)",
+      "kind": "mechanism",
+      "prompt": "Why is every decision problem in Class P automatically guaranteed to be inside Class NP (P ⊆ NP)?",
+      "options": [
+        "If a deterministic polynomial-time solver exists for x, we can build a polynomial verifier V(x, w) that simply ignores the witness w and runs the solver on x directly.",
+        "Because every problem in P has an exponential number of witnesses that cancel each other out.",
+        "Because Cook and Levin proved that P and NP are identical for all graph problems.",
+        "Because a verifier can compress any exponential search tree into a constant-size hash."
+      ],
+      "correctIndex": 0,
+      "explanation": "If you can solve x from scratch in O(n^k) time, you can certainly verify x in O(n^k) time: your verifier V(x, w) takes an empty witness w = \"\", solves x in polynomial time, and outputs the answer.",
+      "safeguardNote": "Therefore P ⊆ NP is unconditionally true; the $1,000,000 question is whether NP ⊆ P (i.e., P = NP) or whether NP is strictly larger (P != NP).",
+      "hint": "How would you verify a YES instance if you already have a fast solver for the problem?"
+    },
+    {
+      "id": "pnp-q10-np-puzzles",
+      "chapterId": "b10-np-puzzles-matrix",
+      "chapterIndex": 9,
+      "chapterTitle": "10. Everyday NP Showcase: Sudoku, Routing & Prime Factoring",
+      "kind": "concept",
+      "prompt": "In generalized n x n Sudoku, what serves as the witness w, and how does the polynomial verifier V(x, w) check it?",
+      "options": [
+        "The witness w is the filled n x n grid; the verifier checks in O(n^2) time that every row, column, and box contains 1..n with no duplicates and matches the initial clues.",
+        "The witness w is the sequence of all backtracked dead-ends; the verifier replays the entire search tree.",
+        "The witness w is a single integer representing the sum of all cells in the grid.",
+        "The verifier solves the blank puzzle from scratch using SAT and compares the timing."
+      ],
+      "correctIndex": 0,
+      "explanation": "Finding a valid completion of an n x n Sudoku grid is NP-Complete, but given a completed grid w, scanning each row, column, and sub-box for uniqueness takes simple polynomial time.",
+      "safeguardNote": "The same pattern holds for Prime Factoring: finding factors of N = p * q is hard, but multiplying p * q to check if it equals N is fast!",
+      "hint": "What do you hand to a referee to prove a Sudoku puzzle is solvable, and how fast can they check it?"
+    },
+    {
+      "id": "pnp-q11-poly-reduction",
+      "chapterId": "b11-poly-reduction",
+      "chapterIndex": 10,
+      "chapterTitle": "11. Polynomial-Time Reductions (A <=_p B)",
+      "kind": "mechanism",
+      "prompt": "What must a polynomial-time reduction f from Problem A to Problem B (written A <=_p B) accomplish?",
+      "options": [
+        "It transforms any instance x of A in polynomial time into an instance f(x) of B such that x is a YES instance of A if and only if f(x) is a YES instance of B.",
+        "It shrinks the bit-length of instance x by at least 50% while running in exponential time.",
+        "It proves that Problem A requires strictly more memory than Problem B.",
+        "It solves Problem A directly without ever calling or referencing Problem B."
+      ],
+      "correctIndex": 0,
+      "explanation": "A reduction f is a polynomial-time translator: x in A <=> f(x) in B. If you have the translator f and a fast solver for B, you can solve A in polynomial time by computing f(x) and feeding it to B's solver.",
+      "safeguardNote": "The translator f itself MUST run in polynomial time; otherwise f could secretly do the exponential work of solving A on its own!",
+      "hint": "Think of f(x) as a fast bridge that translates questions of type A into equivalent questions of type B."
+    },
+    {
+      "id": "pnp-q12-hardness-contrapositive",
+      "chapterId": "b12-hardness-contrapositive",
+      "chapterIndex": 11,
+      "chapterTitle": "12. Direction of Hardness: Fast Solver vs Hardness Transfer",
+      "kind": "safeguard",
+      "prompt": "To prove that a new problem X is NP-Hard using a known NP-Complete problem like 3-SAT, which direction MUST your polynomial reduction go?",
+      "options": [
+        "You must reduce 3-SAT <=_p X (transform any 3-SAT instance into an instance of X), so that if X were easy, 3-SAT would also be easy.",
+        "You must reduce X <=_p 3-SAT, showing that X can be solved by a SAT solver.",
+        "You must reduce X to Sorting, showing that X is at least as easy as O(n log n).",
+        "Direction does not matter because all polynomial reductions are symmetric."
+      ],
+      "correctIndex": 0,
+      "explanation": "By the contrapositive of A <=_p B: if B is easy, A is easy; therefore if A (3-SAT) is hard, B (your new problem X) must be at least as hard! Reducing X <=_p 3-SAT only shows X is no harder than 3-SAT.",
+      "safeguardNote": "Reversing the reduction arrow (reducing X to 3-SAT instead of 3-SAT to X) is the #1 mistake in complexity proofs.",
+      "hint": "If A <=_p B means \"B is at least as hard as A\", which side should be 3-SAT and which side should be X?"
+    },
+    {
+      "id": "pnp-q13-cook-levin",
+      "chapterId": "b13-cook-levin-sat",
+      "chapterIndex": 12,
+      "chapterTitle": "13. Boolean Satisfiability (SAT) & The Cook-Levin Theorem",
+      "kind": "concept",
+      "prompt": "How did Stephen Cook (1971) and Leonid Levin (1973) prove that Boolean Satisfiability (SAT) is NP-Complete before any other NP-Complete problem was known?",
+      "options": [
+        "They showed that the polynomial-time execution tableau (tape cells, head position, and state transitions) of ANY NP verifier V(x, w) can be encoded as a giant Boolean SAT formula.",
+        "They tested all 21 of Karp's graph problems empirically and showed SAT ran the slowest.",
+        "They proved that Boolean algebra cannot be simulated on a Turing machine.",
+        "They showed that SAT formulas with n variables always require 2^n clauses to write down."
+      ],
+      "correctIndex": 0,
+      "explanation": "Because every computer circuit and Turing machine transition is built from local Boolean logic (AND, OR, NOT), Cook and Levin compiled the entire space-time computation grid of an arbitrary O(n^k) verifier into one polynomially sized SAT formula.",
+      "safeguardNote": "Once SAT was crowned the first NP-Complete problem, all subsequent NP-Completeness proofs only needed to reduce FROM SAT (or another NP-Complete problem) rather than from scratch!",
+      "hint": "How can an arbitrary verifier machine V(x, w) running for n^k steps be represented using logic gates?"
+    },
+    {
+      "id": "pnp-q14-np-complete-crown",
+      "chapterId": "b14-np-complete-crown",
+      "chapterIndex": 13,
+      "chapterTitle": "14. NP-Hard vs NP-Complete: The Domino Crown",
+      "kind": "concept",
+      "prompt": "What is the exact difference between an NP-Hard problem and an NP-Complete problem?",
+      "options": [
+        "An NP-Complete problem is both NP-Hard (every problem in NP reduces to it) AND a member of Class NP itself (verifiable in polynomial time).",
+        "NP-Complete problems are harder than NP-Hard problems and cannot even be solved in exponential time.",
+        "NP-Hard problems are inside Class P, whereas NP-Complete problems are outside Class NP.",
+        "NP-Complete problems only apply to graphs, while NP-Hard problems only apply to numbers."
+      ],
+      "correctIndex": 0,
+      "explanation": "NP-Hard means \"at least as hard as everything in NP\" (which even includes undecidable problems like the Halting Problem). NP-Complete is the crown jewel inside NP: both in NP and NP-Hard.",
+      "safeguardNote": "Because all NP-Complete problems reduce to one another in polynomial time, if a single NP-Complete problem falls into P, the entire domino chain collapses and P = NP!",
+      "hint": "Which of the two classes requires the problem itself to live inside NP?"
+    },
+    {
+      "id": "pnp-q15-karp-21",
+      "chapterId": "b15-karp-21-web",
+      "chapterIndex": 14,
+      "chapterTitle": "15. Karp's 21 Problems: The Web of Reductions",
+      "kind": "mechanism",
+      "prompt": "What did Richard Karp's landmark 1972 paper demonstrate by chaining polynomial reductions from SAT to 21 classic problems (Clique, Vertex Cover, Subset Sum, 3-Coloring, TSP)?",
+      "options": [
+        "That NP-Completeness is not a quirk of Boolean logic—thousands of core problems across graphs, scheduling, routing, and number theory are all disguised versions of the same computational barrier.",
+        "That only 21 NP-Complete problems exist in all of mathematics.",
+        "That graph problems are strictly easier than Boolean logic formulas.",
+        "That Subset Sum and Clique can be solved in O(n^2) time using linear programming."
+      ],
+      "correctIndex": 0,
+      "explanation": "Karp built a tree of gadget reductions starting from SAT/3-SAT, proving that seemingly unrelated problems in graph theory, packing, and routing are mutually translatable NP-Complete problems.",
+      "safeguardNote": "Today, thousands of natural problems across biology (protein folding), compilers (register allocation), and operations research are known to be NP-Complete.",
+      "hint": "Why was it so shocking that Clique, Subset Sum, and Traveling Salesperson all reduced to and from SAT?"
+    },
+    {
+      "id": "pnp-q16-world-p-eq-np",
+      "chapterId": "b16-world-p-eq-np",
+      "chapterIndex": 15,
+      "chapterTitle": "16. World 1: What If P = NP? Verification Becomes Creation",
+      "kind": "concept",
+      "prompt": "If a constructive, low-degree polynomial algorithm proved P = NP tomorrow, why would formal mathematical theorem-proving become automated?",
+      "options": [
+        "Because checking whether a formal proof of length <= n^k is valid is in P; thus finding a short proof becomes an NP search that a P = NP solver could execute automatically.",
+        "Because P = NP would repeal Gödel's Incompleteness Theorem and make infinite-length proofs readable in zero time.",
+        "Because mathematicians would no longer need to define axioms before checking proofs.",
+        "Because P = NP only speeds up numerical multiplication, not symbolic logic."
+      ],
+      "correctIndex": 0,
+      "explanation": "Recognizing a valid formal proof of reasonable length is a mechanical polynomial-time verification task. If P = NP, any theorem that has a short proof could be proved automatically in polynomial time!",
+      "safeguardNote": "As Scott Aaronson noted, if P = NP, anyone who can appreciate a great symphony would be Mozart, and anyone who can follow a step-by-step argument would be Gauss.",
+      "hint": "How does verifying a formal step-by-step proof relate to Class NP?"
+    },
+    {
+      "id": "pnp-q17-crypto-collapse",
+      "chapterId": "b17-crypto-collapse",
+      "chapterIndex": 16,
+      "chapterTitle": "17. The Dark Side of P = NP: Cryptography Breaks",
+      "kind": "mechanism",
+      "prompt": "Why would P = NP cause the immediate collapse of modern public-key cryptography, digital signatures, and cryptocurrency proofs-of-work?",
+      "options": [
+        "Modern cryptography relies on one-way functions (easy to compute forward, hard to invert); since verifying a candidate private key or pre-image takes polynomial time, P = NP would invert them in polynomial time.",
+        "Because P = NP would make multiplying prime numbers take exponential time.",
+        "Because AES and RSA keys are stored in unencrypted plaintext on public servers.",
+        "Because one-time pads with truly random keys rely on NP-Completeness."
+      ],
+      "correctIndex": 0,
+      "explanation": "Checking whether a guessed private key k decrypts a known ciphertext or matches a public key takes polynomial time (so key recovery is in NP). If P = NP, no computational one-way function can exist!",
+      "safeguardNote": "Information-theoretic security (like the One-Time Pad, where every plaintext is equally likely without the key) would survive, because there is no unique verifiable witness.",
+      "hint": "Is checking whether a candidate secret key matches a public key a polynomial-time verification task?"
+    },
+    {
+      "id": "pnp-q18-consensus",
+      "chapterId": "b18-consensus-p-neq-np",
+      "chapterIndex": 17,
+      "chapterTitle": "18. World 2: Why Consensus Favors P != NP",
+      "kind": "concept",
+      "prompt": "Why does the overwhelming consensus of theoretical computer scientists favor P != NP?",
+      "options": [
+        "Because thousands of NP-Complete problems reduce to one another, yet decades of effort have found no polynomial solver for any of them, and intuition suggests blind search cannot always be bypassed without structure.",
+        "Because P != NP was already proved in 1972 by Richard Karp, and only the constant factor remains unknown.",
+        "Because quantum computers have already proved that NP-Complete problems require exponential qubits.",
+        "Because polynomial algorithms only exist for 1-dimensional arrays."
+      ],
+      "correctIndex": 0,
+      "explanation": "If P = NP, a single fast solver for 3-SAT would simultaneously solve thousands of notoriously hard problems across every branch of science. The complete absence of such a collapse—plus deep structural evidence—points strongly to P != NP.",
+      "safeguardNote": "Consensus is not a proof! Until a formal mathematical proof settles P vs NP, the Clay Mathematics Institute $1,000,000 Millennium Prize remains unclaimed.",
+      "hint": "What would happen to all 21+ NP-Complete problems if even one of them had a fast solver?"
+    },
+    {
+      "id": "pnp-q19-barriers-coping",
+      "chapterId": "b19-barriers-and-coping",
+      "chapterIndex": 18,
+      "chapterTitle": "19. Proof Barriers & How Engineers Cope With NP-Hardness",
+      "kind": "safeguard",
+      "prompt": "Why haven't mathematicians simply used standard diagonalization (like the Halting Problem proof) to prove P != NP, and how do engineers solve NP-Hard tasks in the real world?",
+      "options": [
+        "Formal meta-theorems (Relativization, Natural Proofs, Algebrization) prove standard techniques cannot separate P from NP; meanwhile, engineers use approximation algorithms, heuristics, and CDCL SAT solvers on structured real-world inputs.",
+        "Mathematicians are waiting for faster computers to test all inputs up to n = 1,000,000.",
+        "Engineers never encounter NP-Hard problems in industry because real data is always sorted.",
+        "Standard diagonalization proves P = NP whenever an oracle is attached."
+      ],
+      "correctIndex": 0,
+      "explanation": "Baker-Gill-Solovay (Relativization), Razborov-Rudich (Natural Proofs), and Aaronson-Wigderson (Algebrization) showed why classic proof techniques hit a wall. In practice, engineers trade worst-case optimality for near-optimal approximations (like Christofides for TSP) or exploit real-world structure.",
+      "safeguardNote": "NP-Completeness is a worst-case guarantee—many industrial SAT instances with millions of variables are solved daily because real-world problems have exploitable structure!",
+      "hint": "What three formal barriers block standard proof techniques, and how do practitioners handle worst-case hardness?"
+    },
+    {
+      "id": "pnp-q20-complexity-atlas",
+      "chapterId": "b20-complexity-atlas",
+      "chapterIndex": 19,
+      "chapterTitle": "20. Synthesis: The Complexity Atlas & Millennium Takeaway",
+      "kind": "concept",
+      "prompt": "In the broader Complexity Atlas (P ⊆ NP ⊆ PSPACE ⊆ EXPTIME), what philosophical question lies at the heart of P vs NP?",
+      "options": [
+        "Whether the creative leap required to discover a solution or proof can always be reduced to the mechanical routine of verifying one.",
+        "Whether memory space (PSPACE) is cheaper to manufacture than CPU clock cycles.",
+        "Whether all mathematical problems are undecidable like the Halting Problem.",
+        "Whether binary computers should be replaced by ternary logic gates."
+      ],
+      "correctIndex": 0,
+      "explanation": "At its deepest level, P vs NP asks a fundamental law of the universe: if a truth is easy to recognize once shown to you (NP), is it also easy to discover from scratch (P)?",
+      "safeguardNote": "While Time Hierarchy Theorems prove P != EXPTIME, we still do not know which containment in P ⊆ NP ⊆ PSPACE ⊆ EXPTIME is strict!",
+      "hint": "Reflect on the contrast between mechanical verification and creative discovery."
+    }
+  ]
 }

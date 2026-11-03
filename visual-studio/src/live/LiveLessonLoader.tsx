@@ -5,7 +5,68 @@ import LivePreparation from './LivePreparation';
 import type {LiveJob,LiveLesson} from './lessonTypes';
 import './live.css';
 type DocumentMeta={id:string;title:string;filename:string;pageCount:number;aliases:string[]};
+type CatalogLesson={id:string;title:string;question:string;beatCount:number;duration:number;hasNative:boolean;quizCount:number;bundled:boolean};
+const FEATURED_IDS=new Set(['b1b20bea700000000000000000000001','1ac198aec0efc9ba04dfa14bd242bd33','61d56323819e14949204a5e95f1214fc']);
+function EnhancedLiveLessonLoader(){
+ const params=new URLSearchParams(location.search),defaultPvpLesson=!params.get('lesson')&&!params.get('job')&&!params.get('topic')&&params.get('home')!=='1',[lesson,setLesson]=useState<LiveLesson|null>(null),[documents,setDocuments]=useState<DocumentMeta[]>([]),[catalogLessons,setCatalogLessons]=useState<CatalogLesson[]>([]),[selected,setSelected]=useState(params.get('document')||''),[question,setQuestion]=useState(params.get('topic')||''),[native,setNative]=useState(params.get('native')==='1'),[generateQuiz,setGenerateQuiz]=useState(params.get('quiz')==='1'),[openQuizOnLoad,setOpenQuizOnLoad]=useState(params.get('quiz')==='1'),[nativeMode,setNativeMode]=useState<'per_beat'|'continuous'>(params.get('nativeMode')==='continuous'?'continuous':'per_beat'),[job,setJob]=useState<string|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const initialized=useRef(false),input=useRef<HTMLInputElement>(null),syncAvailable=useRef(false);
+ async function start(q=question,doc=selected,resumeLessonId?:string,mode=nativeMode,withQuiz=generateQuiz){if(!q.trim()||busy)return;setBusy(true);setError('');setOpenQuizOnLoad(withQuiz);try{const result=await api<LiveJob>('live/jobs',{question:q,documentId:doc||undefined,resumeLessonId,native,nativeMode:mode,generateQuiz:withQuiz});setJob(result.id);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+ useEffect(()=>{
+  void api<{documents:DocumentMeta[]}>('documents').then(r=>setDocuments(r.documents)).catch(e=>setError(e.message));
+  void api<{lessons:CatalogLesson[]}>('live/lessons').then(r=>setCatalogLessons(r.lessons||[])).catch(()=>{});
+  if(initialized.current)return;initialized.current=true;void api('health').then(h=>{syncAvailable.current=h.tts==='openrouter';const id=params.get('lesson')||(defaultPvpLesson?'b1b20bea700000000000000000000001':null);if(id)return api<LiveLesson>(`live/lessons/${id}`).then(ready);else if(params.get('job'))setJob(params.get('job')!);else if(params.get('topic'))return start(params.get('topic')!,params.get('document')||'');}).catch(e=>setError(e.message));
+ },[]);
+ async function upload(file:File){setBusy(true);setError('');try{const base64=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(new Error('Could not read the PDF.'));reader.readAsDataURL(file);});const doc=await api<DocumentMeta>('documents',{filename:file.name,base64});setDocuments(d=>[...d.filter(x=>x.id!==doc.id),doc]);setSelected(doc.id);if(!question)setQuestion('Teach me '+doc.title);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+ const ready=(value:LiveLesson)=>{if(value.kind==='live_generated'&&!value.audioTrack&&syncAvailable.current&&params.get('nosync')!=='1'){void api<LiveJob>('live/synchronize',{lessonId:value.id}).then(j=>setJob(j.id)).catch(e=>setError(e.message));return;}const query=new URLSearchParams({lesson:value.id});for(const key of ['muted','desktop','nosync','t','beat'])if(params.has(key))query.set(key,params.get(key)!);if(generateQuiz||openQuizOnLoad||params.get('quiz')==='1')query.set('quiz','1');setLesson(value);setJob(null);history.replaceState(null,'',`/?${query}`);};
+ const lessonHref=(id:string)=>generateQuiz?`/?lesson=${id}&quiz=1`:`/?lesson=${id}`;
+ const extraLessons=catalogLessons.filter(item=>!FEATURED_IDS.has(item.id));
+ const totalListCount=5+extraLessons.length;
+ return <>{lesson?<LiveLessonPlayer initialLesson={lesson} initialTime={Number(params.get('t')||0)} initialOpenQuiz={openQuizOnLoad||generateQuiz||params.get('quiz')==='1'}/>:<main className="live-generator"><div><span>QWEEPS · LIVE VISUAL LEARNING</span><h1>What would you like to understand?</h1><p>Choose a source PDF or ask for a topic. QWEEPS plans, illustrates and reviews a live lesson you can pause, inspect and question.</p>
+ <section className="live-generated-lessons-box" aria-label="Generated Lesson List">
+  <div className="live-generated-lessons-header">
+   <span>GENERATED LESSONS · SELECT TO LAUNCH</span>
+   <small>{totalListCount} available · scroll to browse</small>
+  </div>
+  <div className="live-generated-lessons-scroll">
+   <a href={lessonHref('b1b20bea700000000000000000000001')} className="live-generated-lesson-item variant-gold">
+    <span className="live-generated-lesson-text">🎬 Play 20-Beat 3b1b Hybrid: <strong>P vs NP ($1M Millennium Problem)</strong></span>
+    <span className="live-generated-lesson-arrow">→</span>
+   </a>
+   <a href="/?lesson=b1b20bea700000000000000000000001&quiz=1&beat=quiz" className="live-generated-lesson-item variant-quiz">
+    <span className="live-generated-lesson-text">🧠 Take Reinforcement Quiz: <strong>P vs NP (20 Questions)</strong></span>
+    <span className="live-generated-lesson-arrow">→</span>
+   </a>
+   <a href={lessonHref('1ac198aec0efc9ba04dfa14bd242bd33')} className="live-generated-lesson-item variant-blue">
+    <span className="live-generated-lesson-text">🔍 Play 6-Beat Walkthrough: <strong>Binary Search Algorithm</strong></span>
+    <span className="live-generated-lesson-arrow">→</span>
+   </a>
+   <a href={lessonHref('61d56323819e14949204a5e95f1214fc')} className="live-generated-lesson-item variant-emerald">
+    <span className="live-generated-lesson-text">✨ Play bundled (Gemini 3.8): <strong>How Massless Light Materializes into Matter</strong></span>
+    <span className="live-generated-lesson-arrow">→</span>
+   </a>
+   <a href="/?stream=1" className="live-generated-lesson-item variant-quiz">
+    <span className="live-generated-lesson-text">⚡ Fast Chapter Stream: <strong>Parallel Agents (Instant ~40s Start)</strong></span>
+    <span className="live-generated-lesson-arrow">→</span>
+   </a>
+   {extraLessons.map((item,idx)=>{
+    const variants=['variant-blue','variant-emerald','variant-gold'] as const;
+    const vClass=variants[idx%variants.length];
+    const icon=item.hasNative?'🎬':item.beatCount<=4?'🌿':'✨';
+    const prefix=item.hasNative?`Play ${item.beatCount}-Beat Hybrid:`:`Play ${item.beatCount}-Beat Generated Lesson:`;
+    return (
+     <a key={item.id} href={lessonHref(item.id)} className={`live-generated-lesson-item ${vClass}`}>
+      <span className="live-generated-lesson-text">{icon} {prefix} <strong>{item.title}</strong></span>
+      <span className="live-generated-lesson-arrow">→</span>
+     </a>
+    );
+   })}
+  </div>
+ </section>
+ <form onSubmit={e=>{e.preventDefault();void start();}}><label htmlFor="live-topic">Your learning request</label><textarea id="live-topic" aria-label="Learning request" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="Teach me Module 6" rows={3}/><label htmlFor="live-source">Source material</label><select id="live-source" aria-label="Lesson PDF" value={selected} onChange={e=>setSelected(e.target.value)}><option value="">Match a saved source, or use general knowledge</option>{documents.map(d=><option key={d.id} value={d.id}>{d.title} · {d.pageCount} pages</option>)}</select><input ref={input} type="file" accept="application/pdf,.pdf" aria-label="Attach a source PDF" onChange={e=>{const f=e.target.files?.[0];if(f)void upload(f);}}/><div style={{display:'flex',flexWrap:'wrap',gap:'20px',alignItems:'center',marginTop:'2px'}}><label style={{display:'flex',gap:'6px',alignItems:'center',fontSize:'0.85rem',color:'#9fb6bf',cursor:'pointer'}}><input type="checkbox" checked={native} onChange={e=>setNative(e.target.checked)}/> Include native ManimGL beats</label><label style={{display:'flex',gap:'6px',alignItems:'center',fontSize:'0.85rem',color:generateQuiz?'#edca82':'#9fb6bf',cursor:'pointer'}} title="Generates a reinforcement quiz where missed questions repeat until answered 100% perfectly"><input type="checkbox" checked={generateQuiz} onChange={e=>{setGenerateQuiz(e.target.checked);setOpenQuizOnLoad(e.target.checked);}}/> Generate Quiz/Tests</label></div>{native&&<label style={{display:'flex',gap:'6px',alignItems:'center',fontSize:'0.85rem',color:'#9fb6bf'}}>Manim composition<select value={nativeMode} onChange={e=>setNativeMode(e.target.value as 'per_beat'|'continuous')} style={{background:'#10242e',color:'#dbe6e6',border:'1px solid #365360',borderRadius:5,padding:'4px 6px'}}><option value="per_beat">Per-beat scenes</option><option value="continuous">Continuous run</option></select></label>}<div><button type="button" disabled={busy} onClick={()=>input.current?.click()}>Attach PDF</button><button type="submit" disabled={busy||!question.trim()}>{busy?'Reading…':generateQuiz?'Teach me + Generate Quiz':'Teach me visually'}</button></div></form>{error&&<p className="live-error" role="alert">{error}</p>}</div></main>}
+ {job&&<LivePreparation key={job} jobId={job} onReady={ready} onCancel={()=>setJob(null)} onRetry={j=>{if(j.speechSync)void api<LiveJob>('live/synchronize',{lessonId:j.lessonId}).then(r=>setJob(r.id)).catch(e=>setError(e.message));else void start(question,selected,j.canResume?j.lessonId:undefined);}}/>}</>;
+}
 export default function LiveLessonLoader(){
+ if(Boolean(1))return <EnhancedLiveLessonLoader/>;
  const params=new URLSearchParams(location.search),[lesson,setLesson]=useState<LiveLesson|null>(null),[documents,setDocuments]=useState<DocumentMeta[]>([]),[selected,setSelected]=useState(params.get('document')||''),[question,setQuestion]=useState(params.get('topic')||''),[native,setNative]=useState(params.get('native')==='1'),[nativeMode,setNativeMode]=useState<'per_beat'|'continuous'>(params.get('nativeMode')==='continuous'?'continuous':'per_beat'),[job,setJob]=useState<string|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const initialized=useRef(false),input=useRef<HTMLInputElement>(null),syncAvailable=useRef(false);
  async function start(q=question,doc=selected,resumeLessonId?:string,mode=nativeMode){if(!q.trim()||busy)return;setBusy(true);setError('');try{const result=await api<LiveJob>('live/jobs',{question:q,documentId:doc||undefined,resumeLessonId,native,nativeMode:mode});setJob(result.id);}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
