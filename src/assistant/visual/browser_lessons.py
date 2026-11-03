@@ -784,7 +784,7 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
                 "chapterIndex": c_idx,
                 "chapterTitle": ch.get("title") or clean_title,
                 "kind": "mechanism",
-                "prompt": f"In \"{clean_title}\", which concept, condition, or component is defined as: \"{masked_body}\"?",
+                "prompt": f"In \"{clean_title}\", which term corresponds to: \"{masked_body}\"?",
                 "options": options_m,
                 "correctIndex": options_m.index(n_title),
                 "explanation": f"In Beat {c_idx + 1} ({clean_title}), {n_title}: {n_body}",
@@ -1103,6 +1103,14 @@ Rules:
             return _build_reinforcement_quiz(lesson)
 
     def _direct_document_quiz(self, document: dict | None, question: str) -> list[dict]:
+        from assistant.visual.anotasyon_reviewer_quiz import (
+            get_curated_anotasyon_quiz,
+            is_anotasyon_reviewer_query,
+        )
+        check_str = f"{question} {(document or {}).get('title', '')} {(document or {}).get('id', '')}"
+        if is_anotasyon_reviewer_query(check_str):
+            return get_curated_anotasyon_quiz()
+
         pages_text = ""
         doc_title = ""
         if document and document.get("pages"):
@@ -1197,6 +1205,25 @@ Rules:
                             pass
             except Exception:
                 pass
+
+        from assistant.visual.anotasyon_reviewer_quiz import (
+            get_curated_anotasyon_quiz,
+            is_anotasyon_reviewer_query,
+        )
+        combined_check = f"{target_q} {target_doc_id or ''} {lesson_id or ''} {base.get('title') or ''} {lesson.get('title') or ''}"
+        if is_anotasyon_reviewer_query(combined_check):
+            questions = get_curated_anotasyon_quiz()
+            if lesson_id:
+                out_dir = self.folder / lesson_id
+                if out_dir.is_dir() and (out_dir / 'lesson.json').is_file():
+                    try:
+                        cur = json.loads((out_dir / 'lesson.json').read_text())
+                        cur['quiz'] = questions
+                        (out_dir / 'lesson.json').write_text(json.dumps(cur, ensure_ascii=False, indent=2))
+                    except Exception:
+                        pass
+            self._last_quiz_lesson_id = lesson_id
+            return questions
 
         if not force_llm and isinstance(base.get('quiz'),list) and len(base['quiz'])>=3:
             self._last_quiz_lesson_id = lesson_id

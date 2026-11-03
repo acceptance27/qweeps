@@ -888,6 +888,23 @@ def test_generate_quiz_from_payload_and_matching_lessons(library, tmp_path):
     assert (folder / store._last_quiz_lesson_id / 'lesson.json').is_file()
 
 
+def test_curated_anotasyon_reviewer_quiz_generation(tmp_path, library):
+    lib, _ = library
+    folder = tmp_path / 'lessons'
+    store = BrowserLessonStore(Model(), STUDIO, folder, lib)
+
+    qs = store.generate_quiz({'topic': '/home/anonymous/Downloads/Anotasyon_Reviewer_Lexs-Group.pdf'})
+    assert len(qs) == 48
+    for q in qs:
+        assert 'which concept, condition, or component is defined as' not in q['prompt']
+        assert len(q['options']) == 4
+        assert 0 <= q['correctIndex'] < 4
+        assert q['prompt'].endswith('?')
+    assert "Who is the author of Sucesos" in qs[0]['prompt']
+    assert "Antonio de Morga Sánchez Garay" in qs[1]['prompt']
+    assert "Tenyente Gobernador" in qs[2]['options'][qs[2]['correctIndex']]
+
+
 
 
 

@@ -230,7 +230,7 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
         chapterIndex: cIdx,
         chapterTitle: ch.title,
         kind: 'mechanism',
-        prompt: `In "${cTitle}", which concept or component is defined as: "${maskedBody}"?`,
+        prompt: `In "${cTitle}", which term corresponds to: "${maskedBody}"?`,
         options: titleOptions,
         correctIndex: titleOptions.indexOf(target.title),
         explanation: `In Beat ${cIdx + 1} (${cTitle}), ${target.title}: ${target.body}`,
