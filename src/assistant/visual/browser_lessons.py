@@ -591,6 +591,37 @@ def _pick_distractors(correct: str, pool: list[str], count: int, seed_key: str, 
     return [x[2] for x in scored[:count]]
 
 
+def _clean_safeguard_for_student(raw: str) -> str:
+    """Transform internal pedagogical authoring notes ('Learner may...; prevent by...') into student-facing insights."""
+    t = (raw or "").strip()
+    if not t:
+        return ""
+    replacements = {
+        "Learner may treat liability as automatic fault; prevent by stressing legally obliged versus answerable and may-require qualifiers.":
+            "Do not treat liability as automatic moral fault: liability is legal obligation to compensate, distinct from personal answerability or blame.",
+        "Learner may blame individuals; prevent by stating each account is true and failure is missing whole-system ownership.":
+            "Do not blame individuals in isolation: each role account may be correct while missing whole-system ownership.",
+        "Learner may seek single broken component; prevent by holding final control question and illustrating systemic cause.":
+            "Avoid seeking a single broken component: systemic defects emerge from uncoordinated interactions across multiple components.",
+        "Learner may treat conditions as misconduct; prevent by stating they are normal habits requiring diagnosis, marked illustrative.":
+            "Do not treat organizational defect conditions as intentional misconduct: they are ordinary habits requiring diagnostic safeguards.",
+        "Learner may think effectiveness is boldness; prevent by stating second version is better written and gives manager something to approve.":
+            "Effective dissent is not emotional boldness: it is disciplined written documentation that gives leadership an actionable decision.",
+        "Learner may rely on verbal memory; prevent by showing no one recalls conversation and requiring written summary.":
+            "Never rely on unrecorded verbal memory: contemporaneous written summaries protect everyone by recording what was known and decided.",
+        "Learner may see course as urging whistleblowing; prevent by stating it teaches conditions, sequence, and cost for deliberate action.":
+            "External disclosure is a grave last resort with severe personal cost: ethical frameworks teach rigorous gate conditions rather than urging whistleblowing.",
+    }
+    for k, v in replacements.items():
+        if k.lower() in t.lower() or t.lower() in k.lower():
+            return v
+
+    t = re.sub(r"^Learner may\s+", "Be careful not to ", t, flags=re.IGNORECASE)
+    t = re.sub(r";\s*prevent by\s+", ". Key safeguard: ", t, flags=re.IGNORECASE)
+    t = re.sub(r"\blearner\b", "team member", t, flags=re.IGNORECASE)
+    return t
+
+
 def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
     """Synthesize a mastery reinforcement quiz grounded in the lesson's beats, mechanisms, and safeguards."""
     chapters = lesson.get("chapters") or []
@@ -604,7 +635,7 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
         ins = (ch.get("insight") or (ch.get("visual") or {}).get("takeaway") or "").strip()
         if ins:
             all_insights.append(ins)
-        sg = (ch.get("safeguard") or "").strip()
+        sg = _clean_safeguard_for_student(ch.get("safeguard") or "")
         if sg and not sg.startswith("Focused mini-lesson"):
             all_safeguards.append(sg)
         for node in (ch.get("visual") or {}).get("nodes") or []:
@@ -647,7 +678,7 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
         q_text = (ch.get("question") or f"What is the key conclusion established in {clean_title}?").strip()
         insight = (ch.get("insight") or (ch.get("visual") or {}).get("takeaway") or "").strip()
         takeaway = ((ch.get("visual") or {}).get("takeaway") or insight).strip()
-        safeguard = (ch.get("safeguard") or "").strip()
+        safeguard = _clean_safeguard_for_student(ch.get("safeguard") or "")
 
         # 1. Beat-level concept / conclusion question
         if insight:

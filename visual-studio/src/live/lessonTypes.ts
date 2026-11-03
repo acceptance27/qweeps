@@ -37,6 +37,34 @@ function cleanTitle(raw: string): string {
   return (raw || 'Concept').replace(/^\s*\d+[\.\)]\s*/, '').trim();
 }
 
+function cleanSafeguardForStudent(raw: string): string {
+  const t = (raw || '').trim();
+  if (!t) return '';
+  const replacements: Record<string, string> = {
+    'learner may treat liability as automatic fault; prevent by stressing legally obliged versus answerable and may-require qualifiers.':
+      'Do not treat liability as automatic moral fault: liability is legal obligation to compensate, distinct from personal answerability or blame.',
+    'learner may blame individuals; prevent by stating each account is true and failure is missing whole-system ownership.':
+      'Do not blame individuals in isolation: each role account may be correct while missing whole-system ownership.',
+    'learner may seek single broken component; prevent by holding final control question and illustrating systemic cause.':
+      'Avoid seeking a single broken component: systemic defects emerge from uncoordinated interactions across multiple components.',
+    'learner may treat conditions as misconduct; prevent by stating they are normal habits requiring diagnosis, marked illustrative.':
+      'Do not treat organizational defect conditions as intentional misconduct: they are ordinary habits requiring diagnostic safeguards.',
+    'learner may think effectiveness is boldness; prevent by stating second version is better written and gives manager something to approve.':
+      'Effective dissent is not emotional boldness: it is disciplined written documentation that gives leadership an actionable decision.',
+    'learner may rely on verbal memory; prevent by showing no one recalls conversation and requiring written summary.':
+      'Never rely on unrecorded verbal memory: contemporaneous written summaries protect everyone by recording what was known and decided.',
+    'learner may see course as urging whistleblowing; prevent by stating it teaches conditions, sequence, and cost for deliberate action.':
+      'External disclosure is a grave last resort with severe personal cost: ethical frameworks teach rigorous gate conditions rather than urging whistleblowing.',
+  };
+  for (const [k, v] of Object.entries(replacements)) {
+    if (t.toLowerCase().includes(k) || k.includes(t.toLowerCase())) return v;
+  }
+  return t
+    .replace(/^Learner may\s+/i, 'Be careful not to ')
+    .replace(/;\s*prevent by\s+/i, '. Key safeguard: ')
+    .replace(/\blearner\b/gi, 'team member');
+}
+
 function hashSort(items: string[], seed: string): string[] {
   return [...items]
     .map((item, idx) => {
@@ -63,7 +91,7 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
     .map(c => (c.insight || c.visual?.takeaway || c.cues?.[c.cues.length - 1]?.text || '').trim())
     .filter(Boolean);
   const allSafeguards = chapters
-    .map(c => (c.safeguard || '').trim())
+    .map(c => cleanSafeguardForStudent(c.safeguard || ''))
     .filter(s => s.length >= 16);
   const allNodeBodies: string[] = [];
   for (const ch of chapters) {
@@ -117,7 +145,7 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
     const cTitle = cleanTitle(ch.title);
     const insight = (ch.insight || ch.visual?.takeaway || ch.cues?.[ch.cues.length - 1]?.text || '').trim();
     const takeaway = (ch.visual?.takeaway || insight).trim();
-    const safeguard = (ch.safeguard || '').trim();
+    const safeguard = cleanSafeguardForStudent(ch.safeguard || '');
 
     if (insight) {
       const qid = `q-${ch.id}-concept`;
