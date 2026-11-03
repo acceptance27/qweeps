@@ -7,6 +7,7 @@ import {
   Flame,
   Trophy,
   ArrowRight,
+  ArrowLeft,
   HelpCircle,
   Eye,
   X,
@@ -31,6 +32,7 @@ export interface ActiveCard extends QuizQuestion {
 export interface QuizProgressState {
   lessonId: string;
   baseQuestions: QuizQuestion[];
+  activeSetIndex: number;
   queue: ActiveCard[];
   cursor: number;
   reinforcementQueue: ActiveCard[];
@@ -41,10 +43,26 @@ export interface QuizProgressState {
   masteredIds: string[];
   everMissedIds: string[];
   attemptsByQuestion: Record<string, number>;
+  historyByQuestion: Record<
+    string,
+    {
+      selectedOption: number | null;
+      typedFeedback: {
+        status: 'correct' | 'wrong' | 'revealed';
+        userText: string;
+        matchedText?: string;
+      } | null;
+      recalledItems?: string[];
+      multiItemRevealed?: boolean;
+      isCorrect: boolean;
+    }
+  >;
+  viewingQuestionId: string | null;
   streak: number;
   bestStreak: number;
   totalSubmissions: number;
   completed: boolean;
+  setCompleted: boolean;
   isHardMode: boolean;
   rapidScan: boolean;
   memoryLocked: boolean;
@@ -56,6 +74,30 @@ export interface QuizProgressState {
   } | null;
   recalledItems: string[];
   multiItemRevealed: boolean;
+}
+
+export function partitionQuizSets<T>(
+  items: T[],
+  baseSize = 10,
+  minRemainder = 5
+): T[][] {
+  if (!items || items.length === 0) return [];
+  if (items.length < baseSize + minRemainder) {
+    return [items];
+  }
+  const result: T[][] = [];
+  let offset = 0;
+  while (offset < items.length) {
+    const remaining = items.length - offset;
+    if (remaining < baseSize + minRemainder) {
+      result.push(items.slice(offset));
+      break;
+    } else {
+      result.push(items.slice(offset, offset + baseSize));
+      offset += baseSize;
+    }
+  }
+  return result;
 }
 
 export interface OptionHookSplit {
@@ -150,10 +192,15 @@ export function createInitialQuizState(
   rapidScan = false
 ): QuizProgressState {
   const baseQuestions = ensureLessonQuiz(lesson);
+  const sets = partitionQuizSets(baseQuestions, 10, 5);
+  const initialSetIndex = sets.length > 1 ? 0 : -1;
+  const initialQuestions = initialSetIndex >= 0 ? sets[initialSetIndex] : baseQuestions;
+
   return {
     lessonId: lesson.id,
     baseQuestions,
-    queue: baseQuestions.map(q => ({
+    activeSetIndex: initialSetIndex,
+    queue: initialQuestions.map(q => ({
       ...q,
       roundNumber: 1,
       attemptNumber: 1,
@@ -168,10 +215,13 @@ export function createInitialQuizState(
     masteredIds: [],
     everMissedIds: [],
     attemptsByQuestion: {},
+    historyByQuestion: {},
+    viewingQuestionId: null,
     streak: 0,
     bestStreak: 0,
     totalSubmissions: 0,
     completed: false,
+    setCompleted: false,
     isHardMode: hardMode,
     rapidScan,
     memoryLocked: false,
@@ -199,13 +249,98 @@ export function ReinforcementQuizNavbar({
   showCloseButton = false,
   className = '',
 }: ReinforcementQuizNavbarProps) {
-  const { baseQuestions, queue, cursor, round, streak, masteredIds, everMissedIds, completed, soundEnabled } = quizState;
-  const currentCard = queue[cursor] as ActiveCard | undefined;
+  const {
+    baseQuestions,
+    queue,
+    cursor,
+    round,
+    streak,
+    masteredIds,
+    everMissedIds,
+    completed,
+    setCompleted,
+    soundEnabled,
+    activeSetIndex,
+    viewingQuestionId,
+  } = quizState;
+
+  const sets = useMemo(() => partitionQuizSets(baseQuestions, 10, 5), [baseQuestions]);
+  const currentSetIdx = activeSetIndex !== undefined ? activeSetIndex : (sets.length > 1 ? 0 : -1);
+
+  const displayQuestions = useMemo(() => {
+    if (currentSetIdx >= 0 && currentSetIdx < sets.length) {
+      return sets[currentSetIdx];
+    }
+    return baseQuestions;
+  }, [sets, currentSetIdx, baseQuestions]);
+
+  const liveCard = queue[cursor] as ActiveCard | undefined;
   const totalCount = baseQuestions.length;
   const masteredSet = useMemo(() => new Set(masteredIds), [masteredIds]);
   const missedSet = useMemo(() => new Set(everMissedIds), [everMissedIds]);
   const masteredCount = masteredSet.size;
   const masteryPercent = Math.round((masteredCount / Math.max(1, totalCount)) * 100);
+
+  const currentSetMasteredCount = useMemo(
+    () => displayQuestions.filter(q => masteredSet.has(q.id)).length,
+    [displayQuestions, masteredSet]
+  );
+  const currentSetPercent = Math.round(
+    (currentSetMasteredCount / Math.max(1, displayQuestions.length)) * 100
+  );
+
+  const onSelectSet = (targetSetIdx: number) => {
+    setQuizState(prev => {
+      if (prev.activeSetIndex === targetSetIdx) return prev;
+      const setsList = partitionQuizSets(prev.baseQuestions, 10, 5);
+      const targetQuestions =
+        targetSetIdx === -1 ? prev.baseQuestions : setsList[targetSetIdx] || prev.baseQuestions;
+      const mSet = new Set(prev.masteredIds);
+      const isAllTargetMastered =
+        targetQuestions.length > 0 && targetQuestions.every(q => mSet.has(q.id));
+
+      const unmastered = targetQuestions.filter(q => !mSet.has(q.id));
+      const nextQuestions = unmastered.length > 0 ? unmastered : targetQuestions;
+
+      const nextQueue: ActiveCard[] = nextQuestions.map((q, idx) => ({
+        ...shuffleQuestionOptions(q, Date.now() + idx),
+        roundNumber: 1,
+        attemptNumber: (prev.attemptsByQuestion[q.id] || 0) + 1,
+        isReinforcement: false,
+      }));
+
+      playStepSound(prev.soundEnabled);
+
+      return {
+        ...prev,
+        activeSetIndex: targetSetIdx,
+        queue: nextQueue,
+        reinforcementQueue: [],
+        cursor: 0,
+        round: 1,
+        selectedOption: null,
+        showHint: false,
+        memoryLocked: false,
+        typedInput: '',
+        typedFeedback: null,
+        recalledItems: [],
+        multiItemRevealed: false,
+        viewingQuestionId: null,
+        setCompleted: isAllTargetMastered,
+      };
+    });
+  };
+
+  const handleJumpToQuestion = (qId: string) => {
+    setQuizState(prev => {
+      const isCurrentLive = prev.queue[prev.cursor]?.id === qId;
+      return {
+        ...prev,
+        viewingQuestionId: isCurrentLive ? null : qId,
+      };
+    });
+    playStepSound(soundEnabled);
+  };
 
   return (
     <div className={`mastery-quiz-top-shell ${className}`.trim()}>
@@ -266,7 +401,15 @@ export function ReinforcementQuizNavbar({
           <div className="mastery-mastery-tag">
             <CheckCircle2 size={14} />
             <span>
-              {masteredCount} / {totalCount} Mastered ({masteryPercent}%)
+              {sets.length > 1 && currentSetIdx >= 0 ? (
+                <>
+                  Set {currentSetIdx + 1}: {currentSetMasteredCount} / {displayQuestions.length} ({currentSetPercent}%)
+                </>
+              ) : (
+                <>
+                  {masteredCount} / {totalCount} Mastered ({masteryPercent}%)
+                </>
+              )}
             </span>
           </div>
           <button
@@ -290,22 +433,76 @@ export function ReinforcementQuizNavbar({
         </div>
       </header>
 
+      {sets.length > 1 && (
+        <div className="mastery-set-selector-bar" role="tablist" aria-label="Quiz question sets">
+          {sets.map((setGroup, sIdx) => {
+            const isActive = currentSetIdx === sIdx;
+            const setMastered = setGroup.filter(q => masteredSet.has(q.id)).length;
+            const isSetFullyMastered = setMastered === setGroup.length;
+            const startNum = sets.slice(0, sIdx).reduce((acc, s) => acc + s.length, 0) + 1;
+            const endNum = startNum + setGroup.length - 1;
+
+            return (
+              <button
+                key={`set-${sIdx}`}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`mastery-set-pill ${isActive ? 'active' : ''} ${isSetFullyMastered ? 'completed' : ''}`}
+                onClick={() => onSelectSet(sIdx)}
+                title={`Set ${sIdx + 1}: Questions ${startNum}–${endNum} (${setMastered}/${setGroup.length} mastered)`}
+              >
+                <span className="mastery-set-title">
+                  Set {sIdx + 1}
+                  <small className="mastery-set-range"> ({startNum}–{endNum})</small>
+                </span>
+                <span className={`mastery-set-status ${isSetFullyMastered ? 'done' : ''}`}>
+                  {isSetFullyMastered ? '✓ 100%' : `${setMastered}/${setGroup.length}`}
+                </span>
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={currentSetIdx === -1}
+            className={`mastery-set-pill all-pill ${currentSetIdx === -1 ? 'active' : ''}`}
+            onClick={() => onSelectSet(-1)}
+            title={`View all ${baseQuestions.length} questions together`}
+          >
+            <span className="mastery-set-title">All</span>
+            <span className="mastery-set-status">{masteredCount}/{totalCount}</span>
+          </button>
+        </div>
+      )}
+
       <div className="mastery-progress-rail" aria-label="Question mastery progress">
-        {baseQuestions.map((q, idx) => {
+        {displayQuestions.map((q, idx) => {
           const isMastered = masteredSet.has(q.id);
           const wasMissed = missedSet.has(q.id);
-          const isCurrent = !completed && currentCard?.id === q.id;
+          const isLiveCurrent = !completed && !setCompleted && liveCard?.id === q.id && !viewingQuestionId;
+          const isViewingThis = viewingQuestionId === q.id || (isLiveCurrent && !viewingQuestionId);
           let stateClass = 'pending';
           if (isMastered && !wasMissed) stateClass = 'mastered-first';
           else if (isMastered && wasMissed) stateClass = 'mastered-reinforced';
           else if (wasMissed) stateClass = 'missed-queued';
-          if (isCurrent) stateClass += ' current';
+          if (isViewingThis) stateClass += ' current';
+          if (viewingQuestionId === q.id) stateClass += ' reviewing';
+
+          const globalIdx = baseQuestions.findIndex(bq => bq.id === q.id);
+          const qNum = globalIdx !== -1 ? globalIdx + 1 : idx + 1;
+
           return (
-            <div
+            <button
               key={q.id}
+              type="button"
               className={`mastery-progress-segment ${stateClass}`}
-              title={`Q${idx + 1}: ${q.chapterTitle} (${
+              onClick={() => handleJumpToQuestion(q.id)}
+              title={`Q${qNum}: ${q.chapterTitle} (${
                 isMastered ? 'Mastered' : wasMissed ? 'Queued for Reinforcement' : 'Upcoming'
+              }) — Click to view`}
+              aria-label={`Question ${qNum}: ${q.chapterTitle} (${
+                isMastered ? 'Mastered' : wasMissed ? 'Queued' : 'Pending'
               })`}
             />
           );
@@ -483,10 +680,14 @@ export function ReinforcementQuizModal({
     masteredIds,
     everMissedIds,
     attemptsByQuestion,
+    historyByQuestion = {},
+    viewingQuestionId = null,
+    activeSetIndex,
     streak,
     bestStreak,
     totalSubmissions,
     completed,
+    setCompleted,
     isHardMode,
     rapidScan,
     memoryLocked,
@@ -496,12 +697,179 @@ export function ReinforcementQuizModal({
     multiItemRevealed,
   } = state;
 
+  const sets = useMemo(() => partitionQuizSets(baseQuestions, 10, 5), [baseQuestions]);
+  const currentSetIdx = activeSetIndex !== undefined ? activeSetIndex : (sets.length > 1 ? 0 : -1);
+
+  const displayQuestions = useMemo(() => {
+    if (currentSetIdx >= 0 && currentSetIdx < sets.length) {
+      return sets[currentSetIdx];
+    }
+    return baseQuestions;
+  }, [sets, currentSetIdx, baseQuestions]);
+
+  const liveCard = queue[cursor] as ActiveCard | undefined;
+  const isReviewing = Boolean(
+    viewingQuestionId && (!liveCard || viewingQuestionId !== liveCard.id)
+  );
+
+  const reviewingQuestion = isReviewing
+    ? baseQuestions.find(q => q.id === viewingQuestionId)
+    : undefined;
+
+  const currentCard: ActiveCard | undefined = isReviewing && reviewingQuestion
+    ? {
+        ...reviewingQuestion,
+        roundNumber: 1,
+        attemptNumber: attemptsByQuestion[reviewingQuestion.id] || 1,
+        isReinforcement: everMissedIds.includes(reviewingQuestion.id),
+      }
+    : liveCard;
+
   const masteredSet = useMemo(() => new Set(masteredIds), [masteredIds]);
   const everMissedSet = useMemo(() => new Set(everMissedIds), [everMissedIds]);
 
-  const currentCard = queue[cursor] as ActiveCard | undefined;
-  const isAnswered = selectedOption !== null;
-  const isCorrect = isAnswered && currentCard && selectedOption === currentCard.correctIndex;
+  const cardHistory = currentCard ? historyByQuestion[currentCard.id] : null;
+  const isCardMastered = currentCard ? masteredSet.has(currentCard.id) : false;
+  const isCardAnswered = Boolean(cardHistory || isCardMastered);
+
+  const effectiveSelectedOption = isReviewing
+    ? (cardHistory?.selectedOption ?? (isCardMastered ? currentCard?.correctIndex ?? null : null))
+    : selectedOption;
+
+  const isAnswered = isReviewing ? isCardAnswered : selectedOption !== null;
+  const isCorrect = isAnswered && currentCard && effectiveSelectedOption === currentCard.correctIndex;
+
+  const effectiveTypedFeedback = isReviewing
+    ? (cardHistory?.typedFeedback ?? (isCardMastered && currentCard ? { status: 'correct' as const, userText: currentCard.options[currentCard.correctIndex] } : null))
+    : typedFeedback;
+
+  const effectiveRecalledItems = isReviewing
+    ? (cardHistory?.recalledItems ?? (isCardMastered && currentCard ? (currentCard.expectedItems || []) : []))
+    : recalledItems;
+
+  const effectiveMultiItemRevealed = isReviewing
+    ? Boolean(cardHistory?.multiItemRevealed)
+    : multiItemRevealed;
+
+  const currentReviewIdx = currentCard ? displayQuestions.findIndex(q => q.id === currentCard.id) : -1;
+  const hasPrevReviewQ = currentReviewIdx > 0;
+  const hasNextReviewQ = currentReviewIdx >= 0 && currentReviewIdx + 1 < displayQuestions.length;
+  const prevReviewQ = hasPrevReviewQ ? displayQuestions[currentReviewIdx - 1] : null;
+  const nextReviewQ = hasNextReviewQ ? displayQuestions[currentReviewIdx + 1] : null;
+
+  const currentQGlobalIndex = currentCard
+    ? baseQuestions.findIndex(q => q.id === currentCard.id) + 1
+    : 1;
+  const liveQGlobalIndex = liveCard
+    ? baseQuestions.findIndex(q => q.id === liveCard.id) + 1
+    : 1;
+
+  const resumeLive = () => {
+    setState(prev => ({
+      ...prev,
+      viewingQuestionId: null,
+    }));
+    playStepSound(soundEnabled);
+  };
+
+  const jumpToQuestion = (qId: string) => {
+    setState(prev => {
+      const isLive = prev.queue[prev.cursor]?.id === qId;
+      return {
+        ...prev,
+        viewingQuestionId: isLive ? null : qId,
+      };
+    });
+    playStepSound(soundEnabled);
+  };
+
+  const goToAdjacentQuestion = (delta: number) => {
+    if (!currentCard) return;
+    const currentIdx = displayQuestions.findIndex(q => q.id === currentCard.id);
+    const targetIdx = currentIdx + delta;
+    if (targetIdx >= 0 && targetIdx < displayQuestions.length) {
+      const targetQ = displayQuestions[targetIdx];
+      if (targetQ.id === liveCard?.id && !completed && !setCompleted) {
+        setState(prev => ({ ...prev, viewingQuestionId: null }));
+      } else {
+        setState(prev => ({ ...prev, viewingQuestionId: targetQ.id }));
+      }
+      playStepSound(soundEnabled);
+    }
+  };
+
+  const onSelectSet = (targetSetIdx: number) => {
+    setState(prev => {
+      if (prev.activeSetIndex === targetSetIdx) return prev;
+      const setsList = partitionQuizSets(prev.baseQuestions, 10, 5);
+      const targetQuestions =
+        targetSetIdx === -1 ? prev.baseQuestions : setsList[targetSetIdx] || prev.baseQuestions;
+      const mSet = new Set(prev.masteredIds);
+      const isAllTargetMastered =
+        targetQuestions.length > 0 && targetQuestions.every(q => mSet.has(q.id));
+
+      const unmastered = targetQuestions.filter(q => !mSet.has(q.id));
+      const nextQuestions = unmastered.length > 0 ? unmastered : targetQuestions;
+
+      const nextQueue: ActiveCard[] = nextQuestions.map((q, idx) => ({
+        ...shuffleQuestionOptions(q, Date.now() + idx),
+        roundNumber: 1,
+        attemptNumber: (prev.attemptsByQuestion[q.id] || 0) + 1,
+        isReinforcement: false,
+      }));
+
+      playStepSound(prev.soundEnabled);
+
+      return {
+        ...prev,
+        activeSetIndex: targetSetIdx,
+        queue: nextQueue,
+        reinforcementQueue: [],
+        cursor: 0,
+        round: 1,
+        selectedOption: null,
+        showHint: false,
+        memoryLocked: false,
+        typedInput: '',
+        typedFeedback: null,
+        recalledItems: [],
+        multiItemRevealed: false,
+        viewingQuestionId: null,
+        setCompleted: isAllTargetMastered,
+      };
+    });
+  };
+
+  const replaySet = (setIdx: number) => {
+    playQuizStartSound(soundEnabled);
+    const setQuestions =
+      setIdx >= 0 && setIdx < sets.length ? sets[setIdx] : baseQuestions;
+    const freshQueue: ActiveCard[] = setQuestions.map((q, idx) => ({
+      ...shuffleQuestionOptions(q, Date.now() + idx),
+      roundNumber: 1,
+      attemptNumber: 1,
+      isReinforcement: false,
+    }));
+    setState(prev => ({
+      ...prev,
+      activeSetIndex: setIdx,
+      queue: freshQueue,
+      reinforcementQueue: [],
+      cursor: 0,
+      round: 1,
+      selectedOption: null,
+      showHint: false,
+      memoryLocked: false,
+      typedInput: '',
+      typedFeedback: null,
+      recalledItems: [],
+      multiItemRevealed: false,
+      viewingQuestionId: null,
+      setCompleted: false,
+      completed: false,
+      masteredIds: prev.masteredIds.filter(id => !setQuestions.some(sq => sq.id === id)),
+    }));
+  };
 
   const handleLockInMemory = () => {
     if (memoryLocked) return;
@@ -546,9 +914,16 @@ export function ReinforcementQuizModal({
   };
 
   const submitAnswer = (optionIdx: number) => {
-    if (selectedOption !== null || !currentCard) return;
+    if (selectedOption !== null || !currentCard || isReviewing) return;
     const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
     const isHit = optionIdx === currentCard.correctIndex;
+    const historyEntry = {
+      selectedOption: optionIdx,
+      typedFeedback: null,
+      recalledItems: [],
+      multiItemRevealed: false,
+      isCorrect: isHit,
+    };
 
     if (isHit) {
       const nextStreak = streak + 1;
@@ -556,6 +931,10 @@ export function ReinforcementQuizModal({
       setState(prev => ({
         ...prev,
         selectedOption: optionIdx,
+        historyByQuestion: {
+          ...prev.historyByQuestion,
+          [currentCard.id]: historyEntry,
+        },
         totalSubmissions: prev.totalSubmissions + 1,
         attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
         masteredIds: prev.masteredIds.includes(currentCard.id)
@@ -591,6 +970,10 @@ export function ReinforcementQuizModal({
           ...prev,
           queue: nextQueue,
           selectedOption: optionIdx,
+          historyByQuestion: {
+            ...prev.historyByQuestion,
+            [currentCard.id]: historyEntry,
+          },
           totalSubmissions: prev.totalSubmissions + 1,
           attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
           streak: 0,
@@ -608,12 +991,23 @@ export function ReinforcementQuizModal({
 
   const submitTypedAnswer = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (isAnswered || !currentCard) return;
+    if (isAnswered || !currentCard || isReviewing) return;
     const rawInput = typedInput.trim();
     if (!rawInput) return;
 
     const result = matchesSingleAnswer(rawInput, currentCard);
     const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
+    const expected = currentCard.acceptedAnswers?.[0] || currentCard.options[currentCard.correctIndex];
+
+    const historyEntry = {
+      selectedOption: result.hit ? currentCard.correctIndex : -1,
+      typedFeedback: result.hit
+        ? { status: 'correct' as const, userText: rawInput, matchedText: result.matched }
+        : { status: 'wrong' as const, userText: rawInput, matchedText: expected },
+      recalledItems: [],
+      multiItemRevealed: false,
+      isCorrect: result.hit,
+    };
 
     if (result.hit) {
       const nextStreak = streak + 1;
@@ -622,6 +1016,10 @@ export function ReinforcementQuizModal({
         ...prev,
         selectedOption: currentCard.correctIndex,
         typedFeedback: { status: 'correct', userText: rawInput, matchedText: result.matched },
+        historyByQuestion: {
+          ...prev.historyByQuestion,
+          [currentCard.id]: historyEntry,
+        },
         totalSubmissions: prev.totalSubmissions + 1,
         attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
         masteredIds: prev.masteredIds.includes(currentCard.id)
@@ -634,7 +1032,6 @@ export function ReinforcementQuizModal({
     } else {
       playWrongSound(soundEnabled);
       const reshuffled = shuffleQuestionOptions(currentCard, totalSubmissions + round + cursor + 1);
-      const expected = currentCard.acceptedAnswers?.[0] || currentCard.options[currentCard.correctIndex];
 
       const retryCard: ActiveCard = {
         ...reshuffled,
@@ -657,6 +1054,10 @@ export function ReinforcementQuizModal({
           queue: nextQueue,
           selectedOption: -1,
           typedFeedback: { status: 'wrong', userText: rawInput, matchedText: expected },
+          historyByQuestion: {
+            ...prev.historyByQuestion,
+            [currentCard.id]: historyEntry,
+          },
           totalSubmissions: prev.totalSubmissions + 1,
           attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
           streak: 0,
@@ -674,7 +1075,7 @@ export function ReinforcementQuizModal({
 
   const submitMultiItem = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (isAnswered || !currentCard || currentCard.kind !== 'multi_item') return;
+    if (isAnswered || !currentCard || currentCard.kind !== 'multi_item' || isReviewing) return;
     const rawInput = typedInput.trim();
     if (!rawInput) return;
     const normInput = normalizeAnswer(rawInput);
@@ -705,6 +1106,17 @@ export function ReinforcementQuizModal({
         const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
         const nextStreak = streak + 1;
         playCorrectSound(nextStreak, currentCard.isReinforcement, soundEnabled);
+        const historyEntry = {
+          selectedOption: currentCard.correctIndex,
+          typedFeedback: {
+            status: 'correct' as const,
+            userText: `All ${expectedList.length} items recalled!`,
+            matchedText: matchedItem!,
+          },
+          recalledItems: nextRecalled,
+          multiItemRevealed: false,
+          isCorrect: true,
+        };
         setState(prev => ({
           ...prev,
           typedInput: '',
@@ -714,6 +1126,10 @@ export function ReinforcementQuizModal({
             status: 'correct',
             userText: `All ${expectedList.length} items recalled!`,
             matchedText: matchedItem!,
+          },
+          historyByQuestion: {
+            ...prev.historyByQuestion,
+            [currentCard.id]: historyEntry,
           },
           totalSubmissions: prev.totalSubmissions + 1,
           attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
@@ -736,7 +1152,7 @@ export function ReinforcementQuizModal({
   };
 
   const giveUpMultiItem = () => {
-    if (isAnswered || !currentCard) return;
+    if (isAnswered || !currentCard || isReviewing) return;
     const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
     playWrongSound(soundEnabled);
     const reshuffled = shuffleQuestionOptions(currentCard, totalSubmissions + round + cursor + 1);
@@ -748,6 +1164,14 @@ export function ReinforcementQuizModal({
       isReinforcement: true,
       isSpacedRecall: true,
       priorTrapOptionText: 'Incomplete recall',
+    };
+
+    const historyEntry = {
+      selectedOption: -1,
+      typedFeedback: null,
+      recalledItems,
+      multiItemRevealed: true,
+      isCorrect: false,
     };
 
     setState(prev => {
@@ -762,6 +1186,10 @@ export function ReinforcementQuizModal({
         queue: nextQueue,
         selectedOption: -1,
         multiItemRevealed: true,
+        historyByQuestion: {
+          ...prev.historyByQuestion,
+          [currentCard.id]: historyEntry,
+        },
         totalSubmissions: prev.totalSubmissions + 1,
         attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
         streak: 0,
@@ -777,6 +1205,17 @@ export function ReinforcementQuizModal({
   };
 
   const advanceNext = () => {
+    if (isReviewing) {
+      if (hasNextReviewQ) {
+        goToAdjacentQuestion(1);
+      } else if (liveCard && !completed && !setCompleted) {
+        resumeLive();
+      } else {
+        setState(prev => ({ ...prev, viewingQuestionId: null }));
+      }
+      return;
+    }
+
     if (!isAnswered) return;
 
     if (cursor + 1 < queue.length) {
@@ -791,6 +1230,7 @@ export function ReinforcementQuizModal({
         recalledItems: [],
         multiItemRevealed: false,
         cursor: prev.cursor + 1,
+        viewingQuestionId: null,
       }));
       return;
     }
@@ -811,20 +1251,41 @@ export function ReinforcementQuizModal({
         reinforcementQueue: [],
         cursor: 0,
         round: prev.round + 1,
+        viewingQuestionId: null,
       }));
     } else {
+      const nextMastered = new Set(masteredIds);
+      const allLessonMastered = baseQuestions.every(q => nextMastered.has(q.id));
+
       playVictoryFanfare(soundEnabled);
-      setState(prev => ({
-        ...prev,
-        selectedOption: null,
-        showHint: false,
-        memoryLocked: false,
-        typedInput: '',
-        typedFeedback: null,
-        recalledItems: [],
-        multiItemRevealed: false,
-        completed: true,
-      }));
+      if (allLessonMastered) {
+        setState(prev => ({
+          ...prev,
+          selectedOption: null,
+          showHint: false,
+          memoryLocked: false,
+          typedInput: '',
+          typedFeedback: null,
+          recalledItems: [],
+          multiItemRevealed: false,
+          viewingQuestionId: null,
+          setCompleted: true,
+          completed: true,
+        }));
+      } else {
+        setState(prev => ({
+          ...prev,
+          selectedOption: null,
+          showHint: false,
+          memoryLocked: false,
+          typedInput: '',
+          typedFeedback: null,
+          recalledItems: [],
+          multiItemRevealed: false,
+          viewingQuestionId: null,
+          setCompleted: true,
+        }));
+      }
     }
   };
 
@@ -833,8 +1294,8 @@ export function ReinforcementQuizModal({
     playQuizStartSound(soundEnabled);
     const source =
       missedOnly && everMissedSet.size > 0
-        ? baseQuestions.filter(q => everMissedSet.has(q.id))
-        : baseQuestions;
+        ? displayQuestions.filter(q => everMissedSet.has(q.id))
+        : displayQuestions;
     const freshQueue = source.map((q, idx) => ({
       ...shuffleQuestionOptions(q, Date.now() + idx),
       roundNumber: 1,
@@ -855,12 +1316,14 @@ export function ReinforcementQuizModal({
       typedFeedback: null,
       recalledItems: [],
       multiItemRevealed: false,
-      masteredIds: [],
+      masteredIds: missedOnly ? prev.masteredIds : prev.masteredIds.filter(id => !displayQuestions.some(dq => dq.id === id)),
       everMissedIds: missedOnly ? prev.everMissedIds : [],
       attemptsByQuestion: missedOnly ? prev.attemptsByQuestion : {},
       streak: 0,
       totalSubmissions: 0,
       completed: false,
+      setCompleted: false,
+      viewingQuestionId: null,
     }));
   };
 
@@ -868,12 +1331,29 @@ export function ReinforcementQuizModal({
     const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target instanceof Element ? e.target : null;
       if (target?.closest('textarea,select,[contenteditable="true"],input:not([type="range"])')) return;
-      if (e.key === 'Escape' && !embedded) {
-        e.preventDefault();
-        onClose();
+      if (e.key === 'Escape') {
+        if (isReviewing) {
+          e.preventDefault();
+          resumeLive();
+          return;
+        }
+        if (!embedded) {
+          e.preventDefault();
+          onClose();
+          return;
+        }
+      }
+      if (isReviewing) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          goToAdjacentQuestion(-1);
+        } else if (e.key === 'ArrowRight' || e.key === 'Enter') {
+          e.preventDefault();
+          goToAdjacentQuestion(1);
+        }
         return;
       }
-      if (completed || !currentCard) return;
+      if (completed || setCompleted || !currentCard) return;
       if (!isAnswered) {
         const numIdx = ['1', '2', '3', '4'].indexOf(e.key);
         const letterIdx = ['a', 'b', 'c', 'd', 'A', 'B', 'C', 'D'].indexOf(e.key);
@@ -904,6 +1384,10 @@ export function ReinforcementQuizModal({
   const firstTryPerfectCount = baseQuestions.filter(q => !everMissedSet.has(q.id) && masteredSet.has(q.id)).length;
   const firstTryAccuracy = Math.round((firstTryPerfectCount / Math.max(1, totalCount)) * 100);
 
+  const setFirstTryCount = displayQuestions.filter(q => !everMissedSet.has(q.id) && masteredSet.has(q.id)).length;
+  const setFirstTryAccuracy = Math.round((setFirstTryCount / Math.max(1, displayQuestions.length)) * 100);
+  const setReinforcedCount = displayQuestions.filter(q => everMissedSet.has(q.id) && masteredSet.has(q.id)).length;
+
   const kindLabel = (kind: QuizQuestion['kind']) => {
     if (kind === 'mechanism') return 'Visual Mechanism';
     if (kind === 'safeguard') return 'Misreading Safeguard';
@@ -923,9 +1407,8 @@ export function ReinforcementQuizModal({
         />
       )}
 
-
       {/* Main Body */}
-      {completed ? (
+      {completed && !isReviewing ? (
         <div className="mastery-completion-body">
           <div className="mastery-trophy-hero">
             <div className="mastery-trophy-ring">
@@ -992,6 +1475,14 @@ export function ReinforcementQuizModal({
                       <span className={`mastery-status-pill ${reinforced ? 'reinforced' : 'first-try'}`}>
                         {reinforced ? `Reinforced (${tries} tries)` : '1st Try Mastered'}
                       </span>
+                      <button
+                        type="button"
+                        className="mastery-inspect-link"
+                        onClick={() => jumpToQuestion(q.id)}
+                        title="View this question in review mode"
+                      >
+                        <Eye size={12} /> View
+                      </button>
                       {onJumpToChapter && (
                         <button
                           type="button"
@@ -1042,9 +1533,173 @@ export function ReinforcementQuizModal({
             </button>
           </footer>
         </div>
+      ) : setCompleted && !isReviewing && sets.length > 1 && currentSetIdx >= 0 ? (
+        <div className="mastery-completion-body set-completion">
+          <div className="mastery-trophy-hero">
+            <div className="mastery-trophy-ring">
+              <Sparkles size={36} />
+            </div>
+            <span className="mastery-kicker">
+              SET {currentSetIdx + 1} OF {sets.length} COMPLETE
+            </span>
+            <h3>Set {currentSetIdx + 1} Mastered!</h3>
+            <p>
+              You have mastered all {displayQuestions.length} concepts in Set {currentSetIdx + 1}.{' '}
+              {currentSetIdx + 1 < sets.length
+                ? `Ready to advance to Set ${currentSetIdx + 2}?`
+                : 'All sets in this quiz have been mastered!'}
+            </p>
+          </div>
+
+          <div className="mastery-metrics-grid">
+            <div className="mastery-metric-card">
+              <span>SET ACCURACY</span>
+              <strong>{setFirstTryAccuracy}%</strong>
+              <small>{setFirstTryCount} of {displayQuestions.length} on 1st attempt</small>
+            </div>
+            <div className="mastery-metric-card">
+              <span>SET REINFORCED</span>
+              <strong>{setReinforcedCount}</strong>
+              <small>Retried until 100% correct</small>
+            </div>
+            <div className="mastery-metric-card">
+              <span>OVERALL MASTERY</span>
+              <strong>{masteredSet.size} / {totalCount}</strong>
+              <small>{Math.round((masteredSet.size / Math.max(1, totalCount)) * 100)}% overall</small>
+            </div>
+            <div className="mastery-metric-card">
+              <span>BEST STREAK</span>
+              <strong>{bestStreak}</strong>
+              <small>Consecutive right answers</small>
+            </div>
+          </div>
+
+          <div className="mastery-breakdown-list">
+            <h4>SET {currentSetIdx + 1} CONCEPT BREAKDOWN</h4>
+            <div className="mastery-breakdown-scroll">
+              {displayQuestions.map((q, idx) => {
+                const tries = attemptsByQuestion[q.id] || 1;
+                const reinforced = everMissedSet.has(q.id);
+                const globalIdx = baseQuestions.findIndex(bq => bq.id === q.id);
+                return (
+                  <div key={q.id} className="mastery-breakdown-row">
+                    <div className="mastery-breakdown-left">
+                      <span className="mastery-q-index">Q{globalIdx !== -1 ? globalIdx + 1 : idx + 1}</span>
+                      <div>
+                        <strong>{q.prompt}</strong>
+                        <small>{q.chapterTitle} · {kindLabel(q.kind)}</small>
+                      </div>
+                    </div>
+                    <div className="mastery-breakdown-right">
+                      <span className={`mastery-status-pill ${reinforced ? 'reinforced' : 'first-try'}`}>
+                        {reinforced ? `Reinforced (${tries} tries)` : '1st Try Mastered'}
+                      </span>
+                      <button
+                        type="button"
+                        className="mastery-inspect-link"
+                        onClick={() => jumpToQuestion(q.id)}
+                        title="View this question in review mode"
+                      >
+                        <Eye size={12} /> View
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <footer className="mastery-completion-footer">
+            {currentSetIdx + 1 < sets.length ? (
+              <button
+                type="button"
+                className="mastery-primary-btn"
+                onClick={() => onSelectSet(currentSetIdx + 1)}
+              >
+                Continue to Set {currentSetIdx + 2} ({sets[currentSetIdx + 1].length} Qs) <ArrowRight size={15} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="mastery-primary-btn"
+                onClick={() => setState(prev => ({ ...prev, completed: true }))}
+              >
+                Full Lesson Scorecard <Trophy size={15} />
+              </button>
+            )}
+            <button
+              type="button"
+              className="mastery-secondary-btn"
+              onClick={() => jumpToQuestion(displayQuestions[0].id)}
+            >
+              <Eye size={15} /> Review Set Questions
+            </button>
+            <button
+              type="button"
+              className="mastery-secondary-btn"
+              onClick={() => replaySet(currentSetIdx)}
+            >
+              <RotateCcw size={15} /> Replay Set {currentSetIdx + 1}
+            </button>
+          </footer>
+        </div>
       ) : (
         currentCard && (
           <div className="mastery-question-body">
+            {/* Review Mode Banner */}
+            {isReviewing && (
+              <div className="mastery-review-banner">
+                <div className="mastery-review-badge">
+                  <Eye size={13} />
+                  <span>
+                    Viewing Q{currentQGlobalIndex} of {baseQuestions.length} · {isCorrect ? 'Mastered' : 'Reinforced'}
+                  </span>
+                </div>
+                <div className="mastery-review-actions">
+                  {hasPrevReviewQ && prevReviewQ && (
+                    <button
+                      type="button"
+                      className="mastery-review-nav-btn"
+                      onClick={() => goToAdjacentQuestion(-1)}
+                      title="View previous question"
+                    >
+                      <ArrowLeft size={13} /> Prev
+                    </button>
+                  )}
+                  {hasNextReviewQ && nextReviewQ && (
+                    <button
+                      type="button"
+                      className="mastery-review-nav-btn"
+                      onClick={() => goToAdjacentQuestion(1)}
+                      title="View next question"
+                    >
+                      Next <ArrowRight size={13} />
+                    </button>
+                  )}
+                  {liveCard && !completed && !setCompleted && (
+                    <button
+                      type="button"
+                      className="mastery-review-resume-btn"
+                      onClick={resumeLive}
+                      title="Return to the active question"
+                    >
+                      Resume Quiz (Q{liveQGlobalIndex}) <ArrowRight size={13} />
+                    </button>
+                  )}
+                  {(completed || setCompleted) && (
+                    <button
+                      type="button"
+                      className="mastery-review-resume-btn"
+                      onClick={() => setState(prev => ({ ...prev, viewingQuestionId: null }))}
+                      title="Return to score summary"
+                    >
+                      Scorecard <Trophy size={13} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Question Context Row */}
             <div className="mastery-question-meta">
               <div className="mastery-meta-tags">
@@ -1061,6 +1716,11 @@ export function ReinforcementQuizModal({
                 <span className="mastery-beat-tag">
                   Beat {currentCard.chapterIndex + 1} of {lesson.chapters.length} · {currentCard.chapterTitle}
                 </span>
+                {sets.length > 1 && currentSetIdx >= 0 && (
+                  <span className="mastery-beat-tag" style={{ color: '#edca82' }}>
+                    Set {currentSetIdx + 1}
+                  </span>
+                )}
                 {currentCard.isReinforcement && !currentCard.isSpacedRecall && (
                   <span className="mastery-reinforce-pill">
                     <Repeat size={11} /> Reinforcement Retry #{currentCard.attemptNumber}
@@ -1108,7 +1768,7 @@ export function ReinforcementQuizModal({
               </div>
             </div>
 
-            {/* 3-Card Short-Horizon Spaced Recall Banner (Memory Cue Anchor removed as requested) */}
+            {/* 3-Card Short-Horizon Spaced Recall Banner */}
             {currentCard.isSpacedRecall && (
               <div className="mastery-spaced-banner">
                 <div className="mastery-spaced-badge">
@@ -1133,10 +1793,10 @@ export function ReinforcementQuizModal({
               <div className="mastery-multi-slots-container">
                 <div className="mastery-multi-slots-header">
                   <span className="mastery-multi-slots-title">
-                    Recalled {recalledItems.length} of {(currentCard.expectedItems || []).length}{' '}
+                    Recalled {effectiveRecalledItems.length} of {(currentCard.expectedItems || []).length}{' '}
                     {currentCard.itemLabel || 'items'}:
                   </span>
-                  {recalledItems.length === (currentCard.expectedItems || []).length && (
+                  {effectiveRecalledItems.length === (currentCard.expectedItems || []).length && (
                     <span className="mastery-all-recalled-badge">
                       <CheckCircle2 size={13} /> All Recalled!
                     </span>
@@ -1144,8 +1804,8 @@ export function ReinforcementQuizModal({
                 </div>
                 <div className="mastery-multi-slots-grid">
                   {(currentCard.expectedItems || []).map((item, idx) => {
-                    const isRecalled = recalledItems.includes(item);
-                    const isRevealed = multiItemRevealed && !isRecalled;
+                    const isRecalled = effectiveRecalledItems.includes(item);
+                    const isRevealed = effectiveMultiItemRevealed && !isRecalled;
                     return (
                       <div
                         key={`${currentCard.id}-slot-${idx}`}
@@ -1164,7 +1824,7 @@ export function ReinforcementQuizModal({
                   })}
                 </div>
 
-                {!isAnswered && (
+                {!isAnswered && !isReviewing && (
                   <form onSubmit={submitMultiItem} className="mastery-hard-input-form">
                     <div className="mastery-hard-input-wrap">
                       <input
@@ -1203,14 +1863,14 @@ export function ReinforcementQuizModal({
                 <div className="mastery-hard-input-wrap">
                   <input
                     type="text"
-                    value={typedInput}
-                    disabled={isAnswered}
+                    value={isReviewing ? (effectiveTypedFeedback?.userText || '') : typedInput}
+                    disabled={isAnswered || isReviewing}
                     onChange={e => setState(prev => ({ ...prev, typedInput: e.target.value }))}
                     placeholder="Type the correct term, concept, or condition..."
                     className="mastery-hard-input"
                     autoFocus
                   />
-                  {!isAnswered && (
+                  {!isAnswered && !isReviewing && (
                     <button
                       type="submit"
                       className="mastery-hard-submit-btn"
@@ -1220,16 +1880,16 @@ export function ReinforcementQuizModal({
                     </button>
                   )}
                 </div>
-                {typedFeedback && (
-                  <div className={`mastery-typed-callout ${typedFeedback.status}`}>
-                    {typedFeedback.status === 'correct' ? (
+                {effectiveTypedFeedback && (
+                  <div className={`mastery-typed-callout ${effectiveTypedFeedback.status}`}>
+                    {effectiveTypedFeedback.status === 'correct' ? (
                       <div className="mastery-typed-line ok">
                         <CheckCircle2 size={16} />
                         <span>
-                          Your answer: <strong>"{typedFeedback.userText}"</strong>{' '}
-                          {typedFeedback.matchedText &&
-                            typedFeedback.matchedText.toLowerCase() !== typedFeedback.userText.toLowerCase() && (
-                              <small>(Matched: {typedFeedback.matchedText})</small>
+                          Your answer: <strong>"{effectiveTypedFeedback.userText}"</strong>{' '}
+                          {effectiveTypedFeedback.matchedText &&
+                            effectiveTypedFeedback.matchedText.toLowerCase() !== effectiveTypedFeedback.userText.toLowerCase() && (
+                              <small>(Matched: {effectiveTypedFeedback.matchedText})</small>
                             )}
                         </span>
                       </div>
@@ -1237,8 +1897,8 @@ export function ReinforcementQuizModal({
                       <div className="mastery-typed-line bad">
                         <XCircle size={16} />
                         <span>
-                          Your answer: <strong>"{typedFeedback.userText || '(empty)'}"</strong> · Expected:{' '}
-                          <strong>"{typedFeedback.matchedText}"</strong>
+                          Your answer: <strong>"{effectiveTypedFeedback.userText || '(empty)'}"</strong> · Expected:{' '}
+                          <strong>"{effectiveTypedFeedback.matchedText}"</strong>
                         </span>
                       </div>
                     )}
@@ -1251,7 +1911,7 @@ export function ReinforcementQuizModal({
             {!isHardMode && (
               <div className="mastery-options-list">
                 {currentCard.options.map((opt, idx) => {
-                  const isThisSelected = selectedOption === idx;
+                  const isThisSelected = effectiveSelectedOption === idx;
                   const isThisCorrect = idx === currentCard.correctIndex;
                   const isPriorTrap = Boolean(
                     currentCard.isSpacedRecall &&
@@ -1272,7 +1932,7 @@ export function ReinforcementQuizModal({
                     <button
                       key={`${currentCard.id}-opt-${idx}`}
                       type="button"
-                      disabled={isAnswered}
+                      disabled={isAnswered || isReviewing}
                       onClick={() => submitAnswer(idx)}
                       className={`mastery-option-btn ${state} ${isPriorTrap ? 'prior-trap' : ''} ${isThisCorrect && memoryLocked ? 'memory-locked' : ''}`}
                     >
@@ -1289,7 +1949,7 @@ export function ReinforcementQuizModal({
                         {!rapidScan && supportingText && (
                           <div className="mastery-option-supporting">{supportingText}</div>
                         )}
-                        {isAnswered && !isCorrect && isThisCorrect && (
+                        {isAnswered && !isCorrect && isThisCorrect && !isReviewing && (
                           <button
                             type="button"
                             className={`mastery-lock-memory-btn ${memoryLocked ? 'locked' : ''}`}
@@ -1319,7 +1979,12 @@ export function ReinforcementQuizModal({
               <div className={`mastery-feedback-panel ${isCorrect ? 'correct' : 'missed'}`}>
                 <div className="mastery-feedback-main">
                   <div className="mastery-feedback-title">
-                    {isCorrect ? (
+                    {isReviewing ? (
+                      <>
+                        {isCorrect ? <CheckCircle2 size={18} /> : <Repeat size={18} />}
+                        <strong>{isCorrect ? 'Mastered Concept' : 'Reinforced Concept'}</strong>
+                      </>
+                    ) : isCorrect ? (
                       <>
                         <CheckCircle2 size={18} />
                         <strong>
@@ -1338,7 +2003,7 @@ export function ReinforcementQuizModal({
                     )}
                   </div>
 
-                  {isHardMode && !isCorrect && (
+                  {isHardMode && !isCorrect && !isReviewing && (
                     <div style={{ marginTop: 4 }}>
                       <button
                         type="button"
@@ -1359,7 +2024,38 @@ export function ReinforcementQuizModal({
                   )}
                 </div>
 
-                {cursor + 1 < queue.length ? (
+                {isReviewing ? (
+                  <div className="mastery-round-complete-actions">
+                    {hasNextReviewQ && nextReviewQ ? (
+                      <button
+                        type="button"
+                        className="mastery-continue-btn"
+                        onClick={() => goToAdjacentQuestion(1)}
+                        autoFocus
+                      >
+                        Next Question <ArrowRight size={16} />
+                      </button>
+                    ) : liveCard && !completed && !setCompleted ? (
+                      <button
+                        type="button"
+                        className="mastery-continue-btn"
+                        onClick={resumeLive}
+                        autoFocus
+                      >
+                        Resume Quiz <ArrowRight size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="mastery-continue-btn"
+                        onClick={() => setState(prev => ({ ...prev, viewingQuestionId: null }))}
+                        autoFocus
+                      >
+                        Scorecard <ArrowRight size={16} />
+                      </button>
+                    )}
+                  </div>
+                ) : cursor + 1 < queue.length ? (
                   <button type="button" className="mastery-continue-btn" onClick={advanceNext} autoFocus>
                     Next Question <ArrowRight size={16} />
                   </button>
@@ -1399,17 +2095,22 @@ export function ReinforcementQuizModal({
               </div>
             )}
 
-            {!isAnswered && !isHardMode && (
+            {!isAnswered && !isHardMode && !isReviewing && (
               <div className="mastery-keyboard-tip">
                 Press <kbd>A</kbd>–<kbd>D</kbd> or <kbd>1</kbd>–<kbd>4</kbd> to answer · Missed questions return 3 cards later for spaced recall
               </div>
             )}
-            {isAnswered && !isCorrect && (
+            {isReviewing && (
+              <div className="mastery-keyboard-tip">
+                Press <kbd>←</kbd> / <kbd>→</kbd> or click progress bar to review questions · Press <kbd>Esc</kbd> to return to active quiz
+              </div>
+            )}
+            {isAnswered && !isCorrect && !isReviewing && (
               <div className="mastery-keyboard-tip">
                 Press <kbd>L</kbd> to Lock in Memory · Press <kbd>Enter</kbd> or <kbd>Space</kbd> for next card
               </div>
             )}
-            {!isAnswered && isHardMode && (
+            {!isAnswered && isHardMode && !isReviewing && (
               <div className="mastery-keyboard-tip">
                 Type your answer and press <kbd>Enter</kbd> · Active recall reinforces memory retention
               </div>

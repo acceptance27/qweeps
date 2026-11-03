@@ -771,13 +771,20 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
                 _clean_beat_title(n_title).lower(),
             })
 
+            # Mask answer term in the prompt body to avoid leaking the answer (e.g. "Appointed _____ in 1593")
+            masked_body = n_body
+            leak_candidates = [n_title, base_title, _clean_beat_title(n_title)]
+            for term in sorted(set(leak_candidates), key=len, reverse=True):
+                if term and len(term) >= 3:
+                    masked_body = re.sub(rf"(?i)\b{re.escape(term)}\b", "_____", masked_body)
+
             questions.append({
                 "id": qid_m,
                 "chapterId": cid,
                 "chapterIndex": c_idx,
                 "chapterTitle": ch.get("title") or clean_title,
                 "kind": "mechanism",
-                "prompt": f"In \"{clean_title}\", which concept, condition, or component is defined as: \"{n_body}\"?",
+                "prompt": f"In \"{clean_title}\", which concept, condition, or component is defined as: \"{masked_body}\"?",
                 "options": options_m,
                 "correctIndex": options_m.index(n_title),
                 "explanation": f"In Beat {c_idx + 1} ({clean_title}), {n_title}: {n_body}",

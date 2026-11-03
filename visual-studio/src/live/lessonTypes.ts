@@ -215,13 +215,22 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
         }
       }
       const titleOptions = hashSort([target.title, ...otherTitles.slice(0, 3)], `${qidTerm}-opts`);
+      // Mask answer terms in prompt to avoid giving away the answer in the question itself
+      let maskedBody = target.body;
+      const baseTitle = target.title.replace(/\s*\(.*?\)/, '').trim();
+      const leakTerms = [target.title, baseTitle, cleanTitle(target.title)].filter(t => t && t.length >= 3);
+      for (const term of leakTerms) {
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        maskedBody = maskedBody.replace(new RegExp(`\\b${escaped}\\b`, 'gi'), '_____');
+      }
+
       questions.push({
         id: qidTerm,
         chapterId: ch.id,
         chapterIndex: cIdx,
         chapterTitle: ch.title,
         kind: 'mechanism',
-        prompt: `In "${cTitle}", which concept or component is defined as: "${target.body}"?`,
+        prompt: `In "${cTitle}", which concept or component is defined as: "${maskedBody}"?`,
         options: titleOptions,
         correctIndex: titleOptions.indexOf(target.title),
         explanation: `In Beat ${cIdx + 1} (${cTitle}), ${target.title}: ${target.body}`,
