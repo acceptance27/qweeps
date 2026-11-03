@@ -73,10 +73,123 @@ export default function LiveLessonLoader() {
   const [job, setJob] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [busyQuiz, setBusyQuiz] = useState(false);
+  const [busyLessonQuizId, setBusyLessonQuizId] = useState<string | null>(null);
 
   const initialized = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const syncAvailable = useRef(false);
+
+  async function generateQuizOnly(doc = selected, q = question) {
+    if (busy || busyQuiz) return;
+    if (!q.trim() && !doc) {
+      setError('Please enter a learning topic or select a source document.');
+      return;
+    }
+    setBusyQuiz(true);
+    setError('');
+    try {
+      const existing = catalogLessons.find(
+        l => (doc && l.id === doc) || (q && l.question?.toLowerCase().includes(q.trim().toLowerCase()))
+      );
+      const res = await api<{
+        quiz: any[];
+        count: number;
+        lessonId?: string;
+        lesson?: LiveLesson;
+      }>('live/quiz', {
+        lessonId: existing?.id,
+        documentId: doc || undefined,
+        question: q || undefined,
+        topic: q || undefined,
+      });
+
+      if (!res?.quiz || res.quiz.length === 0) {
+        throw new Error('No quiz questions were returned.');
+      }
+
+      setOpenQuizOnLoad(true);
+      setGenerateQuiz(true);
+
+      let targetLesson: LiveLesson | null = res.lesson || null;
+      if (!targetLesson && res.lessonId) {
+        try {
+          targetLesson = await api<LiveLesson>(`live/lessons/${res.lessonId}`);
+        } catch {
+          // ignore
+        }
+      }
+      if (!targetLesson && existing) {
+        try {
+          targetLesson = await api<LiveLesson>(`live/lessons/${existing.id}`);
+        } catch {
+          // ignore
+        }
+      }
+
+      if (targetLesson) {
+        ready({ ...targetLesson, quiz: res.quiz });
+      } else {
+        const titleText = q.trim() || 'Reinforcement Quiz';
+        const virtualLesson: LiveLesson = {
+          id: res.lessonId || 'standalone_quiz',
+          title: titleText,
+          question: q.trim() || `Mastery Quiz: ${titleText}`,
+          duration: 30,
+          kind: 'live_generated',
+          chapters: [
+            {
+              id: 'quiz-beat-1',
+              title: titleText,
+              question: q.trim() || `Mastery Quiz: ${titleText}`,
+              insight: 'Interactive reinforcement mastery quiz',
+              start: 0,
+              end: 30,
+              narration: 'Begin the interactive reinforcement quiz.',
+              cues: [],
+              visual: { takeaway: titleText, nodes: [] },
+            },
+          ],
+          quiz: res.quiz,
+        };
+        ready(virtualLesson);
+      }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyQuiz(false);
+    }
+  }
+
+  async function generateQuizForLesson(lessonId: string) {
+    if (busy || busyQuiz || busyLessonQuizId) return;
+    setBusyLessonQuizId(lessonId);
+    setError('');
+    try {
+      const res = await api<{
+        quiz: any[];
+        count: number;
+        lessonId?: string;
+        lesson?: LiveLesson;
+      }>('live/quiz', { lessonId });
+
+      if (!res?.quiz || res.quiz.length === 0) {
+        throw new Error('Could not generate quiz for this lesson.');
+      }
+
+      setOpenQuizOnLoad(true);
+      setGenerateQuiz(true);
+      let targetLesson = res.lesson;
+      if (!targetLesson) {
+        targetLesson = await api<LiveLesson>(`live/lessons/${lessonId}`);
+      }
+      ready({ ...targetLesson, quiz: res.quiz });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyLessonQuizId(null);
+    }
+  }
 
   async function start(
     q = question,
@@ -150,7 +263,7 @@ export default function LiveLessonLoader() {
   }
 
   const ready = (value: LiveLesson) => {
-    if (value.kind === 'live_generated' && !value.audioTrack && syncAvailable.current && params.get('nosync') !== '1') {
+    if (!openQuizOnLoad && params.get('quiz') !== '1' && value.kind === 'live_generated' && !value.audioTrack && syncAvailable.current && params.get('nosync') !== '1') {
       void api<LiveJob>('live/synchronize', { lessonId: value.id })
         .then(j => setJob(j.id))
         .catch(e => setError(e.message));
@@ -272,7 +385,7 @@ export default function LiveLessonLoader() {
                             <span className="live-generated-lesson-arrow">→</span>
                           </div>
                         </a>
-                        {item.quizCount > 0 && (
+                        {item.quizCount > 0 ? (
                           <a
                             href={`/?lesson=${item.id}&quiz=1&beat=quiz`}
                             className="live-generated-lesson-quiz-btn"
@@ -280,6 +393,16 @@ export default function LiveLessonLoader() {
                           >
                             🧠 Quiz ({item.quizCount})
                           </a>
+                        ) : (
+                          <button
+                            type="button"
+                            className="live-generated-lesson-quiz-btn quiz-action-generate"
+                            disabled={busyQuiz || busyLessonQuizId === item.id}
+                            onClick={() => void generateQuizForLesson(item.id)}
+                            title="Generate reinforcement quiz for this lesson"
+                          >
+                            {busyLessonQuizId === item.id ? 'Generating…' : '🧠 + Quiz'}
+                          </button>
                         )}
                       </div>
                     );
@@ -402,13 +525,24 @@ export default function LiveLessonLoader() {
                   </select>
                 </label>
               )}
-              <div>
-                <button type="button" disabled={busy} onClick={() => input.current?.click()}>
+              <div className="live-generator-actions">
+                <button type="button" disabled={busy || busyQuiz} onClick={() => input.current?.click()}>
                   Attach PDF
                 </button>
-                <button type="submit" disabled={busy || !question.trim()}>
-                  {busy ? 'Reading…' : generateQuiz ? 'Teach me + Generate Quiz' : 'Teach me visually'}
-                </button>
+                <div className="live-generator-action-group">
+                  <button
+                    type="button"
+                    className="live-menu-generate-quiz-btn"
+                    disabled={busy || busyQuiz || (!question.trim() && !selected)}
+                    onClick={() => void generateQuizOnly()}
+                    title="Generate reinforcement quiz only (instant, without building animations)"
+                  >
+                    {busyQuiz ? '🧠 Generating Quiz…' : '🧠 Generate Quiz'}
+                  </button>
+                  <button type="submit" disabled={busy || busyQuiz || !question.trim()}>
+                    {busy ? 'Reading…' : generateQuiz ? 'Teach me + Generate Quiz' : 'Teach me visually'}
+                  </button>
+                </div>
               </div>
             </form>
             {error && (

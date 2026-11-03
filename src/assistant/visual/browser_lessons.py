@@ -1093,21 +1093,134 @@ Rules:
         except Exception:
             return _build_reinforcement_quiz(lesson)
 
+    def _direct_document_quiz(self, document: dict | None, question: str) -> list[dict]:
+        pages_text = ""
+        doc_title = ""
+        if document and document.get("pages"):
+            doc_title = document.get("title", "")
+            pages_text = "\n---\n".join(
+                f"Page {p.get('page')}: {str(p.get('text', ''))[:1200]}"
+                for p in document["pages"][:12]
+            )
+        instruction = """You are the QWEEPS visual learning reinforcement quiz generator.
+Generate 10 to 15 high-rigor multiple-choice mastery questions covering key concepts, mechanisms, and nuances in the provided source material.
+Return JSON only; no markdown fences or tools:
+{"questions":[{"id":"q-1","chapterId":"beat-1","chapterIndex":0,"chapterTitle":"Core Concept","kind":"concept","prompt":"Clear conceptual question","options":["Option A","Option B","Option C","Option D"],"correctIndex":0,"explanation":"Detailed explanation of why the correct option is right","safeguardNote":"Common misconception to avoid","hint":"Short cue pointing to the key idea"}]}
+Rules:
+1. Every question MUST have exactly 4 distinct options and a valid correctIndex (0..3).
+2. Ground every question strictly in the provided text.
+3. Keep all native proper nouns and historical titles intact."""
+        payload = {"title": doc_title, "question": question, "source": pages_text}
+        def validate(r):
+            qs = [q for q in (r.get("questions") or []) if isinstance(q, dict) and len(q.get("options") or []) == 4]
+            if len(qs) < 3:
+                raise PlanError("Insufficient valid questions returned")
+            return qs
+        try:
+            return _model_json(self.llm, instruction, payload, validate, tokens=4800)
+        except Exception:
+            return _build_reinforcement_quiz({
+                "title": doc_title or question or "Quiz",
+                "question": question or "Reinforcement Quiz",
+                "chapters": [{
+                    "id": "beat-1", "title": doc_title or question or "Core Topic",
+                    "question": question or "Topic Overview", "insight": "Core understanding",
+                    "safeguard": "Review core concepts", "visual": {"takeaway": doc_title or question, "nodes": []}
+                }]
+            })
+
     def generate_quiz(self,lesson_or_id,*,persist=True,force_llm=False):
+        lesson_id = None
+        base = {}
+        lesson = {}
+        target_doc_id = None
+        target_q = ""
         if isinstance(lesson_or_id,str):
-            base=self._base_lesson(lesson_or_id)
-            lesson=self.lesson(lesson_or_id)
             lesson_id=lesson_or_id
+            base=self._base_lesson(lesson_id)
+            lesson=self.lesson(lesson_id)
         elif isinstance(lesson_or_id,dict):
-            base=lesson_or_id
-            lesson=lesson_or_id
-            lesson_id=lesson.get('id')
+            target_doc_id = lesson_or_id.get('documentId')
+            target_q = (lesson_or_id.get('question') or lesson_or_id.get('topic') or '').strip()
+            lesson_id=lesson_or_id.get('lessonId') or lesson_or_id.get('id')
+            if lesson_id:
+                try:
+                    base=self._base_lesson(lesson_id)
+                    lesson=self.lesson(lesson_id)
+                except Exception:
+                    base=lesson_or_id
+                    lesson=lesson_or_id
+            else:
+                base=lesson_or_id
+                lesson=lesson_or_id
         else:
             raise PlanError('Provide a lesson ID or lesson object to generate a quiz')
+
+        # Check existing lessons if lesson_id was not explicitly given or had no chapters
+        if (not lesson_id or not (lesson and lesson.get('chapters'))) and (target_doc_id or target_q):
+            try:
+                for candidate_dir in sorted(self.folder.iterdir(), key=lambda p: p.stat().st_mtime if p.is_dir() else 0, reverse=True):
+                    if not candidate_dir.is_dir() or len(candidate_dir.name) != 32: continue
+                    req_file = candidate_dir / 'request.json'
+                    if req_file.is_file():
+                        try:
+                            req = json.loads(req_file.read_text())
+                            if target_doc_id and req.get('documentId') == target_doc_id:
+                                lesson_id = candidate_dir.name
+                                base = self._base_lesson(lesson_id)
+                                lesson = self.lesson(lesson_id)
+                                break
+                            if target_q and req.get('question') and target_q.lower() in req['question'].lower():
+                                lesson_id = candidate_dir.name
+                                base = self._base_lesson(lesson_id)
+                                lesson = self.lesson(lesson_id)
+                                break
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
         if not force_llm and isinstance(base.get('quiz'),list) and len(base['quiz'])>=3:
+            self._last_quiz_lesson_id = lesson_id
             return base['quiz']
         chapters=lesson.get('chapters') or []
         if not chapters:
+            if target_doc_id or target_q:
+                document = self.documents.resolve(target_q, target_doc_id) if (target_doc_id or target_q) else None
+                questions = self._direct_document_quiz(document, target_q)
+                hash_key = f"quiz_{target_doc_id or ''}_{target_q}".encode()
+                lesson_id = hashlib.sha256(hash_key).hexdigest()[:32]
+                title = (document.get('title') if document else None) or target_q or "Reinforcement Quiz"
+                lesson = {
+                    'id': lesson_id,
+                    'title': title,
+                    'question': target_q or f"Mastery quiz on {title}",
+                    'duration': 30.0,
+                    'kind': 'live_generated',
+                    'chapters': [{
+                        'id': 'quiz-beat-1',
+                        'title': title,
+                        'question': target_q or f"Mastery quiz on {title}",
+                        'insight': f"Comprehensive reinforcement quiz for {title}",
+                        'start': 0.0,
+                        'end': 30.0,
+                        'narration': f"Interactive reinforcement quiz on {title}.",
+                        'cues': [],
+                        'visual': {'takeaway': title, 'nodes': []},
+                    }],
+                    'quiz': questions,
+                }
+                if persist:
+                    out_dir = self.folder / lesson_id
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                    (out_dir / 'lesson.json').write_text(json.dumps(lesson, ensure_ascii=False, indent=2))
+                    (out_dir / 'request.json').write_text(json.dumps({
+                        'question': target_q,
+                        'documentId': target_doc_id,
+                        'generateQuiz': True,
+                    }, ensure_ascii=False))
+                self._last_quiz_lesson_id = lesson_id
+                return questions
             raise PlanError('Lesson has no chapters to build a quiz from')
         questions=self._llm_reinforcement_quiz(lesson)
         lesson['quiz']=questions
@@ -1123,6 +1236,7 @@ Rules:
                             fpath.write_text(json.dumps(data,ensure_ascii=False,indent=2))
                         except Exception:
                             pass
+        self._last_quiz_lesson_id = lesson_id
         return questions
     def start(self,payload,context=None):
         native=bool(payload.get('native'))

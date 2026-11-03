@@ -21,6 +21,10 @@ class _NativePass(ast.NodeTransformer):
 
     def visit_ClassDef(self, node: ast.ClassDef) -> ast.AST:
         self.generic_visit(node)
+        node.body = [
+            item for item in node.body
+            if not (isinstance(item, ast.FunctionDef) and item.name in ("beat", "cue"))
+        ]
         for index, base in enumerate(node.bases):
             if isinstance(base, ast.Name) and base.id in SCENE_BASES:
                 node.bases[index] = ast.Name(id="RecordedScene", ctx=ast.Load())

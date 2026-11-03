@@ -471,9 +471,21 @@ class Handler(SimpleHTTPRequestHandler):
             elif route == '/api/visual/live/jobs':
                 result=self.service.live.start(payload)
             elif route == '/api/visual/live/quiz':
-                target=payload.get('lessonId') or payload.get('lesson')
+                target=payload.get('lessonId') or payload.get('lesson') or payload
                 questions=self.service.live.generate_quiz(target)
+                lesson_id=getattr(self.service.live, '_last_quiz_lesson_id', None)
+                if not lesson_id:
+                    if isinstance(target, dict):
+                        lesson_id = target.get('lessonId') or target.get('id')
+                    elif isinstance(target, str) and len(target) == 32:
+                        lesson_id = target
                 result={'quiz':questions,'count':len(questions)}
+                if lesson_id:
+                    result['lessonId'] = lesson_id
+                    try:
+                        result['lesson'] = self.service.live.lesson(lesson_id)
+                    except Exception:
+                        pass
             elif route == '/api/visual/live/stream':
                 result=self.service.live.start_stream(payload)
             elif route == '/api/visual/live/check':

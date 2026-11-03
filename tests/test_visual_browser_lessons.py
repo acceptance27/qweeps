@@ -841,6 +841,53 @@ def test_catalog_time_based_sorting(library, tmp_path):
     assert items_title[1]['id'] == id_b
 
 
+def test_generate_quiz_from_payload_and_matching_lessons(library, tmp_path):
+    lib, _ = library
+    folder = tmp_path / 'lessons'
+    store = BrowserLessonStore(Model(), STUDIO, folder, lib)
+    store.bundled_folder = tmp_path / 'bundled'
+
+    id_test = 'c' * 32
+    path_test = folder / id_test
+    path_test.mkdir(parents=True)
+    (path_test / 'request.json').write_text(json.dumps({
+        'question': 'Teach me Photosynthesis',
+        'documentId': 'doc_photo_123',
+    }))
+    (path_test / 'lesson.json').write_text(json.dumps({
+        'id': id_test,
+        'title': 'Photosynthesis Lesson',
+        'duration': 60.0,
+        'chapters': [{
+            'id': 'b1', 'title': 'Light Reactions',
+            'question': 'How does light create ATP?',
+            'insight': 'Photons split water producing ATP and NADPH',
+            'start': 0, 'end': 30, 'cues': [], 'visual': {'takeaway': 'Light reactions', 'nodes': []}
+        }]
+    }))
+
+    # 1. Generate quiz passing lessonId
+    qs1 = store.generate_quiz({'lessonId': id_test})
+    assert len(qs1) >= 1
+    assert store._last_quiz_lesson_id == id_test
+
+    # 2. Generate quiz passing documentId
+    qs2 = store.generate_quiz({'documentId': 'doc_photo_123'})
+    assert len(qs2) >= 1
+    assert store._last_quiz_lesson_id == id_test
+
+    # 3. Generate quiz passing topic
+    qs3 = store.generate_quiz({'topic': 'Photosynthesis'})
+    assert len(qs3) >= 1
+    assert store._last_quiz_lesson_id == id_test
+
+    # 4. Standalone quiz generation for unseen topic
+    qs4 = store.generate_quiz({'topic': 'Quantum Computing Basics'})
+    assert len(qs4) >= 1
+    assert store._last_quiz_lesson_id is not None
+    assert (folder / store._last_quiz_lesson_id / 'lesson.json').is_file()
+
+
 
 
 

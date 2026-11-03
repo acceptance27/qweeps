@@ -118,6 +118,8 @@ def _hide_scene_title(code: str) -> str:
 def clean_code(code: str) -> str:
     code = re.sub(r"^```(?:python)?\s*", "", code.strip())
     code = re.sub(r"```\s*$", "", code).strip() + "\n"
+    # Ensure accidental `.copy` without parentheses inside transforms becomes `.copy()`
+    code = re.sub(r"(\.\s*copy)\b(?!\s*\()", r"\1()", code)
     # Transform lowering, group `.animate` lowering, per-dot motion and text
     # crossfades all live in the native shim now (recorded_scene).  The CE
     # source keeps the model's own animation choices; only the duplicate scene
@@ -484,7 +486,7 @@ def assemble(lesson: dict, story: dict, manifest: dict, native_ids: list[str],
                            nativeDuration=round(duration, 3))
         else:
             duration = round(float(chapter.get("targetDuration")
-                                   or (chapter["end"] - chapter["start"])), 2)
+                                   or (chapter.get("end", 10.0) - chapter.get("start", 0.0))), 2)
         chapter["start"] = round(clock, 2)
         chapter["end"] = round(clock + duration, 2)
         chapter["finishedAt"] = round(max(chapter["start"], chapter["end"] - 2), 2)
