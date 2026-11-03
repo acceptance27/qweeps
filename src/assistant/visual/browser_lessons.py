@@ -1098,7 +1098,7 @@ class BrowserLessonStore:
             tokens=9000 if any(b.get('layout')=='diagram' for b in beats) else 4200
             raw=self._request(j,lambda:_model_json(self.llm,DIRECT+'\n\n'+browser_guidance('director'),payload,check,tokens=tokens))
             target.write_text(json.dumps(raw,ensure_ascii=False));return raw
-        with ThreadPoolExecutor(max_workers=2) as pool:parts=list(pool.map(section,range(len(groups))))
+        with ThreadPoolExecutor(max_workers=min(4, len(groups))) as pool:parts=list(pool.map(section,range(len(groups))))
         raw={k:parts[0][k] for k in ('title','question','representation','example')};raw['chapters']=[c for part in parts for c in part['chapters']]
         return validate_lesson(raw,document,self.icons,require_continuity=True,fallback_icons=True,
                                require_presentation=any('presentation' in b for b in story['beats']))
@@ -1206,7 +1206,7 @@ Approval requires no findings and supported:true for every supplied beat.'''
             else:result=self._request(j,lambda:_model_json(self.llm,instruction,payload,validate,tokens=1800))
             receipt.write_text(json.dumps(result,ensure_ascii=False))
             part.write_text(json.dumps(result,ensure_ascii=False));return result
-        with ThreadPoolExecutor(max_workers=2) as pool:parts=list(pool.map(inspect,range(len(groups))))
+        with ThreadPoolExecutor(max_workers=min(4, len(groups))) as pool:parts=list(pool.map(inspect,range(len(groups))))
         raw=check({'approved':all(p['approved'] for p in parts),'checks':[c for p in parts for c in p['checks']],
                    'findings':[f for p in parts for f in p['findings']]})
         raw['method']='supplied-document-factual-review' if j['document'] else 'model-factual-review-without-retrieved-sources'
@@ -1668,7 +1668,7 @@ replacements, only those needed.'''
 
             reviews=[cached_group_review(grp) for grp in approved_groups]
             if review_groups:
-                with ThreadPoolExecutor(max_workers=2) as pool:
+                with ThreadPoolExecutor(max_workers=min(4, len(review_groups))) as pool:
                     reviews.extend(pool.map(inspect,review_groups))
             result={'approved':all(r['approved'] for r in reviews),'findings':[f for r in reviews for f in r['findings']],'observations':[o for r in reviews for o in r['observations']],
                     'presentationChecks':[c for r in reviews for c in r.get('presentationChecks',[])]}

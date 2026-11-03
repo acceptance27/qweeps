@@ -156,11 +156,16 @@ def assemble_lesson(base,plans,piece,alignment):
         bridge_end=bridge_ends[i]
         if bridge_end is not None:
             c['continuity']['spokenEnd']=lead+bridge_end
-    # Navigation, captions and narration all run on one clock. Bridge-delayed
-    # visual windows made the header/beat selection lag behind the spoken chapter
-    # (and overlap the next native chapter), so every chapter uses its audio span.
+            if c.get('renderer')!='manimgl' and lead+bridge_end<c['end']-.5:
+                c['visualStart']=lead+bridge_end
+            else:
+                c['visualStart']=c['start']
+        else:
+            c['visualStart']=c['start']
+    for i,c in enumerate(result['chapters']):
+        c['visualEnd']=result['chapters'][i+1]['visualStart'] if i+1<len(result['chapters']) else result['duration']
     for c in result['chapters']:
-        c['visualStart']=c['start']
-        c['visualEnd']=c['end']
+        if c.get('renderer')=='manimgl':
+            c['visualStart']=c['start'];c['visualEnd']=c['end']
     result['narrationScript']=lesson_script(base)
     return bytes(int(lead*RATE)*2)+piece+bytes(int(tail*RATE)*2),result

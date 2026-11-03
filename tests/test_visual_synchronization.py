@@ -51,10 +51,11 @@ def test_visual_handoff_waits_for_the_measured_end_of_the_incoming_reasoning_bri
  base['chapters'][1]['continuity']={'from':'fruit','bridge':'Consider fruit. Apple is crisp.'}
  _,result=assemble_lesson(base,plan()['chapters']*2,bytes(RATE*2*18),full_alignment())
  first,second=result['chapters']
- assert second['visualStart']==second['start']
+ assert second['visualStart']==pytest.approx(.3+10.65)
  assert first['visualEnd']==second['visualStart']
+ assert first['end']<second['visualStart'],'keep the previous completed diagram during the incoming spoken bridge'
  assert first['finishedAt']<first['end']
- assert second['continuity']['spokenEnd']==pytest.approx(.3+10.65)
+ assert second['continuity']['spokenEnd']==second['visualStart']
 
 
 def test_missing_bridge_final_word_does_not_produce_an_early_guessed_visual_handoff():
