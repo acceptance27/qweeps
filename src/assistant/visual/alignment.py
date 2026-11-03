@@ -51,7 +51,7 @@ def phrase_range(script,phrase,occurrence=1):
 def validate_anchors(raw,chapters):
     if not isinstance(raw,dict) or not isinstance(raw.get('chapters'),list) or [c.get('id') for c in raw['chapters']]!=[c['id'] for c in chapters]:raise PlanError('Keep the actual chapter IDs and order')
     for item,c in zip(raw['chapters'],chapters):
-        anchors=item.get('anchors');ids={n['id'] for n in c['visual']['nodes']}
+        anchors=item.get('anchors');ids={n['id'] for n in (c.get('visual') or {}).get('nodes') or []}
         if not isinstance(anchors,list) or not 2<=len(anchors)<=30:raise PlanError('Give concise exact-phrase anchors for the scene')
         if not ids<={a.get('target') for a in anchors}:raise PlanError('Every object needs a spoken or explicitly grouped context anchor')
         if not {'context','takeaway'}<={a.get('target') for a in anchors}:raise PlanError('Anchor the introduction and takeaway too')

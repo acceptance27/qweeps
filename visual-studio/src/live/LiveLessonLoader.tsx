@@ -89,8 +89,18 @@ export default function LiveLessonLoader() {
     setBusyQuiz(true);
     setError('');
     try {
+      let docId = doc;
+      if (!docId && q) {
+        const qLower = q.toLowerCase();
+        const matchedDoc = documents.find(
+          d =>
+            (d.filename && qLower.includes(d.filename.toLowerCase())) ||
+            (d.title && qLower.includes(d.title.toLowerCase()))
+        );
+        if (matchedDoc) docId = matchedDoc.id;
+      }
       const existing = catalogLessons.find(
-        l => (doc && l.id === doc) || (q && l.question?.toLowerCase().includes(q.trim().toLowerCase()))
+        l => (docId && l.id === docId) || (q && l.question?.toLowerCase().includes(q.trim().toLowerCase()))
       );
       const res = await api<{
         quiz: any[];
@@ -99,7 +109,7 @@ export default function LiveLessonLoader() {
         lesson?: LiveLesson;
       }>('live/quiz', {
         lessonId: existing?.id,
-        documentId: doc || undefined,
+        documentId: docId || undefined,
         question: q || undefined,
         topic: q || undefined,
       });
@@ -128,7 +138,7 @@ export default function LiveLessonLoader() {
       }
 
       if (targetLesson) {
-        ready({ ...targetLesson, quiz: res.quiz });
+        ready({ ...targetLesson, quiz: res.quiz }, true);
       } else {
         const titleText = q.trim() || 'Reinforcement Quiz';
         const virtualLesson: LiveLesson = {
@@ -152,7 +162,7 @@ export default function LiveLessonLoader() {
           ],
           quiz: res.quiz,
         };
-        ready(virtualLesson);
+        ready(virtualLesson, true);
       }
     } catch (e) {
       setError((e as Error).message);
@@ -183,7 +193,7 @@ export default function LiveLessonLoader() {
       if (!targetLesson) {
         targetLesson = await api<LiveLesson>(`live/lessons/${lessonId}`);
       }
-      ready({ ...targetLesson, quiz: res.quiz });
+      ready({ ...targetLesson, quiz: res.quiz }, true);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -203,9 +213,19 @@ export default function LiveLessonLoader() {
     setError('');
     setOpenQuizOnLoad(withQuiz);
     try {
+      let docId = doc;
+      if (!docId && q) {
+        const qLower = q.toLowerCase();
+        const matchedDoc = documents.find(
+          d =>
+            (d.filename && qLower.includes(d.filename.toLowerCase())) ||
+            (d.title && qLower.includes(d.title.toLowerCase()))
+        );
+        if (matchedDoc) docId = matchedDoc.id;
+      }
       const result = await api<LiveJob>('live/jobs', {
         question: q,
-        documentId: doc || undefined,
+        documentId: docId || undefined,
         resumeLessonId,
         native,
         nativeMode: mode,
@@ -262,8 +282,14 @@ export default function LiveLessonLoader() {
     }
   }
 
-  const ready = (value: LiveLesson) => {
-    if (!openQuizOnLoad && params.get('quiz') !== '1' && value.kind === 'live_generated' && !value.audioTrack && syncAvailable.current && params.get('nosync') !== '1') {
+  const ready = (value: LiveLesson, quizMode = false) => {
+    const isQuiz =
+      quizMode ||
+      openQuizOnLoad ||
+      generateQuiz ||
+      params.get('quiz') === '1' ||
+      params.get('beat') === 'quiz';
+    if (!isQuiz && value.kind === 'live_generated' && !value.audioTrack && syncAvailable.current && params.get('nosync') !== '1') {
       void api<LiveJob>('live/synchronize', { lessonId: value.id })
         .then(j => setJob(j.id))
         .catch(e => setError(e.message));
@@ -273,7 +299,7 @@ export default function LiveLessonLoader() {
     for (const key of ['muted', 'desktop', 'nosync', 't', 'beat']) {
       if (params.has(key)) query.set(key, params.get(key)!);
     }
-    if (generateQuiz || openQuizOnLoad || params.get('quiz') === '1') query.set('quiz', '1');
+    if (isQuiz) query.set('quiz', '1');
     setLesson(value);
     setJob(null);
     history.replaceState(null, '', `/?${query}`);

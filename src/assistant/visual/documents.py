@@ -69,8 +69,15 @@ class DocumentLibrary:
         (folder/'document.json').write_text(json.dumps(out,ensure_ascii=False));return {k:out[k] for k in ('id','title','filename','pageCount','aliases')}
     def resolve(self,question,doc_id=None):
         if doc_id:return self.get(doc_id)
-        path=re.search(r'(/[^\n]*?\.(?:pdf|pptx))(?=$|[\s\"\'])',question,re.I)
+        if not question:return None
+        # Match quoted or unquoted absolute or home file paths
+        path=re.search(r'''(?:^|[\s\'\":])(/[^\n\'\"]*?\.(?:pdf|pptx))''',question,re.I)
         if path and Path(path[1]).is_file():return self.get(self.ingest({'path':path[1]})['id'])
+        # Match by registered document filename
+        for meta in self.catalog():
+            fname = meta.get('filename') or ''
+            if fname and fname.lower() in question.lower():
+                return self.get(meta['id'])
         matched=[];query=words(question)
         for meta in self.catalog():
             if any(words(alias)<=query for alias in meta['aliases'] if words(alias)):matched.append(meta)
