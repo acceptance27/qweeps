@@ -728,4 +728,67 @@ def test_validate_lesson_matrix_cell_alignment_and_tolerance(library):
  assert v3['nodes'][1]['cells']==['—','—','—']
 
 
+def test_reinforcement_quiz_generation_covers_nodes_multi_item_and_balanced_lengths():
+ from assistant.visual.browser_lessons import _build_reinforcement_quiz
+ sample_lesson = {
+   'title': 'System Ethics and Accountability',
+   'chapters': [
+     {
+       'id': 'beat-1',
+       'title': 'Four Terms That Are Not Synonyms',
+       'question': 'What distinguishes forward duty from backward accountability?',
+       'insight': 'Responsibility is the forward duty to prevent defects, while accountability is being answerable after the fact.',
+       'visual': {
+         'nodes': [
+           {'id': 'n1', 'title': 'Responsibility', 'body': 'Having the duty and power to stop a known defect before release.'},
+           {'id': 'n2', 'title': 'Accountability', 'body': 'Being answerable to leadership and users for system outcomes.'},
+           {'id': 'n3', 'title': 'Liability', 'body': 'Being legally required to pay damages or face statutory sanctions.'},
+           {'id': 'n4', 'title': 'Blame', 'body': 'Attribution of personal fault rather than resolving structural failures.'},
+         ]
+       },
+       'safeguard': 'Do not conflate moral fault with organizational answerability.'
+     },
+     {
+       'id': 'beat-2',
+       'title': 'Five Conditions That Let Defects Through',
+       'question': 'Which systemic factors allow known defects to reach deployment?',
+       'insight': 'Defects bypass checks when ownership is diffuse and schedule pressures dominate.',
+       'visual': {
+         'nodes': [
+           {'id': 'c1', 'title': 'Diffuse ownership', 'body': 'Nobody owns the full system outcome so issues go unaddressed.'},
+           {'id': 'c2', 'title': 'Discounted reports', 'body': 'Early anomaly logs are routinely closed without diagnosis.'},
+           {'id': 'c3', 'title': 'Deadline dominance', 'body': 'Fixed schedules make quality negotiable when shipping.'},
+         ]
+       }
+     }
+   ]
+ }
+
+ quiz = _build_reinforcement_quiz(sample_lesson)
+ assert len(quiz) >= 9, f"Expected comprehensive coverage, got {len(quiz)}"
+
+ # Multi-item questions for beats with >=3 nodes
+ multi_qs = [q for q in quiz if q['kind'] == 'multi_item']
+ assert len(multi_qs) == 2
+ b1_multi = next(q for q in multi_qs if q['chapterId'] == 'beat-1')
+ assert b1_multi['expectedItems'] == ['Responsibility', 'Accountability', 'Liability', 'Blame']
+ assert 'responsibility' in b1_multi['itemAliases']['Responsibility']
+ assert len(b1_multi['options']) == 4
+
+ # Individual node mechanism questions
+ node_qs = [q for q in quiz if q['kind'] == 'mechanism']
+ assert any(q['chapterId'] == 'beat-1' and q['options'][q['correctIndex']] == 'Responsibility' for q in node_qs)
+ assert any(q['chapterId'] == 'beat-1' and q['options'][q['correctIndex']] == 'Accountability' for q in node_qs)
+
+ # Check that node question options are concise titles
+ for q in node_qs:
+  lens = [len(opt) for opt in q['options']]
+  assert max(lens) < 40, f"Options should be concise titles, got lengths {lens}"
+
+ # Check that correct answers are not strictly the longest in all questions
+ longest_count = sum(1 for q in quiz if len(q['options'][q['correctIndex']]) == max(len(o) for o in q['options']) and max(len(o) for o in q['options']) > min(len(o) for o in q['options']))
+ assert longest_count < len(quiz), "Correct answer should not always be the longest option"
+
+
+
 

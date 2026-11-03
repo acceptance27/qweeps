@@ -16,13 +16,17 @@ export interface QuizQuestion {
   chapterId: string;
   chapterIndex: number;
   chapterTitle: string;
-  kind: 'concept' | 'mechanism' | 'safeguard';
+  kind: 'concept' | 'mechanism' | 'safeguard' | 'multi_item';
   prompt: string;
   options: string[];
   correctIndex: number;
   explanation: string;
   safeguardNote?: string | null;
   hint?: string;
+  acceptedAnswers?: string[];
+  expectedItems?: string[];
+  itemAliases?: Record<string, string[]>;
+  itemLabel?: string;
 }
 
 export type LiveLesson={id:string;kind?:string;title:string;question:string;duration:number;audioTrack?:{url:string;key:string;duration:number;clock:'audio'};representation?:string;documentId?:string|null;documentTitle?:string|null;example?:{title:string;description:string;icon:string};chapters:LiveChapter[];nativeMode?:'per_beat'|'continuous';nativeScenes?:Record<string,NativeSceneManifest>;sources:{id?:string;title:string;url:string}[];quiz?:QuizQuestion[]};
@@ -78,6 +82,8 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
     'It relies on unconstrained brute-force enumeration without structural bounds or conservation laws.',
     'It bypasses intermediate verification steps by assuming every local transition is automatically reversible.',
     'It treats the representation as a static label rather than an active transformation with measurable invariants.',
+    'It treats isolated component successes as a substitute for verifying total end-to-end system reliability.',
+    'It assumes local procedural adherence automatically resolves structural accountability across boundaries.',
   ];
 
   const pickDistractors = (correct: string, pool: string[], seed: string): string[] => {
@@ -85,19 +91,25 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
     const unique: string[] = [];
     for (const item of [...pool, ...fallbackDistractors]) {
       const norm = item.toLowerCase().trim();
-      if (item.trim().length >= 12 && !seen.has(norm)) {
+      if (item.trim().length >= 10 && !seen.has(norm)) {
         seen.add(norm);
         unique.push(item.trim());
       }
     }
-    return hashSort(unique, seed).slice(0, 3);
+    // Balance option lengths: prioritize distractors close in character length to correct answer
+    // so that the correct answer is not identifiable merely by being the longest text.
+    const targetLen = correct.length;
+    const lengthMatched = [...unique].sort((a, b) => {
+      const diffA = Math.abs(a.length - targetLen);
+      const diffB = Math.abs(b.length - targetLen);
+      if (Math.abs(diffA - diffB) > 20) return diffA - diffB;
+      return 0;
+    });
+    return hashSort(lengthMatched.slice(0, 10), seed).slice(0, 3);
   };
 
   const total = chapters.length;
-  const indices: number[] =
-    total <= 8
-      ? chapters.map((_, i) => i)
-      : Array.from(new Set(Array.from({ length: 8 }, (_, i) => Math.min(total - 1, Math.round((i * (total - 1)) / 7)))));
+  const indices: number[] = chapters.map((_, i) => i);
 
   const questions: QuizQuestion[] = [];
   for (const cIdx of indices) {
@@ -123,6 +135,7 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
         explanation: insight + (takeaway && takeaway !== insight ? ` — Visual takeaway: ${takeaway}` : ''),
         safeguardNote: safeguard || null,
         hint: `Recall the visual evidence in Beat ${cIdx + 1} (${cTitle}).`,
+        acceptedAnswers: [cTitle, insight.split(/[,.;]/)[0].trim()],
       });
     }
 
@@ -138,23 +151,80 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
 
     const nodes = (ch.visual?.nodes || []).filter(n => n.title && n.body && n.body.trim().length >= 16);
     const candidates = nodes.length ? nodes : roleEntries;
-    if (candidates.length && questions.length < 12) {
-      const target = candidates[cIdx % candidates.length];
-      const qidM = `q-${ch.id}-mech`;
-      const distractorsM = pickDistractors(target.body, [...allNodeBodies, ...allInsights], qidM);
-      const optionsM = hashSort([target.body, ...distractorsM], `${qidM}-opts`);
+    
+    // Generate questions for candidate rows/nodes in this beat
+    for (let nIdx = 0; nIdx < candidates.length; nIdx++) {
+      const target = candidates[nIdx];
+      const qidTerm = `q-${ch.id}-node-${nIdx}`;
+      const otherTitles = candidates.filter((_, i) => i !== nIdx).map(c => c.title);
+      // Collect alternative titles from other beats if fewer than 3
+      for (const otherCh of chapters) {
+        if (otherTitles.length >= 3) break;
+        if (otherCh.id === ch.id) continue;
+        for (const on of otherCh.visual?.nodes || []) {
+          if (on.title && !otherTitles.includes(on.title) && on.title !== target.title) {
+            otherTitles.push(on.title);
+          }
+        }
+      }
+      const titleOptions = hashSort([target.title, ...otherTitles.slice(0, 3)], `${qidTerm}-opts`);
       questions.push({
-        id: qidM,
+        id: qidTerm,
         chapterId: ch.id,
         chapterIndex: cIdx,
         chapterTitle: ch.title,
         kind: 'mechanism',
-        prompt: `In "${cTitle}", how does "${target.title}" function within the lesson's visual mechanism?`,
-        options: optionsM,
-        correctIndex: optionsM.indexOf(target.body),
+        prompt: `In "${cTitle}", which concept or component is defined as: "${target.body}"?`,
+        options: titleOptions,
+        correctIndex: titleOptions.indexOf(target.title),
         explanation: `In Beat ${cIdx + 1} (${cTitle}), ${target.title}: ${target.body}`,
         safeguardNote: takeaway || null,
         hint: `Inspect "${target.title}" in Beat ${cIdx + 1}.`,
+        acceptedAnswers: [target.title, cleanTitle(target.title), target.title.toLowerCase()],
+      });
+    }
+
+    // Add multi-item recall question if beat has 3 or more rows/nodes
+    if (candidates.length >= 3) {
+      const qidMulti = `q-${ch.id}-multi`;
+      const expectedItems = candidates.map(c => c.title);
+      const correctJoined = expectedItems.join(', ');
+      
+      // Build length-balanced multi-item distractors
+      const distractorLists: string[] = [];
+      for (let d = 1; d <= 3; d++) {
+        const alt = [...expectedItems];
+        // Perturb 1-2 items with plausible replacements
+        alt[(d - 1) % alt.length] = d === 1 ? 'Unverified heuristic' : d === 2 ? 'Single point of failure' : 'Isolated procedural sign-off';
+        distractorLists.push(alt.join(', '));
+      }
+      const multiOptions = hashSort([correctJoined, ...distractorLists], `${qidMulti}-opts`);
+
+      const aliases: Record<string, string[]> = {};
+      for (const item of expectedItems) {
+        const raw = item.trim();
+        const base = raw.replace(/\s*\(.*?\)/, '').split(':')[0].trim();
+        const set = new Set([raw, raw.toLowerCase(), base, base.toLowerCase()].filter(Boolean));
+        const words = raw.match(/[a-zA-Z]{4,}/g) || [];
+        for (const w of words) set.add(w.toLowerCase());
+        aliases[item] = Array.from(set);
+      }
+
+      questions.push({
+        id: qidMulti,
+        chapterId: ch.id,
+        chapterIndex: cIdx,
+        chapterTitle: ch.title,
+        kind: 'multi_item',
+        prompt: `Name all ${candidates.length} key components analyzed in "${cTitle}".`,
+        options: multiOptions,
+        correctIndex: multiOptions.indexOf(correctJoined),
+        explanation: `The complete set of ${candidates.length} components in "${cTitle}": ${correctJoined}.`,
+        safeguardNote: takeaway || null,
+        hint: `Think of all the rows/cards shown in Beat ${cIdx + 1} (${cTitle}).`,
+        expectedItems,
+        itemAliases: aliases,
+        itemLabel: 'components',
       });
     }
   }

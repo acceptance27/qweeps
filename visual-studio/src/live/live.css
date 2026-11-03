@@ -279,6 +279,59 @@
 .mastery-secondary-btn{display:inline-flex!important;align-items:center;gap:7px;padding:10px 15px!important;border-radius:8px;background:#132833!important;border:1px solid #2b4957!important;color:#c7dce2!important;font-size:12px;cursor:pointer}
 .mastery-secondary-btn:hover{border-color:#edca82!important;color:#edca82!important}
 
+/* Mode toggle in navbar */
+.mastery-mode-toggle-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid #284452;background:#10222b;color:#b6cdd5;transition:all .15s ease}
+.mastery-mode-toggle-btn:hover{border-color:#edca82;color:#edca82}
+.mastery-mode-toggle-btn.hard{border-color:#d4974f;background:rgba(212,151,79,.18);color:#f5b878}
+.mastery-hard-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px;font-size:10px;background:rgba(212,151,79,.18);color:#f5b878;border:1px solid rgba(212,151,79,.4);font-weight:600}
+
+/* Hard mode input form */
+.mastery-hard-input-form{display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box}
+.mastery-hard-input-wrap{display:flex;align-items:center;gap:8px;width:100%;background:#09151c;border:1.5px solid #274858;border-radius:10px;padding:4px 6px 4px 14px;box-sizing:border-box;transition:border-color .15s ease,box-shadow .15s ease}
+.mastery-hard-input-wrap:focus-within{border-color:#edca82;box-shadow:0 0 0 3px rgba(237,202,130,.15)}
+.mastery-hard-input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:#f0f5f5;font-size:14.5px;font-family:'Plus Jakarta Sans',sans-serif;padding:8px 0}
+.mastery-hard-input::placeholder{color:#627c88}
+.mastery-hard-submit-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:7px;background:#edca82;color:#0b1820;border:0;font-weight:600;font-size:13px;cursor:pointer;flex-shrink:0;transition:opacity .15s ease,transform .1s ease}
+.mastery-hard-submit-btn:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.06)}
+.mastery-hard-submit-btn:disabled{opacity:.4;cursor:not-allowed}
+.mastery-hard-subactions{display:flex;justify-content:flex-end;width:100%}
+.mastery-giveup-btn{background:transparent;border:0;color:#85a2ae;font-size:11.5px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:4px}
+.mastery-giveup-btn:hover{color:#f5b878}
+
+/* Typed callout feedback */
+.mastery-typed-callout{padding:10px 14px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;box-sizing:border-box}
+.mastery-typed-callout.correct{background:rgba(82,199,153,.12);border:1px solid rgba(82,199,153,.35);color:#7ee6bc}
+.mastery-typed-callout.wrong{background:rgba(229,147,104,.14);border:1px solid rgba(229,147,104,.4);color:#f4b393}
+.mastery-typed-line{display:flex;align-items:center;gap:8px;line-height:1.4}
+.mastery-typed-line strong{color:#fff}
+
+/* Multi-Item interactive recall slots */
+.mastery-multi-slots-container{display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box}
+.mastery-multi-slots-header{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#a0b8c2;font-weight:500}
+.mastery-all-recalled-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:4px;background:rgba(82,199,153,.15);color:#7ee6bc;font-weight:600;font-size:11px}
+.mastery-multi-slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;width:100%;box-sizing:border-box}
+.mastery-slot-chip{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;font-size:12.5px;box-sizing:border-box;transition:all .2s ease}
+.mastery-slot-chip.empty{border:1px dashed #274554;background:rgba(12,26,35,.6);color:#5d7885}
+.mastery-slot-chip.recalled{border:1px solid rgba(82,199,153,.45);background:rgba(82,199,153,.15);color:#93f0c9;font-weight:600}
+.mastery-slot-chip.revealed{border:1px solid rgba(229,147,104,.4);background:rgba(229,147,104,.14);color:#f4b393}
+.mastery-slot-index{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:10px;background:rgba(255,255,255,.08);color:#a0b8c2;flex-shrink:0}
+.mastery-slot-chip.recalled .mastery-slot-index{background:#52c799;color:#0b1820;font-weight:700}
+.mastery-slot-text{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mastery-slot-icon{flex-shrink:0}
+.mastery-slot-icon.ok{color:#52c799}
+.mastery-slot-icon.miss{color:#e59368}
+
+/* End of round dual choices: Replay vs Hard Mode */
+.mastery-round-complete-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:auto}
+.mastery-replay-action-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 15px;border-radius:8px;background:#132833;border:1px solid #2b4957;color:#c7dce2;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s ease}
+.mastery-replay-action-btn:hover{border-color:#edca82;color:#edca82}
+.mastery-hard-action-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:8px;background:linear-gradient(135deg,#c7883b,#e6b567);color:#08131a;border:0;font-size:12.5px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(230,181,103,.28);transition:all .15s ease}
+.mastery-hard-action-btn:hover{transform:translateY(-1px);filter:brightness(1.08);box-shadow:0 6px 18px rgba(230,181,103,.4)}
+.mastery-scorecard-action-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:8px;background:transparent;border:1px solid #25404e;color:#8ba5b0;font-size:12px;cursor:pointer}
+.mastery-scorecard-action-btn:hover{border-color:#edca82;color:#edca82}
+.mastery-hard-cta-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 16px!important;border-radius:8px;background:linear-gradient(135deg,#c7883b,#e6b567)!important;color:#08131a!important;border:0!important;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(230,181,103,.28);transition:all .15s ease}
+.mastery-hard-cta-btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+
 /* Landscape and Desktop Monitor Ergonomics: comfortable 740px width + 2x2 option grid (fits completely without vertical scrolling) */
 @media(min-width:640px){
   .mastery-quiz-modal{max-width:740px}

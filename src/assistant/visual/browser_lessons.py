@@ -566,19 +566,29 @@ def _pick_distractors(correct: str, pool: list[str], count: int, seed_key: str, 
     for item in pool:
         text = (item or "").strip()
         norm = " ".join(text.lower().split())
-        if len(text) >= 12 and norm not in seen:
+        if len(text) >= 10 and norm not in seen:
             seen.add(norm)
             candidates.append(text)
-    shuffled = _deterministic_shuffle(candidates, seed_key)
-    chosen = shuffled[:count]
     for fb in fallbacks:
-        if len(chosen) >= count:
-            break
-        norm = " ".join(fb.lower().split())
+        text = (fb or "").strip()
+        norm = " ".join(text.lower().split())
         if norm not in seen:
             seen.add(norm)
-            chosen.append(fb)
-    return chosen[:count]
+            candidates.append(text)
+
+    # Balance option lengths: prioritize distractors closest in character length to correct answer
+    # so that the correct answer is not identifiable merely by being the longest text.
+    target_len = len(correct)
+    scored = []
+    for idx, c in enumerate(candidates):
+        diff = abs(len(c) - target_len)
+        digest = hashlib.sha256(f"{seed_key}:{idx}:{c}".encode("utf-8")).hexdigest()
+        scored.append((diff, digest, c))
+
+    # Candidates within 25 characters of each other keep randomized hash sorting;
+    # otherwise, closer lengths take precedence.
+    scored.sort(key=lambda x: (x[0] // 25, x[1]))
+    return [x[2] for x in scored[:count]]
 
 
 def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
@@ -589,6 +599,7 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
     all_insights = []
     all_safeguards = []
     all_node_bodies = []
+    all_node_titles = []
     for ch in chapters:
         ins = (ch.get("insight") or (ch.get("visual") or {}).get("takeaway") or "").strip()
         if ins:
@@ -597,42 +608,40 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
         if sg and not sg.startswith("Focused mini-lesson"):
             all_safeguards.append(sg)
         for node in (ch.get("visual") or {}).get("nodes") or []:
-            if isinstance(node, dict) and (node.get("body") or "").strip():
-                all_node_bodies.append(node["body"].strip())
+            if isinstance(node, dict):
+                t = (node.get("title") or "").strip()
+                b = (node.get("body") or "").strip()
+                if t and t not in all_node_titles:
+                    all_node_titles.append(t)
+                if b:
+                    all_node_bodies.append(b)
         for r_id, r_val in (ch.get("roles") or {}).items():
             if isinstance(r_val, str) and ":" in r_val:
-                body_part = r_val.split(":", 1)[1].strip()
-                if len(body_part) >= 18:
-                    all_node_bodies.append(body_part)
+                t_part, b_part = r_val.split(":", 1)
+                t_part = t_part.strip()
+                b_part = b_part.strip()
+                if t_part and t_part not in all_node_titles:
+                    all_node_titles.append(t_part)
+                if len(b_part) >= 18:
+                    all_node_bodies.append(b_part)
 
     generic_insight_fallbacks = [
         "It relies on an unconstrained brute-force enumeration without structural bounds or conservation laws.",
         "It bypasses intermediate verification steps by assuming every local transition is automatically reversible.",
         "It treats the representation as a static label rather than an active transformation with measurable invariants.",
-    ]
-    generic_mech_fallbacks = [
-        "Acts only as a decorative boundary label without participating in the underlying transformation.",
-        "Replaces the primary constraint check with an unverified heuristic approximation.",
-        "Merges all independent inputs into a single unindexed constant regardless of scale.",
+        "It treats isolated component successes as a substitute for verifying total end-to-end system reliability.",
+        "It assumes local procedural adherence automatically resolves structural accountability across institutional boundaries.",
     ]
     generic_safeguard_fallbacks = [
         "Assume that any necessary condition automatically guarantees the final outcome in every reference frame.",
         "Treat illustrative schematic arrows as literal physical trajectories without checking conservation thresholds.",
         "Conflate verifying a proposed candidate solution with searching the entire state space from scratch.",
+        "Treat an unowned aggregate process as self-correcting without establishing explicit individual answerability.",
     ]
-
-    # Sample chapters evenly if the lesson is very long (e.g. 25-beat P vs NP -> ~10 chapter indices)
-    total_ch = len(chapters)
-    if total_ch <= 8:
-        selected_indices = list(range(total_ch))
-    else:
-        step = max(1, (total_ch - 1) / 7.0)
-        selected_indices = sorted({min(total_ch - 1, int(round(i * step))) for i in range(8)})
 
     questions: list[dict] = []
 
-    for c_idx in selected_indices:
-        ch = chapters[c_idx]
+    for c_idx, ch in enumerate(chapters):
         cid = ch.get("id") or f"beat-{c_idx + 1}"
         clean_title = _clean_beat_title(ch.get("title") or cid)
         q_text = (ch.get("question") or f"What is the key conclusion established in {clean_title}?").strip()
@@ -640,6 +649,7 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
         takeaway = ((ch.get("visual") or {}).get("takeaway") or insight).strip()
         safeguard = (ch.get("safeguard") or "").strip()
 
+        # 1. Beat-level concept / conclusion question
         if insight:
             qid = f"q-{cid}-concept"
             other_insights = [x for i, x in enumerate(all_insights) if i != c_idx] + all_safeguards
@@ -657,49 +667,119 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
                 "explanation": f"{insight}" + (f" — Visual takeaway: {takeaway}" if takeaway and takeaway != insight else ""),
                 "safeguardNote": safeguard if safeguard and not safeguard.startswith("Focused mini-lesson") else None,
                 "hint": f"Recall the visual evidence in Beat {c_idx + 1} ({clean_title}).",
+                "acceptedAnswers": [clean_title, insight.split(".")[0].strip()],
             })
 
-        # Add a mechanism question if the chapter has rich nodes or roles
-        nodes = [
-            n for n in ((ch.get("visual") or {}).get("nodes") or [])
-            if isinstance(n, dict) and (n.get("title") or "").strip() and len((n.get("body") or "").strip()) >= 18
-        ]
+        # 2. Extract candidate semantic objects / roles for this beat
+        nodes: list[dict] = []
+        for n in ((ch.get("visual") or {}).get("nodes") or []):
+            if isinstance(n, dict) and (n.get("title") or "").strip() and len((n.get("body") or "").strip()) >= 16:
+                nodes.append({"id": n.get("id", ""), "title": n["title"].strip(), "body": n["body"].strip()})
         if not nodes and isinstance(ch.get("roles"), dict):
             for r_id, r_val in ch["roles"].items():
                 if isinstance(r_val, str) and ":" in r_val:
                     t_part, b_part = r_val.split(":", 1)
-                    if t_part.strip() and len(b_part.strip()) >= 18:
+                    if t_part.strip() and len(b_part.strip()) >= 16:
                         nodes.append({"id": r_id, "title": t_part.strip(), "body": b_part.strip()})
 
-        if nodes and len(questions) < 12 and (total_ch <= 6 or c_idx in selected_indices[::2]):
-            target_node = nodes[c_idx % len(nodes)]
-            n_title = target_node["title"].strip()
-            n_body = target_node["body"].strip()
-            qid_m = f"q-{cid}-mech"
-            distractors_m = _pick_distractors(n_body, all_node_bodies + all_insights, 3, qid_m, generic_mech_fallbacks)
-            options_m = _deterministic_shuffle([n_body, *distractors_m], qid_m + "-opts")
+        # 3. Generate individual row/node questions for each element in the beat
+        for n_idx, target_node in enumerate(nodes):
+            n_title = target_node["title"]
+            n_body = target_node["body"]
+            qid_m = f"q-{cid}-node-{n_idx}"
+
+            # Options are concise titles (e.g. Responsibility vs Accountability vs Liability vs Blame)
+            other_titles = [other["title"] for j, other in enumerate(nodes) if j != n_idx]
+            for ot in all_node_titles:
+                if len(other_titles) >= 3:
+                    break
+                if ot != n_title and ot not in other_titles:
+                    other_titles.append(ot)
+
+            options_m = _deterministic_shuffle([n_title, *other_titles[:3]], qid_m + "-opts")
+            
+            # Clean title aliases for Hard Mode text matching
+            base_title = re.sub(r"\s*\(.*?\)", "", n_title).strip()
+            if ":" in base_title:
+                base_title = base_title.split(":", 1)[0].strip()
+            aliases = list({
+                n_title,
+                n_title.lower(),
+                base_title,
+                base_title.lower(),
+                _clean_beat_title(n_title),
+                _clean_beat_title(n_title).lower(),
+            })
+
             questions.append({
                 "id": qid_m,
                 "chapterId": cid,
                 "chapterIndex": c_idx,
                 "chapterTitle": ch.get("title") or clean_title,
                 "kind": "mechanism",
-                "prompt": f"In \"{clean_title}\", how does \"{n_title}\" function within the visual mechanism?",
+                "prompt": f"In \"{clean_title}\", which concept, condition, or component is defined as: \"{n_body}\"?",
                 "options": options_m,
-                "correctIndex": options_m.index(n_body),
+                "correctIndex": options_m.index(n_title),
                 "explanation": f"In Beat {c_idx + 1} ({clean_title}), {n_title}: {n_body}",
                 "safeguardNote": takeaway if takeaway else None,
                 "hint": f"Inspect the '{n_title}' element in Beat {c_idx + 1}.",
+                "acceptedAnswers": aliases,
             })
 
-        # Add a misconception safeguard question for selected beats
-        if (
-            safeguard
-            and len(safeguard) >= 24
-            and not safeguard.startswith("Focused mini-lesson")
-            and len(questions) < 14
-            and c_idx in (selected_indices[1::3] or selected_indices[:1])
-        ):
+        # 4. Multi-item recall question for beats with 3 or more rows/nodes
+        if len(nodes) >= 3:
+            qid_multi = f"q-{cid}-multi"
+            expected_items = [n["title"] for n in nodes]
+            correct_joined = ", ".join(expected_items)
+
+            # Generate length-matched distractors for multi-item list
+            distractor_lists: list[str] = []
+            perturb_substitutes = [
+                "Unverified heuristic",
+                "Single point of failure",
+                "Isolated procedural sign-off",
+                "Decentralized control gap",
+            ]
+            for d_idx in range(3):
+                alt = list(expected_items)
+                swap_pos = d_idx % len(alt)
+                alt[swap_pos] = perturb_substitutes[d_idx % len(perturb_substitutes)]
+                distractor_lists.append(", ".join(alt))
+
+            options_multi = _deterministic_shuffle([correct_joined, *distractor_lists], qid_multi + "-opts")
+
+            item_aliases: dict[str, list[str]] = {}
+            for item in expected_items:
+                raw = item.strip()
+                base = re.sub(r"\s*\(.*?\)", "", raw).strip()
+                if ":" in base:
+                    base = base.split(":", 1)[0].strip()
+                aliases_for_item = {raw, raw.lower(), base, base.lower(), _clean_beat_title(raw).lower()}
+                for w in re.findall(r"[a-zA-Z]{4,}", raw):
+                    aliases_for_item.add(w.lower())
+                item_aliases[item] = [a for a in aliases_for_item if a]
+
+            item_label = "conditions" if "condition" in clean_title.lower() else "terms" if "term" in clean_title.lower() else "components"
+
+            questions.append({
+                "id": qid_multi,
+                "chapterId": cid,
+                "chapterIndex": c_idx,
+                "chapterTitle": ch.get("title") or clean_title,
+                "kind": "multi_item",
+                "prompt": f"Name all {len(nodes)} {item_label} analyzed in \"{clean_title}\".",
+                "options": options_multi,
+                "correctIndex": options_multi.index(correct_joined),
+                "explanation": f"The complete set of {len(nodes)} {item_label} in \"{clean_title}\": {correct_joined}.",
+                "safeguardNote": takeaway if takeaway else None,
+                "hint": f"Recall all {len(nodes)} elements shown on stage in Beat {c_idx + 1} ({clean_title}).",
+                "expectedItems": expected_items,
+                "itemAliases": item_aliases,
+                "itemLabel": item_label,
+            })
+
+        # 5. Misconception safeguard question for beats with substantial safeguards
+        if safeguard and len(safeguard) >= 24 and not safeguard.startswith("Focused mini-lesson"):
             qid_s = f"q-{cid}-safeguard"
             distractors_s = _pick_distractors(
                 safeguard,
@@ -721,6 +801,7 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
                 "explanation": f"Safeguard for {clean_title}: {safeguard}",
                 "safeguardNote": insight if insight else None,
                 "hint": f"Think about the common misreading warned against in Beat {c_idx + 1}.",
+                "acceptedAnswers": [clean_title, safeguard.split(".")[0].strip()],
             })
 
     return questions

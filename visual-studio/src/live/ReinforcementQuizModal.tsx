@@ -42,9 +42,22 @@ export interface QuizProgressState {
   bestStreak: number;
   totalSubmissions: number;
   completed: boolean;
+  isHardMode: boolean;
+  typedInput: string;
+  typedFeedback: {
+    status: 'correct' | 'wrong' | 'revealed';
+    userText: string;
+    matchedText?: string;
+  } | null;
+  recalledItems: string[];
+  multiItemRevealed: boolean;
 }
 
-export function createInitialQuizState(lesson: LiveLesson, soundEnabled = true): QuizProgressState {
+export function createInitialQuizState(
+  lesson: LiveLesson,
+  soundEnabled = true,
+  hardMode = false
+): QuizProgressState {
   const baseQuestions = ensureLessonQuiz(lesson);
   return {
     lessonId: lesson.id,
@@ -68,6 +81,11 @@ export function createInitialQuizState(lesson: LiveLesson, soundEnabled = true):
     bestStreak: 0,
     totalSubmissions: 0,
     completed: false,
+    isHardMode: hardMode,
+    typedInput: '',
+    typedFeedback: null,
+    recalledItems: [],
+    multiItemRevealed: false,
   };
 }
 
@@ -107,6 +125,26 @@ export function ReinforcementQuizNavbar({
         </div>
 
         <div className="mastery-quiz-stats">
+          <button
+            type="button"
+            className={`mastery-mode-toggle-btn ${quizState.isHardMode ? 'hard' : 'standard'}`}
+            onClick={() => {
+              const nextHard = !quizState.isHardMode;
+              setQuizState(prev => ({
+                ...prev,
+                isHardMode: nextHard,
+                typedInput: '',
+                typedFeedback: null,
+                recalledItems: [],
+                multiItemRevealed: false,
+              }));
+              playStepSound(soundEnabled);
+            }}
+            title={quizState.isHardMode ? 'Switch to Multiple Choice Mode' : 'Switch to Hard Mode (Type Answers)'}
+          >
+            {quizState.isHardMode ? <Flame size={13} /> : <Sparkles size={13} />}
+            <span>{quizState.isHardMode ? 'Hard Mode' : 'Standard'}</span>
+          </button>
           <div className={`mastery-round-tag ${round > 1 ? 'reinforcing' : ''}`}>
             <Repeat size={13} />
             <span>
@@ -335,6 +373,11 @@ export function ReinforcementQuizModal({
     bestStreak,
     totalSubmissions,
     completed,
+    isHardMode,
+    typedInput,
+    typedFeedback,
+    recalledItems,
+    multiItemRevealed,
   } = state;
 
   const masteredSet = useMemo(() => new Set(masteredIds), [masteredIds]);
@@ -343,6 +386,39 @@ export function ReinforcementQuizModal({
   const currentCard = queue[cursor] as ActiveCard | undefined;
   const isAnswered = selectedOption !== null;
   const isCorrect = isAnswered && currentCard && selectedOption === currentCard.correctIndex;
+
+  const normalizeAnswer = (text: string): string => {
+    return (text || '')
+      .toLowerCase()
+      .replace(/^(the|a|an)\s+/i, '')
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
+  const matchesSingleAnswer = (userText: string, card: ActiveCard): { hit: boolean; matched?: string } => {
+    const normUser = normalizeAnswer(userText);
+    if (!normUser) return { hit: false };
+
+    if (card.acceptedAnswers && card.acceptedAnswers.length > 0) {
+      for (const ans of card.acceptedAnswers) {
+        const normAns = normalizeAnswer(ans);
+        if (!normAns) continue;
+        if (normUser === normAns) return { hit: true, matched: ans };
+        if (normUser.length >= 3 && normAns.includes(normUser)) return { hit: true, matched: ans };
+        if (normAns.length >= 3 && normUser.includes(normAns)) return { hit: true, matched: ans };
+      }
+    }
+
+    const correctOpt = card.options[card.correctIndex] || '';
+    const normOpt = normalizeAnswer(correctOpt);
+    if (normUser === normOpt) return { hit: true, matched: correctOpt };
+    if (normOpt.length <= 40 && (normOpt.includes(normUser) || normUser.includes(normOpt))) {
+      return { hit: true, matched: correctOpt };
+    }
+
+    return { hit: false };
+  };
 
   const submitAnswer = (optionIdx: number) => {
     if (selectedOption !== null || !currentCard) return;
@@ -388,6 +464,147 @@ export function ReinforcementQuizModal({
     }
   };
 
+  const submitTypedAnswer = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isAnswered || !currentCard) return;
+    const rawInput = typedInput.trim();
+    if (!rawInput) return;
+
+    const result = matchesSingleAnswer(rawInput, currentCard);
+    const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
+
+    if (result.hit) {
+      const nextStreak = streak + 1;
+      playCorrectSound(nextStreak, currentCard.isReinforcement, soundEnabled);
+      setState(prev => ({
+        ...prev,
+        selectedOption: currentCard.correctIndex,
+        typedFeedback: { status: 'correct', userText: rawInput, matchedText: result.matched },
+        totalSubmissions: prev.totalSubmissions + 1,
+        attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
+        masteredIds: prev.masteredIds.includes(currentCard.id)
+          ? prev.masteredIds
+          : [...prev.masteredIds, currentCard.id],
+        streak: nextStreak,
+        bestStreak: Math.max(prev.bestStreak, nextStreak),
+      }));
+    } else {
+      playWrongSound(soundEnabled);
+      const reshuffled = shuffleQuestionOptions(currentCard, totalSubmissions + round + cursor + 1);
+      const expected = currentCard.acceptedAnswers?.[0] || currentCard.options[currentCard.correctIndex];
+      setState(prev => ({
+        ...prev,
+        selectedOption: -1,
+        typedFeedback: { status: 'wrong', userText: rawInput, matchedText: expected },
+        totalSubmissions: prev.totalSubmissions + 1,
+        attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
+        streak: 0,
+        everMissedIds: prev.everMissedIds.includes(currentCard.id)
+          ? prev.everMissedIds
+          : [...prev.everMissedIds, currentCard.id],
+        reinforcementQueue: [
+          ...prev.reinforcementQueue,
+          {
+            ...reshuffled,
+            roundNumber: prev.round + 1,
+            attemptNumber: nextAttemptCount + 1,
+            isReinforcement: true,
+          },
+        ],
+      }));
+    }
+  };
+
+  const submitMultiItem = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isAnswered || !currentCard || currentCard.kind !== 'multi_item') return;
+    const rawInput = typedInput.trim();
+    if (!rawInput) return;
+    const normInput = normalizeAnswer(rawInput);
+    const expectedList = currentCard.expectedItems || [];
+
+    let matchedItem: string | null = null;
+    for (const item of expectedList) {
+      if (recalledItems.includes(item)) continue;
+      const aliases = currentCard.itemAliases?.[item] || [item];
+      for (const a of aliases) {
+        const normA = normalizeAnswer(a);
+        if (
+          normInput === normA ||
+          (normInput.length >= 4 && normA.includes(normInput)) ||
+          (normA.length >= 4 && normInput.includes(normA))
+        ) {
+          matchedItem = item;
+          break;
+        }
+      }
+      if (matchedItem) break;
+    }
+
+    if (matchedItem) {
+      const nextRecalled = [...recalledItems, matchedItem];
+      playStepSound(soundEnabled);
+      if (nextRecalled.length === expectedList.length) {
+        const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
+        const nextStreak = streak + 1;
+        playCorrectSound(nextStreak, currentCard.isReinforcement, soundEnabled);
+        setState(prev => ({
+          ...prev,
+          typedInput: '',
+          recalledItems: nextRecalled,
+          selectedOption: currentCard.correctIndex,
+          typedFeedback: {
+            status: 'correct',
+            userText: `All ${expectedList.length} items recalled!`,
+            matchedText: matchedItem!,
+          },
+          totalSubmissions: prev.totalSubmissions + 1,
+          attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
+          masteredIds: prev.masteredIds.includes(currentCard.id)
+            ? prev.masteredIds
+            : [...prev.masteredIds, currentCard.id],
+          streak: nextStreak,
+          bestStreak: Math.max(prev.bestStreak, nextStreak),
+        }));
+      } else {
+        setState(prev => ({
+          ...prev,
+          typedInput: '',
+          recalledItems: nextRecalled,
+        }));
+      }
+    } else {
+      playWrongSound(soundEnabled);
+    }
+  };
+
+  const giveUpMultiItem = () => {
+    if (isAnswered || !currentCard) return;
+    const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
+    playWrongSound(soundEnabled);
+    const reshuffled = shuffleQuestionOptions(currentCard, totalSubmissions + round + cursor + 1);
+    setState(prev => ({
+      ...prev,
+      selectedOption: -1,
+      multiItemRevealed: true,
+      totalSubmissions: prev.totalSubmissions + 1,
+      attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
+      streak: 0,
+      everMissedIds: prev.everMissedIds.includes(currentCard.id)
+        ? prev.everMissedIds
+        : [...prev.everMissedIds, currentCard.id],
+      reinforcementQueue: [
+        ...prev.reinforcementQueue,
+        {
+          ...reshuffled,
+          roundNumber: prev.round + 1,
+          attemptNumber: nextAttemptCount + 1,
+          isReinforcement: true,
+        },
+      ],
+    }));
+  };
+
   const advanceNext = () => {
     if (!isAnswered) return;
 
@@ -397,6 +614,10 @@ export function ReinforcementQuizModal({
         ...prev,
         selectedOption: null,
         showHint: false,
+        typedInput: '',
+        typedFeedback: null,
+        recalledItems: [],
+        multiItemRevealed: false,
         cursor: prev.cursor + 1,
       }));
       return;
@@ -409,6 +630,10 @@ export function ReinforcementQuizModal({
         ...prev,
         selectedOption: null,
         showHint: false,
+        typedInput: '',
+        typedFeedback: null,
+        recalledItems: [],
+        multiItemRevealed: false,
         queue: prev.reinforcementQueue,
         reinforcementQueue: [],
         cursor: 0,
@@ -420,12 +645,17 @@ export function ReinforcementQuizModal({
         ...prev,
         selectedOption: null,
         showHint: false,
+        typedInput: '',
+        typedFeedback: null,
+        recalledItems: [],
+        multiItemRevealed: false,
         completed: true,
       }));
     }
   };
 
-  const restartQuiz = (missedOnly = false) => {
+  const restartQuiz = (missedOnly = false, hardMode?: boolean) => {
+    const nextHardMode = hardMode !== undefined ? hardMode : isHardMode;
     playQuizStartSound(soundEnabled);
     const source =
       missedOnly && everMissedSet.size > 0
@@ -439,12 +669,17 @@ export function ReinforcementQuizModal({
     }));
     setState(prev => ({
       ...prev,
+      isHardMode: nextHardMode,
       queue: freshQueue,
       reinforcementQueue: [],
       cursor: 0,
       round: 1,
       selectedOption: null,
       showHint: false,
+      typedInput: '',
+      typedFeedback: null,
+      recalledItems: [],
+      multiItemRevealed: false,
       masteredIds: [],
       everMissedIds: missedOnly ? prev.everMissedIds : [],
       attemptsByQuestion: missedOnly ? prev.attemptsByQuestion : {},
@@ -492,6 +727,7 @@ export function ReinforcementQuizModal({
   const kindLabel = (kind: QuizQuestion['kind']) => {
     if (kind === 'mechanism') return 'Visual Mechanism';
     if (kind === 'safeguard') return 'Misreading Safeguard';
+    if (kind === 'multi_item') return 'Multi-Item Recall';
     return 'Core Inference';
   };
 
@@ -515,14 +751,18 @@ export function ReinforcementQuizModal({
             <div className="mastery-trophy-ring">
               <Trophy size={36} />
             </div>
-            <span className="mastery-kicker">100% MASTERY VERIFIED</span>
-            <h3>Perfect Score Achieved!</h3>
+            <span className="mastery-kicker">
+              {isHardMode ? 'HARD MODE 100% MASTERY VERIFIED' : '100% MASTERY VERIFIED'}
+            </span>
+            <h3>{isHardMode ? 'Hard Mode Conquered!' : 'Perfect Score Achieved!'}</h3>
             <p>
-              {everMissedSet.size === 0
-                ? 'Flawless run! You answered every single concept and visual mechanism question correctly on the first pass.'
-                : `You reinforced and mastered all ${everMissedSet.size} missed concept${
-                    everMissedSet.size > 1 ? 's' : ''
-                  } across ${round} rounds until zero gaps remained.`}
+              {isHardMode
+                ? 'Flawless active recall! You typed the answers and recalled multi-item rows with zero multiple-choice prompts.'
+                : everMissedSet.size === 0
+                  ? 'Flawless run! You answered every single concept and visual mechanism question correctly on the first pass.'
+                  : `You reinforced and mastered all ${everMissedSet.size} missed concept${
+                      everMissedSet.size > 1 ? 's' : ''
+                    } across ${round} rounds until zero gaps remained.`}
             </p>
           </div>
 
@@ -592,12 +832,29 @@ export function ReinforcementQuizModal({
           </div>
 
           <footer className="mastery-completion-footer">
-            <button type="button" className="mastery-secondary-btn" onClick={() => restartQuiz(false)}>
-              <RotateCcw size={15} /> Restart Full Quiz (Reshuffle)
+            <button
+              type="button"
+              className="mastery-secondary-btn"
+              onClick={() => restartQuiz(false, false)}
+              title="Play again in multiple-choice mode"
+            >
+              <RotateCcw size={15} /> Replay Standard Quiz
+            </button>
+            <button
+              type="button"
+              className={`mastery-hard-cta-btn ${isHardMode ? 'active' : ''}`}
+              onClick={() => restartQuiz(false, true)}
+              title="Test true recall by typing your answers"
+            >
+              <Sparkles size={15} /> {isHardMode ? 'Replay Hard Mode' : 'Hard Mode (Type Answers)'}
             </button>
             {everMissedSet.size > 0 && (
-              <button type="button" className="mastery-secondary-btn" onClick={() => restartQuiz(true)}>
-                <Repeat size={15} /> Drill {everMissedSet.size} Previously Missed Only
+              <button
+                type="button"
+                className="mastery-secondary-btn"
+                onClick={() => restartQuiz(true, isHardMode)}
+              >
+                <Repeat size={15} /> Drill {everMissedSet.size} Missed Only
               </button>
             )}
             <button type="button" className="mastery-primary-btn" onClick={onClose}>
@@ -612,7 +869,13 @@ export function ReinforcementQuizModal({
             <div className="mastery-question-meta">
               <div className="mastery-meta-tags">
                 <span className={`mastery-kind-tag ${currentCard.kind}`}>
-                  {currentCard.kind === 'safeguard' ? <ShieldAlert size={12} /> : <Layers size={12} />}
+                  {currentCard.kind === 'safeguard' ? (
+                    <ShieldAlert size={12} />
+                  ) : currentCard.kind === 'multi_item' ? (
+                    <Sparkles size={12} />
+                  ) : (
+                    <Layers size={12} />
+                  )}
                   {kindLabel(currentCard.kind)}
                 </span>
                 <span className="mastery-beat-tag">
@@ -621,6 +884,11 @@ export function ReinforcementQuizModal({
                 {currentCard.isReinforcement && (
                   <span className="mastery-reinforce-pill">
                     <Repeat size={11} /> Reinforcement Retry #{currentCard.attemptNumber}
+                  </span>
+                )}
+                {isHardMode && (
+                  <span className="mastery-hard-pill">
+                    <Flame size={11} /> Hard Mode (Type Answer)
                   </span>
                 )}
               </div>
@@ -665,36 +933,157 @@ export function ReinforcementQuizModal({
               </div>
             )}
 
-            {/* Options Grid */}
-            <div className="mastery-options-list">
-              {currentCard.options.map((opt, idx) => {
-                const isThisSelected = selectedOption === idx;
-                const isThisCorrect = idx === currentCard.correctIndex;
-                let state = 'idle';
-                if (isAnswered) {
-                  if (isThisCorrect) state = 'correct';
-                  else if (isThisSelected) state = 'wrong';
-                  else state = 'dimmed';
-                }
-                const letter = String.fromCharCode(65 + idx);
-                return (
-                  <button
-                    key={`${currentCard.id}-opt-${idx}`}
-                    type="button"
+            {/* Hard Mode: Multi-Item Interactive Recall */}
+            {isHardMode && currentCard.kind === 'multi_item' && (
+              <div className="mastery-multi-slots-container">
+                <div className="mastery-multi-slots-header">
+                  <span className="mastery-multi-slots-title">
+                    Recalled {recalledItems.length} of {(currentCard.expectedItems || []).length}{' '}
+                    {currentCard.itemLabel || 'items'}:
+                  </span>
+                  {recalledItems.length === (currentCard.expectedItems || []).length && (
+                    <span className="mastery-all-recalled-badge">
+                      <CheckCircle2 size={13} /> All Recalled!
+                    </span>
+                  )}
+                </div>
+                <div className="mastery-multi-slots-grid">
+                  {(currentCard.expectedItems || []).map((item, idx) => {
+                    const isRecalled = recalledItems.includes(item);
+                    const isRevealed = multiItemRevealed && !isRecalled;
+                    return (
+                      <div
+                        key={`${currentCard.id}-slot-${idx}`}
+                        className={`mastery-slot-chip ${
+                          isRecalled ? 'recalled' : isRevealed ? 'revealed' : 'empty'
+                        }`}
+                      >
+                        <span className="mastery-slot-index">{idx + 1}</span>
+                        <span className="mastery-slot-text">
+                          {isRecalled ? item : isRevealed ? item : '· · · · · · · ·'}
+                        </span>
+                        {isRecalled && <CheckCircle2 size={14} className="mastery-slot-icon ok" />}
+                        {isRevealed && <XCircle size={14} className="mastery-slot-icon miss" />}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {!isAnswered && (
+                  <form onSubmit={submitMultiItem} className="mastery-hard-input-form">
+                    <div className="mastery-hard-input-wrap">
+                      <input
+                        type="text"
+                        value={typedInput}
+                        onChange={e => setState(prev => ({ ...prev, typedInput: e.target.value }))}
+                        placeholder={`Type one condition/item and press Enter...`}
+                        className="mastery-hard-input"
+                        autoFocus
+                      />
+                      <button
+                        type="submit"
+                        className="mastery-hard-submit-btn"
+                        disabled={!typedInput.trim()}
+                      >
+                        <span>Add</span> <ArrowRight size={14} />
+                      </button>
+                    </div>
+                    <div className="mastery-hard-subactions">
+                      <button
+                        type="button"
+                        className="mastery-giveup-btn"
+                        onClick={giveUpMultiItem}
+                      >
+                        I'm Stuck — Reveal Remaining & Retry Later
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {/* Hard Mode: Single-Answer Typed Input */}
+            {isHardMode && currentCard.kind !== 'multi_item' && (
+              <form onSubmit={submitTypedAnswer} className="mastery-hard-input-form">
+                <div className="mastery-hard-input-wrap">
+                  <input
+                    type="text"
+                    value={typedInput}
                     disabled={isAnswered}
-                    onClick={() => submitAnswer(idx)}
-                    className={`mastery-option-btn ${state}`}
-                  >
-                    <span className="mastery-option-key">{letter}</span>
-                    <span className="mastery-option-text">{opt}</span>
-                    {isAnswered && isThisCorrect && <CheckCircle2 size={18} className="mastery-opt-icon ok" />}
-                    {isAnswered && isThisSelected && !isThisCorrect && (
-                      <XCircle size={18} className="mastery-opt-icon bad" />
+                    onChange={e => setState(prev => ({ ...prev, typedInput: e.target.value }))}
+                    placeholder="Type the correct term, concept, or condition..."
+                    className="mastery-hard-input"
+                    autoFocus
+                  />
+                  {!isAnswered && (
+                    <button
+                      type="submit"
+                      className="mastery-hard-submit-btn"
+                      disabled={!typedInput.trim()}
+                    >
+                      <span>Submit</span> <ArrowRight size={14} />
+                    </button>
+                  )}
+                </div>
+                {typedFeedback && (
+                  <div className={`mastery-typed-callout ${typedFeedback.status}`}>
+                    {typedFeedback.status === 'correct' ? (
+                      <div className="mastery-typed-line ok">
+                        <CheckCircle2 size={16} />
+                        <span>
+                          Your answer: <strong>"{typedFeedback.userText}"</strong>{' '}
+                          {typedFeedback.matchedText &&
+                            typedFeedback.matchedText.toLowerCase() !== typedFeedback.userText.toLowerCase() && (
+                              <small>(Matched: {typedFeedback.matchedText})</small>
+                            )}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="mastery-typed-line bad">
+                        <XCircle size={16} />
+                        <span>
+                          Your answer: <strong>"{typedFeedback.userText || '(empty)'}"</strong> · Expected:{' '}
+                          <strong>"{typedFeedback.matchedText}"</strong>
+                        </span>
+                      </div>
                     )}
-                  </button>
-                );
-              })}
-            </div>
+                  </div>
+                )}
+              </form>
+            )}
+
+            {/* Standard Mode: Multiple-Choice Options Grid */}
+            {!isHardMode && (
+              <div className="mastery-options-list">
+                {currentCard.options.map((opt, idx) => {
+                  const isThisSelected = selectedOption === idx;
+                  const isThisCorrect = idx === currentCard.correctIndex;
+                  let state = 'idle';
+                  if (isAnswered) {
+                    if (isThisCorrect) state = 'correct';
+                    else if (isThisSelected) state = 'wrong';
+                    else state = 'dimmed';
+                  }
+                  const letter = String.fromCharCode(65 + idx);
+                  return (
+                    <button
+                      key={`${currentCard.id}-opt-${idx}`}
+                      type="button"
+                      disabled={isAnswered}
+                      onClick={() => submitAnswer(idx)}
+                      className={`mastery-option-btn ${state}`}
+                    >
+                      <span className="mastery-option-key">{letter}</span>
+                      <span className="mastery-option-text">{opt}</span>
+                      {isAnswered && isThisCorrect && <CheckCircle2 size={18} className="mastery-opt-icon ok" />}
+                      {isAnswered && isThisSelected && !isThisCorrect && (
+                        <XCircle size={18} className="mastery-opt-icon bad" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Immediate Feedback */}
             {isAnswered && (
@@ -725,20 +1114,54 @@ export function ReinforcementQuizModal({
                   )}
                 </div>
 
-                <button type="button" className="mastery-continue-btn" onClick={advanceNext} autoFocus>
-                  {cursor + 1 < queue.length
-                    ? 'Next Question'
-                    : reinforcementQueue.length > 0
-                      ? `Start Reinforcement Round ${round + 1} (${reinforcementQueue.length})`
-                      : 'Finish & View Mastery'}
-                  <ArrowRight size={16} />
-                </button>
+                {cursor + 1 < queue.length ? (
+                  <button type="button" className="mastery-continue-btn" onClick={advanceNext} autoFocus>
+                    Next Question <ArrowRight size={16} />
+                  </button>
+                ) : reinforcementQueue.length > 0 ? (
+                  <button type="button" className="mastery-continue-btn" onClick={advanceNext} autoFocus>
+                    Start Reinforcement Round {round + 1} ({reinforcementQueue.length})
+                    <ArrowRight size={16} />
+                  </button>
+                ) : (
+                  <div className="mastery-round-complete-actions">
+                    <button
+                      type="button"
+                      className="mastery-replay-action-btn"
+                      onClick={() => restartQuiz(false, false)}
+                      title="Replay in standard multiple-choice mode"
+                    >
+                      <RotateCcw size={14} /> Replay
+                    </button>
+                    <button
+                      type="button"
+                      className="mastery-hard-action-btn"
+                      onClick={() => restartQuiz(false, true)}
+                      title="Challenge yourself in Hard Mode: type the answers"
+                    >
+                      <Sparkles size={14} /> Hard Mode
+                    </button>
+                    <button
+                      type="button"
+                      className="mastery-scorecard-action-btn"
+                      onClick={advanceNext}
+                      title="View full lesson mastery metrics"
+                    >
+                      Scorecard <ArrowRight size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
-            {!isAnswered && (
+            {!isAnswered && !isHardMode && (
               <div className="mastery-keyboard-tip">
                 Press <kbd>A</kbd>–<kbd>D</kbd> or <kbd>1</kbd>–<kbd>4</kbd> to answer · Missed questions automatically repeat until mastered
+              </div>
+            )}
+            {!isAnswered && isHardMode && (
+              <div className="mastery-keyboard-tip">
+                Type your answer and press <kbd>Enter</kbd> · Active recall reinforces memory retention
               </div>
             )}
           </div>
