@@ -357,12 +357,6 @@
 .mastery-lock-memory-btn:hover{background:rgba(237,202,130,.32);border-color:#edca82;transform:translateY(-1px)}
 .mastery-lock-memory-btn.locked{background:rgba(82,199,153,.22);border-color:rgba(82,199,153,.6);color:#a7f3d0;cursor:default}
 
-/* Gold Key Hook Callout When Missed */
-.mastery-key-hook-callout{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:10px;background:linear-gradient(135deg,rgba(237,202,130,.14) 0%,rgba(201,138,75,.1) 100%);border:1.5px solid rgba(237,202,130,.4);box-shadow:0 4px 18px rgba(0,0,0,.25),inset 0 0 12px rgba(237,202,130,.06)}
-.mastery-key-hook-header{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.12em;font-weight:800;color:#edca82;text-transform:uppercase}
-.mastery-key-hook-phrase{font-size:15px;font-weight:700;color:#fff;line-height:1.35;padding:2px 0;text-shadow:0 1px 4px rgba(0,0,0,.4)}
-.mastery-key-hook-sub{font-size:11.5px;color:#d1b886;line-height:1.4}
-
 /* 3-Card Short-Horizon Spaced Recall Banner */
 .mastery-spaced-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-radius:8px;background:linear-gradient(90deg,rgba(237,202,130,.14) 0%,rgba(13,30,40,.6) 100%);border:1px solid rgba(237,202,130,.35);box-sizing:border-box}
 .mastery-spaced-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.08em;font-weight:800;color:#edca82;text-transform:uppercase;flex-shrink:0}

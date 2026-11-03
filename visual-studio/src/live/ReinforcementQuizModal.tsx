@@ -1348,26 +1348,16 @@ export function ReinforcementQuizModal({
                     )}
                   </div>
 
-                  {!isCorrect && (
-                    <div className="mastery-key-hook-callout">
-                      <div className="mastery-key-hook-header">
-                        <Sparkles size={14} />
-                        <span>REMEMBER THIS KEY HOOK FOR RETRY</span>
-                      </div>
-                      <div className="mastery-key-hook-phrase">"{getCardKeyHook(currentCard)}"</div>
-                      <div className="mastery-key-hook-sub">
-                        Re-entering working memory in <strong>3 cards</strong> for Short-Horizon Spaced Recall.
-                      </div>
-                      {isHardMode && (
-                        <button
-                          type="button"
-                          className={`mastery-lock-memory-btn ${memoryLocked ? 'locked' : ''}`}
-                          onClick={handleLockInMemory}
-                        >
-                          <Sparkles size={12} />
-                          <span>{memoryLocked ? 'Memory Locked 🔒' : 'Tap to Lock In Memory'}</span>
-                        </button>
-                      )}
+                  {isHardMode && !isCorrect && (
+                    <div style={{ marginTop: 4 }}>
+                      <button
+                        type="button"
+                        className={`mastery-lock-memory-btn ${memoryLocked ? 'locked' : ''}`}
+                        onClick={handleLockInMemory}
+                      >
+                        <Sparkles size={12} />
+                        <span>{memoryLocked ? 'Memory Locked 🔒' : 'Tap to Lock In Memory'}</span>
+                      </button>
                     </div>
                   )}
 
