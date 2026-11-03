@@ -81,8 +81,9 @@ function hashSort(items: string[], seed: string): string[] {
 }
 
 export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
-  if (Array.isArray(lesson.quiz) && lesson.quiz.length >= 3) {
-    return lesson.quiz;
+  const existing = lesson.quiz || lesson.reinforcementQuiz;
+  if (Array.isArray(existing) && existing.length >= 3) {
+    return existing;
   }
   const chapters = lesson.chapters || [];
   if (!chapters.length) return [];

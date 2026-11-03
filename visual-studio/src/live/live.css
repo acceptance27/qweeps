@@ -332,6 +332,45 @@
 .mastery-hard-cta-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 16px!important;border-radius:8px;background:linear-gradient(135deg,#c7883b,#e6b567)!important;color:#08131a!important;border:0!important;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(230,181,103,.28);transition:all .15s ease}
 .mastery-hard-cta-btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
 
+/* Option Hook Split & Rapid Scan */
+.mastery-option-content{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;text-align:left}
+.mastery-option-lead-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mastery-option-lead-hook{font-weight:700;font-size:14px;color:#f1f6f6;line-height:1.35;letter-spacing:-0.01em;transition:color .15s ease}
+.mastery-option-btn:hover:not(:disabled) .mastery-option-lead-hook{color:#edca82}
+.mastery-option-btn.correct .mastery-option-lead-hook{color:#a7f3d0}
+.mastery-option-btn.wrong .mastery-option-lead-hook{color:#fecdd3}
+.mastery-option-supporting{font-size:12.5px;line-height:1.45;color:#9cb5bf;font-weight:400;transition:opacity .15s ease}
+.mastery-option-btn.dimmed .mastery-option-supporting{color:#637d88}
+
+/* ⚡ Rapid Scan Toggle Button & Badge */
+.mastery-rapid-scan-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid #284452;background:#10222b;color:#b6cdd5;transition:all .15s ease}
+.mastery-rapid-scan-btn:hover{border-color:#edca82;color:#edca82}
+.mastery-rapid-scan-btn.active{border-color:#f59e0b;background:rgba(245,158,11,.18);color:#fbbf24;box-shadow:0 0 10px rgba(245,158,11,.2)}
+.mastery-rapid-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.04em;background:rgba(245,158,11,.16);color:#fbbf24;border:1px solid rgba(245,158,11,.45);text-transform:uppercase}
+
+/* Prior Trap Warning on Spaced Recall Cards */
+.mastery-option-btn.prior-trap{border-style:dashed!important;border-color:rgba(224,108,83,.7)!important;background:rgba(224,108,83,.08)!important}
+.mastery-prior-trap-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.04em;background:rgba(224,108,83,.22);color:#fca591;border:1px solid rgba(224,108,83,.5);text-transform:uppercase}
+
+/* Tap to Lock In Memory Button */
+.mastery-lock-memory-btn{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;margin-top:5px;border-radius:6px;background:rgba(237,202,130,.18);border:1px solid rgba(237,202,130,.45);color:#f7dda2;font-size:11px;font-weight:700;cursor:pointer;width:fit-content;transition:all .15s ease}
+.mastery-lock-memory-btn:hover{background:rgba(237,202,130,.32);border-color:#edca82;transform:translateY(-1px)}
+.mastery-lock-memory-btn.locked{background:rgba(82,199,153,.22);border-color:rgba(82,199,153,.6);color:#a7f3d0;cursor:default}
+
+/* Gold Key Hook Callout When Missed */
+.mastery-key-hook-callout{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:10px;background:linear-gradient(135deg,rgba(237,202,130,.14) 0%,rgba(201,138,75,.1) 100%);border:1.5px solid rgba(237,202,130,.4);box-shadow:0 4px 18px rgba(0,0,0,.25),inset 0 0 12px rgba(237,202,130,.06)}
+.mastery-key-hook-header{display:flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.12em;font-weight:800;color:#edca82;text-transform:uppercase}
+.mastery-key-hook-phrase{font-size:15px;font-weight:700;color:#fff;line-height:1.35;padding:2px 0;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+.mastery-key-hook-sub{font-size:11.5px;color:#d1b886;line-height:1.4}
+
+/* 3-Card Short-Horizon Spaced Recall Banner */
+.mastery-spaced-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 12px;border-radius:8px;background:linear-gradient(90deg,rgba(237,202,130,.14) 0%,rgba(13,30,40,.6) 100%);border:1px solid rgba(237,202,130,.35);box-sizing:border-box}
+.mastery-spaced-badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.08em;font-weight:800;color:#edca82;text-transform:uppercase;flex-shrink:0}
+.mastery-spaced-cue{font-size:12px;color:#cbd5e1;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mastery-spaced-cue .gold-text{color:#f7dda2;font-weight:700}
+@keyframes spinSlow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.spin-slow{animation:spinSlow 8s linear infinite}
+
 /* Landscape and Desktop Monitor Ergonomics: comfortable 740px width + 2x2 option grid (fits completely without vertical scrolling) */
 @media(min-width:640px){
   .mastery-quiz-modal{max-width:740px}

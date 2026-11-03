@@ -16,6 +16,7 @@ import {
   Brain,
   Volume2,
   VolumeX,
+  Zap,
 } from 'lucide-react';
 import { ensureLessonQuiz, type LiveLesson, type QuizQuestion } from './lessonTypes';
 
@@ -23,6 +24,9 @@ export interface ActiveCard extends QuizQuestion {
   roundNumber: number;
   attemptNumber: number;
   isReinforcement: boolean;
+  isSpacedRecall?: boolean;
+  memoryCue?: string;
+  priorTrapOptionText?: string;
 }
 
 export interface QuizProgressState {
@@ -43,6 +47,8 @@ export interface QuizProgressState {
   totalSubmissions: number;
   completed: boolean;
   isHardMode: boolean;
+  rapidScan: boolean;
+  memoryLocked: boolean;
   typedInput: string;
   typedFeedback: {
     status: 'correct' | 'wrong' | 'revealed';
@@ -53,10 +59,96 @@ export interface QuizProgressState {
   multiItemRevealed: boolean;
 }
 
+export interface OptionHookSplit {
+  leadHook: string;
+  supportingText: string;
+}
+
+export function splitOptionHook(text: string): OptionHookSplit {
+  if (!text) return { leadHook: '', supportingText: '' };
+  const trimmed = text.trim();
+
+  // 1. Colon separator within first 45 chars (e.g. "Decided: decision and decider", "Harm + Belief: ...")
+  const colonIdx = trimmed.indexOf(':');
+  if (colonIdx > 0 && colonIdx <= 45) {
+    const lead = trimmed.slice(0, colonIdx).trim();
+    const rest = trimmed.slice(colonIdx + 1).trim();
+    if (lead.split(/\s+/).length <= 7 && rest.length > 0) {
+      return { leadHook: lead, supportingText: rest };
+    }
+  }
+
+  // 2. Semicolon or em-dash within first 45 chars
+  const sepIdx = trimmed.search(/[;—]/);
+  if (sepIdx > 0 && sepIdx <= 45) {
+    const lead = trimmed.slice(0, sepIdx).trim();
+    const rest = trimmed.slice(sepIdx + 1).trim();
+    if (lead.split(/\s+/).length <= 7 && rest.length > 0) {
+      return { leadHook: lead, supportingText: rest };
+    }
+  }
+
+  // 3. Comma separator within first 2 to 6 words (e.g. "Responsibility asks who could act, ...")
+  const commaIdx = trimmed.indexOf(',');
+  if (commaIdx > 0 && commaIdx <= 45) {
+    const lead = trimmed.slice(0, commaIdx).trim();
+    const words = lead.split(/\s+/);
+    if (words.length >= 2 && words.length <= 6) {
+      const rest = trimmed.slice(commaIdx + 1).trim();
+      if (rest.length > 0) {
+        return { leadHook: lead, supportingText: rest };
+      }
+    }
+  }
+
+  // 4. Period separator within first 3 to 6 words
+  const dotIdx = trimmed.indexOf('.');
+  if (dotIdx > 0 && dotIdx <= 45) {
+    const lead = trimmed.slice(0, dotIdx).trim();
+    const words = lead.split(/\s+/);
+    if (words.length >= 2 && words.length <= 6) {
+      const rest = trimmed.slice(dotIdx + 1).trim();
+      if (rest.length > 0) {
+        return { leadHook: lead, supportingText: rest };
+      }
+    }
+  }
+
+  // 5. Short options (<= 5 words total)
+  const allWords = trimmed.split(/\s+/);
+  if (allWords.length <= 5) {
+    return { leadHook: trimmed, supportingText: '' };
+  }
+
+  // 6. Natural 3-5 word lead hook cutoff for longer prose
+  const targetWords = allWords.length >= 8 ? 4 : 3;
+  const lead = allWords.slice(0, targetWords).join(' ');
+  const rest = allWords.slice(targetWords).join(' ');
+  return { leadHook: lead, supportingText: rest };
+}
+
+export function getCardKeyHook(card: QuizQuestion): string {
+  const correctOpt = card.options[card.correctIndex] || '';
+  if (!correctOpt) return card.chapterTitle || 'Key Concept';
+
+  if (card.acceptedAnswers && card.acceptedAnswers.length > 0) {
+    const sorted = [...card.acceptedAnswers]
+      .filter(a => a && a.length >= 3 && a.length <= 36)
+      .sort((a, b) => a.length - b.length);
+    if (sorted.length > 0) {
+      return sorted[0];
+    }
+  }
+
+  const { leadHook } = splitOptionHook(correctOpt);
+  return leadHook || correctOpt.slice(0, 35);
+}
+
 export function createInitialQuizState(
   lesson: LiveLesson,
   soundEnabled = true,
-  hardMode = false
+  hardMode = false,
+  rapidScan = false
 ): QuizProgressState {
   const baseQuestions = ensureLessonQuiz(lesson);
   return {
@@ -82,6 +174,8 @@ export function createInitialQuizState(
     totalSubmissions: 0,
     completed: false,
     isHardMode: hardMode,
+    rapidScan,
+    memoryLocked: false,
     typedInput: '',
     typedFeedback: null,
     recalledItems: [],
@@ -125,6 +219,19 @@ export function ReinforcementQuizNavbar({
         </div>
 
         <div className="mastery-quiz-stats">
+          <button
+            type="button"
+            className={`mastery-rapid-scan-btn ${quizState.rapidScan ? 'active' : ''}`}
+            onClick={() => {
+              const nextRapid = !quizState.rapidScan;
+              setQuizState(prev => ({ ...prev, rapidScan: nextRapid }));
+              playStepSound(soundEnabled);
+            }}
+            title={quizState.rapidScan ? '⚡ Rapid Scan Active: Key hooks only (click to show full supporting text)' : '⚡ Rapid Scan: Hide supporting prose and answer purely by key-phrase hooks'}
+          >
+            <Zap size={13} />
+            <span>Rapid Scan</span>
+          </button>
           <button
             type="button"
             className={`mastery-mode-toggle-btn ${quizState.isHardMode ? 'hard' : 'standard'}`}
@@ -322,6 +429,14 @@ export function playVictoryFanfare(enabled = true) {
   playTone(783.99, 0.35, 0.6, 'sine', 0.09);
 }
 
+export function playMemoryLockChime(enabled = true) {
+  if (!enabled) return;
+  // Resonant 3-note harmonic lock (F#5 -> A#5 -> C#6)
+  playTone(739.99, 0.0, 0.12, 'triangle', 0.14);
+  playTone(932.33, 0.06, 0.16, 'triangle', 0.14);
+  playTone(1108.73, 0.12, 0.35, 'sine', 0.16);
+}
+
 function shuffleQuestionOptions(q: QuizQuestion, salt: number): QuizQuestion {
   const correctText = q.options[q.correctIndex];
   const indexed = q.options.map((opt, idx) => ({
@@ -374,6 +489,8 @@ export function ReinforcementQuizModal({
     totalSubmissions,
     completed,
     isHardMode,
+    rapidScan,
+    memoryLocked,
     typedInput,
     typedFeedback,
     recalledItems,
@@ -386,6 +503,15 @@ export function ReinforcementQuizModal({
   const currentCard = queue[cursor] as ActiveCard | undefined;
   const isAnswered = selectedOption !== null;
   const isCorrect = isAnswered && currentCard && selectedOption === currentCard.correctIndex;
+
+  const handleLockInMemory = () => {
+    if (memoryLocked) return;
+    playMemoryLockChime(soundEnabled);
+    setState(prev => ({
+      ...prev,
+      memoryLocked: true,
+    }));
+  };
 
   const normalizeAnswer = (text: string): string => {
     return (text || '')
@@ -427,7 +553,7 @@ export function ReinforcementQuizModal({
 
     if (isHit) {
       const nextStreak = streak + 1;
-      playCorrectSound(nextStreak, currentCard.isReinforcement, soundEnabled);
+      playCorrectSound(nextStreak, currentCard.isReinforcement || Boolean(currentCard.isSpacedRecall), soundEnabled);
       setState(prev => ({
         ...prev,
         selectedOption: optionIdx,
@@ -436,31 +562,50 @@ export function ReinforcementQuizModal({
         masteredIds: prev.masteredIds.includes(currentCard.id)
           ? prev.masteredIds
           : [...prev.masteredIds, currentCard.id],
+        reinforcementQueue: prev.reinforcementQueue.filter(rc => rc.id !== currentCard.id),
         streak: nextStreak,
         bestStreak: Math.max(prev.bestStreak, nextStreak),
       }));
     } else {
       playWrongSound(soundEnabled);
       const reshuffled = shuffleQuestionOptions(currentCard, totalSubmissions + round + cursor + 1);
-      setState(prev => ({
-        ...prev,
-        selectedOption: optionIdx,
-        totalSubmissions: prev.totalSubmissions + 1,
-        attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
-        streak: 0,
-        everMissedIds: prev.everMissedIds.includes(currentCard.id)
-          ? prev.everMissedIds
-          : [...prev.everMissedIds, currentCard.id],
-        reinforcementQueue: [
-          ...prev.reinforcementQueue,
-          {
-            ...reshuffled,
-            roundNumber: prev.round + 1,
-            attemptNumber: nextAttemptCount + 1,
-            isReinforcement: true,
-          },
-        ],
-      }));
+      const keyHook = getCardKeyHook(currentCard);
+      const priorTrap = currentCard.options[optionIdx] || '';
+
+      const retryCard: ActiveCard = {
+        ...reshuffled,
+        roundNumber: currentCard.roundNumber,
+        attemptNumber: nextAttemptCount + 1,
+        isReinforcement: true,
+        isSpacedRecall: true,
+        memoryCue: keyHook,
+        priorTrapOptionText: priorTrap,
+      };
+
+      // 3-Card Short-Horizon Spaced Recall: re-enters queue exactly 3 cards later
+      setState(prev => {
+        const insertPos = Math.min(prev.queue.length, prev.cursor + 3);
+        const nextQueue = [
+          ...prev.queue.slice(0, insertPos),
+          retryCard,
+          ...prev.queue.slice(insertPos),
+        ];
+        return {
+          ...prev,
+          queue: nextQueue,
+          selectedOption: optionIdx,
+          totalSubmissions: prev.totalSubmissions + 1,
+          attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
+          streak: 0,
+          everMissedIds: prev.everMissedIds.includes(currentCard.id)
+            ? prev.everMissedIds
+            : [...prev.everMissedIds, currentCard.id],
+          reinforcementQueue: [
+            ...prev.reinforcementQueue,
+            retryCard,
+          ],
+        };
+      });
     }
   };
 
@@ -475,7 +620,7 @@ export function ReinforcementQuizModal({
 
     if (result.hit) {
       const nextStreak = streak + 1;
-      playCorrectSound(nextStreak, currentCard.isReinforcement, soundEnabled);
+      playCorrectSound(nextStreak, currentCard.isReinforcement || Boolean(currentCard.isSpacedRecall), soundEnabled);
       setState(prev => ({
         ...prev,
         selectedOption: currentCard.correctIndex,
@@ -485,6 +630,7 @@ export function ReinforcementQuizModal({
         masteredIds: prev.masteredIds.includes(currentCard.id)
           ? prev.masteredIds
           : [...prev.masteredIds, currentCard.id],
+        reinforcementQueue: prev.reinforcementQueue.filter(rc => rc.id !== currentCard.id),
         streak: nextStreak,
         bestStreak: Math.max(prev.bestStreak, nextStreak),
       }));
@@ -492,26 +638,42 @@ export function ReinforcementQuizModal({
       playWrongSound(soundEnabled);
       const reshuffled = shuffleQuestionOptions(currentCard, totalSubmissions + round + cursor + 1);
       const expected = currentCard.acceptedAnswers?.[0] || currentCard.options[currentCard.correctIndex];
-      setState(prev => ({
-        ...prev,
-        selectedOption: -1,
-        typedFeedback: { status: 'wrong', userText: rawInput, matchedText: expected },
-        totalSubmissions: prev.totalSubmissions + 1,
-        attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
-        streak: 0,
-        everMissedIds: prev.everMissedIds.includes(currentCard.id)
-          ? prev.everMissedIds
-          : [...prev.everMissedIds, currentCard.id],
-        reinforcementQueue: [
-          ...prev.reinforcementQueue,
-          {
-            ...reshuffled,
-            roundNumber: prev.round + 1,
-            attemptNumber: nextAttemptCount + 1,
-            isReinforcement: true,
-          },
-        ],
-      }));
+      const keyHook = getCardKeyHook(currentCard);
+
+      const retryCard: ActiveCard = {
+        ...reshuffled,
+        roundNumber: currentCard.roundNumber,
+        attemptNumber: nextAttemptCount + 1,
+        isReinforcement: true,
+        isSpacedRecall: true,
+        memoryCue: keyHook,
+        priorTrapOptionText: rawInput,
+      };
+
+      setState(prev => {
+        const insertPos = Math.min(prev.queue.length, prev.cursor + 3);
+        const nextQueue = [
+          ...prev.queue.slice(0, insertPos),
+          retryCard,
+          ...prev.queue.slice(insertPos),
+        ];
+        return {
+          ...prev,
+          queue: nextQueue,
+          selectedOption: -1,
+          typedFeedback: { status: 'wrong', userText: rawInput, matchedText: expected },
+          totalSubmissions: prev.totalSubmissions + 1,
+          attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
+          streak: 0,
+          everMissedIds: prev.everMissedIds.includes(currentCard.id)
+            ? prev.everMissedIds
+            : [...prev.everMissedIds, currentCard.id],
+          reinforcementQueue: [
+            ...prev.reinforcementQueue,
+            retryCard,
+          ],
+        };
+      });
     }
   };
 
@@ -583,26 +745,42 @@ export function ReinforcementQuizModal({
     const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
     playWrongSound(soundEnabled);
     const reshuffled = shuffleQuestionOptions(currentCard, totalSubmissions + round + cursor + 1);
-    setState(prev => ({
-      ...prev,
-      selectedOption: -1,
-      multiItemRevealed: true,
-      totalSubmissions: prev.totalSubmissions + 1,
-      attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
-      streak: 0,
-      everMissedIds: prev.everMissedIds.includes(currentCard.id)
-        ? prev.everMissedIds
-        : [...prev.everMissedIds, currentCard.id],
-      reinforcementQueue: [
-        ...prev.reinforcementQueue,
-        {
-          ...reshuffled,
-          roundNumber: prev.round + 1,
-          attemptNumber: nextAttemptCount + 1,
-          isReinforcement: true,
-        },
-      ],
-    }));
+    const keyHook = getCardKeyHook(currentCard);
+
+    const retryCard: ActiveCard = {
+      ...reshuffled,
+      roundNumber: currentCard.roundNumber,
+      attemptNumber: nextAttemptCount + 1,
+      isReinforcement: true,
+      isSpacedRecall: true,
+      memoryCue: keyHook,
+      priorTrapOptionText: 'Incomplete recall',
+    };
+
+    setState(prev => {
+      const insertPos = Math.min(prev.queue.length, prev.cursor + 3);
+      const nextQueue = [
+        ...prev.queue.slice(0, insertPos),
+        retryCard,
+        ...prev.queue.slice(insertPos),
+      ];
+      return {
+        ...prev,
+        queue: nextQueue,
+        selectedOption: -1,
+        multiItemRevealed: true,
+        totalSubmissions: prev.totalSubmissions + 1,
+        attemptsByQuestion: { ...prev.attemptsByQuestion, [currentCard.id]: nextAttemptCount },
+        streak: 0,
+        everMissedIds: prev.everMissedIds.includes(currentCard.id)
+          ? prev.everMissedIds
+          : [...prev.everMissedIds, currentCard.id],
+        reinforcementQueue: [
+          ...prev.reinforcementQueue,
+          retryCard,
+        ],
+      };
+    });
   };
 
   const advanceNext = () => {
@@ -614,6 +792,7 @@ export function ReinforcementQuizModal({
         ...prev,
         selectedOption: null,
         showHint: false,
+        memoryLocked: false,
         typedInput: '',
         typedFeedback: null,
         recalledItems: [],
@@ -630,6 +809,7 @@ export function ReinforcementQuizModal({
         ...prev,
         selectedOption: null,
         showHint: false,
+        memoryLocked: false,
         typedInput: '',
         typedFeedback: null,
         recalledItems: [],
@@ -645,6 +825,7 @@ export function ReinforcementQuizModal({
         ...prev,
         selectedOption: null,
         showHint: false,
+        memoryLocked: false,
         typedInput: '',
         typedFeedback: null,
         recalledItems: [],
@@ -676,6 +857,7 @@ export function ReinforcementQuizModal({
       round: 1,
       selectedOption: null,
       showHint: false,
+      memoryLocked: false,
       typedInput: '',
       typedFeedback: null,
       recalledItems: [],
@@ -707,9 +889,14 @@ export function ReinforcementQuizModal({
           e.preventDefault();
           submitAnswer(idx);
         }
-      } else if (isAnswered && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        advanceNext();
+      } else if (isAnswered) {
+        if (!isCorrect && (e.key === 'l' || e.key === 'L')) {
+          e.preventDefault();
+          handleLockInMemory();
+        } else if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          advanceNext();
+        }
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -881,7 +1068,7 @@ export function ReinforcementQuizModal({
                 <span className="mastery-beat-tag">
                   Beat {currentCard.chapterIndex + 1} of {lesson.chapters.length} · {currentCard.chapterTitle}
                 </span>
-                {currentCard.isReinforcement && (
+                {currentCard.isReinforcement && !currentCard.isSpacedRecall && (
                   <span className="mastery-reinforce-pill">
                     <Repeat size={11} /> Reinforcement Retry #{currentCard.attemptNumber}
                   </span>
@@ -889,6 +1076,11 @@ export function ReinforcementQuizModal({
                 {isHardMode && (
                   <span className="mastery-hard-pill">
                     <Flame size={11} /> Hard Mode (Type Answer)
+                  </span>
+                )}
+                {rapidScan && !isHardMode && (
+                  <span className="mastery-rapid-badge" title="Rapid Scan Active: Showing key hooks only">
+                    <Zap size={11} /> Rapid Scan
                   </span>
                 )}
               </div>
@@ -922,6 +1114,19 @@ export function ReinforcementQuizModal({
                 )}
               </div>
             </div>
+
+            {/* 3-Card Short-Horizon Spaced Recall Banner */}
+            {currentCard.isSpacedRecall && (
+              <div className="mastery-spaced-banner">
+                <div className="mastery-spaced-badge">
+                  <RotateCcw size={13} className="spin-slow" />
+                  <span>3-CARD SPACED RECALL</span>
+                </div>
+                <div className="mastery-spaced-cue">
+                  Memory Cue Anchor: <strong className="gold-text">"{currentCard.memoryCue || getCardKeyHook(currentCard)}"</strong>
+                </div>
+              </div>
+            )}
 
             {/* Prompt */}
             <h3 className="mastery-prompt">{currentCard.prompt}</h3>
@@ -1058,6 +1263,12 @@ export function ReinforcementQuizModal({
                 {currentCard.options.map((opt, idx) => {
                   const isThisSelected = selectedOption === idx;
                   const isThisCorrect = idx === currentCard.correctIndex;
+                  const isPriorTrap = Boolean(
+                    currentCard.isSpacedRecall &&
+                    currentCard.priorTrapOptionText &&
+                    (opt === currentCard.priorTrapOptionText ||
+                     normalizeAnswer(opt) === normalizeAnswer(currentCard.priorTrapOptionText))
+                  );
                   let state = 'idle';
                   if (isAnswered) {
                     if (isThisCorrect) state = 'correct';
@@ -1065,16 +1276,44 @@ export function ReinforcementQuizModal({
                     else state = 'dimmed';
                   }
                   const letter = String.fromCharCode(65 + idx);
+                  const { leadHook, supportingText } = splitOptionHook(opt);
+
                   return (
                     <button
                       key={`${currentCard.id}-opt-${idx}`}
                       type="button"
                       disabled={isAnswered}
                       onClick={() => submitAnswer(idx)}
-                      className={`mastery-option-btn ${state}`}
+                      className={`mastery-option-btn ${state} ${isPriorTrap ? 'prior-trap' : ''} ${isThisCorrect && memoryLocked ? 'memory-locked' : ''}`}
                     >
                       <span className="mastery-option-key">{letter}</span>
-                      <span className="mastery-option-text">{opt}</span>
+                      <div className="mastery-option-content">
+                        <div className="mastery-option-lead-row">
+                          <span className="mastery-option-lead-hook">{leadHook}</span>
+                          {isPriorTrap && !isAnswered && (
+                            <span className="mastery-prior-trap-tag" title="You selected this option on your previous attempt">
+                              ⚠️ Prior Trap (Avoid)
+                            </span>
+                          )}
+                        </div>
+                        {!rapidScan && supportingText && (
+                          <div className="mastery-option-supporting">{supportingText}</div>
+                        )}
+                        {isAnswered && !isCorrect && isThisCorrect && (
+                          <button
+                            type="button"
+                            className={`mastery-lock-memory-btn ${memoryLocked ? 'locked' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLockInMemory();
+                            }}
+                            title="Lock this key phrase into working memory before retry"
+                          >
+                            <Sparkles size={12} />
+                            <span>{memoryLocked ? 'Memory Locked 🔒' : 'Tap to Lock In Memory'}</span>
+                          </button>
+                        )}
+                      </div>
                       {isAnswered && isThisCorrect && <CheckCircle2 size={18} className="mastery-opt-icon ok" />}
                       {isAnswered && isThisSelected && !isThisCorrect && (
                         <XCircle size={18} className="mastery-opt-icon bad" />
@@ -1094,7 +1333,9 @@ export function ReinforcementQuizModal({
                       <>
                         <CheckCircle2 size={18} />
                         <strong>
-                          {currentCard.isReinforcement
+                          {currentCard.isSpacedRecall
+                            ? '🎯 Spaced Recall Mastered! Trap Avoided.'
+                            : currentCard.isReinforcement
                             ? 'Reinforced & Mastered! Concept Locked In.'
                             : 'Correct — Concept Mastered!'}
                         </strong>
@@ -1102,10 +1343,34 @@ export function ReinforcementQuizModal({
                     ) : (
                       <>
                         <Repeat size={18} />
-                        <strong>Missed — Queued for Reinforcement</strong>
+                        <strong>Missed — Queued for 3-Card Spaced Recall</strong>
                       </>
                     )}
                   </div>
+
+                  {!isCorrect && (
+                    <div className="mastery-key-hook-callout">
+                      <div className="mastery-key-hook-header">
+                        <Sparkles size={14} />
+                        <span>REMEMBER THIS KEY HOOK FOR RETRY</span>
+                      </div>
+                      <div className="mastery-key-hook-phrase">"{getCardKeyHook(currentCard)}"</div>
+                      <div className="mastery-key-hook-sub">
+                        Re-entering working memory in <strong>3 cards</strong> for Short-Horizon Spaced Recall.
+                      </div>
+                      {isHardMode && (
+                        <button
+                          type="button"
+                          className={`mastery-lock-memory-btn ${memoryLocked ? 'locked' : ''}`}
+                          onClick={handleLockInMemory}
+                        >
+                          <Sparkles size={12} />
+                          <span>{memoryLocked ? 'Memory Locked 🔒' : 'Tap to Lock In Memory'}</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   <p className="mastery-feedback-explanation">{currentCard.explanation}</p>
                   {currentCard.safeguardNote && (
                     <p className="mastery-feedback-safeguard">
@@ -1156,7 +1421,12 @@ export function ReinforcementQuizModal({
 
             {!isAnswered && !isHardMode && (
               <div className="mastery-keyboard-tip">
-                Press <kbd>A</kbd>–<kbd>D</kbd> or <kbd>1</kbd>–<kbd>4</kbd> to answer · Missed questions automatically repeat until mastered
+                Press <kbd>A</kbd>–<kbd>D</kbd> or <kbd>1</kbd>–<kbd>4</kbd> to answer · Missed questions return 3 cards later for spaced recall
+              </div>
+            )}
+            {isAnswered && !isCorrect && (
+              <div className="mastery-keyboard-tip">
+                Press <kbd>L</kbd> to Lock in Memory · Press <kbd>Enter</kbd> or <kbd>Space</kbd> for next card
               </div>
             )}
             {!isAnswered && isHardMode && (
