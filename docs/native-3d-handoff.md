@@ -59,6 +59,6 @@ Also:
 
 ## Env
 
-- worker: `~/.local/share/omarchy-assistant/visual-venv/bin/python -m assistant.visual.native_live`
+- worker: `~/.local/share/qweeps/visual-venv/bin/python -m assistant.visual.native_live`
 - studio: `PYTHONPATH=src .venv/bin/python -m assistant.visual.server` (4174)
 - restart the studio after changing `native_host.py`/`native_live.py`.

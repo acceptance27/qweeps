@@ -327,7 +327,7 @@ elif lesson_id == "mybeat":
 
 ```bash
 printf '{"lessonId":"alu","time":6,"experiment":{},"selected":[],"camera":null}\n' \
-  | PYTHONPATH=src ~/.local/share/omarchy-assistant/visual-venv/bin/python \
+  | PYTHONPATH=src ~/.local/share/qweeps/visual-venv/bin/python \
     -m assistant.visual.native_live /tmp/alu \
     visual-studio/public/lessons/alu.json \
     visual-studio/public/production/stopwatch.svg alu

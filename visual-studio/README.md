@@ -9,18 +9,18 @@ diagrams use SVG/Canvas; Manim CE also exports them to video.
 ## Run
 
 ```bash
-cd ~/Work/omarchy-assistant
+cd ~/Work/qweeps
 npm --prefix visual-studio ci
 npm --prefix visual-studio run build
-omarchy-assistant visual astar
-omarchy-assistant visual "Explain how an ALU works"
+qweeps visual astar
+qweeps visual "Explain how an ALU works"
 ```
 
 The launcher starts the local studio/model host at
 [http://127.0.0.1:4174](http://127.0.0.1:4174). It reuses QWEEPS' configured LLM and
 TTS. No provider API key is stored in this browser app.
 
-For development, run `omarchy-assistant visual serve` and `npm run dev` in separate
+For development, run `qweeps visual serve` and `npm run dev` in separate
 terminals. The Vite dev/preview proxy forwards `/api`, `/narration` and `/renders` to port 4174.
 
 ## Interaction
@@ -50,7 +50,7 @@ fixed compiler exports the same data as a Manim CE `MovingCameraScene`.
 
 Use **Manim source** or **Render Manim video** on generated lessons. MP4 renders
 are visual-only; speech remains in the interactive session. Install Manim CE in
-`~/.local/share/omarchy-assistant/manim-ce`, or set `QWEEPS_MANIM_PYTHON`, as described
+`~/.local/share/qweeps/manim-ce`, or set `QWEEPS_MANIM_PYTHON`, as described
 in the assistant's [visual learning guide](../docs/visual-learning.md).
 
 The current generated vocabulary is boxes, ellipses, text, arrows and lines.
@@ -101,7 +101,7 @@ Select geometry or drag a region, ask a question, change parameters, and return
 from a focused question branch to the saved parent. Right-drag pans; wheel zooms.
 Fish narration retains its cached clip and playhead across pause/resume.
 
-Native runtime: `~/.local/share/omarchy-assistant/visual-venv/bin/python` with
+Native runtime: `~/.local/share/qweeps/visual-venv/bin/python` with
 ManimGL and working OpenGL, or set `QWEEPS_MANIMGL_PYTHON`. No generated Python is
 executed: the model chooses reviewed representations and bounded parameters.
 The numeric report is a frozen snapshot of prior work; dollar values are

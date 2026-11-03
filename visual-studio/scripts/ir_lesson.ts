@@ -34,7 +34,7 @@ const lesson={
  duration:90,example:{title:'A two-input neuron',description:'Measured boxes, relational placement, resolved connectors.',icon:'cpu'},
  chapters,sources:[],
 };
-const folder=path.join(process.env.HOME||'', '.cache/omarchy-assistant/browser-lessons', lessonId);
+const folder=path.join(process.env.HOME||'', '.cache/qweeps/browser-lessons', lessonId);
 fs.mkdirSync(folder,{recursive:true});
 fs.writeFileSync(path.join(folder,'lesson.json'),JSON.stringify(lesson,null,1));
 fs.writeFileSync('/tmp/opencode/ir-slice-lesson.json',JSON.stringify(lesson,null,1));

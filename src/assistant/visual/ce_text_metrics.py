@@ -22,7 +22,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-CACHE_PATH = Path.home() / ".cache" / "omarchy-assistant" / "ce-text-metrics.json"
+CACHE_PATH = (
+    Path.home() / ".cache" / "qweeps" / "ce-text-metrics.json"
+    if (Path.home() / ".cache" / "qweeps").is_dir() or not (Path.home() / ".cache" / "omarchy-assistant" / "ce-text-metrics.json").is_file()
+    else Path.home() / ".cache" / "omarchy-assistant" / "ce-text-metrics.json"
+)
 
 
 def metric_key(text, font_size, font="", weight="", slant=""):

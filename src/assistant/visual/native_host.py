@@ -16,7 +16,11 @@ from .production import experiment
 class NativeHost:
     def __init__(self,studio):
         self.studio=Path(studio);self.jobs={};self.lock=threading.RLock()
-        default_interp=Path.home()/'.local/share/qweeps/visual-venv/bin/python' if not (Path.home()/'.local/share/omarchy-assistant/visual-venv/bin/python').is_file() else Path.home()/'.local/share/omarchy-assistant/visual-venv/bin/python'
+        default_interp = (
+            Path.home() / '.local/share/qweeps/visual-venv/bin/python'
+            if (Path.home() / '.local/share/qweeps/visual-venv/bin/python').is_file()
+            else Path.home() / '.local/share/omarchy-assistant/visual-venv/bin/python'
+        )
         self.interpreter=Path(os.environ.get('QWEEPS_MANIMGL_PYTHON',str(default_interp)))
         self.report=json.loads((self.studio/'public/production/report.json').read_text()) if (self.studio/'public/production/report.json').exists() else None
     def ensure(self,sid,lesson_id=None,plan=None):
@@ -46,7 +50,11 @@ class NativeHost:
                 idle=min(active,key=lambda j:j['seen'])
                 idle_sid=next(key for key,value in self.jobs.items() if value is idle)
                 self.close(idle_sid)
-            default_cache=Path.home()/'.cache/qweeps' if not (Path.home()/'.cache/omarchy-assistant').is_dir() else Path.home()/'.cache/omarchy-assistant'
+            default_cache = (
+                Path.home() / '.cache/qweeps'
+                if (Path.home() / '.cache/qweeps').is_dir()
+                else Path.home() / '.cache/omarchy-assistant'
+            )
             root=Path('/dev/shm') if Path('/dev/shm').is_dir() else default_cache
             folder=root/f'qweeps-manim-{uuid.uuid4().hex}'
             folder.mkdir(parents=True)

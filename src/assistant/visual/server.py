@@ -57,7 +57,11 @@ class VisualService:
         self.active_id: str | None = None
         self.lock = threading.RLock()
         self.render_lock = threading.Lock()
-        default_renders = Path.home() / ".cache/qweeps/visual-renders" if not (Path.home() / ".cache/omarchy-assistant/visual-renders").is_dir() else Path.home() / ".cache/omarchy-assistant/visual-renders"
+        default_renders = (
+            Path.home() / ".cache/qweeps/visual-renders"
+            if (Path.home() / ".cache/qweeps/visual-renders").is_dir() or not (Path.home() / ".cache/omarchy-assistant/visual-renders").is_dir()
+            else Path.home() / ".cache/omarchy-assistant/visual-renders"
+        )
         self.render_dir = render_dir or default_renders
         self.renderer = manim_python()
         from .narration import NarrationStore

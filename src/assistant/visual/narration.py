@@ -12,7 +12,11 @@ from .plan import PlanError,_text
 
 class NarrationStore:
     def __init__(self,cfg,folder=None):
-        default_folder=Path.home()/'.cache/qweeps/visual-narration' if not (Path.home()/'.cache/omarchy-assistant/visual-narration').is_dir() else Path.home()/'.cache/omarchy-assistant/visual-narration'
+        default_folder = (
+            Path.home() / '.cache/qweeps/visual-narration'
+            if (Path.home() / '.cache/qweeps/visual-narration').is_dir() or not (Path.home() / '.cache/omarchy-assistant/visual-narration').is_dir()
+            else Path.home() / '.cache/omarchy-assistant/visual-narration'
+        )
         self.cfg=cfg;self.folder=Path(folder or default_folder);self.lock=threading.Lock();self.locks={}
         self.rate_lock=threading.Lock();self.next_request=0;self.cooldown=0
     def signature(self):

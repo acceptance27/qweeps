@@ -4,7 +4,7 @@
         --plan tests/fixtures/hybrid_neuron_plan.json \
         --out /tmp/opencode/hybrid/lesson.json
 
-Add `--publish-dir ~/.cache/omarchy-assistant/browser-lessons` to write
+Add `--publish-dir ~/.cache/qweeps/browser-lessons` to write
 `<lesson-id>/lesson.json` so the studio can open `/?lesson=<lesson-id>`.
 """
 from __future__ import annotations

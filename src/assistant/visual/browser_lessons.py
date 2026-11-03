@@ -508,7 +508,11 @@ class BrowserLessonStore:
     def __init__(self,llm,studio,folder=None,documents=None,narration=None):
         self.narration=narration
         self.llm=llm;self.studio=Path(studio)
-        default_folder=Path.home()/'.cache/qweeps/browser-lessons' if not (Path.home()/'.cache/omarchy-assistant/browser-lessons').is_dir() else Path.home()/'.cache/omarchy-assistant/browser-lessons'
+        default_folder = (
+            Path.home() / '.cache/qweeps/browser-lessons'
+            if (Path.home() / '.cache/qweeps/browser-lessons').is_dir() or not (Path.home() / '.cache/omarchy-assistant/browser-lessons').is_dir()
+            else Path.home() / '.cache/omarchy-assistant/browser-lessons'
+        )
         self.folder=Path(folder or default_folder);self.folder.mkdir(parents=True,exist_ok=True)
         self.bundled_folder=Path(__file__).resolve().parents[3]/'bundled-lessons/browser-lessons'
         self.documents=documents or DocumentLibrary();self.icons=json.loads((self.studio/'public/live/catalog.json').read_text())['icons']
@@ -1294,8 +1298,8 @@ replacements, only those needed.'''
         candidate = Path(os.environ.get("QWEEPS_MANIMGL_PYTHON", "")) if os.environ.get("QWEEPS_MANIMGL_PYTHON") else None
         if candidate and candidate.is_file():
             return str(candidate)
-        for path in (Path.home()/".local/share/omarchy-assistant/visual-venv/bin/python",
-                     Path.home()/".local/share/qweeps/visual-venv/bin/python"):
+        for path in (Path.home()/".local/share/qweeps/visual-venv/bin/python",
+                     Path.home()/".local/share/omarchy-assistant/visual-venv/bin/python"):
             if path.is_file():
                 return str(path)
         raise PlanError("The native ManimGL runtime is unavailable.")

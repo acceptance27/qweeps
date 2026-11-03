@@ -6,7 +6,11 @@ from assistant.visual.alignment import align_recordings, spoken_sentence_cues
 
 cfg = load_config()
 narration = NarrationStore(cfg)
-folder = Path.home() / ".cache/omarchy-assistant/browser-lessons/1ac198aec0efc9ba04dfa14bd242bd33"
+folder = (
+    Path.home() / ".cache/qweeps/browser-lessons/1ac198aec0efc9ba04dfa14bd242bd33"
+    if (Path.home() / ".cache/qweeps/browser-lessons/1ac198aec0efc9ba04dfa14bd242bd33").is_dir()
+    else Path.home() / ".cache/omarchy-assistant/browser-lessons/1ac198aec0efc9ba04dfa14bd242bd33"
+)
 with open(folder / "working.json") as f:
     working = json.load(f)["raw"]
 

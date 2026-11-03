@@ -32,7 +32,11 @@ from assistant.visual.scene_contract import (
 )
 
 
-VISUAL_PYTHON = Path.home() / ".local/share/omarchy-assistant/visual-venv/bin/python"
+VISUAL_PYTHON = (
+    Path.home() / ".local/share/qweeps/visual-venv/bin/python"
+    if (Path.home() / ".local/share/qweeps/visual-venv/bin/python").is_file()
+    else Path.home() / ".local/share/omarchy-assistant/visual-venv/bin/python"
+)
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 

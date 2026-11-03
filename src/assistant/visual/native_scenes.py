@@ -13,9 +13,9 @@ def registry_root() -> Path:
     configured = os.environ.get("QWEEPS_NATIVE_SCENES")
     if configured:
         return Path(configured)
-    base = Path.home() / ".cache/omarchy-assistant"
-    if not (Path.home() / ".cache/omarchy-assistant").is_dir():
-        base = Path.home() / ".cache/qweeps"
+    base = Path.home() / ".cache/qweeps"
+    if not base.is_dir() and (Path.home() / ".cache/omarchy-assistant").is_dir():
+        base = Path.home() / ".cache/omarchy-assistant"
     return base / "native-scenes"
 
 
@@ -52,7 +52,12 @@ def load_manifest(scene_id_value: str) -> dict | None:
         return None
     source = Path(manifest.get("source", ""))
     if not source.is_file():
-        return None
+        local_scene = scene_dir(scene_id_value) / "scene.py"
+        if local_scene.is_file():
+            source = local_scene
+            manifest["source"] = str(local_scene)
+        else:
+            return None
     return manifest
 
 

@@ -129,7 +129,7 @@ sha256(question, sourceDocumentHash, model, promptVersion,
        detailLevel, storyboardHash)
 ```
 
-Store under `~/.cache/omarchy-assistant/hybrid-lessons/<key>/`:
+Store under `~/.cache/qweeps/hybrid-lessons/<key>/`:
 
 ```
 storyboard.json
@@ -184,7 +184,7 @@ compute their durations.
   "sceneId": "gen_9b41c2d7",
   "title": "How does a neuron fire?",
   "sceneClass": "GenScene",
-  "source": "~/.cache/omarchy-assistant/hybrid-lessons/<key>/native/source.py",
+  "source": "~/.cache/qweeps/hybrid-lessons/<key>/native/source.py",
   "duration": 43.4,
   "beats": [
     {"id": "resting-membrane", "title": "A charged battery at rest", "start": 2.7, "end": 7.8},
@@ -312,7 +312,7 @@ ManimGL:
   defined.
 - **Text metrics.** The compiler measures static `Text(...)` calls in a real
   ManimCE environment, caches the boxes in
-  `~/.cache/omarchy-assistant/ce-text-metrics.json`, and stretches native text
+  `~/.cache/qweeps/ce-text-metrics.json`, and stretches native text
   to the CE width/height. See `ce_text_metrics.py`.
 - **Camera state.** Camera frame points and uniforms are stored in every play
   checkpoint. Without that, seeking past a later `play()` skipped the camera
@@ -400,7 +400,7 @@ Replace the hard-coded `if lesson_id == ...` chain with a registry.
 ### 6.1 Registry layout
 
 ```
-~/.cache/omarchy-assistant/native-scenes/
+~/.cache/qweeps/native-scenes/
   gen_9b41c2d7/
     scene.py
     manifest.json

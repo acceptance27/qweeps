@@ -16,7 +16,11 @@ def words(text):
 
 class DocumentLibrary:
     def __init__(self,folder=None):
-        default_folder=Path.home()/'.local/share/qweeps/visual-documents' if not (Path.home()/'.local/share/omarchy-assistant/visual-documents').is_dir() else Path.home()/'.local/share/omarchy-assistant/visual-documents'
+        default_folder = (
+            Path.home() / '.local/share/qweeps/visual-documents'
+            if (Path.home() / '.local/share/qweeps/visual-documents').is_dir() or not (Path.home() / '.local/share/omarchy-assistant/visual-documents').is_dir()
+            else Path.home() / '.local/share/omarchy-assistant/visual-documents'
+        )
         self.folder=Path(folder or default_folder)
         self.folder.mkdir(parents=True,exist_ok=True)
     def get(self,doc_id):

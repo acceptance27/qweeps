@@ -24,7 +24,7 @@ export async function api<T = any>(path: string, data?: unknown, signal?: AbortS
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data), signal,
   });
   const type = response.headers.get('content-type') || '';
-  if (!type.includes('application/json')) throw new Error('The QWEEPS visual server is unavailable. Open the studio through “omarchy-assistant visual”.');
+  if (!type.includes('application/json')) throw new Error('The QWEEPS visual server is unavailable. Open the studio through “qweeps visual”.');
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || `Visual request failed (${response.status})`);
   return result;

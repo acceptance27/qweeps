@@ -10,7 +10,7 @@ _configured = False
 
 def state_dir() -> Path:
     base = os.environ.get("XDG_STATE_HOME") or str(Path.home() / ".local" / "state")
-    return Path(base) / "qweeps" if not (Path(base) / "omarchy-assistant").is_dir() else Path(base) / "omarchy-assistant"
+    return Path(base) / "qweeps"
 
 
 def log_file() -> Path:

@@ -117,7 +117,7 @@ def post_multipart(
     headers: dict[str, str] | None = None,
     timeout: int = 120,
 ) -> dict[str, Any]:
-    boundary = f"----omarchy-assistant-{uuid.uuid4().hex}"
+    boundary = f"----qweeps-{uuid.uuid4().hex}"
     lines: list[bytes] = []
     for name, value in fields.items():
         lines.append(f"--{boundary}".encode())

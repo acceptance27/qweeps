@@ -176,7 +176,88 @@ for _name in ("FadeIn", "FadeOut", "ShowCreation", "Uncreate", "Write",
         globals()[_name] = _variadic_animation(globals()[_name])
 
 Create = ShowCreation
-MathTex = Tex
+
+
+class VectorBrace(VMobject):
+    """Pure-vector curly brace that does not invoke external LaTeX."""
+
+    def __init__(self, mobject, direction=DOWN, buff=0.2, stroke_width=3.0, **kwargs):
+        super().__init__(stroke_width=stroke_width, **kwargs)
+        direction = np.array(direction, dtype=float)
+        norm_dir = direction / (np.linalg.norm(direction) or 1.0)
+        self.brace_direction = norm_dir
+
+        angle = -math.atan2(norm_dir[1], norm_dir[0]) - math.pi / 2
+
+        pts = mobject.get_all_points()
+        if len(pts) == 0:
+            c = mobject.get_center()
+            pts = np.array([c - 0.5, c + 0.5])
+
+        cos_a, sin_a = math.cos(-angle), math.sin(-angle)
+        rot_x = pts[:, 0] * cos_a - pts[:, 1] * sin_a
+        width = max(rot_x) - min(rot_x)
+        w = max(width, 0.4) / 2.0
+        d = min(0.35, max(0.15, w * 0.25))
+
+        qw = min(w * 0.4, 0.3)
+        p0 = np.array([-w, 0, 0])
+        p1 = np.array([-w + qw, -d * 0.5, 0])
+        p2 = np.array([-qw, -d * 0.5, 0])
+        p3 = np.array([0, -d, 0])
+        p4 = np.array([qw, -d * 0.5, 0])
+        p5 = np.array([w - qw, -d * 0.5, 0])
+        p6 = np.array([w, 0, 0])
+
+        self.set_points_smoothly([p0, p1, p2, p3, p4, p5, p6])
+        self.rotate(angle, about_point=ORIGIN)
+        self.next_to(mobject, norm_dir, buff=buff)
+
+    def get_tip(self):
+        center = self.get_center()
+        half_dim = (self.get_height() / 2) if abs(self.brace_direction[1]) > 0.5 else (self.get_width() / 2)
+        return center + self.brace_direction * half_dim
+
+    def get_direction(self):
+        return self.brace_direction
+
+    def put_at_tip(self, mob, buff=0.15):
+        mob.next_to(self.get_tip(), self.brace_direction, buff=buff)
+        return self
+
+    def get_text(self, text, **kwargs):
+        buff = kwargs.pop("buff", 0.15)
+        text_mob = Text(text, **kwargs)
+        self.put_at_tip(text_mob, buff=buff)
+        return text_mob
+
+    def get_tex(self, *tex, **kwargs):
+        buff = kwargs.pop("buff", 0.15)
+        text_mob = Text(" ".join(tex), **kwargs)
+        self.put_at_tip(text_mob, buff=buff)
+        return text_mob
+
+
+Brace = VectorBrace
+
+import shutil as _shutil
+
+if not _shutil.which("latex"):
+    class SafeTex(VMobject):
+        """Fallback for Tex/MathTex when LaTeX is not installed on the system."""
+
+        def __init__(self, *tex_strings, **kwargs):
+            raw = " ".join(str(s) for s in tex_strings)
+            cleaned = re.sub(r"\\[a-zA-Z]+", " ", raw)
+            cleaned = cleaned.replace("$", "").replace("{", "").replace("}", "").strip()
+            super().__init__(**kwargs)
+            self._text_mobj = Text(cleaned or " ", **kwargs)
+            self.add(self._text_mobj)
+
+    Tex = SafeTex
+    MathTex = SafeTex
+else:
+    MathTex = Tex
 
 
 # AnimationGroup and its subclasses also call prepare_animation internally.
