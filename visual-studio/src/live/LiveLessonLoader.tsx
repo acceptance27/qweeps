@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sliders } from 'lucide-react';
 import { api } from '../learning/types';
 import LiveLessonPlayer from './LiveLessonPlayer';
 import LivePreparation from './LivePreparation';
+import SettingsApisModal from './SettingsApisModal';
 import {
   ReinforcementQuizModal,
   ReinforcementQuizNavbar,
@@ -138,6 +139,7 @@ export default function LiveLessonLoader() {
   const [busy, setBusy] = useState(false);
   const [busyQuiz, setBusyQuiz] = useState(false);
   const [busyLessonQuizId, setBusyLessonQuizId] = useState<string | null>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(params.get('settings') === '1');
 
   const initialized = useRef(false);
   const input = useRef<HTMLInputElement>(null);
@@ -202,7 +204,8 @@ export default function LiveLessonLoader() {
         question: q.trim() || `Mastery Quiz: ${titleText}`,
         duration: 30,
         kind: 'standalone_quiz',
-        chapters,
+        chapters: chapters as any,
+        sources: [],
         quiz: res.quiz,
       };
 
@@ -330,7 +333,8 @@ export default function LiveLessonLoader() {
                     question: `Mastery Quiz: ${title}`,
                     duration: 30,
                     kind: 'standalone_quiz',
-                    chapters,
+                    chapters: chapters as any,
+                    sources: [],
                     quiz: res.quiz,
                   });
                 }
@@ -429,7 +433,19 @@ export default function LiveLessonLoader() {
       ) : (
         <main className="live-generator">
           <div>
-            <span>QWEEPS · LIVE VISUAL LEARNING</span>
+            <div className="live-menu-top-bar">
+              <span className="live-menu-brand-text">QWEEPS · LIVE VISUAL LEARNING</span>
+              <button
+                type="button"
+                className="live-menu-settings-btn"
+                onClick={() => setShowSettingsModal(true)}
+                title="Configure APIs, AI Models & Thinking Effort for each process"
+                aria-label="Settings and APIs configuration"
+              >
+                <Sliders size={15} />
+                <span>Settings/APIs</span>
+              </button>
+            </div>
             <h1>What would you like to understand?</h1>
             <p>
               Choose a source PDF or ask for a topic. QWEEPS plans, illustrates and reviews a live lesson you can pause,
@@ -690,6 +706,17 @@ export default function LiveLessonLoader() {
           }}
         />
       )}
+      <SettingsApisModal
+        isOpen={showSettingsModal}
+        onClose={() => {
+          setShowSettingsModal(false);
+          const p = new URLSearchParams(location.search);
+          if (p.has('settings')) {
+            p.delete('settings');
+            history.replaceState(null, '', p.toString() ? `/?${p}` : '/?home=1');
+          }
+        }}
+      />
     </>
   );
 }

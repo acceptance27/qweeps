@@ -91,6 +91,9 @@ fallback_provider = "offline"
 visual_provider = "opencode-go"  # empty inherits the main provider
 visual_model = "opencode-go/muse-spark-1.3-contributor"
 visual_vision_model = "opencode-go/muse-spark-1.3-contributor"
+quiz_verification_provider = "openrouter-free"
+quiz_verification_model = "nvidia/nemotron-3.5-super-vl:free"
+quiz_verification_reasoning = "none"
 
 [tts]
 provider = "espeak"          # none | openrouter | piper | espeak
@@ -203,6 +206,9 @@ class LLMConfig:
     visual_provider: str = "opencode-go"
     visual_model: str = "opencode-go/muse-spark-1.3-contributor"
     visual_vision_model: str = "opencode-go/muse-spark-1.3-contributor"
+    quiz_verification_provider: str = "openrouter-free"
+    quiz_verification_model: str = "nvidia/nemotron-3.5-super-vl:free"
+    quiz_verification_reasoning: str = "none"
 
 
 @dataclass

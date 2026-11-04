@@ -105,7 +105,8 @@ def verify_with_openrouter(
     accepted: list[str] | None,
     api_key: str,
     model: str = 'nvidia/nemotron-3.5-super-vl:free',
-    timeout: int = 8
+    timeout: int = 8,
+    reasoning_effort: str = 'none',
 ) -> dict[str, Any] | None:
     prompt = f"""You are a strict but fair pedagogical examiner evaluating a learner's short typed answer.
 Question: {question}
@@ -121,14 +122,17 @@ Return JSON only:
 {{"correct": true/false, "confidence": 0.0-1.0, "feedback": "one short sentence explaining why"}}"""
 
     try:
+        payload: dict[str, Any] = {
+            'model': model,
+            'messages': [{'role': 'user', 'content': prompt}],
+            'max_tokens': 350,
+            'temperature': 0.1,
+        }
+        if reasoning_effort and reasoning_effort != 'none':
+            payload['reasoning_effort'] = reasoning_effort
         data = post_json(
             'https://openrouter.ai/api/v1/chat/completions',
-            payload={
-                'model': model,
-                'messages': [{'role': 'user', 'content': prompt}],
-                'max_tokens': 350,
-                'temperature': 0.1
-            },
+            payload=payload,
             headers={'Authorization': f'Bearer {api_key}'},
             timeout=timeout,
             retries=0
@@ -155,7 +159,8 @@ def verify_with_opencode_go(
     accepted: list[str] | None,
     api_key: str,
     model: str = 'muse-spark-1.3-contributor',
-    timeout: int = 8
+    timeout: int = 8,
+    reasoning_effort: str = 'none',
 ) -> dict[str, Any] | None:
     prompt = f"""You are a strict but fair pedagogical examiner evaluating a learner's short typed answer.
 Question: {question}
@@ -177,15 +182,17 @@ Return JSON only:
             'User-Agent': 'opencode/1.19.5',
             'x-opencode-session': uuid.uuid4().hex
         }
+        payload: dict[str, Any] = {
+            'model': api_model,
+            'messages': [{'role': 'user', 'content': prompt}],
+            'max_tokens': 350,
+            'temperature': 0.1,
+        }
+        if reasoning_effort and reasoning_effort != 'none':
+            payload['reasoning_effort'] = reasoning_effort
         data = post_json(
             'https://opencode.ai/inference/go/openai/v1/chat/completions',
-            payload={
-                'model': api_model,
-                'messages': [{'role': 'user', 'content': prompt}],
-                'max_tokens': 350,
-                'temperature': 0.1,
-                'reasoning_effort': 'low'
-            },
+            payload=payload,
             headers=headers,
             timeout=timeout,
             retries=0
@@ -221,23 +228,62 @@ def verify_answer(
     if fast_heuristic_verify(raw_user, raw_expected, accepted):
         return {'correct': True, 'confidence': 1.0, 'feedback': 'Exact or direct match', 'source': 'heuristic'}
 
-    # 2. Tier 1: Try OpenRouter Free model first (preferred by user)
+    quiz_prov = getattr(getattr(cfg, 'llm', None), 'quiz_verification_provider', 'openrouter-free')
+    quiz_model = getattr(getattr(cfg, 'llm', None), 'quiz_verification_model', 'nvidia/nemotron-3.5-super-vl:free')
+    quiz_reasoning = getattr(getattr(cfg, 'llm', None), 'quiz_verification_reasoning', 'none')
+
+    if quiz_prov == 'heuristic':
+        return {
+            'correct': False,
+            'confidence': 0.5,
+            'feedback': f'Does not match expected answer: "{raw_expected}"',
+            'source': 'heuristic-strict'
+        }
+
     or_key = get_openrouter_key(cfg)
-    if or_key:
-        free_model = getattr(cfg.llm, 'model', None) if cfg and getattr(getattr(cfg, 'llm', None), 'model', '').endswith(':free') else 'nvidia/nemotron-3.5-super-vl:free'
-        res = verify_with_openrouter(question, raw_expected, raw_user, accepted, or_key, model=free_model)
-        if res:
-            return res
-
-    # 3. Tier 2: Try OpenCode Go cheap model (fallback)
     oc_key = get_opencode_go_key(cfg)
-    if oc_key:
-        go_model = getattr(getattr(cfg, 'llm', None), 'visual_model', None) if cfg else 'opencode-go/muse-spark-1.3-contributor'
-        res = verify_with_opencode_go(question, raw_expected, raw_user, accepted, oc_key, model=go_model)
+
+    # If user selected OpenCode Go as primary for verification:
+    if quiz_prov == 'opencode-go' and oc_key:
+        res = verify_with_opencode_go(
+            question, raw_expected, raw_user, accepted, oc_key,
+            model=quiz_model or 'opencode-go/muse-spark-1.3-contributor',
+            reasoning_effort=quiz_reasoning
+        )
+        if res:
+            return res
+        if or_key:
+            res_or = verify_with_openrouter(
+                question, raw_expected, raw_user, accepted, or_key,
+                model='nvidia/nemotron-3.5-super-vl:free',
+                reasoning_effort='none'
+            )
+            if res_or:
+                return res_or
+
+    # Default / OpenRouter preferred:
+    if or_key:
+        target_model = quiz_model if quiz_prov in ('openrouter', 'openrouter-free') else 'nvidia/nemotron-3.5-super-vl:free'
+        res = verify_with_openrouter(
+            question, raw_expected, raw_user, accepted, or_key,
+            model=target_model,
+            reasoning_effort=quiz_reasoning
+        )
         if res:
             return res
 
-    # 4. Final heuristic fallback if offline / rate limited
+    # Fallback to OpenCode Go if OpenRouter failed or not configured:
+    if oc_key:
+        fallback_model = quiz_model if quiz_prov == 'opencode-go' else 'opencode-go/muse-spark-1.3-contributor'
+        res = verify_with_opencode_go(
+            question, raw_expected, raw_user, accepted, oc_key,
+            model=fallback_model,
+            reasoning_effort=quiz_reasoning
+        )
+        if res:
+            return res
+
+    # Final fallback if offline / rate limited
     return {
         'correct': False,
         'confidence': 0.5,

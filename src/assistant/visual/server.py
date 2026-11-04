@@ -17,7 +17,7 @@ from types import SimpleNamespace
 from urllib.parse import urlsplit, parse_qs
 import uuid
 
-from ..config import load_config
+from ..config import load_config, set_config_value, write_secret, write_default_config
 from ..llm import build_visual_llm, OfflineLLM, AntigravityLLM, ModelProviderError
 from ..http import HTTPError
 from .plan import PlanError, _text, generate_reply, manim_source, validate_plan
@@ -91,6 +91,287 @@ class VisualService:
                 "lessonPipeline": ["storyboard", "animation", "teaching_review", "rendered_frame_review"],
                 "teachingReferences": ["pdf_explainer", "math_01", "astar_heuristics", "hyperframes_rizal"],
                 "liveGeneration": True,"livePipeline": ["source", "storyboard", "animation_direction", "browser_frame_review"]}
+
+    def get_settings(self) -> dict:
+        from .quiz_verifier import get_openrouter_key, get_opencode_go_key
+
+        cfg = self.cfg
+        or_key = get_openrouter_key(cfg)
+        oc_key = get_opencode_go_key(cfg)
+        agy_path = shutil.which('agy')
+
+        masked_or = (or_key[:8] + '••••••••' + or_key[-4:]) if (or_key and len(or_key) > 12) else ('••••••••' if or_key else '')
+        masked_oc = (oc_key[:6] + '••••••••' + oc_key[-4:]) if (oc_key and len(oc_key) > 10) else ('••••••••' if oc_key else '')
+
+        return {
+            "processes": {
+                "lesson_planning": {
+                    "id": "lesson_planning",
+                    "title": "Live Visual Lesson Generation",
+                    "subtitle": "Planning, Storyboard & Scene Synthesis",
+                    "description": "Synthesizes pedagogical outline, scene architecture, and visual animation instructions from PDF/topics.",
+                    "provider": getattr(cfg.llm, "visual_provider", "") or getattr(cfg.llm, "auth_provider", "opencode-go"),
+                    "model": getattr(cfg.llm, "visual_model", "") or getattr(cfg.llm, "model", "opencode-go/muse-spark-1.3-contributor"),
+                    "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "low"),
+                    "recommended": {
+                        "provider": "opencode-go",
+                        "model": "opencode-go/muse-spark-1.3-contributor",
+                        "reasoning_effort": "low",
+                        "badge": "⭐ Recommended (Free Tier & High Structure)"
+                    },
+                    "options": {
+                        "providers": ["opencode-go", "openrouter-free", "antigravity", "openrouter", "offline"],
+                        "models": [
+                            {"value": "opencode-go/muse-spark-1.3-contributor", "label": "opencode-go/muse-spark-1.3-contributor", "badge": "⭐ Recommended Free Tier"},
+                            {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ OpenRouter Free"},
+                            {"value": "google/gemini-2.0-flash-exp:free", "label": "google/gemini-2.0-flash-exp:free", "badge": "⚡ Fast Free"},
+                            {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "💎 Antigravity High Quality"}
+                        ],
+                        "reasoning": [
+                            {"value": "none", "label": "None (Fastest ~1s)", "badge": "⚡ Fastest"},
+                            {"value": "low", "label": "Low (Balanced ~2-4s)", "badge": "⭐ Recommended"},
+                            {"value": "medium", "label": "Medium (Deeper thinking ~6s)"},
+                            {"value": "high", "label": "High (Deep CoT ~10s+)"}
+                        ]
+                    }
+                },
+                "frame_review": {
+                    "id": "frame_review",
+                    "title": "Visual Review & Gate Verification",
+                    "subtitle": "Rendered Frame & SVG Quality Gate",
+                    "description": "Multimodal vision gate that inspects rendered SVG frames and canvas snapshots for legibility, overlap, and alignment.",
+                    "provider": getattr(cfg.llm, "visual_provider", "") or "openrouter-free",
+                    "model": getattr(cfg.llm, "visual_vision_model", "") or "nvidia/nemotron-3.5-super-vl:free",
+                    "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "low"),
+                    "recommended": {
+                        "provider": "openrouter-free",
+                        "model": "nvidia/nemotron-3.5-super-vl:free",
+                        "reasoning_effort": "low",
+                        "badge": "⭐ Recommended (Multi-Modal Vision Free)"
+                    },
+                    "options": {
+                        "providers": ["openrouter-free", "opencode-go", "antigravity"],
+                        "models": [
+                            {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ Recommended Free Vision"},
+                            {"value": "opencode-go/muse-spark-1.3-contributor", "label": "opencode-go/muse-spark-1.3-contributor", "badge": "⚡ Fast Vision"},
+                            {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "💎 Antigravity Vision"}
+                        ],
+                        "reasoning": [
+                            {"value": "none", "label": "None (Instant check)"},
+                            {"value": "low", "label": "Low (Pedagogic gate)", "badge": "⭐ Recommended"},
+                            {"value": "medium", "label": "Medium"},
+                            {"value": "high", "label": "High"}
+                        ]
+                    }
+                },
+                "quiz_generation": {
+                    "id": "quiz_generation",
+                    "title": "Reinforcement Quiz Generation",
+                    "subtitle": "Mastery Question & Distractor Synthesis",
+                    "description": "Extracts key concepts, creates fill-in-the-blank prompt stems, and synthesizes 3-5 word lead distractors grounded in reviewer notes.",
+                    "provider": getattr(cfg.llm, "visual_provider", "") or "opencode-go",
+                    "model": getattr(cfg.llm, "visual_model", "") or "opencode-go/muse-spark-1.3-contributor",
+                    "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "low"),
+                    "recommended": {
+                        "provider": "opencode-go",
+                        "model": "opencode-go/muse-spark-1.3-contributor",
+                        "reasoning_effort": "low",
+                        "badge": "⭐ Recommended (Pedagogical Grounding)"
+                    },
+                    "options": {
+                        "providers": ["opencode-go", "openrouter-free", "antigravity"],
+                        "models": [
+                            {"value": "opencode-go/muse-spark-1.3-contributor", "label": "opencode-go/muse-spark-1.3-contributor", "badge": "⭐ Recommended Free"},
+                            {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⚡ Free OpenRouter"},
+                            {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high"}
+                        ],
+                        "reasoning": [
+                            {"value": "none", "label": "None (Instant)"},
+                            {"value": "low", "label": "Low (Strict Distractors)", "badge": "⭐ Recommended"},
+                            {"value": "medium", "label": "Medium"},
+                            {"value": "high", "label": "High"}
+                        ]
+                    }
+                },
+                "quiz_verification": {
+                    "id": "quiz_verification",
+                    "title": "Semantic Quiz Answer Verification",
+                    "subtitle": "Sub-Second Typed Recall Evaluation",
+                    "description": "Evaluates short typed user answers with zero-latency heuristics and sub-second semantic LLM judgment.",
+                    "provider": getattr(cfg.llm, "quiz_verification_provider", "openrouter-free"),
+                    "model": getattr(cfg.llm, "quiz_verification_model", "nvidia/nemotron-3.5-super-vl:free"),
+                    "reasoning_effort": getattr(cfg.llm, "quiz_verification_reasoning", "none"),
+                    "recommended": {
+                        "provider": "openrouter-free",
+                        "model": "nvidia/nemotron-3.5-super-vl:free",
+                        "reasoning_effort": "none",
+                        "badge": "⚡⭐ Recommended (Sub-Second 400-800ms Latency)"
+                    },
+                    "options": {
+                        "providers": ["openrouter-free", "opencode-go", "heuristic"],
+                        "models": [
+                            {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⚡⭐ Recommended Sub-Second Free"},
+                            {"value": "opencode-go/muse-spark-1.3-contributor", "label": "opencode-go/muse-spark-1.3-contributor", "badge": "⚡ Fast Go Fallback"}
+                        ],
+                        "reasoning": [
+                            {"value": "none", "label": "None (⚡ Sub-Second Speed)", "badge": "⭐ Recommended for Sub-Second"},
+                            {"value": "low", "label": "Low (Adds 2-4s thinking)"}
+                        ]
+                    }
+                },
+                "tts": {
+                    "id": "tts",
+                    "title": "Speech Synthesis & Narration (TTS)",
+                    "subtitle": "Neural Spoken Teaching Audio",
+                    "description": "Synthesizes expressive spoken audio for scene explanations, key concepts, and interactive learner feedback.",
+                    "provider": getattr(cfg.tts, "provider", "openrouter"),
+                    "model": getattr(cfg.tts, "model", "fish-audio/s2.1-pro-free:free"),
+                    "voice": getattr(cfg.tts, "voice", "33a2191b8fda440cae962137e9793985"),
+                    "recommended": {
+                        "provider": "openrouter",
+                        "model": "fish-audio/s2.1-pro-free:free",
+                        "voice": "33a2191b8fda440cae962137e9793985",
+                        "badge": "⭐ Recommended (Fish Audio Natural Free Voice)"
+                    },
+                    "options": {
+                        "providers": ["openrouter", "piper", "espeak", "none"],
+                        "models": [
+                            {"value": "fish-audio/s2.1-pro-free:free", "label": "Fish Audio S2.1 Pro Free", "badge": "⭐ Recommended Natural Free Voice"},
+                            {"value": "piper:en_US-lessac-medium", "label": "Piper Local Neural Voice", "badge": "🔒 100% Offline Private"}
+                        ]
+                    }
+                },
+                "stt": {
+                    "id": "stt",
+                    "title": "Voice Recognition & Transcription (STT)",
+                    "subtitle": "Real-Time Microphone Question Input",
+                    "description": "Transcribes live student spoken questions when pausing a visual lesson.",
+                    "provider": getattr(cfg.stt, "provider", "voxtype"),
+                    "engine": getattr(cfg.stt, "engine", "whisper"),
+                    "model": getattr(cfg.stt, "stt_model", "fish-audio/transcribe-1"),
+                    "recommended": {
+                        "provider": "voxtype",
+                        "engine": "whisper",
+                        "badge": "⭐ Recommended (Local Fast Whisper STT)"
+                    },
+                    "options": {
+                        "providers": ["voxtype", "openrouter", "none"],
+                        "engines": [
+                            {"value": "whisper", "label": "Whisper (Local Neural)", "badge": "⭐ Recommended Local"},
+                            {"value": "cohere", "label": "Cohere Engine"},
+                            {"value": "parakeet", "label": "NVIDIA Parakeet"}
+                        ]
+                    }
+                }
+            },
+            "api_keys": {
+                "openrouter": {
+                    "configured": bool(or_key),
+                    "masked": masked_or,
+                    "source": "secrets.toml" if cfg.secret("OPENROUTER_API_KEY") else ("auth.json" if or_key else "none")
+                },
+                "opencode_go": {
+                    "configured": bool(oc_key),
+                    "masked": masked_oc,
+                    "source": "auth.json" if oc_key else "none"
+                },
+                "antigravity": {
+                    "available": bool(agy_path),
+                    "path": agy_path or ""
+                }
+            }
+        }
+
+    def save_settings(self, payload: dict) -> dict:
+        if not isinstance(payload, dict):
+            raise PlanError("Settings payload must be an object")
+
+        config_dir = getattr(self.cfg, "config_dir", None) or (Path.home() / ".config/qweeps")
+        config_path = config_dir / "config.toml"
+        if not config_path.is_file():
+            config_path = write_default_config(config_dir)
+
+        # 1. Update API Keys in secrets.toml if provided
+        api_keys = payload.get("api_keys") or {}
+        or_key = (api_keys.get("openrouter_key") or "").strip()
+        if or_key and "••••" not in or_key:
+            write_secret(config_dir, "OPENROUTER_API_KEY", or_key, "openrouter")
+        oc_key = (api_keys.get("opencode_key") or "").strip()
+        if oc_key and "••••" not in oc_key:
+            write_secret(config_dir, "OPENCODE_API_KEY", oc_key, "opencode")
+
+        # 2. Update config.toml
+        text = config_path.read_text()
+        processes = payload.get("processes") or {}
+
+        # Lesson Planning
+        lp = processes.get("lesson_planning") or {}
+        if lp.get("provider"):
+            text = set_config_value(text, "llm", "visual_provider", f'"{lp["provider"]}"')
+        if lp.get("model"):
+            text = set_config_value(text, "llm", "visual_model", f'"{lp["model"]}"')
+        if lp.get("reasoning_effort"):
+            text = set_config_value(text, "llm", "reasoning_effort", f'"{lp["reasoning_effort"]}"')
+
+        # Frame Review
+        fr = processes.get("frame_review") or {}
+        if fr.get("model"):
+            text = set_config_value(text, "llm", "visual_vision_model", f'"{fr["model"]}"')
+
+        # Quiz Generation
+        qg = processes.get("quiz_generation") or {}
+        if qg.get("model"):
+            # Quiz generation can reuse visual_model or custom
+            pass
+
+        # Quiz Verification
+        qv = processes.get("quiz_verification") or {}
+        if qv.get("provider"):
+            text = set_config_value(text, "llm", "quiz_verification_provider", f'"{qv["provider"]}"')
+        if qv.get("model"):
+            text = set_config_value(text, "llm", "quiz_verification_model", f'"{qv["model"]}"')
+        if qv.get("reasoning_effort"):
+            text = set_config_value(text, "llm", "quiz_verification_reasoning", f'"{qv["reasoning_effort"]}"')
+
+        # TTS
+        tts = processes.get("tts") or {}
+        if tts.get("provider"):
+            text = set_config_value(text, "tts", "provider", f'"{tts["provider"]}"')
+        if tts.get("model"):
+            text = set_config_value(text, "tts", "model", f'"{tts["model"]}"')
+        if tts.get("voice"):
+            text = set_config_value(text, "tts", "voice", f'"{tts["voice"]}"')
+
+        # STT
+        stt = processes.get("stt") or {}
+        if stt.get("provider"):
+            text = set_config_value(text, "stt", "provider", f'"{stt["provider"]}"')
+        if stt.get("engine"):
+            text = set_config_value(text, "stt", "engine", f'"{stt["engine"]}"')
+        if stt.get("model"):
+            text = set_config_value(text, "stt", "stt_model", f'"{stt["model"]}"')
+
+        config_path.write_text(text)
+
+        # 3. Hot-reload configuration in-memory
+        with self.lock:
+            self.cfg = load_config(config_dir=config_dir)
+            try:
+                self.llm = build_visual_llm(self.cfg)
+                if hasattr(self, 'live') and self.live:
+                    self.live.llm = self.llm
+                if hasattr(self, 'beats') and self.beats:
+                    self.beats.llm = self.llm
+                if hasattr(self, 'visual_beats') and self.visual_beats:
+                    self.visual_beats.llm = self.llm
+                from .narration import NarrationStore
+                self.narration = NarrationStore(self.cfg)
+                if hasattr(self, 'live') and self.live:
+                    self.live.narration = self.narration if self.cfg.tts.provider == 'openrouter' else None
+            except Exception:
+                pass
+
+        return {"ok": True, "settings": self.get_settings()}
 
     def session(self, sid: str | None = None) -> tuple[str, dict]:
         with self.lock:
@@ -314,6 +595,8 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             if parsed.path == "/api/visual/health":
                 self.send_json(200, self.service.health())
+            elif parsed.path == "/api/visual/settings":
+                self.send_json(200, self.service.get_settings())
             elif parsed.path == '/api/visual/documents':
                 self.send_json(200,{'documents':self.service.live.documents.catalog()})
             elif re.fullmatch(r'/api/visual/documents/[0-9a-f]{32}/file',parsed.path):
@@ -496,6 +779,8 @@ class Handler(SimpleHTTPRequestHandler):
                         pass
             elif route == '/api/visual/live/verify-answer':
                 result = self.service.verify_quiz_answer(payload)
+            elif route == '/api/visual/settings':
+                result = self.service.save_settings(payload)
             elif route == '/api/visual/live/stream':
                 result=self.service.live.start_stream(payload)
             elif route == '/api/visual/live/check':

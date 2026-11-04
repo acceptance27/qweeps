@@ -92,11 +92,14 @@ test('3-Card Short-Horizon Spaced Recall inserts missed card 3 steps later with 
   const lesson: LiveLesson = {
     id: 'test_lesson',
     title: 'Test Lesson',
+    question: 'Test',
+    duration: 60,
+    sources: [],
     chapters: Array.from({ length: 6 }, (_, i) => ({
       id: `ch-${i}`,
       title: `Beat ${i + 1}`,
       cues: [],
-    })),
+    })) as any,
     reinforcementQuiz: dummyQuestions,
   };
 
@@ -211,6 +214,9 @@ test('createInitialQuizState focuses on Set 1 of generic partitioned sets for la
   const lesson: LiveLesson = {
     id: 'generic_48',
     title: 'Generic Large Quiz',
+    question: 'Generic',
+    duration: 60,
+    sources: [],
     chapters: [],
     quiz: dummy48,
   };
@@ -338,6 +344,9 @@ test('createInitialQuizState focuses on Unit 1 (13 cards) for the Rizal Morga re
   const lesson: LiveLesson = {
     id: 'rizal_morga_reviewer',
     title: "Who May Tell the Philippines' Past? Rizal Annotates Morga",
+    question: 'Reviewer',
+    duration: 60,
+    sources: [],
     chapters: [],
     quiz: questions,
   };

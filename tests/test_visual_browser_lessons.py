@@ -1023,6 +1023,68 @@ def test_visual_service_verify_quiz_answer():
     assert "source" in res
 
 
+def test_visual_service_settings_and_recommendations(tmp_path):
+    from assistant.visual.server import VisualService
+    from assistant.config import Config, LLMConfig, TTSConfig, STTConfig
+
+    cfg = Config(
+        config_dir=tmp_path,
+        llm=LLMConfig(
+            visual_provider="opencode-go",
+            visual_model="opencode-go/muse-spark-1.3-contributor",
+            quiz_verification_provider="openrouter-free",
+            quiz_verification_model="nvidia/nemotron-3.5-super-vl:free",
+            quiz_verification_reasoning="none"
+        ),
+        tts=TTSConfig(provider="openrouter", model="fish-audio/s2.1-pro-free:free"),
+        stt=STTConfig(provider="voxtype", engine="whisper")
+    )
+    service = VisualService(cfg=cfg, llm=Model())
+    settings = service.get_settings()
+
+    # Verify all 6 processes exist
+    processes = settings["processes"]
+    assert "lesson_planning" in processes
+    assert "frame_review" in processes
+    assert "quiz_generation" in processes
+    assert "quiz_verification" in processes
+    assert "tts" in processes
+    assert "stt" in processes
+
+    # Verify recommendations and reasoning
+    for p_key, proc in processes.items():
+        assert "recommended" in proc, f"{p_key} missing recommended block"
+        assert "badge" in proc["recommended"], f"{p_key} missing recommendation badge"
+        if "reasoning_effort" in proc:
+            assert proc["reasoning_effort"] in ("none", "low", "medium", "high")
+
+    assert processes["quiz_verification"]["recommended"]["reasoning_effort"] == "none"
+    assert "api_keys" in settings
+
+    # Verify save_settings
+    update_payload = {
+        "processes": {
+            "lesson_planning": {
+                "provider": "openrouter-free",
+                "model": "nvidia/nemotron-3.5-super-vl:free",
+                "reasoning_effort": "low"
+            },
+            "quiz_verification": {
+                "provider": "opencode-go",
+                "model": "opencode-go/muse-spark-1.3-contributor",
+                "reasoning_effort": "none"
+            }
+        }
+    }
+    save_res = service.save_settings(update_payload)
+    assert save_res["ok"] is True
+    saved_proc = save_res["settings"]["processes"]
+    assert saved_proc["lesson_planning"]["provider"] == "openrouter-free"
+    assert saved_proc["lesson_planning"]["model"] == "nvidia/nemotron-3.5-super-vl:free"
+    assert saved_proc["quiz_verification"]["provider"] == "opencode-go"
+
+
+
 
 
 
