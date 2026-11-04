@@ -11,6 +11,14 @@ QWEEPS is an experimental local teaching system that turns a question or supplie
 
 Learners can pause, move through the explanation, inspect objects or a selected region, ask questions, and request a focused visual branch. The browser scenes use SVG, GSAP and a Hyperframes adapter. **Live playback does not require baking an MP4.** Native Manim export and rendering are separate, optional paths.
 
+## Android
+
+The mobile interface supports portrait and landscape layouts with on-demand lesson
+controls, captions over the lesson stage, and all answer choices visible together.
+A standalone Android wrapper bundles the React studio, Python 3.11 and the Python
+backend using Chaquopy. See [Android setup and build instructions](docs/android.md)
+for supported features, background-service limits and APK generation.
+
 ## Demos
 
 ### 1. Full Live Browser Lesson: P vs NP

@@ -1,5 +1,8 @@
+import {useCompactLayout} from './useCompactLayout';
+import PixelQ from '../components/PixelQ';
+import LearningWorld from './LearningWorld';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Sliders } from 'lucide-react';
+import { ArrowLeft, BookOpen, Brain, Clock3, FileUp, Sliders, Zap } from 'lucide-react';
 import { api } from '../learning/types';
 import LiveLessonPlayer from './LiveLessonPlayer';
 import LivePreparation from './LivePreparation';
@@ -83,25 +86,20 @@ function StandaloneQuizPlayer({
           title="Return to main menu"
         >
           <ArrowLeft size={16} />
-          <span>Exit to Main Menu</span>
+          <span>Main menu</span>
         </button>
         <div className="standalone-quiz-title-box">
-          <span className="standalone-quiz-kicker">🧠 REINFORCEMENT MASTERY QUIZ</span>
+          <span className="standalone-quiz-kicker">REINFORCEMENT QUIZ · {lesson.quiz?.length || 0} CARDS</span>
           <h2>{lesson.title}</h2>
         </div>
-        <div className="standalone-quiz-meta-info">
-          <span>{lesson.quiz?.length || 0} Mastery Cards</span>
-        </div>
-      </header>
-
-      <div className="standalone-quiz-navbar-wrapper">
         <ReinforcementQuizNavbar
           lesson={lesson}
           quizState={quizState}
           setQuizState={setQuizState}
+          hideTitle
           className="live-replaced-quiz-navbar"
         />
-      </div>
+      </header>
 
       <div className="standalone-quiz-stage-body">
         <ReinforcementQuizModal
@@ -125,7 +123,21 @@ export default function LiveLessonLoader() {
   const [standaloneQuiz, setStandaloneQuiz] = useState<LiveLesson | null>(null);
   const [documents, setDocuments] = useState<DocumentMeta[]>([]);
   const [catalogLessons, setCatalogLessons] = useState<CatalogLesson[]>([]);
-  const [selected, setSelected] = useState(params.get('document') || '');
+  const initialDocs = (params.get('documents') || params.get('document') || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>(initialDocs);
+  const selected = selectedDocs.join(',');
+  const setSelected = (val: string | string[]) => {
+    if (Array.isArray(val)) {
+      setSelectedDocs(val);
+    } else if (!val) {
+      setSelectedDocs([]);
+    } else {
+      setSelectedDocs(val.split(',').map(s => s.trim()).filter(Boolean));
+    }
+  };
   const [question, setQuestion] = useState(params.get('topic') || '');
   const [native, setNative] = useState(params.get('native') === '1');
   const [generateQuiz, setGenerateQuiz] = useState(params.get('quiz') === '1');
@@ -134,6 +146,9 @@ export default function LiveLessonLoader() {
     params.get('nativeMode') === 'continuous' ? 'continuous' : 'per_beat'
   );
   const [sortBy, setSortBy] = useState<SortMode>('newest');
+  const {compact, pageSize, keyboard} = useCompactLayout();
+  const [homePanel,setHomePanel] = useState<'create'|'library'>('create');
+  const [libraryPage,setLibraryPage] = useState(0);
   const [job, setJob] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -178,16 +193,17 @@ export default function LiveLessonLoader() {
       let docId = doc;
       if (!docId && q) {
         const qLower = q.toLowerCase();
-        const matchedDoc = documents.find(
+        const matchedDocs = documents.filter(
           d =>
             (d.filename && qLower.includes(d.filename.toLowerCase())) ||
             (d.title && qLower.includes(d.title.toLowerCase()))
         );
-        if (matchedDoc) docId = matchedDoc.id;
+        if (matchedDocs.length > 0) docId = matchedDocs.map(d => d.id).join(',');
       }
       const existing = catalogLessons.find(
         l => (docId && l.id === docId) || (q && l.question?.toLowerCase().includes(q.trim().toLowerCase()))
       );
+      const docIdsArray = docId ? docId.split(',').map(s => s.trim()).filter(Boolean) : [];
       const res = await api<{
         quiz: any[];
         count: number;
@@ -196,6 +212,7 @@ export default function LiveLessonLoader() {
       }>('live/quiz', {
         lessonId: existing?.id,
         documentId: docId || undefined,
+        documentIds: docIdsArray.length > 0 ? docIdsArray : undefined,
         question: q || undefined,
         topic: q || undefined,
       });
@@ -322,16 +339,18 @@ export default function LiveLessonLoader() {
       let docId = doc;
       if (!docId && q) {
         const qLower = q.toLowerCase();
-        const matchedDoc = documents.find(
+        const matchedDocs = documents.filter(
           d =>
             (d.filename && qLower.includes(d.filename.toLowerCase())) ||
             (d.title && qLower.includes(d.title.toLowerCase()))
         );
-        if (matchedDoc) docId = matchedDoc.id;
+        if (matchedDocs.length > 0) docId = matchedDocs.map(d => d.id).join(',');
       }
+      const docIdsArray = docId ? docId.split(',').map(s => s.trim()).filter(Boolean) : [];
       const result = await api<LiveJob>('live/jobs', {
         question: q,
         documentId: docId || undefined,
+        documentIds: docIdsArray.length > 0 ? docIdsArray : undefined,
         resumeLessonId,
         native,
         nativeMode: mode,
@@ -414,25 +433,44 @@ export default function LiveLessonLoader() {
       .catch(e => setError(e.message));
   }, [sortBy]);
 
-  async function upload(file: File) {
+  async function uploadMultiple(files: FileList | File[]) {
+    const fileArray = Array.from(files);
+    if (!fileArray.length) return;
     setBusy(true);
     setError('');
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result).split(',')[1]);
-        reader.onerror = () => reject(new Error('Could not read the PDF.'));
-        reader.readAsDataURL(file);
+      const uploaded: DocumentMeta[] = [];
+      for (const file of fileArray) {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result).split(',')[1]);
+          reader.onerror = () => reject(new Error(`Could not read ${file.name}`));
+          reader.readAsDataURL(file);
+        });
+        const doc = await api<DocumentMeta>('documents', { filename: file.name, base64 });
+        uploaded.push(doc);
+      }
+      setDocuments(prev => {
+        const ids = new Set(uploaded.map(x => x.id));
+        return [...prev.filter(x => !ids.has(x.id)), ...uploaded];
       });
-      const doc = await api<DocumentMeta>('documents', { filename: file.name, base64 });
-      setDocuments(d => [...d.filter(x => x.id !== doc.id), doc]);
-      setSelected(doc.id);
-      if (!question) setQuestion('Teach me ' + doc.title);
+      setSelectedDocs(prev => Array.from(new Set([...prev, ...uploaded.map(d => d.id)])));
+      if (!question) {
+        if (uploaded.length === 1) {
+          setQuestion('Teach me ' + uploaded[0].title);
+        } else {
+          setQuestion('Synthesize lesson from ' + uploaded.map(d => d.title).join(' and '));
+        }
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function upload(file: File) {
+    return uploadMultiple([file]);
   }
 
   const ready = (value: LiveLesson, quizMode = false) => {
@@ -477,6 +515,10 @@ export default function LiveLessonLoader() {
     return list;
   }, [catalogLessons, sortBy]);
 
+  const libraryPageCount = Math.max(1, Math.ceil(sortedLessons.length / pageSize));
+  const currentLibraryPage = Math.min(libraryPage, libraryPageCount - 1);
+  const visibleLessons = compact ? sortedLessons.slice(currentLibraryPage * pageSize, (currentLibraryPage + 1) * pageSize) : sortedLessons;
+
   return (
     <>
       {standaloneQuiz ? (
@@ -494,10 +536,11 @@ export default function LiveLessonLoader() {
           initialOpenQuiz={openQuizOnLoad || generateQuiz || params.get('quiz') === '1'}
         />
       ) : (
-        <main className="live-generator">
+        <main className="live-generator" data-mobile-panel={homePanel} data-keyboard-open={keyboard}>
+          <LearningWorld />
           <div>
             <div className="live-menu-top-bar">
-              <span className="live-menu-brand-text">QWEEPS · LIVE VISUAL LEARNING</span>
+              <span className="live-menu-brand-text"><PixelQ/> QWEEPS <small>VISUAL LEARNING STUDIO</small></span>
               <button
                 type="button"
                 className="live-menu-settings-btn"
@@ -509,16 +552,18 @@ export default function LiveLessonLoader() {
                 <span>Settings/APIs</span>
               </button>
             </div>
-            <h1>What would you like to understand?</h1>
-            <p>
-              Choose a source PDF or ask for a topic. QWEEPS plans, illustrates and reviews a live lesson you can pause,
-              inspect and question.
-            </p>
+            <nav className="mobile-home-tabs" aria-label="Learning workspace"><button type="button" aria-pressed={homePanel==='create'} onClick={()=>setHomePanel('create')}>Create a lesson</button><button type="button" aria-pressed={homePanel==='library'} onClick={()=>setHomePanel('library')}>Your library ({catalogLessons.length})</button></nav>
+            <div className="live-home-intro">
+              <span className="live-home-eyebrow">YOUR LEARNING ADVENTURE AWAITS</span>
+              <h1>A little world<br /><em>of big ideas.</em></h1>
+              <p>Turn a question or a source into a visual lesson you can explore at your own pace.</p>
+            </div>
+
 
             <section className="live-generated-lessons-box" aria-label="Generated Lesson List">
               <div className="live-generated-lessons-header">
                 <div className="live-header-title-group">
-                  <span>GENERATED LESSONS</span>
+                  <span>YOUR LESSON LIBRARY</span>
                   <span className="live-header-count">{catalogLessons.length} available</span>
                 </div>
                 <div className="live-sort-controls">
@@ -529,38 +574,37 @@ export default function LiveLessonLoader() {
                     id="live-lesson-sort"
                     className="live-sort-select"
                     value={sortBy}
-                    onChange={e => setSortBy(e.target.value as SortMode)}
+                    onChange={e => {setSortBy(e.target.value as SortMode);setLibraryPage(0);}}
                     aria-label="Sort lessons by"
                   >
-                    <option value="newest">🕒 Newest first</option>
-                    <option value="oldest">⏳ Oldest first</option>
-                    <option value="duration">⏱️ Duration</option>
-                    <option value="title">🔤 Title (A–Z)</option>
+                    <option value="newest">Newest first</option>
+                    <option value="oldest">Oldest first</option>
+                    <option value="duration">Duration</option>
+                    <option value="title">Title (A–Z)</option>
                   </select>
                 </div>
               </div>
 
               <div className="live-generated-lessons-scroll">
-                <a
+                {!compact&&<a
                   href="/?stream=1"
                   className="live-generated-lesson-item variant-quiz"
                   title="Instant parallel chapter streaming demo"
                 >
                   <span className="live-generated-lesson-text">
-                    ⚡ Fast Chapter Stream: <strong>Parallel Agents (Instant ~40s Start)</strong>
+                    <Zap size={17} aria-hidden="true" /><span><strong>Fast chapter stream</strong><small>Parallel chapter preview</small></span>
                   </span>
                   <span className="live-generated-lesson-arrow">→</span>
-                </a>
+                </a>}
 
                 {sortedLessons.length === 0 ? (
                   <div className="live-generated-lessons-empty">
                     Loading lesson catalog…
                   </div>
                 ) : (
-                  sortedLessons.map((item, idx) => {
+                  visibleLessons.map((item, idx) => {
                     const variants = ['variant-gold', 'variant-blue', 'variant-emerald'] as const;
                     const vClass = item.hasNative ? 'variant-gold' : variants[idx % variants.length];
-                    const icon = item.hasNative ? '🎬' : item.beatCount <= 4 ? '🌿' : '✨';
                     const relTime = formatRelativeTime(item.mtime);
                     const durStr = formatDuration(item.duration);
                     return (
@@ -571,16 +615,16 @@ export default function LiveLessonLoader() {
                           title={`Play: ${item.title}`}
                         >
                           <span className="live-generated-lesson-text">
-                            {icon} Play {item.beatCount}-Beat {item.hasNative ? 'Hybrid' : 'Lesson'}:{' '}
-                            <strong>{item.title}</strong>
+                            <BookOpen size={18} aria-hidden="true" />
+                            <span><strong>{item.title}</strong><small>{item.beatCount} chapters · {item.hasNative ? 'Hybrid lesson' : 'Visual lesson'}</small></span>
                           </span>
                           <div className="live-generated-lesson-meta">
                             {relTime && (
                               <span className="live-meta-badge live-badge-time" title={item.updatedAt || ''}>
-                                🕒 {relTime}
+                                {relTime}
                               </span>
                             )}
-                            <span className="live-meta-badge live-badge-duration">⏱️ {durStr}</span>
+                            <span className="live-meta-badge live-badge-duration"><Clock3 size={12} aria-hidden="true" /> {durStr}</span>
                             <span className="live-generated-lesson-arrow">→</span>
                           </div>
                         </a>
@@ -592,7 +636,7 @@ export default function LiveLessonLoader() {
                             onClick={() => void generateQuizForLesson(item.id)}
                             title={`Take ${item.quizCount}-Question Reinforcement Quiz`}
                           >
-                            🧠 Quiz ({item.quizCount})
+                            <Brain size={15} aria-hidden="true" /> Quiz ({item.quizCount})
                           </button>
                         ) : (
                           <button
@@ -602,7 +646,7 @@ export default function LiveLessonLoader() {
                             onClick={() => void generateQuizForLesson(item.id)}
                             title="Generate reinforcement quiz for this lesson"
                           >
-                            {busyLessonQuizId === item.id ? 'Generating…' : '🧠 + Quiz'}
+                            <Brain size={15} aria-hidden="true" /> {busyLessonQuizId === item.id ? 'Generating…' : '+ Quiz'}
                           </button>
                         )}
                       </div>
@@ -610,6 +654,7 @@ export default function LiveLessonLoader() {
                   })
                 )}
               </div>
+              <div className="mobile-library-pages"><button type="button" aria-label="Previous library page" disabled={currentLibraryPage===0} onClick={()=>setLibraryPage(currentLibraryPage-1)}>← Previous</button><span>{currentLibraryPage+1} / {libraryPageCount}</span><button type="button" aria-label="Next library page" disabled={currentLibraryPage+1>=libraryPageCount} onClick={()=>setLibraryPage(currentLibraryPage+1)}>Next →</button></div>
             </section>
 
             {apiConfigured === false && (
@@ -631,63 +676,98 @@ export default function LiveLessonLoader() {
               </div>
             )}
 
-            <form
+            <form className="live-create-form"
               onSubmit={e => {
                 e.preventDefault();
                 void start();
               }}
             >
+              <div className="live-create-heading"><PixelQ/><div><strong>Start exploring</strong><small>WHAT WILL YOU LEARN TODAY?</small></div></div>
               <label htmlFor="live-topic">Your learning request</label>
               <textarea
                 id="live-topic"
                 aria-label="Learning request"
                 value={question}
                 onChange={e => setQuestion(e.target.value)}
-                placeholder="Teach me Module 6"
+                placeholder="Explain how a neuron sends a signal..."
                 rows={3}
               />
-              <label htmlFor="live-source">Source material</label>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+                <label htmlFor="live-source">Source material (Multiple PDFs supported)</label>
+                {selectedDocs.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDocs([])}
+                    style={{fontSize:'10px',color:'#edb09f',textDecoration:'underline',cursor:'pointer'}}
+                  >
+                    Clear sources
+                  </button>
+                )}
+              </div>
               <select
                 id="live-source"
                 aria-label="Lesson PDF"
-                value={selected}
-                onChange={e => setSelected(e.target.value)}
+                value=""
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val) {
+                    setSelectedDocs(prev => prev.includes(val) ? prev : [...prev, val]);
+                    e.target.value = '';
+                  }
+                }}
               >
-                <option value="">Match a saved source, or use general knowledge</option>
+                <option value="">{selectedDocs.length > 0 ? '+ Add another source document...' : 'Match a saved source, or use general knowledge'}</option>
                 {documents.map(d => (
-                  <option key={d.id} value={d.id}>
-                    {d.title} · {d.pageCount} pages
+                  <option key={d.id} value={d.id} disabled={selectedDocs.includes(d.id)}>
+                    {selectedDocs.includes(d.id) ? '✓ ' : ''}{d.title} · {d.pageCount} pages
                   </option>
                 ))}
               </select>
+              {selectedDocs.length > 0 && (
+                <div className="live-selected-docs-tray" style={{display:'flex',flexWrap:'wrap',gap:'6px',margin:'2px 0 8px'}}>
+                  {selectedDocs.map(id => {
+                    const doc = documents.find(d => d.id === id);
+                    return (
+                      <span
+                        key={id}
+                        style={{
+                          display:'inline-flex',alignItems:'center',gap:'6px',padding:'3px 8px',
+                          background:'rgba(237,202,130,0.12)',border:'1px solid rgba(237,202,130,0.3)',
+                          borderRadius:'14px',fontSize:'11px',color:'#ebd8a7'
+                        }}
+                      >
+                        📄 {doc?.title || id} <small style={{opacity:0.75}}>({doc?.pageCount || 1}p)</small>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedDocs(prev => prev.filter(x => x !== id))}
+                          style={{cursor:'pointer',fontSize:'13px',fontWeight:'bold',color:'#edca82',lineHeight:1,padding:'0 2px'}}
+                          title="Remove document"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    );
+                  })}
+                  <span style={{fontSize:'10px',color:'#849da8',alignSelf:'center'}}>
+                    ({selectedDocs.length} PDF{selectedDocs.length > 1 ? 's' : ''} ·{' '}
+                    {selectedDocs.reduce((acc, id) => acc + (documents.find(d => d.id === id)?.pageCount || 0), 0)} total pages)
+                  </span>
+                </div>
+              )}
               <input
                 ref={input}
                 type="file"
-                accept="application/pdf,.pdf"
-                aria-label="Attach a source PDF"
+                multiple
+                accept="application/pdf,.pdf,.pptx,.ppt"
+                aria-label="Attach source PDFs"
+                style={{display:'none'}}
                 onChange={e => {
-                  const f = e.target.files?.[0];
-                  if (f) void upload(f);
+                  if (e.target.files) void uploadMultiple(e.target.files);
                 }}
               />
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '20px',
-                  alignItems: 'center',
-                  marginTop: '2px',
-                }}
-              >
-                <label
-                  style={{
-                    display: 'flex',
-                    gap: '6px',
-                    alignItems: 'center',
-                    fontSize: '0.85rem',
-                    color: '#9fb6bf',
-                    cursor: 'pointer',
-                  }}
+              <div className="live-generator-options">
+                <label className="live-native-option"
+                  style={{display:'flex',gap:6,alignItems:'center',color:'#9fb6bf',cursor:'pointer'}}
                 >
                   <input
                     type="checkbox"
@@ -701,7 +781,6 @@ export default function LiveLessonLoader() {
                     display: 'flex',
                     gap: '6px',
                     alignItems: 'center',
-                    fontSize: '0.85rem',
                     color: generateQuiz ? '#edca82' : '#9fb6bf',
                     cursor: 'pointer',
                   }}
@@ -724,7 +803,6 @@ export default function LiveLessonLoader() {
                     display: 'flex',
                     gap: '6px',
                     alignItems: 'center',
-                    fontSize: '0.85rem',
                     color: '#9fb6bf',
                   }}
                 >
@@ -746,20 +824,20 @@ export default function LiveLessonLoader() {
                 </label>
               )}
               <div className="live-generator-actions">
-                <button type="button" disabled={busy || busyQuiz} onClick={() => input.current?.click()}>
-                  Attach PDF
+                <button type="button" disabled={busy || busyQuiz} onClick={() => input.current?.click()} title="Upload one or multiple PDFs">
+                  <FileUp size={16} aria-hidden="true" /> {selectedDocs.length > 0 ? 'Attach more PDFs' : 'Attach PDF(s)'}
                 </button>
                 <div className="live-generator-action-group">
                   <button
                     type="button"
                     className="live-menu-generate-quiz-btn"
-                    disabled={busy || busyQuiz || (!question.trim() && !selected)}
+                    disabled={busy || busyQuiz || (!question.trim() && selectedDocs.length === 0)}
                     onClick={() => void generateQuizOnly()}
                     title="Generate reinforcement quiz only (instant, without building animations)"
                   >
-                    {busyQuiz ? '🧠 Generating Quiz…' : '🧠 Generate Quiz'}
+                    <Brain size={16} aria-hidden="true" /> {busyQuiz ? 'Generating quiz…' : 'Generate quiz'}
                   </button>
-                  <button type="submit" disabled={busy || busyQuiz || !question.trim()}>
+                  <button type="submit" disabled={busy || busyQuiz || (!question.trim() && selectedDocs.length === 0)}>
                     {busy ? 'Reading…' : generateQuiz ? 'Teach me + Generate Quiz' : 'Teach me visually'}
                   </button>
                 </div>

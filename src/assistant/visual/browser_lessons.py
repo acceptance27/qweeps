@@ -1177,41 +1177,42 @@ Return JSON only; no markdown fences or tools:
         except Exception:
             return _build_reinforcement_quiz(lesson)
 
-    def _direct_document_quiz(self, document: dict | None, question: str) -> list[dict]:
-        from assistant.visual.anotasyon_reviewer_quiz import (
-            get_curated_anotasyon_quiz,
-            is_anotasyon_reviewer_query,
-        )
-        check_str = f"{question} {(document or {}).get('title', '')} {(document or {}).get('id', '')}"
-        if is_anotasyon_reviewer_query(check_str):
-            return get_curated_anotasyon_quiz()
+    def _generate_unit_quiz(self, unit: dict, question: str, root_title: str) -> list[dict]:
+        unit_title = unit['title']
+        unit_id = unit['id']
+        unit_idx = unit['index']
+        pages = unit.get('pages') or []
+        q_count = unit.get('target_questions', 20)
 
-        pages_text = ""
-        doc_title = ""
-        if document and document.get("pages"):
-            doc_title = document.get("title", "")
-            pages_text = "\n---\n".join(
-                f"Page {p.get('page')}: {str(p.get('text', ''))[:1200]}"
-                for p in document["pages"][:12]
-            )
+        # Sample representative pages evenly across the unit if there are many pages
+        if len(pages) > 18:
+            step = len(pages) / 18
+            sampled_pages = [pages[int(i * step)] for i in range(18)]
+        else:
+            sampled_pages = pages
+
+        pages_text = "\n---\n".join(
+            f"Page {p.get('page')} ({p.get('sourceDoc', unit_title)}): {str(p.get('text', ''))[:1200]}"
+            for p in sampled_pages
+        )
 
         extracted_qa = _extract_document_qa_pairs(pages_text) if pages_text else []
 
-        instruction = """You are the QWEEPS visual learning reinforcement quiz generator.
-Generate 10 to 15 high-rigor multiple-choice mastery questions covering key concepts, mechanisms, and nuances in the provided source material.
+        instruction = f"""You are the QWEEPS visual learning reinforcement quiz generator.
+Generate {q_count} high-rigor multiple-choice mastery questions covering key concepts, mechanisms, distinctions, and nuances from the provided "{unit_title}" curriculum.
 
-Core Guidelines for High-Yield Memorization & Understanding:
+Core Guidelines for High-Yield Mastery Questions:
 1. HIGH-YIELD MEMORIZATION & UNDERSTANDING:
-   - Prioritize essential core facts: key historical figures, dates, causal drivers ("Why did X happen?"), distinctions, and landmark publications.
-   - Do NOT test trivial wording, superficial filler, or obvious non-sequiturs.
+   - Prioritize essential core facts: key figures, definitions, causal drivers ("Why did X happen?"), business/technical principles, and practical scenarios.
+   - Every question must test an actionable concept from this unit.
 
 2. NATURAL, DIRECT QUESTION STEMS:
-   - Ask clean, direct questions in natural English: "Why did...", "What was the purpose of...", "How did...", "Which principle governs...", "Who was...".
-   - STRICTLY FORBIDDEN: NEVER write formulaic templates like "Which concept, condition, or component is defined as" or "In [Beat], which concept is defined as".
+   - Ask clean, direct questions in natural English: "Why did...", "What was the purpose of...", "How did...", "Which factor...", "Who...".
+   - STRICTLY FORBIDDEN: NEVER write formulaic templates like "Which concept, condition, or component is defined as".
 
 3. SUBSTANTIVE, EDUCATIONAL OPTIONS:
-   - The correct answer must be clear, complete, and informative (1-2 articulate clauses). Reading the correct option should teach and reinforce the concept on its own.
-   - The 3 distractors must be plausible, contextually grounded alternatives from the same domain that challenge misconceptions, NOT absurd non sequiturs.
+   - The correct answer must be clear, complete, and informative (1-2 articulate clauses).
+   - The 3 distractors must be plausible, contextually grounded alternatives from the same domain that challenge common misconceptions.
    - Every question must have exactly 4 distinct options and a valid correctIndex (0..3).
 
 4. COGNITIVE REINFORCEMENT:
@@ -1219,37 +1220,31 @@ Core Guidelines for High-Yield Memorization & Understanding:
    - Provide a focused 'hint' giving a memorable mnemonic or cue.
    - Provide 'acceptedAnswers' with 3-6 concise keyword variations for learners using typing/recall mode.
 
-5. AUTHENTIC DOCUMENT Q&A HANDLING:
-   - If 'source_qa_pairs' are provided, translate, clean, and convert them into English reinforcement questions, preserving their core pedagogical substance.
+Return JSON only; no markdown fences:
+{{"questions":[{{"id":"q-{unit_id}-1","chapterId":"{unit_id}","chapterIndex":{unit_idx},"chapterTitle":"{unit_title}","kind":"concept","prompt":"Clear direct question in natural English","options":["Option A","Option B","Option C","Option D"],"correctIndex":0,"explanation":"Authoritative explanation","safeguardNote":"Misconception to avoid","hint":"Mnemonic cue","acceptedAnswers":["Keyword 1","Keyword 2"]}}]}}"""
 
-Return JSON only; no markdown fences or tools:
-{"questions":[{"id":"q-doc-1","chapterId":"unit-1","chapterIndex":0,"chapterTitle":"Core Topic","kind":"concept","prompt":"Clear direct question in natural English","options":["Option A","Option B","Option C","Option D"],"correctIndex":0,"explanation":"Authoritative explanation of why the correct option is right","safeguardNote":"Common misconception to avoid","hint":"Mnemonic cue pointing to key concept","acceptedAnswers":["Keyword 1","Keyword 2"]}]}"""
-
-        payload = {"title": doc_title, "question": question, "source": pages_text}
+        payload = {"unit": unit_title, "source": pages_text, "question": question}
         if extracted_qa:
-            payload["source_qa_pairs"] = extracted_qa[:25]
+            payload["source_qa_pairs"] = extracted_qa[:20]
 
         def validate(r):
             raw_qs = r.get("questions") if isinstance(r, dict) else []
             cleaned = []
             for idx, q in enumerate(raw_qs or []):
-                if not isinstance(q, dict):
-                    continue
+                if not isinstance(q, dict): continue
                 opts = [str(o).strip() for o in (q.get("options") or []) if str(o).strip()]
-                if len(opts) != 4:
-                    continue
+                if len(opts) != 4: continue
                 prompt = str(q.get("prompt") or "").strip()
                 if not prompt or "which concept, condition, or component is defined as" in prompt.lower():
                     continue
                 correct_idx = int(q.get("correctIndex", 0))
                 if not 0 <= correct_idx < 4:
                     correct_idx = 0
-                c_idx = int(q.get("chapterIndex", idx // 10))
                 cleaned.append({
-                    "id": str(q.get("id") or f"q-doc-{idx+1}"),
-                    "chapterId": str(q.get("chapterId") or f"unit-{c_idx + 1}"),
-                    "chapterIndex": c_idx,
-                    "chapterTitle": str(q.get("chapterTitle") or doc_title or f"Unit {c_idx + 1}"),
+                    "id": f"q-{unit_id}-{idx+1}",
+                    "chapterId": unit_id,
+                    "chapterIndex": unit_idx,
+                    "chapterTitle": unit_title,
                     "kind": q.get("kind") if q.get("kind") in {"concept", "mechanism", "safeguard"} else "concept",
                     "prompt": prompt,
                     "options": opts,
@@ -1260,23 +1255,113 @@ Return JSON only; no markdown fences or tools:
                     "acceptedAnswers": [str(a).strip() for a in (q.get("acceptedAnswers") or []) if str(a).strip()] or [opts[correct_idx][:35]],
                 })
             if len(cleaned) < 3:
-                raise PlanError("Insufficient valid questions returned")
+                raise PlanError(f"Insufficient questions generated for {unit_title}")
             return cleaned
 
         try:
-            return _model_json(self.llm, instruction, payload, validate, tokens=4800)
+            return _model_json(self.llm, instruction, payload, validate, tokens=6000)
         except Exception:
             if extracted_qa:
-                return _build_quiz_from_extracted_qa(extracted_qa, doc_title)
+                return _build_quiz_from_extracted_qa(extracted_qa, unit_title)
+            return []
+
+    def _direct_document_quiz(self, document: dict | None, question: str) -> list[dict]:
+        from assistant.visual.anotasyon_reviewer_quiz import (
+            get_curated_anotasyon_quiz,
+            is_anotasyon_reviewer_query,
+        )
+        check_str = f"{question} {(document or {}).get('title', '')} {(document or {}).get('id', '')}"
+        if is_anotasyon_reviewer_query(check_str):
+            return get_curated_anotasyon_quiz()
+
+        if not document or not document.get("pages"):
             return _build_reinforcement_quiz({
-                "title": doc_title or question or "Quiz",
+                "title": (document.get('title') if document else None) or question or "Quiz",
                 "question": question or "Reinforcement Quiz",
-                "chapters": [{
-                    "id": "beat-1", "title": doc_title or question or "Core Topic",
-                    "question": question or "Topic Overview", "insight": "Core understanding",
-                    "safeguard": "Review core concepts", "visual": {"takeaway": doc_title or question, "nodes": []}
-                }]
+                "chapters": [{"id": "beat-1", "title": question or "Core Topic", "question": question, "insight": "Key insight", "start": 0, "end": 30, "cues": [], "visual": {"takeaway": "Core", "nodes": []}}]
             })
+
+        # Build units to cover the ENTIRE curriculum across all documents and page ranges
+        units: list[dict] = []
+        if document.get('isComposite') and document.get('documents'):
+            for idx, c in enumerate(document['documents']):
+                c_id = c['id']
+                c_title = c.get('title') or c.get('filename') or f"Chapter {idx+1}"
+                c_pages = [p for p in document['pages'] if p.get('sourceDocId') == c_id]
+                if not c_pages:
+                    c_pages = [p for p in document['pages'] if c_title.lower() in p.get('text', '').lower()]
+                if not c_pages:
+                    chunk_sz = max(1, len(document['pages']) // len(document['documents']))
+                    c_pages = document['pages'][idx * chunk_sz : (idx + 1) * chunk_sz]
+                target_q = 25 if len(c_pages) >= 20 else 15
+                units.append({
+                    'id': f"unit-{idx+1}",
+                    'title': c_title,
+                    'pages': c_pages,
+                    'index': idx,
+                    'target_questions': target_q,
+                })
+        else:
+            all_pages = document.get('pages', [])
+            total_pages = len(all_pages)
+            if total_pages <= 15:
+                units.append({
+                    'id': 'unit-1',
+                    'title': document.get('title') or "Core Curriculum",
+                    'pages': all_pages,
+                    'index': 0,
+                    'target_questions': max(12, min(25, total_pages * 2)),
+                })
+            elif total_pages <= 40:
+                mid = total_pages // 2
+                units.append({'id': 'unit-1', 'title': f"{document.get('title', 'Unit 1')} · Part 1", 'pages': all_pages[:mid], 'index': 0, 'target_questions': 20})
+                units.append({'id': 'unit-2', 'title': f"{document.get('title', 'Unit 2')} · Part 2", 'pages': all_pages[mid:], 'index': 1, 'target_questions': 20})
+            elif total_pages <= 80:
+                chunk = total_pages // 3
+                units.append({'id': 'unit-1', 'title': f"{document.get('title', 'Unit 1')} · Part 1 (pp. 1-{chunk})", 'pages': all_pages[:chunk], 'index': 0, 'target_questions': 20})
+                units.append({'id': 'unit-2', 'title': f"{document.get('title', 'Unit 2')} · Part 2 (pp. {chunk+1}-{chunk*2})", 'pages': all_pages[chunk:chunk*2], 'index': 1, 'target_questions': 20})
+                units.append({'id': 'unit-3', 'title': f"{document.get('title', 'Unit 3')} · Part 3 (pp. {chunk*2+1}-{total_pages})", 'pages': all_pages[chunk*2:], 'index': 2, 'target_questions': 20})
+            else:
+                chunk = total_pages // 4
+                for u_idx in range(4):
+                    start_p = u_idx * chunk
+                    end_p = (u_idx + 1) * chunk if u_idx < 3 else total_pages
+                    units.append({
+                        'id': f"unit-{u_idx+1}",
+                        'title': f"{document.get('title', 'Curriculum')} · Section {u_idx+1} (pp. {start_p+1}-{end_p})",
+                        'pages': all_pages[start_p:end_p],
+                        'index': u_idx,
+                        'target_questions': 20,
+                    })
+
+        import concurrent.futures
+        all_questions: list[dict] = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, len(units))) as executor:
+            future_to_idx = {
+                executor.submit(self._generate_unit_quiz, unit, question, document.get('title', '')): unit['index']
+                for unit in units
+            }
+            results_by_idx: dict[int, list[dict]] = {}
+            for future in concurrent.futures.as_completed(future_to_idx):
+                u_idx = future_to_idx[future]
+                try:
+                    res = future.result()
+                    results_by_idx[u_idx] = res
+                except Exception:
+                    results_by_idx[u_idx] = []
+
+        for idx in range(len(units)):
+            all_questions.extend(results_by_idx.get(idx, []))
+
+        # Re-number questions sequentially for clean progression:
+        for idx, q in enumerate(all_questions):
+            q["id"] = f"q-doc-{idx+1}"
+
+        if not all_questions:
+            # Fallback to single-unit generation
+            return self._generate_unit_quiz(units[0] if units else {'id': 'unit-1', 'title': document.get('title', 'Topic'), 'pages': document.get('pages', [])[:20], 'index': 0, 'target_questions': 15}, question, document.get('title', ''))
+
+        return all_questions
 
     def generate_quiz(self,lesson_or_id,*,persist=True,force_llm=False):
         lesson_id = None
@@ -1289,7 +1374,7 @@ Return JSON only; no markdown fences or tools:
             base=self._base_lesson(lesson_id)
             lesson=self.lesson(lesson_id)
         elif isinstance(lesson_or_id,dict):
-            target_doc_id = lesson_or_id.get('documentId')
+            target_doc_id = lesson_or_id.get('documentIds') or lesson_or_id.get('documentId')
             target_q = (lesson_or_id.get('question') or lesson_or_id.get('topic') or '').strip()
             lesson_id=lesson_or_id.get('lessonId') or lesson_or_id.get('id')
             if lesson_id:
@@ -1357,9 +1442,19 @@ Return JSON only; no markdown fences or tools:
             self._last_quiz_lesson_id = lesson_id
             return questions
 
+        is_composite_or_large = False
+        if target_doc_id or target_q:
+            try:
+                resolved_doc = self.documents.resolve(target_q, target_doc_id)
+                if resolved_doc and (resolved_doc.get('isComposite') or resolved_doc.get('pageCount', 0) > 25):
+                    is_composite_or_large = True
+            except Exception:
+                pass
+
         if not force_llm and isinstance(base.get('quiz'),list) and len(base['quiz'])>=3:
-            self._last_quiz_lesson_id = lesson_id
-            return base['quiz']
+            if not (is_composite_or_large and len(base['quiz']) < 25):
+                self._last_quiz_lesson_id = lesson_id
+                return base['quiz']
         chapters=lesson.get('chapters') or []
         if not chapters:
             if target_doc_id or target_q:
@@ -1414,9 +1509,9 @@ Return JSON only; no markdown fences or tools:
         if native_mode not in {'continuous','per_beat'}:
             raise PlanError("nativeMode must be 'continuous' or 'per_beat'")
         question=_text(payload.get('question') or payload.get('topic'),'lesson request',4000)
-        document=self.documents.resolve(question,payload.get('documentId'))
+        document=self.documents.resolve(question,payload.get('documentIds') or payload.get('documentId'))
         context=copy.deepcopy(context or payload.get('context') or {})
-        if context.get('documentId') and not document:document=self.documents.get(context['documentId'])
+        if (context.get('documentIds') or context.get('documentId')) and not document:document=self.documents.resolve('',context.get('documentIds') or context.get('documentId'))
         signature=json.dumps({'engine':7,'native':native,'nativeMode':native_mode,'question':question,'document':document['id'] if document else None,'context':context,
                              'model':{'provider':getattr(self.llm,'provider',type(self.llm).__name__),
                                       'generation':getattr(self.llm,'visual_model',None) or getattr(self.llm,'model',None),
@@ -1452,7 +1547,7 @@ Return JSON only; no markdown fences or tools:
             job={'id':job_id,'lessonId':key,'status':'preparing','stage':'Reading source material','revision':0,'question':question,'document':document,'context':context,'native':native,'nativeMode':native_mode,'generateQuiz':generate_quiz}
             self.jobs[job_id]=job
             folder=self.folder/key;folder.mkdir(exist_ok=True)
-            (folder/'request.json').write_text(json.dumps({'question':question,'documentId':document['id'] if document else None,'context':context,'generateQuiz':generate_quiz},ensure_ascii=False))
+            (folder/'request.json').write_text(json.dumps({'question':question,'documentId':document['id'] if document else None,'documentIds':[d['id'] for d in document.get('documents',[])] if document and 'documents' in document else ([document['id']] if document else []),'context':context,'generateQuiz':generate_quiz},ensure_ascii=False))
             cached=self.folder/key/'lesson.json'
             if cached.is_file() and not payload.get('regenerate'):
                 try: cached_lesson=json.loads(cached.read_text())
@@ -1473,7 +1568,7 @@ Return JSON only; no markdown fences or tools:
         methods=bool(payload.get('methods'))
         storyboard=methods_storyboard() if methods else None
         question=_text(payload.get('question') or payload.get('topic') or (storyboard['question'] if storyboard else None),'lesson request',4000)
-        document=self.documents.resolve(question,payload.get('documentId'))
+        document=self.documents.resolve(question,payload.get('documentIds') or payload.get('documentId'))
         context=copy.deepcopy(payload.get('context') or {})
         signature=json.dumps({'stream':True,'engine':7,'methods':methods,
             'plan':hashlib.sha256(json.dumps(storyboard,sort_keys=True).encode()).hexdigest() if storyboard else None,
@@ -1494,6 +1589,7 @@ Return JSON only; no markdown fences or tools:
             self.jobs[job_id]=j;self.streams[job_id]=queue.Queue()
         folder=self.folder/key;folder.mkdir(parents=True,exist_ok=True)
         (folder/'request.json').write_text(json.dumps({'question':question,'documentId':document['id'] if document else None,
+            'documentIds':[d['id'] for d in document.get('documents',[])] if document and 'documents' in document else ([document['id']] if document else []),
             'context':context,'stream':True},ensure_ascii=False))
         threading.Thread(target=self._stream_generate,args=(job_id,),daemon=True).start()
         return {'id':job_id,'status':'preparing','stage':j['stage']}
@@ -2735,7 +2831,7 @@ Return JSON only: {"answer":"..."}.'''
                     result={'answer':self._fallback_answer(question,beat,context)}
                 else:
                     raise
-        result.update(scene=None,researchAvailable=bool(evidence),sources=[{'title':f"{document['title']} · p. {p['page']}",'url':f"/api/visual/documents/{document['id']}/file#page={p['page']}"} for p in evidence[:3]] if document else [])
+        result.update(scene=None,researchAvailable=bool(evidence),sources=[{'title':f"{p.get('sourceDoc') or document['title']} · p. {p.get('sourcePage', p['page'])}",'url':f"/api/visual/documents/{p.get('sourceDocId') or document['id']}/file#page={p.get('sourcePage', p['page'])}"} for p in evidence[:3]] if document else [])
         if payload.get('mode')=='branch':
             declared=_declared_branch(lesson,question)
             if declared:

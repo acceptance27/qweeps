@@ -70,6 +70,54 @@ def test_document_resolution_requires_a_real_unambiguous_source(library):
  other={**d,'id':'b'*32};p=lib.folder/other['id'];p.mkdir();(p/'document.json').write_text(json.dumps(other))
  with pytest.raises(PlanError,match='More than one'):lib.resolve('Teach me Module 12')
 
+def test_combine_multiple_documents_and_multi_pdf_resolution(library):
+ lib,d=library
+ d2={'id':'c'*32,'title':'Module 13: Liability & Risk','filename':'Module_13.pdf','aliases':['Module 13'],'pageCount':3,
+     'pages':[{'page':1,'text':'Liability attaches to negligent deployment.'},
+              {'page':2,'text':'Indemnity shifts risk between commercial parties.'},
+              {'page':3,'text':'Insurance caps exposure.'}]}
+ p2=lib.folder/d2['id'];p2.mkdir();(p2/'document.json').write_text(json.dumps(d2));(p2/'source.pdf').write_bytes(b'%PDF-1.4\n')
+
+ # Test combine direct
+ composite=lib.combine([d['id'],d2['id']])
+ assert composite['isComposite'] is True
+ assert composite['pageCount']==5 # 2 from d + 3 from d2
+ assert 'Module 12' in composite['title'] and 'Module 13' in composite['title']
+ assert len(composite['pages'])==5
+ assert composite['pages'][0]['sourceDocId']==d['id'] and composite['pages'][0]['sourcePage']==1
+ assert composite['pages'][2]['sourceDocId']==d2['id'] and composite['pages'][2]['sourcePage']==1
+
+ # Test resolve with list of IDs
+ resolved_list=lib.resolve('Synthesize modules', [d['id'],d2['id']])
+ assert resolved_list['id']==composite['id']
+
+ # Test resolve with comma-separated string
+ resolved_comma=lib.resolve('Synthesize modules', f"{d['id']},{d2['id']}")
+ assert resolved_comma['id']==composite['id']
+
+ # Test resolve by multi-alias query
+ resolved_query=lib.resolve('Synthesize Module 12 and Module 13')
+ assert resolved_query['id']==composite['id']
+
+ # Test evidence extraction preserves individual document attribution
+ evidence=lib.evidence(composite,'liability and copyright',limit=4)
+ assert len(evidence)>0
+ for ev in evidence:
+     assert 'sourceDocId' in ev and 'sourcePage' in ev and 'sourceDoc' in ev
+
+ # Test batch ingest
+ with patch('assistant.visual.documents.shutil.which',return_value='/usr/bin/pdftotext'),patch('assistant.visual.documents.subprocess.run') as run:
+     run.side_effect=[
+         Mock(returncode=0,stdout='Batch doc A page text '*5+'\f'),Mock(stdout='Title: Batch A\n'),
+         Mock(returncode=0,stdout='Batch doc B page text '*5+'\f'),Mock(stdout='Title: Batch B\n')
+     ]
+     batch=lib.ingest({'files':[
+         {'filename':'BatchA.pdf','base64':base64.b64encode(b'%PDF-1.4\nsource_for_batch_a').decode()},
+         {'filename':'BatchB.pdf','base64':base64.b64encode(b'%PDF-1.4\nsource_for_batch_b').decode()}
+     ]})
+     assert batch['count']==2
+     assert len(batch['documents'])==2
+
 def test_extraction_uses_page_boundaries_and_argument_lists(library):
  lib,_=library
  with patch('assistant.visual.documents.shutil.which',return_value='/usr/bin/pdftotext'),patch('assistant.visual.documents.subprocess.run') as run:

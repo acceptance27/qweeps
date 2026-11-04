@@ -33,6 +33,8 @@ STUDIO_DIR = Path(os.environ.get("QWEEPS_STUDIO_DIR", str(
 
 
 def manim_python() -> str | None:
+    if os.environ.get("QWEEPS_PLATFORM") == "android":
+        return None
     configured = os.environ.get("QWEEPS_MANIM_PYTHON")
     qweeps_manim = Path.home() / ".local/share/qweeps/manim-ce/bin/python"
     legacy_manim = Path.home() / ".local/share/omarchy-assistant/manim-ce/bin/python"
@@ -54,6 +56,7 @@ class VisualService:
         model = llm if llm is not None else build_visual_llm(self.cfg)
         self.llm = model
         self.sessions: dict[str, dict] = {}
+        self.active_requests = 0
         self.active_id: str | None = None
         self.lock = threading.RLock()
         self.render_lock = threading.Lock()
@@ -75,7 +78,7 @@ class VisualService:
         self.visual_beats = VisualBeatFactory(self.llm, STUDIO_DIR)
 
     def health(self) -> dict:
-        return {"service": "qweeps-visual", "version": 1,
+        return {"service": "qweeps-visual", "version": 1, "platform": os.environ.get("QWEEPS_PLATFORM", "desktop"),
                 "model": (self.llm.visual_model or os.environ.get('QWEEPS_ANTIGRAVITY_VISUAL_MODEL','gemini-3.8-flash-high')
                           if isinstance(self.llm, AntigravityLLM) else getattr(self.llm,'model',self.cfg.llm.model)),
                 "modelReady": not isinstance(self.llm, OfflineLLM),
@@ -709,8 +712,12 @@ class Handler(SimpleHTTPRequestHandler):
             elif parsed.path == '/api/visual/documents':
                 self.send_json(200,{'documents':self.service.live.documents.catalog()})
             elif re.fullmatch(r'/api/visual/documents/[0-9a-f]{32}/file',parsed.path):
-                doc_id=parsed.path.split('/')[-2];self.service.live.documents.get(doc_id)
-                self.send_video(self.service.live.documents.folder/doc_id/'source.pdf','application/pdf')
+                doc_id=parsed.path.split('/')[-2];doc=self.service.live.documents.get(doc_id)
+                pdf_path=self.service.live.documents.folder/doc_id/'source.pdf'
+                if not pdf_path.is_file() and doc.get('documents'):
+                    first_id=doc['documents'][0]['id']
+                    pdf_path=self.service.live.documents.folder/first_id/'source.pdf'
+                self.send_video(pdf_path,'application/pdf')
             elif re.fullmatch(r'/api/visual/live/stream-lesson/[0-9a-f]{32}',parsed.path):
                 self.send_json(200,self.service.live.stream_lesson(parsed.path.rsplit('/',1)[-1]))
             elif re.fullmatch(r'/api/visual/live/stream/[0-9a-f]{32}',parsed.path):
@@ -846,13 +853,24 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(400, {"error": str(exc)})
 
     def do_POST(self):
+        if os.environ.get("QWEEPS_PLATFORM") != "android":
+            return self._do_POST()
+        with self.service.lock:
+            self.service.active_requests += 1
+        try:
+            return self._do_POST()
+        finally:
+            with self.service.lock:
+                self.service.active_requests -= 1
+
+    def _do_POST(self):
         if not self.allowed() or self.headers.get_content_type() != "application/json":
             self.send_json(403, {"error": "Local JSON requests only"})
             return
         try:
             route = urlsplit(self.path).path
             length = int(self.headers.get("Content-Length", "0"))
-            limit=36_000_000 if route=='/api/visual/documents' else 24_000_000 if route=='/api/visual/live/review' else 2_000_000 if route=='/api/visual/live/check' else 250_000
+            limit=150_000_000 if route=='/api/visual/documents' else 24_000_000 if route=='/api/visual/live/review' else 2_000_000 if route=='/api/visual/live/check' else 250_000
             if not 0 < length <= limit:
                 raise PlanError(f"Request must be 1–{limit} bytes")
             payload = json.loads(self.rfile.read(length))
@@ -872,7 +890,8 @@ class Handler(SimpleHTTPRequestHandler):
                 result=self.service.live.start(payload)
             elif route == '/api/visual/live/quiz':
                 target=payload.get('lessonId') or payload.get('lesson') or payload
-                questions=self.service.live.generate_quiz(target)
+                force=bool(payload.get('force') or payload.get('regenerate'))
+                questions=self.service.live.generate_quiz(target, force_llm=force)
                 lesson_id=getattr(self.service.live, '_last_quiz_lesson_id', None)
                 if not lesson_id:
                     if isinstance(target, dict):
@@ -974,10 +993,15 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json(502, {"error": "QWEEPS could not complete the request. Check model connectivity and the visual server log."})
 
 
+def create_server(port=PORT, studio_dir=STUDIO_DIR, cfg=None, service=None):
+    service = service if service is not None else VisualService(cfg=cfg)
+    handler = type("StudioHandler", (Handler,), {"service": service})
+    return ThreadingHTTPServer(("127.0.0.1", port), functools.partial(handler, directory=str(Path(studio_dir) / "dist")))
+
+
 def serve(port=PORT, studio_dir=STUDIO_DIR, cfg=None):
     service = VisualService(cfg=cfg)
-    handler = type("StudioHandler", (Handler,), {"service": service})
-    httpd = ThreadingHTTPServer(("127.0.0.1", port), functools.partial(handler, directory=str(Path(studio_dir) / "dist")))
+    httpd = create_server(port=port, studio_dir=studio_dir, service=service)
     print(f"QWEEPS visual studio http://127.0.0.1:{port}", flush=True)
     try:
         httpd.serve_forever()

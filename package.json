@@ -1,7 +1,7 @@
 {
   "name": "qweeps-visual-studio-root",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "workspaces": [
     "visual-studio"
@@ -12,7 +12,9 @@
     "build": "vite build visual-studio --config visual-studio/vite.config.ts && node visual-studio/scripts/copy_notices.mjs && rm -rf dist && cp -r visual-studio/dist dist",
     "notices": "node visual-studio/scripts/copy_notices.mjs",
     "lint": "tsc -p visual-studio/tsconfig.json --noEmit",
-    "test": "npm --prefix visual-studio test"
+    "test": "npm --prefix visual-studio test",
+    "android:build": "bash scripts/build_android.sh",
+    "android:check": "bash scripts/build_android.sh --check"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

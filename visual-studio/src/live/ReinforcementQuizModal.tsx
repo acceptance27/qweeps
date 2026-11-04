@@ -1,3 +1,5 @@
+import {useCompactLayout} from './useCompactLayout';
+import LearningWorld from './LearningWorld';
 import { useEffect, useMemo, useState } from 'react';
 import {
   CheckCircle2,
@@ -382,6 +384,7 @@ interface ReinforcementQuizNavbarProps {
   setQuizState: React.Dispatch<React.SetStateAction<QuizProgressState>>;
   onClose?: () => void;
   showCloseButton?: boolean;
+  hideTitle?: boolean;
   className?: string;
 }
 
@@ -392,7 +395,11 @@ export function ReinforcementQuizNavbar({
   onClose,
   showCloseButton = false,
   className = '',
-}: ReinforcementQuizNavbarProps) {
+  hideTitle = false,
+ } : ReinforcementQuizNavbarProps) {
+  const {compact,landscape} = useCompactLayout();
+  const [controlsOpen,setControlsOpen] = useState(false);
+  useEffect(()=>setControlsOpen(false),[compact,landscape]);
   const {
     baseQuestions,
     queue,
@@ -489,13 +496,15 @@ export function ReinforcementQuizNavbar({
 
   return (
     <div className={`mastery-quiz-top-shell ${className}`.trim()}>
+      {compact&&<button type="button" className="mastery-mobile-toggle" aria-expanded={controlsOpen} onClick={()=>setControlsOpen(v=>!v)}><Layers size={15}/><span>Quiz controls · {masteredIds.length}/{baseQuestions.length} mastered</span><span>{controlsOpen?'Close':'Open'}</span></button>}
+      <div className="mastery-controls-body" hidden={compact&&!controlsOpen}>
       <header className="mastery-quiz-header">
-        <div className="mastery-quiz-brand">
+        {!hideTitle && <div className="mastery-quiz-brand">
           <span className="mastery-quiz-badge">
             <Brain size={14} /> REINFORCEMENT QUIZ
           </span>
           <h2>{lesson.title}</h2>
-        </div>
+        </div>}
 
         <div className="mastery-quiz-stats">
           <button
@@ -621,6 +630,7 @@ export function ReinforcementQuizNavbar({
         </div>
       )}
 
+      </div>
       <div className="mastery-progress-rail" aria-label="Question mastery progress">
         {displayQuestions.map((q, idx) => {
           const isMastered = masteredSet.has(q.id);
@@ -802,6 +812,10 @@ export function ReinforcementQuizModal({
   quizState: externalState,
   setQuizState: externalSetState,
 }: ReinforcementQuizModalProps) {
+  const {compact,landscape} = useCompactLayout();
+  const [feedbackDetail,setFeedbackDetail] = useState<'explanation'|'takeaway'>('explanation');
+  const [completionView,setCompletionView] = useState<'summary'|'review'>('summary');
+  const [breakdownPage,setBreakdownPage] = useState(0);
   const [internalState, setInternalState] = useState<QuizProgressState>(() => createInitialQuizState(lesson));
   const state = externalState ?? internalState;
   const setState = externalSetState ?? setInternalState;
@@ -885,6 +899,7 @@ export function ReinforcementQuizModal({
 
   const isAnswered = isReviewing ? isCardAnswered : selectedOption !== null;
   const isCorrect = isAnswered && currentCard && effectiveSelectedOption === currentCard.correctIndex;
+
 
   const effectiveTypedFeedback = isReviewing
     ? (cardHistory?.typedFeedback ?? (isCardMastered && currentCard ? { status: 'correct' as const, userText: currentCard.options[currentCard.correctIndex] } : null))
@@ -1593,8 +1608,16 @@ export function ReinforcementQuizModal({
     return 'Core Inference';
   };
 
+  const breakdownQuestions = completed ? baseQuestions : displayQuestions;
+  const breakdownSize = landscape ? 1 : 2;
+  const breakdownCount = Math.max(1,Math.ceil(breakdownQuestions.length/breakdownSize));
+  const safeBreakdownPage = Math.min(breakdownPage,breakdownCount-1);
+  const visibleBreakdown = compact ? breakdownQuestions.slice(safeBreakdownPage*breakdownSize,(safeBreakdownPage+1)*breakdownSize) : breakdownQuestions;
+  const completionNavigation = compact&&<nav className="mobile-completion-tabs" aria-label="Quiz results"><button type="button" aria-pressed={completionView==='summary'} onClick={()=>setCompletionView('summary')}>Summary</button><button type="button" aria-pressed={completionView==='review'} onClick={()=>setCompletionView('review')}>Concept review</button></nav>;
+  const breakdownNavigation = compact&&<nav className="mobile-breakdown-pages" aria-label="Concept review pages"><button type="button" disabled={safeBreakdownPage===0} onClick={()=>setBreakdownPage(safeBreakdownPage-1)}>← Previous</button><span>{safeBreakdownPage+1}/{breakdownCount}</span><button type="button" disabled={safeBreakdownPage+1>=breakdownCount} onClick={()=>setBreakdownPage(safeBreakdownPage+1)}>Next →</button></nav>;
+
   const content = (
-    <div className={`mastery-quiz-modal ${embedded ? 'embedded-stage' : ''}`}>
+    <div className={`mastery-quiz-modal ${embedded ? 'embedded-stage' : ''}`} data-mobile-answered={compact&&isAnswered}>
       {!hideHeader && (
         <ReinforcementQuizNavbar
           lesson={lesson}
@@ -1607,7 +1630,7 @@ export function ReinforcementQuizModal({
 
       {/* Main Body */}
       {completed && !isReviewing ? (
-        <div className="mastery-completion-body">
+        <div className="mastery-completion-body" data-mobile-view={completionView}>{completionNavigation}
           <div className="mastery-trophy-hero">
             <div className="mastery-trophy-ring">
               <Trophy size={36} />
@@ -1653,9 +1676,9 @@ export function ReinforcementQuizModal({
           </div>
 
           <div className="mastery-breakdown-list">
-            <h4>CONCEPT MASTERY BREAKDOWN</h4>
+            <h4>CONCEPT MASTERY BREAKDOWN</h4>{breakdownNavigation}
             <div className="mastery-breakdown-scroll">
-              {baseQuestions.map((q, idx) => {
+              {visibleBreakdown.map((q, idx) => {
                 const tries = attemptsByQuestion[q.id] || 1;
                 const reinforced = everMissedSet.has(q.id);
                 return (
@@ -1732,7 +1755,7 @@ export function ReinforcementQuizModal({
           </footer>
         </div>
       ) : setCompleted && !isReviewing && sets.length > 1 && activeSet ? (
-        <div className="mastery-completion-body set-completion">
+        <div className="mastery-completion-body set-completion" data-mobile-view={completionView}>{completionNavigation}
           <div className="mastery-trophy-hero">
             <div className="mastery-trophy-ring">
               <Sparkles size={36} />
@@ -1778,9 +1801,9 @@ export function ReinforcementQuizModal({
           </div>
 
           <div className="mastery-breakdown-list">
-            <h4>{activeSet.shortTitle.toUpperCase()} CONCEPT BREAKDOWN</h4>
+            <h4>{activeSet.shortTitle.toUpperCase()} CONCEPT BREAKDOWN</h4>{breakdownNavigation}
             <div className="mastery-breakdown-scroll">
-              {displayQuestions.map((q, idx) => {
+              {visibleBreakdown.map((q, idx) => {
                 const tries = attemptsByQuestion[q.id] || 1;
                 const reinforced = everMissedSet.has(q.id);
                 const globalIdx = baseQuestions.findIndex(bq => bq.id === q.id);
@@ -1942,6 +1965,7 @@ export function ReinforcementQuizModal({
               </div>
 
               <div className="mastery-meta-actions">
+                {currentCard.isSpacedRecall && <div className="mastery-spaced-banner"><div className="mastery-spaced-badge"><RotateCcw size={13} /><span>3-CARD SPACED RECALL</span></div></div>}
                 {currentCard.hint && !isAnswered && (
                   <button
                     type="button"
@@ -1970,16 +1994,6 @@ export function ReinforcementQuizModal({
                 )}
               </div>
             </div>
-
-            {/* 3-Card Short-Horizon Spaced Recall Banner */}
-            {currentCard.isSpacedRecall && (
-              <div className="mastery-spaced-banner">
-                <div className="mastery-spaced-badge">
-                  <RotateCcw size={13} className="spin-slow" />
-                  <span>3-CARD SPACED RECALL</span>
-                </div>
-              </div>
-            )}
 
             {/* Prompt */}
             <h3 className="mastery-prompt">{currentCard.prompt}</h3>
@@ -2128,6 +2142,7 @@ export function ReinforcementQuizModal({
             {/* Standard Mode: Multiple-Choice Options Grid */}
             {!isHardMode && (
               <div className="mastery-options-list">
+
                 {currentCard.options.map((opt, idx) => {
                   const isThisSelected = effectiveSelectedOption === idx;
                   const isThisCorrect = idx === currentCard.correctIndex;
@@ -2144,7 +2159,7 @@ export function ReinforcementQuizModal({
                     else state = 'dimmed';
                   }
                   const letter = String.fromCharCode(65 + idx);
-                  const { leadHook, supportingText } = splitOptionHook(opt);
+                  const { leadHook } = splitOptionHook(opt);
 
                   return (
                     <button
@@ -2157,16 +2172,13 @@ export function ReinforcementQuizModal({
                       <span className="mastery-option-key">{letter}</span>
                       <div className="mastery-option-content">
                         <div className="mastery-option-lead-row">
-                          <span className="mastery-option-lead-hook">{leadHook}</span>
+                          <span className="mastery-option-lead-hook">{rapidScan ? leadHook : opt}</span>
                           {isPriorTrap && !isAnswered && (
                             <span className="mastery-prior-trap-tag" title="You selected this option on your previous attempt">
                               ⚠️ Prior Trap (Avoid)
                             </span>
                           )}
                         </div>
-                        {!rapidScan && supportingText && (
-                          <div className="mastery-option-supporting">{supportingText}</div>
-                        )}
                         {isAnswered && !isCorrect && isThisCorrect && !isReviewing && (
                           <button
                             type="button"
@@ -2194,7 +2206,7 @@ export function ReinforcementQuizModal({
 
             {/* Immediate Feedback */}
             {isAnswered && (
-              <div className={`mastery-feedback-panel ${isCorrect ? 'correct' : 'missed'}`}>
+              <div className={`mastery-feedback-panel ${isCorrect ? 'correct' : 'missed'}`} data-mobile-detail={feedbackDetail}>
                 <div className="mastery-feedback-main">
                   <div className="mastery-feedback-title">
                     {isReviewing ? (
@@ -2234,6 +2246,7 @@ export function ReinforcementQuizModal({
                     </div>
                   )}
 
+                  {compact&&currentCard.safeguardNote&&<nav className="mobile-feedback-tabs" aria-label="Answer explanation"><button type="button" aria-pressed={feedbackDetail==='explanation'} onClick={()=>setFeedbackDetail('explanation')}>Explanation</button><button type="button" aria-pressed={feedbackDetail==='takeaway'} onClick={()=>setFeedbackDetail('takeaway')}>Key takeaway</button></nav>}
                   <p className="mastery-feedback-explanation">{currentCard.explanation}</p>
                   {currentCard.safeguardNote && (
                     <p className="mastery-feedback-safeguard">
@@ -2340,11 +2353,12 @@ export function ReinforcementQuizModal({
   );
 
   if (embedded) {
-    return <div className="mastery-quiz-stage-container">{content}</div>;
+    return <div className="mastery-quiz-stage-container"><LearningWorld />{content}</div>;
   }
 
   return (
     <div className="mastery-quiz-backdrop" role="dialog" aria-modal="true" aria-label="Reinforcement Quiz">
+      <LearningWorld />
       {content}
     </div>
   );

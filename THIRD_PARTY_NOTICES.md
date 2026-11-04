@@ -205,3 +205,17 @@ If you add a new third-party asset, dependency or provider output:
 
 This notice file is an inventory, not legal advice. It does not replace the
 full license texts or a review of provider terms.
+
+
+## Pixel interface fonts and Android runtime
+
+- **m5x7**, by Daniel Linssen: CC0 1.0. Distributed in
+  `visual-studio/public/fonts/` with its license notice.
+- **Alagard**, by Hewett Tsoi (Pix3M): distributed unmodified, with the requested
+  author credit in `visual-studio/public/fonts/alagard-CREDIT.txt`.
+- **Chaquopy**, by Chaquopy contributors: MIT license; see
+  <https://github.com/chaquo/chaquopy>. The Android app uses its packaged Python
+  runtime, including the runtime's upstream third-party components.
+- **pypdf**, by the pypdf contributors: BSD-3-Clause. Its license is retained in
+  the APK's Python requirements archive under `pypdf-6.0.0.dist-info/licenses/`.
+- **Gradle Wrapper**: Apache-2.0; see <https://github.com/gradle/gradle>.
