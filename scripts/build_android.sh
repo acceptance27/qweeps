@@ -51,8 +51,19 @@ if [[ "${1:-}" == '--check' ]]; then
   printf 'SDK: %s\nJDK: %s\nPython: %s\n' "$ANDROID_HOME" "$JAVA_HOME" "$QWEEPS_BUILD_PYTHON"
   exit 0
 fi
+variant="Release"
+if [[ "${1:-}" == '--debug' || "${1:-}" == 'debug' ]]; then
+  variant="Debug"
+fi
 cd "$qweeps_root"
 npm run build
 cd android
-./gradlew --no-daemon :app:assembleDebug
-printf '\nAPK: %s/android/app/build/outputs/apk/debug/app-debug.apk\n' "$qweeps_root"
+./gradlew --no-daemon ":app:assemble$variant"
+if [[ "$variant" == "Release" ]]; then
+  apk_path="$qweeps_root/android/app/build/outputs/apk/release/app-release.apk"
+else
+  apk_path="$qweeps_root/android/app/build/outputs/apk/debug/app-debug.apk"
+fi
+mkdir -p "$qweeps_root/dist"
+cp -f "$apk_path" "$qweeps_root/dist/qweeps.apk"
+printf '\nAPK: %s\n' "$apk_path"
