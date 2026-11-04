@@ -1,6 +1,6 @@
 import {useCompactLayout} from './useCompactLayout';
 import LearningWorld from './LearningWorld';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CheckCircle2,
   XCircle,
@@ -919,6 +919,19 @@ export function ReinforcementQuizModal({
   const prevReviewQ = hasPrevReviewQ ? displayQuestions[currentReviewIdx - 1] : null;
   const nextReviewQ = hasNextReviewQ ? displayQuestions[currentReviewIdx + 1] : null;
 
+  const typedInputRef = useRef<HTMLInputElement>(null);
+
+  // Automatically focus the text box in Hard Mode on question start and whenever advancing with Enter
+  useEffect(() => {
+    if (isHardMode && !isAnswered && !isReviewing && !completed && !setCompleted && currentCard) {
+      const timer = setTimeout(() => {
+        typedInputRef.current?.focus();
+        typedInputRef.current?.select();
+      }, 35);
+      return () => clearTimeout(timer);
+    }
+  }, [isHardMode, isAnswered, isReviewing, cursor, completed, setCompleted, currentCard?.id]);
+
   const currentQGlobalIndex = currentCard
     ? baseQuestions.findIndex(q => q.id === currentCard.id) + 1
     : 1;
@@ -1582,6 +1595,11 @@ export function ReinforcementQuizModal({
         } else if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           advanceNext();
+          if (isHardMode) {
+            setTimeout(() => {
+              typedInputRef.current?.focus();
+            }, 40);
+          }
         }
       }
     };
@@ -2045,6 +2063,7 @@ export function ReinforcementQuizModal({
                   <form onSubmit={submitMultiItem} className="mastery-hard-input-form">
                     <div className="mastery-hard-input-wrap">
                       <input
+                        ref={typedInputRef}
                         type="text"
                         value={typedInput}
                         onChange={e => setState(prev => ({ ...prev, typedInput: e.target.value }))}
@@ -2079,6 +2098,7 @@ export function ReinforcementQuizModal({
               <form onSubmit={submitTypedAnswer} className="mastery-hard-input-form">
                 <div className="mastery-hard-input-wrap">
                   <input
+                    ref={typedInputRef}
                     type="text"
                     value={isReviewing ? (effectiveTypedFeedback?.userText || '') : typedInput}
                     disabled={isAnswered || isReviewing || Boolean(isVerifyingSemantic)}
