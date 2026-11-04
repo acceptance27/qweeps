@@ -37,6 +37,30 @@ function cleanTitle(raw: string): string {
   return (raw || 'Concept').replace(/^\s*\d+[\.\)]\s*/, '').trim();
 }
 
+export function formatHighYieldNodePrompt(cleanTitle: string, nTitle: string, maskedBody: string): string {
+  const bodyLow = maskedBody.toLowerCase();
+  const titleLow = nTitle.toLowerCase();
+  if (
+    ['governor', 'author', 'scholar', 'historian', 'doctor', 'priest', 'friar', 'critic', 'jurist', 'magistrate'].some(k => titleLow.includes(k)) ||
+    ['appointed', 'born in', 'commanded', 'authored', 'served as', 'rector', 'procurator'].some(k => bodyLow.includes(k))
+  ) {
+    return `In "${cleanTitle}", which historical figure or colonial office corresponds to: "${maskedBody}"?`;
+  }
+  if (
+    ['club', 'society', 'journal', 'newspaper', 'record', 'review', 'edition', 'prologue', 'book', 'monopoly'].some(k => titleLow.includes(k)) ||
+    ['published', 'founded', 'established', 'clandestine', 'society', 'newspaper'].some(k => bodyLow.includes(k))
+  ) {
+    return `Regarding "${cleanTitle}", which organization, society, or landmark publication is described as: "${maskedBody}"?`;
+  }
+  if (
+    ['view', 'method', 'principle', 'rule', 'law', 'annotation', 'criterion', 'argument', 'doctrine'].some(k => titleLow.includes(k)) ||
+    ['framework', 'stages', 'criteria', 'principle', 'argued', 'refuted'].some(k => bodyLow.includes(k))
+  ) {
+    return `In "${cleanTitle}", which foundational principle or historical framework asserts: "${maskedBody}"?`;
+  }
+  return `In "${cleanTitle}", which key concept or historical development describes: "${maskedBody}"?`;
+}
+
 function cleanSafeguardForStudent(raw: string): string {
   const t = (raw || '').trim();
   if (!t) return '';
@@ -230,7 +254,7 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
         chapterIndex: cIdx,
         chapterTitle: ch.title,
         kind: 'mechanism',
-        prompt: `In "${cTitle}", which term corresponds to: "${maskedBody}"?`,
+        prompt: formatHighYieldNodePrompt(cTitle, target.title, maskedBody),
         options: titleOptions,
         correctIndex: titleOptions.indexOf(target.title),
         explanation: `In Beat ${cIdx + 1} (${cTitle}), ${target.title}: ${target.body}`,

@@ -668,6 +668,65 @@ def _generate_beat_safeguard_distractors(ch: dict, clean_title: str, safeguard: 
     ]
 
 
+def _format_high_yield_node_prompt(clean_title: str, n_title: str, masked_body: str) -> str:
+    """Format a natural, pedagogical question stem tailored to the entity type, avoiding formulaic templates."""
+    body_low = masked_body.lower()
+    title_low = n_title.lower()
+    if any(k in title_low for k in ["governor", "author", "scholar", "historian", "doctor", "priest", "friar", "critic", "jurist", "magistrate"]) or any(k in body_low for k in ["appointed", "born in", "commanded", "authored", "served as", "rector", "procurator"]):
+        return f"In \"{clean_title}\", which historical figure or colonial office corresponds to: \"{masked_body}\"?"
+    if any(k in title_low for k in ["club", "society", "journal", "newspaper", "record", "review", "edition", "prologue", "book", "monopoly"]) or any(k in body_low for k in ["published", "founded", "established", "clandestine", "society", "newspaper"]):
+        return f"Regarding \"{clean_title}\", which organization, society, or landmark publication is described as: \"{masked_body}\"?"
+    if any(k in title_low for k in ["view", "method", "principle", "rule", "law", "annotation", "criterion", "argument", "doctrine"]) or any(k in body_low for k in ["framework", "stages", "criteria", "principle", "argued", "refuted"]):
+        return f"In \"{clean_title}\", which foundational principle or historical framework asserts: \"{masked_body}\"?"
+    return f"In \"{clean_title}\", which key concept or historical development describes: \"{masked_body}\"?"
+
+
+def _extract_document_qa_pairs(text: str) -> list[dict[str, Any]]:
+    """Extract numbered Q&A pairs from a study guide or reviewer text."""
+    if not text:
+        return []
+    cleaned = re.sub(r'Page \d+', '', text)
+    matches = re.findall(r'(?ms)^\s*(\d+)\.\s+([^?\n]+?\?)\s+(.*?)(?=(?:^\s*\d+\.|\Z))', cleaned)
+    results = []
+    for num, q, a in matches:
+        q_clean = ' '.join(q.split())
+        a_clean = ' '.join(a.split())
+        if len(q_clean) >= 6 and len(a_clean) >= 3:
+            results.append({'num': int(num), 'question': q_clean, 'answer': a_clean})
+    return results
+
+
+def _build_quiz_from_extracted_qa(qa_pairs: list[dict[str, Any]], title: str) -> list[dict[str, Any]]:
+    """Synthesize high-yield multiple-choice cards directly from authentic study guide Q&A pairs."""
+    questions = []
+    all_answers = [item['answer'] for item in qa_pairs]
+    fallback_pool = [
+        "Historical perspective focusing strictly on colonial administrative records rather than indigenous viewpoints.",
+        "Alternative scholarly reading arguing that economic factors were secondary to religious conversions.",
+        "Revisionist interpretation asserting that secular institutions operated independently from royal decrees.",
+        "Secondary analysis maintaining that documentation standards were standardized across all provinces.",
+    ]
+    for idx, item in enumerate(qa_pairs):
+        correct = item['answer']
+        other_answers = [a for j, a in enumerate(all_answers) if j != idx]
+        distractors = _pick_distractors(correct, other_answers, 3, f"qa-dist-{idx}", fallback_pool)
+        opts = _deterministic_shuffle([correct, *distractors], f"qa-{idx}-opts")
+        questions.append({
+            'id': f"q-qa-{idx+1}",
+            'chapterId': f"section-{(idx // 12) + 1}",
+            'chapterIndex': idx // 12,
+            'chapterTitle': title or f"Unit {(idx // 12) + 1}",
+            'kind': 'concept',
+            'prompt': item['question'],
+            'options': opts,
+            'correctIndex': opts.index(correct),
+            'explanation': f"According to the reviewer: {correct}",
+            'hint': f"Recall the key answer from item {item['num']}.",
+            'acceptedAnswers': [correct[:35].strip(), item['question'].split('?')[0].strip()[:35]],
+        })
+    return questions
+
+
 def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
     """Synthesize a mastery reinforcement quiz grounded in the lesson's beats, mechanisms, and safeguards."""
     chapters = lesson.get("chapters") or []
@@ -784,7 +843,7 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
                 "chapterIndex": c_idx,
                 "chapterTitle": ch.get("title") or clean_title,
                 "kind": "mechanism",
-                "prompt": f"In \"{clean_title}\", which term corresponds to: \"{masked_body}\"?",
+                "prompt": _format_high_yield_node_prompt(clean_title, n_title, masked_body),
                 "options": options_m,
                 "correctIndex": options_m.index(n_title),
                 "explanation": f"In Beat {c_idx + 1} ({clean_title}), {n_title}: {n_body}",
@@ -1056,14 +1115,30 @@ class BrowserLessonStore:
             for idx,c in enumerate(chapters)
         ]
         target_count=min(20,max(6,len(chapters)))
-        instruction=f'''You are the QWEEPS visual learning reinforcement quiz generator.
-Generate {target_count} high-rigor multiple-choice mastery questions covering the beats of this lesson.
+        instruction=f'''You are the QWEEPS pedagogical reinforcement quiz architect.
+Your mission is to generate {target_count} high-yield multiple-choice mastery questions that reinforce the learner's deep understanding and long-term memorization.
+
+PEDAGOGICAL REQUIREMENTS (CRITICAL):
+1. HIGH-YIELD MEMORIZATION FOCUS:
+   - Test genuinely important, memorable core knowledge: causal drivers ("Why did X occur?"), central theses and arguments ("How did X counter Y?"), critical distinctions ("What distinguishes X from Y?"), key dates, landmark publications, named figures, and governing mechanisms.
+   - Do NOT test trivial wording, superficial filler, or obvious non-sequiturs.
+
+2. NATURAL, DIRECT QUESTION STEMS:
+   - Ask clean, direct questions in natural English: "Why did...", "What was the purpose of...", "How did...", "Which principle governs...", "Who was...".
+   - STRICTLY FORBIDDEN: NEVER write formulaic templates like "Which concept, condition, or component is defined as" or "In [Beat], which concept is defined as".
+
+3. SUBSTANTIVE, EDUCATIONAL OPTIONS:
+   - The correct answer must be clear, complete, and informative (1-2 articulate clauses). Reading the correct option should teach and reinforce the concept on its own.
+   - The 3 distractors must be plausible, contextually grounded alternatives from the same domain that challenge misconceptions, NOT absurd non sequiturs.
+   - Every question must have exactly 4 distinct options and a valid correctIndex (0..3).
+
+4. COGNITIVE REINFORCEMENT:
+   - Provide an authoritative 'explanation' clarifying why the correct option is right.
+   - Provide a focused 'hint' giving a memorable mnemonic or visual cue.
+   - Provide 'acceptedAnswers' with 3-6 concise keyword variations for learners using typing/recall mode.
+
 Return JSON only; no markdown fences or tools:
-{{"questions":[{{"id":"q-beat-1","chapterId":"beat-id","chapterIndex":0,"chapterTitle":"Beat Title","kind":"concept"|"mechanism"|"safeguard","prompt":"Clear conceptual or visual mechanism question","options":["Option A","Option B","Option C","Option D"],"correctIndex":0,"explanation":"Why the correct answer is right based on the beat's visual evidence","safeguardNote":"Common misreading or boundary condition to avoid","hint":"Short cue pointing to the beat's visual mechanism"}}]}}
-Rules:
-1. Every question MUST have exactly 4 distinct options and a valid correctIndex (0..3).
-2. Ground every question, explanation, and hint in the supplied lesson beats.
-3. Do not mention "Gizmo" anywhere.'''
+{{"questions":[{{"id":"q-beat-1","chapterId":"beat-id","chapterIndex":0,"chapterTitle":"Beat Title","kind":"concept"|"mechanism"|"safeguard","prompt":"Clear direct question","options":["Option A","Option B","Option C","Option D"],"correctIndex":0,"explanation":"Why this answer is historically/scientifically right","safeguardNote":"Key misconception to avoid","hint":"Mnemonic cue for memory recall","acceptedAnswers":["Keyword 1","Keyword 2"]}}]}}'''
         def validate_quiz_response(raw):
             if not isinstance(raw,dict) or not isinstance(raw.get('questions'),list) or len(raw['questions'])<3:
                 raise PlanError('Model quiz response must contain at least 3 questions')
@@ -1119,23 +1194,80 @@ Rules:
                 f"Page {p.get('page')}: {str(p.get('text', ''))[:1200]}"
                 for p in document["pages"][:12]
             )
+
+        extracted_qa = _extract_document_qa_pairs(pages_text) if pages_text else []
+
         instruction = """You are the QWEEPS visual learning reinforcement quiz generator.
 Generate 10 to 15 high-rigor multiple-choice mastery questions covering key concepts, mechanisms, and nuances in the provided source material.
+
+Core Guidelines for High-Yield Memorization & Understanding:
+1. HIGH-YIELD MEMORIZATION & UNDERSTANDING:
+   - Prioritize essential core facts: key historical figures, dates, causal drivers ("Why did X happen?"), distinctions, and landmark publications.
+   - Do NOT test trivial wording, superficial filler, or obvious non-sequiturs.
+
+2. NATURAL, DIRECT QUESTION STEMS:
+   - Ask clean, direct questions in natural English: "Why did...", "What was the purpose of...", "How did...", "Which principle governs...", "Who was...".
+   - STRICTLY FORBIDDEN: NEVER write formulaic templates like "Which concept, condition, or component is defined as" or "In [Beat], which concept is defined as".
+
+3. SUBSTANTIVE, EDUCATIONAL OPTIONS:
+   - The correct answer must be clear, complete, and informative (1-2 articulate clauses). Reading the correct option should teach and reinforce the concept on its own.
+   - The 3 distractors must be plausible, contextually grounded alternatives from the same domain that challenge misconceptions, NOT absurd non sequiturs.
+   - Every question must have exactly 4 distinct options and a valid correctIndex (0..3).
+
+4. COGNITIVE REINFORCEMENT:
+   - Provide an authoritative 'explanation' clarifying why the correct option is right.
+   - Provide a focused 'hint' giving a memorable mnemonic or cue.
+   - Provide 'acceptedAnswers' with 3-6 concise keyword variations for learners using typing/recall mode.
+
+5. AUTHENTIC DOCUMENT Q&A HANDLING:
+   - If 'source_qa_pairs' are provided, translate, clean, and convert them into English reinforcement questions, preserving their core pedagogical substance.
+
 Return JSON only; no markdown fences or tools:
-{"questions":[{"id":"q-1","chapterId":"beat-1","chapterIndex":0,"chapterTitle":"Core Concept","kind":"concept","prompt":"Clear conceptual question","options":["Option A","Option B","Option C","Option D"],"correctIndex":0,"explanation":"Detailed explanation of why the correct option is right","safeguardNote":"Common misconception to avoid","hint":"Short cue pointing to the key idea"}]}
-Rules:
-1. Every question MUST have exactly 4 distinct options and a valid correctIndex (0..3).
-2. Ground every question strictly in the provided text.
-3. Keep all native proper nouns and historical titles intact."""
+{"questions":[{"id":"q-doc-1","chapterId":"unit-1","chapterIndex":0,"chapterTitle":"Core Topic","kind":"concept","prompt":"Clear direct question in natural English","options":["Option A","Option B","Option C","Option D"],"correctIndex":0,"explanation":"Authoritative explanation of why the correct option is right","safeguardNote":"Common misconception to avoid","hint":"Mnemonic cue pointing to key concept","acceptedAnswers":["Keyword 1","Keyword 2"]}]}"""
+
         payload = {"title": doc_title, "question": question, "source": pages_text}
+        if extracted_qa:
+            payload["source_qa_pairs"] = extracted_qa[:25]
+
         def validate(r):
-            qs = [q for q in (r.get("questions") or []) if isinstance(q, dict) and len(q.get("options") or []) == 4]
-            if len(qs) < 3:
+            raw_qs = r.get("questions") if isinstance(r, dict) else []
+            cleaned = []
+            for idx, q in enumerate(raw_qs or []):
+                if not isinstance(q, dict):
+                    continue
+                opts = [str(o).strip() for o in (q.get("options") or []) if str(o).strip()]
+                if len(opts) != 4:
+                    continue
+                prompt = str(q.get("prompt") or "").strip()
+                if not prompt or "which concept, condition, or component is defined as" in prompt.lower():
+                    continue
+                correct_idx = int(q.get("correctIndex", 0))
+                if not 0 <= correct_idx < 4:
+                    correct_idx = 0
+                c_idx = int(q.get("chapterIndex", idx // 10))
+                cleaned.append({
+                    "id": str(q.get("id") or f"q-doc-{idx+1}"),
+                    "chapterId": str(q.get("chapterId") or f"unit-{c_idx + 1}"),
+                    "chapterIndex": c_idx,
+                    "chapterTitle": str(q.get("chapterTitle") or doc_title or f"Unit {c_idx + 1}"),
+                    "kind": q.get("kind") if q.get("kind") in {"concept", "mechanism", "safeguard"} else "concept",
+                    "prompt": prompt,
+                    "options": opts,
+                    "correctIndex": correct_idx,
+                    "explanation": str(q.get("explanation") or opts[correct_idx]).strip(),
+                    "safeguardNote": str(q.get("safeguardNote") or "").strip() or None,
+                    "hint": str(q.get("hint") or "Recall the primary source evidence.").strip(),
+                    "acceptedAnswers": [str(a).strip() for a in (q.get("acceptedAnswers") or []) if str(a).strip()] or [opts[correct_idx][:35]],
+                })
+            if len(cleaned) < 3:
                 raise PlanError("Insufficient valid questions returned")
-            return qs
+            return cleaned
+
         try:
             return _model_json(self.llm, instruction, payload, validate, tokens=4800)
         except Exception:
+            if extracted_qa:
+                return _build_quiz_from_extracted_qa(extracted_qa, doc_title)
             return _build_reinforcement_quiz({
                 "title": doc_title or question or "Quiz",
                 "question": question or "Reinforcement Quiz",

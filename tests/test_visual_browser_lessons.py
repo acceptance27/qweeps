@@ -896,13 +896,93 @@ def test_curated_anotasyon_reviewer_quiz_generation(tmp_path, library):
     qs = store.generate_quiz({'topic': '/home/anonymous/Downloads/Anotasyon_Reviewer_Lexs-Group.pdf'})
     assert len(qs) == 48
     for q in qs:
-        assert 'which concept, condition, or component is defined as' not in q['prompt']
+        assert 'which concept, condition, or component is defined as' not in q['prompt'].lower()
         assert len(q['options']) == 4
         assert 0 <= q['correctIndex'] < 4
         assert q['prompt'].endswith('?')
     assert "Who is the author of Sucesos" in qs[0]['prompt']
     assert "Antonio de Morga Sánchez Garay" in qs[1]['prompt']
     assert "Tenyente Gobernador" in qs[2]['options'][qs[2]['correctIndex']]
+
+
+def test_document_qa_extraction_and_high_yield_quiz():
+    from assistant.visual.browser_lessons import (
+        _extract_document_qa_pairs,
+        _build_quiz_from_extracted_qa,
+        _format_high_yield_node_prompt,
+    )
+    raw_text = """
+    Page 1
+    1. Kailan nilimbag ang aklat na Sucesos de las Islas Filipinas?
+    1609 sa Mexico.
+    2. Sino ang sumulat ng paunang salita sa anotasyon ni Rizal?
+    Ferdinand Blumentritt.
+    3. Bakit mahalaga ang anotasyon ni Rizal sa kasaysayan ng Pilipinas?
+    Upang ituwid ang mga maling pananaw ng mga Kastila sa katutubong kultura.
+    4. Ano ang tawag sa lihim na samahang itinatag sa Paris?
+    Kidlat Club.
+    """
+    pairs = _extract_document_qa_pairs(raw_text)
+    assert len(pairs) == 4
+    assert pairs[0]['num'] == 1
+    assert "Kailan nilimbag" in pairs[0]['question']
+    assert "1609 sa Mexico" in pairs[0]['answer']
+
+    quiz = _build_quiz_from_extracted_qa(pairs, "Anotasyon Review")
+    assert len(quiz) == 4
+    for q in quiz:
+        assert len(q['options']) == 4
+        assert 0 <= q['correctIndex'] < 4
+        assert 'which concept, condition, or component is defined as' not in q['prompt'].lower()
+        assert q['options'][q['correctIndex']] in [p['answer'] for p in pairs]
+
+    # Test high-yield node prompt generation avoids robotic template
+    p1 = _format_high_yield_node_prompt("Colonial Governance", "Lieutenant Governor", "Appointed in 1593 to oversee legal administration")
+    assert "historical figure or colonial office" in p1
+    assert "which concept, condition, or component is defined as" not in p1
+
+    p2 = _format_high_yield_node_prompt("Propaganda Movement", "La Solidaridad", "Published bi-weekly in Barcelona to advocate reforms")
+    assert "landmark publication" in p2
+    assert "which concept, condition, or component is defined as" not in p2
+
+    p3 = _format_high_yield_node_prompt("Historiographical Critique", "Annotation Framework", "Tripartite view of Philippine history")
+    assert "foundational principle or historical framework" in p3
+    assert "which concept, condition, or component is defined as" not in p3
+
+
+def test_direct_document_quiz_fallback_with_extracted_qa(tmp_path, library):
+    lib, _ = library
+    folder = tmp_path / 'lessons'
+    store = BrowserLessonStore(Model(), STUDIO, folder, lib)
+
+    doc = {
+        'id': 'doc-study-guide',
+        'title': 'Philippine History Reviewer',
+        'pages': [
+            {
+                'page': 1,
+                'text': """
+                1. Who led the Cavite Mutiny in 1872?
+                Fernando La Madrid.
+                2. What was the decree creating the Audiencia of Manila?
+                Royal Decree of May 5, 1583.
+                3. Which vessel completed the first circumnavigation?
+                Victoria under Juan Sebastian Elcano.
+                4. What was the secret society formed in Paris by Rizal?
+                Kidlat Club.
+                """,
+            }
+        ],
+    }
+
+    qs = store._direct_document_quiz(doc, "Philippine History Reviewer")
+    assert len(qs) >= 4
+    for q in qs:
+        assert len(q['options']) == 4
+        assert 0 <= q['correctIndex'] < 4
+        assert 'which concept, condition, or component is defined as' not in q['prompt'].lower()
+        assert q['prompt'].endswith('?')
+
 
 
 
