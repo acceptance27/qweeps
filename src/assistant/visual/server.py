@@ -116,66 +116,66 @@ class VisualService:
             ],
             "openrouter-free": [
                 {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ Recommended Free Multimodal & Sub-Second"},
-                {"value": "google/gemini-2.0-flash-exp:free", "label": "google/gemini-2.0-flash-exp:free", "badge": "⚡ Fast Free"},
                 {"value": "meta-llama/llama-3.3-70b-instruct:free", "label": "meta-llama/llama-3.3-70b-instruct:free", "badge": "Free 70B"},
                 {"value": "mistralai/mistral-small-24b-instruct-2501:free", "label": "mistral-small-24b:free", "badge": "Free 24B"}
             ],
             "openrouter": [
                 {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ Free Multimodal"},
-                {"value": "google/gemini-2.5-pro", "label": "google/gemini-2.5-pro", "badge": "💎 Deep Pedagogic Logic"},
+                {"value": "deepseek/deepseek-r1", "label": "deepseek/deepseek-r1", "badge": "💎 Deep Pedagogic Reasoning"},
                 {"value": "anthropic/claude-3.5-sonnet", "label": "anthropic/claude-3.5-sonnet", "badge": "Structured Code"},
                 {"value": "openai/gpt-4o", "label": "openai/gpt-4o", "badge": "Multimodal"},
                 {"value": "openrouter/auto", "label": "openrouter/auto", "badge": "Auto Best Routing"}
-            ],
-            "antigravity": [
-                {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "⭐ Recommended Antigravity Visual"},
-                {"value": "gemini-4-argon", "label": "gemini-4-argon", "badge": "💎 Gemini 4 Argon Multimodal"},
-                {"value": "gemini-2.5-flash", "label": "gemini-2.5-flash", "badge": "⚡ Fast"},
-                {"value": "gemini-2.5-pro", "label": "gemini-2.5-pro", "badge": "💎 Deep Reasoning"}
             ],
             "offline": [
                 {"value": "offline-deterministic", "label": "offline-deterministic", "badge": "🔒 100% Offline Fallback"}
             ]
         }
 
+        if agy_path:
+            general_provider_models["antigravity"] = [
+                {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "Local CLI"},
+                {"value": "gemini-2.5-flash", "label": "gemini-2.5-flash", "badge": "Fast"},
+                {"value": "gemini-2.5-pro", "label": "gemini-2.5-pro", "badge": "Deep Reasoning"}
+            ]
+
         vision_provider_models = {
             "openrouter-free": [
-                {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ Recommended Vision Free"},
-                {"value": "google/gemini-2.0-flash-exp:free", "label": "google/gemini-2.0-flash-exp:free", "badge": "⚡ Fast Free Vision"}
+                {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ Recommended Vision Free"}
             ],
             "opencode-go": [
                 {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⭐ Vision & SVG Review"},
                 {"value": "opencode-go/deepseek-v4.1-flash", "label": "deepseek-v4.1-flash", "badge": "⚡ Fast Vision Flash"},
                 {"value": "opencode-go/mimo-v2.6-flash", "label": "mimo-v2.6-flash", "badge": "Fast Vision"}
             ],
-            "antigravity": [
-                {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "💎 Multimodal Vision"},
-                {"value": "gemini-4-argon", "label": "gemini-4-argon", "badge": "💎 Gemini 4 Argon Vision"},
-                {"value": "gemini-2.5-flash", "label": "gemini-2.5-flash", "badge": "Fast Vision"}
-            ],
             "offline": [
                 {"value": "offline-deterministic", "label": "offline-deterministic", "badge": "Offline"}
             ]
         }
 
+        if agy_path:
+            vision_provider_models["antigravity"] = [
+                {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "Local CLI Vision"},
+                {"value": "gemini-2.5-flash", "label": "gemini-2.5-flash", "badge": "Fast Vision"}
+            ]
+
         verify_provider_models = {
             "openrouter-free": [
-                {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⚡⭐ Recommended Sub-Second Free"},
-                {"value": "google/gemini-2.0-flash-exp:free", "label": "google/gemini-2.0-flash-exp:free", "badge": "⚡ Fast Free"}
+                {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⚡⭐ Recommended Sub-Second Free"}
             ],
             "opencode-go": [
                 {"value": "opencode-go/deepseek-v4.1-flash", "label": "deepseek-v4.1-flash", "badge": "⚡ Fast Flash Evaluation"},
                 {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⚡ Fast Go Fallback"},
                 {"value": "opencode-go/beam-free", "label": "beam-free", "badge": "Free"}
             ],
-            "antigravity": [
-                {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "⚡ Fast Gemini Evaluation"},
-                {"value": "gemini-4-argon", "label": "gemini-4-argon", "badge": "💎 Gemini 4 Argon"}
-            ],
             "heuristic": [
                 {"value": "heuristic-fast", "label": "Zero-Latency Heuristic (0ms)", "badge": "⚡ 0ms Exact & Substring"}
             ]
         }
+
+        if agy_path:
+            verify_provider_models["antigravity"] = [
+                {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "Local CLI Evaluation"}
+            ]
 
         tts_provider_models = {
             "openrouter": [

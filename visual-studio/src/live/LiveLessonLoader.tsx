@@ -164,7 +164,7 @@ export default function LiveLessonLoader() {
   async function generateQuizOnly(doc = selected, q = question) {
     if (busy || busyQuiz) return;
     if (apiConfigured === false) {
-      setError('⚠️ AI API Key Required: No API or Antigravity connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate quizzes.');
+      setError('⚠️ AI API Key Required: No AI API connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate quizzes.');
       setShowSettingsModal(true);
       return;
     }
@@ -254,7 +254,7 @@ export default function LiveLessonLoader() {
   async function generateQuizForLesson(lessonId: string) {
     if (busy || busyQuiz || busyLessonQuizId) return;
     if (apiConfigured === false) {
-      setError('⚠️ AI API Key Required: No API or Antigravity connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate quizzes.');
+      setError('⚠️ AI API Key Required: No AI API connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate quizzes.');
       setShowSettingsModal(true);
       return;
     }
@@ -311,7 +311,7 @@ export default function LiveLessonLoader() {
   ) {
     if (!q.trim() || busy) return;
     if (apiConfigured === false) {
-      setError('⚠️ AI API Key Required: No API or Antigravity connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate visual lessons.');
+      setError('⚠️ AI API Key Required: No AI API connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate visual lessons.');
       setShowSettingsModal(true);
       return;
     }

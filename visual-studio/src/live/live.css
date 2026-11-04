@@ -1188,27 +1188,6 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(16,185,129,0.35);
 }
-.settings-preset-btn-edu {
-  display: inline-flex !important;
-  align-items: center;
-  gap: 5px;
-  background: #3b82f6 !important;
-  color: #082f49 !important;
-  border: none !important;
-  border-radius: 7px !important;
-  padding: 8px 12px !important;
-  font-size: 11.5px !important;
-  font-weight: 700 !important;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(59,130,246,0.25);
-}
-.settings-preset-btn-edu:hover {
-  background: #60a5fa !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(59,130,246,0.35);
-}
 
 /* Beginner Guide Card (Free & Cheap Models Breakdown) */
 .settings-guide-card {
@@ -1302,10 +1281,6 @@
   border-color: rgba(237, 202, 130, 0.4);
   background: linear-gradient(180deg, rgba(237, 202, 130, 0.08) 0%, rgba(8, 20, 28, 0.85) 100%);
 }
-.settings-guide-col.col-antigravity {
-  border-color: rgba(59, 130, 246, 0.35);
-  background: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, rgba(8, 20, 28, 0.85) 100%);
-}
 
 .settings-guide-col-header {
   display: flex;
@@ -1330,11 +1305,6 @@
   background: rgba(237, 202, 130, 0.2);
   color: #edca82;
   border: 1px solid rgba(237, 202, 130, 0.4);
-}
-.badge-price-edu {
-  background: rgba(59, 130, 246, 0.2);
-  color: #93c5fd;
-  border: 1px solid rgba(59, 130, 246, 0.4);
 }
 .settings-guide-col-title {
   margin: 0;
@@ -1399,15 +1369,6 @@
 .btn-go-action:hover {
   background: #edca82 !important;
   color: #0b1a23 !important;
-}
-.btn-edu-action {
-  background: rgba(59, 130, 246, 0.18) !important;
-  color: #93c5fd !important;
-  border-color: rgba(59, 130, 246, 0.35) !important;
-}
-.btn-edu-action:hover {
-  background: #3b82f6 !important;
-  color: #082f49 !important;
 }
 
 /* Missing API Warning Banner in Live Generator */

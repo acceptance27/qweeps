@@ -15,7 +15,6 @@ import {
   Eye,
   Layers,
   Edit3,
-  GraduationCap,
   HelpCircle,
   Gift,
   ChevronDown,
@@ -289,67 +288,6 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
     setTimeout(() => setSuccessMsg(null), 4000);
   };
 
-  const applyAntigravityStudentPreset = () => {
-    if (!settings) return;
-    const updated = { ...settings.processes };
-
-    if (updated.lesson_planning) {
-      updated.lesson_planning = {
-        ...updated.lesson_planning,
-        provider: 'antigravity',
-        model: 'gemini-3.8-flash-high',
-        reasoning_effort: 'high',
-      };
-    }
-    if (updated.frame_review) {
-      updated.frame_review = {
-        ...updated.frame_review,
-        provider: 'antigravity',
-        model: 'gemini-3.8-flash-high',
-        reasoning_effort: 'high',
-      };
-    }
-    if (updated.quiz_generation) {
-      updated.quiz_generation = {
-        ...updated.quiz_generation,
-        provider: 'antigravity',
-        model: 'gemini-3.8-flash-high',
-        reasoning_effort: 'high',
-      };
-    }
-    if (updated.quiz_verification) {
-      updated.quiz_verification = {
-        ...updated.quiz_verification,
-        provider: 'openrouter-free',
-        model: 'nvidia/nemotron-3.5-super-vl:free',
-        reasoning_effort: 'none',
-      };
-    }
-    if (updated.tts) {
-      updated.tts = {
-        ...updated.tts,
-        provider: 'openrouter',
-        model: 'fish-audio/s2.1-pro-free:free',
-        voice: '33a2191b8fda440cae962137e9793985',
-      };
-    }
-    if (updated.stt) {
-      updated.stt = {
-        ...updated.stt,
-        provider: 'openrouter',
-        engine: 'whisper',
-        model: 'fish-audio/transcribe-1',
-      };
-    }
-
-    setSettings({
-      ...settings,
-      processes: updated,
-    });
-    setSuccessMsg('🎓 Applied Google Antigravity & Gemini Student Pass Preset!');
-    setTimeout(() => setSuccessMsg(null), 4000);
-  };
-
   const handleSave = async () => {
     if (!settings) return;
     setSaving(true);
@@ -463,9 +401,8 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
           <div className="settings-preset-info">
             <div className="settings-preset-badge">⚡ Quick Presets</div>
             <div className="settings-preset-desc">
-              Choose your setup in one click: <strong>100% Free OpenRouter</strong> (zero-config, no card),{' '}
-              <strong>OpenCode Go</strong> ($10/mo = $80+ compute with Muse Spark & DeepSeek v4.1), or{' '}
-              <strong>Google Antigravity</strong> (free for .edu students).
+              Choose your setup in one click: <strong>100% Free OpenRouter</strong> (zero-config, no card) or{' '}
+              <strong>OpenCode Go</strong> ($10/mo = $80+ compute with Muse Spark & DeepSeek v4.1).
             </div>
           </div>
           <div className="settings-preset-actions">
@@ -486,15 +423,6 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
             >
               <Zap size={14} />
               <span>⭐ OpenCode Go ($10)</span>
-            </button>
-            <button
-              type="button"
-              className="settings-preset-btn-edu"
-              onClick={applyAntigravityStudentPreset}
-              title="Configure all processes with Google Antigravity & Gemini multimodal models"
-            >
-              <GraduationCap size={14} />
-              <span>🎓 Antigravity .edu</span>
             </button>
           </div>
         </div>
@@ -544,7 +472,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                 </div>
                 <p className="settings-guide-subtitle">
                   Recommended capable models: <strong>DeepSeek v4.1 Flash</strong>,{' '}
-                  <strong>Muse Spark 1.3 Contributor</strong>, and <strong>Gemini 3.8 / Argon</strong>.
+                  <strong>Muse Spark 1.3 Contributor</strong>, and <strong>Qwen 3.8 Flash</strong>.
                 </p>
 
                 {showGuide && (
@@ -558,7 +486,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                         </div>
                         <h4 className="settings-guide-col-title">OpenRouter Free Tier</h4>
                         <div className="settings-guide-models-list">
-                          <code>nvidia/nemotron-3.5-super-vl:free</code> · <code>gemini-2.0-flash-exp:free</code> · Fish Audio
+                          <code>nvidia/nemotron-3.5-super-vl:free</code> · <code>llama-3.3-70b-instruct:free</code> · Fish Audio
                         </div>
                         <p className="settings-guide-text">
                           <strong>No credit card required</strong>: Sign up at openrouter.ai and generate a free API key in seconds.
@@ -605,35 +533,6 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                         >
                           <Sparkles size={13} />
                           <span>Apply Go Preset</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Option 3: Antigravity Student Pass */}
-                    <div className="settings-guide-col col-antigravity">
-                      <div>
-                        <div className="settings-guide-col-header">
-                          <span className="settings-guide-price-badge badge-price-edu">Free with .edu</span>
-                          <GraduationCap size={16} className="text-blue-400" />
-                        </div>
-                        <h4 className="settings-guide-col-title">Google Antigravity Student Pass</h4>
-                        <div className="settings-guide-models-list">
-                          <code>gemini-3.8-flash-high</code> · <code>gemini-4-argon</code>
-                        </div>
-                        <p className="settings-guide-text">
-                          <strong>Free for students</strong>: Active college and university students with a verified <code>.edu</code> email address can get free Google Gemini Advanced / Antigravity access, saving the standard <strong>$19.99/month</strong> subscription until graduation.
-                          Gemini 3.8 / Argon multimodal vision provides world-class SVG geometry reasoning and visual frame review.
-                        </p>
-                      </div>
-                      <div className="settings-guide-col-footer">
-                        <button
-                          type="button"
-                          className="settings-guide-action-btn btn-edu-action"
-                          onClick={applyAntigravityStudentPreset}
-                          title="Apply Google Antigravity student pass configuration"
-                        >
-                          <GraduationCap size={13} />
-                          <span>Apply Student Preset</span>
                         </button>
                       </div>
                     </div>
@@ -729,27 +628,23 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                       </p>
                     </div>
 
-                    {/* Antigravity CLI */}
-                    <div className="settings-key-item">
-                      <div className="settings-key-header">
-                        <span className="settings-key-name">Antigravity CLI (agy)</span>
-                        {settings.api_keys.antigravity.available ? (
+                    {/* Local CLI Runner (only shown if detected on user's machine) */}
+                    {settings.api_keys.antigravity?.available && (
+                      <div className="settings-key-item">
+                        <div className="settings-key-header">
+                          <span className="settings-key-name">Local Runner (CLI)</span>
                           <span className="settings-status-badge badge-connected">
                             <CheckCircle2 size={12} /> Detected
                           </span>
-                        ) : (
-                          <span className="settings-status-badge badge-missing">
-                            <AlertCircle size={12} /> Not in PATH
-                          </span>
-                        )}
+                        </div>
+                        <div className="settings-key-meta">
+                          Path: <code>{settings.api_keys.antigravity.path}</code>
+                        </div>
+                        <p className="settings-key-hint">
+                          Local CLI execution runner detected on system PATH.
+                        </p>
                       </div>
-                      <div className="settings-key-meta">
-                        Path: <code>{settings.api_keys.antigravity.path || 'Not found'}</code>
-                      </div>
-                      <p className="settings-key-hint">
-                        Local CLI runner for high-fidelity Google Gemini multimodal models.
-                      </p>
-                    </div>
+                    )}
                   </div>
                 </section>
               )}

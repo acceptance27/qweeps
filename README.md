@@ -54,7 +54,7 @@ These are reproducible demonstration artifacts, not a guarantee that every new r
 
 - Python 3.11 or newer and a browser. The primary development environment is Linux/Omarchy; other platforms have not been established as supported.
 - The supplied `visual-studio/dist/` and `bundled-lessons/` directories, retained alongside the source checkout. A Python package installation alone does not bundle the whole studio.
-- For **new lesson generation and contextual Q&A** with the default configuration: an installed, authenticated Antigravity CLI (`agy`) with access to the configured models.
+- For **new lesson generation and contextual Q&A**: an OpenRouter API key (supports 100% free models like `nvidia/nemotron-3.5-super-vl:free`), OpenCode Go credentials, or a local CLI runner.
 - For **new Fish narration**: an OpenRouter API key and the configured Fish model/voice, plus the local speech-alignment runtime described in [visual learning documentation](docs/visual-learning.md). Playing the included recording does not require generating it again.
 
 ### Install from the source checkout
@@ -156,7 +156,7 @@ The maintained teaching skill draws on PDF Explainer, Math 01, A* Pathfinding & 
 - Generated explanations can contain incorrect facts, unclear mechanisms, overlaps or poor visual choices despite passing automated checks. General-topic model review is not the same as verification against retrieved sources.
 - Generated choice interactions highlight cases and explain consequences; they are not a general numerical simulation engine. The authored A* demonstration has its own executable grid-search behavior.
 - Provider response times vary. There is no guaranteed sub-second response or first-pass lesson approval. Interrupted preparation can resume saved checkpoints where available.
-- Default lesson requests have a bounded Antigravity timeout. A timeout alone does not identify whether the cause was reasoning, response length, transport failure or provider delay.
+- Default lesson requests have a bounded network timeout. A timeout alone does not identify whether the cause was reasoning, response length, transport failure or provider delay.
 - **Proposed, not implemented as a general system:** perimeter-port routing for diagrams, relative annotation constraints, failed-frame images supplied directly to the reviser, and selective bounding-box collision telemetry. Existing text-fit checks are more limited.
 - No controlled model ranking, learning-outcome study or fixed recall improvement is claimed.
 
@@ -169,9 +169,9 @@ Configuration is stored at `~/.config/qweeps/config.toml` (or via environment va
 | Role | Default route |
 |---|---|
 | General conversation and orchestration text | OpenRouter: `nvidia/nemotron-3.5-super-vl:free` |
-| Lesson planning, direction, review, narration writing and lesson Q&A | Antigravity: `gemini-3.8-flash-high` |
-| Speech synthesis | Configurable independently; the default is eSpeak, with Fish via OpenRouter and Piper as options |
-| Speech recognition | Voxtype by default; optional for typed/browser use |
+| Lesson planning, direction, review, narration writing and lesson Q&A | OpenRouter Free: `nvidia/nemotron-3.5-super-vl:free` (or OpenCode Go) |
+| Speech synthesis | Configurable independently; default is Fish via OpenRouter, with Piper and eSpeak as options |
+| Speech recognition | OpenRouter Cloud STT (`fish-audio/transcribe-1`) by default; Voxtype local as an option |
 
 These are configured route identifiers, not guarantees of current provider availability or price. Lesson narration writing and voice synthesis are different stages: changing the lesson model does not change the selected voice.
 
@@ -184,12 +184,12 @@ api_key_env = "OPENROUTER_API_KEY"
 model = "nvidia/nemotron-3.5-super-vl:free"
 fallback_models = []
 fallback_provider = "offline"
-visual_provider = "antigravity"
-visual_model = "gemini-3.8-flash-high"
-visual_vision_model = "gemini-3.8-flash-high"
+visual_provider = "openrouter-free"
+visual_model = "nvidia/nemotron-3.5-super-vl:free"
+visual_vision_model = "nvidia/nemotron-3.5-super-vl:free"
 reasoning_effort = "none"
 
-# Optional Fish synthesis; this differs from the eSpeak default.
+# Fish synthesis
 [tts]
 provider = "openrouter"
 base_url = "https://openrouter.ai/api/v1"
@@ -197,7 +197,7 @@ model = "fish-audio/s2.1-pro-free:free"
 voice = "33a2191b8fda440cae962137e9793985"
 ```
 
-Use `qweeps set-key` for the OpenRouter key, or configure a local `.env` file (`OPENROUTER_API_KEY=...`). Antigravity uses its own local authentication (`agy`). See the visual documentation for alternative provider adapters and alignment requirements.
+Use `qweeps set-key` for the OpenRouter key, or configure a local `.env` file (`OPENROUTER_API_KEY=...`). See the visual documentation for alternative provider adapters and alignment requirements.
 
 ## CLI commands
 
