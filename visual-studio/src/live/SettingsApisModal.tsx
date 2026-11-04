@@ -334,8 +334,8 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
           <div className="settings-preset-info">
             <div className="settings-preset-badge">⭐ Recommended Preset</div>
             <div className="settings-preset-desc">
-              <strong>Free Tier & Sub-Second Latency</strong>: OpenCode Go + OpenRouter Free models, Fish Audio TTS,
-              Whisper STT, and 0-thinking instant typed quiz verification (&lt;800ms).
+              <strong>High Pedagogic Rigor & Sub-Second Recall</strong>: OpenCode Go + OpenRouter Free models,
+              High reasoning effort for lessons & quizzes (deep proofs & strict distractors), and 0-thinking for instant typed answer checks (&lt;800ms).
             </div>
           </div>
           <button

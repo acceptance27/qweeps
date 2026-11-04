@@ -226,22 +226,22 @@ class VisualService:
                     "description": "Synthesizes pedagogical outline, scene architecture, and visual animation instructions from PDF/topics.",
                     "provider": lp_prov,
                     "model": getattr(cfg.llm, "visual_model", "") or getattr(cfg.llm, "model", "opencode-go/muse-spark-1.3-contributor"),
-                    "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "low"),
+                    "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "high"),
                     "recommended": {
                         "provider": "opencode-go",
                         "model": "opencode-go/muse-spark-1.3-contributor",
-                        "reasoning_effort": "low",
-                        "badge": "⭐ Recommended (Free Tier & High Structure)"
+                        "reasoning_effort": "high",
+                        "badge": "⭐ Recommended (Free Tier & High Rigor)"
                     },
                     "options": {
                         "providers": list(general_provider_models.keys()),
                         "provider_models": general_provider_models,
                         "models": general_provider_models.get(lp_prov, []),
                         "reasoning": [
-                            {"value": "none", "label": "None (Fastest ~1s)", "badge": "⚡ Fastest"},
-                            {"value": "low", "label": "Low (Balanced ~2-4s)", "badge": "⭐ Recommended"},
-                            {"value": "medium", "label": "Medium (Deeper thinking ~6s)"},
-                            {"value": "high", "label": "High (Deep CoT ~10s+)"}
+                            {"value": "high", "label": "High (⭐ Deep Rigor & Proofs ~45s)", "badge": "⭐ Recommended High Rigor"},
+                            {"value": "medium", "label": "Medium (Balanced ~25-30s)"},
+                            {"value": "low", "label": "Low (Fast ~15-20s, lighter thinking)"},
+                            {"value": "none", "label": "None (Fastest ~2s, simple layouts)"}
                         ]
                     }
                 },
@@ -252,11 +252,11 @@ class VisualService:
                     "description": "Multimodal vision gate that inspects rendered SVG frames and canvas snapshots for legibility, overlap, and alignment.",
                     "provider": fr_prov,
                     "model": getattr(cfg.llm, "visual_vision_model", "") or "nvidia/nemotron-3.5-super-vl:free",
-                    "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "low"),
+                    "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "high"),
                     "recommended": {
                         "provider": "openrouter-free",
                         "model": "nvidia/nemotron-3.5-super-vl:free",
-                        "reasoning_effort": "low",
+                        "reasoning_effort": "high",
                         "badge": "⭐ Recommended (Multi-Modal Vision Free)"
                     },
                     "options": {
@@ -264,10 +264,10 @@ class VisualService:
                         "provider_models": vision_provider_models,
                         "models": vision_provider_models.get(fr_prov, []),
                         "reasoning": [
-                            {"value": "none", "label": "None (Instant check)"},
-                            {"value": "low", "label": "Low (Pedagogic gate)", "badge": "⭐ Recommended"},
+                            {"value": "high", "label": "High (Thorough Gate)", "badge": "⭐ Recommended"},
                             {"value": "medium", "label": "Medium"},
-                            {"value": "high", "label": "High"}
+                            {"value": "low", "label": "Low (Fast check)"},
+                            {"value": "none", "label": "None (Instant check)"}
                         ]
                     }
                 },
@@ -278,22 +278,22 @@ class VisualService:
                     "description": "Extracts key concepts, creates fill-in-the-blank prompt stems, and synthesizes 3-5 word lead distractors grounded in reviewer notes.",
                     "provider": qg_prov,
                     "model": getattr(cfg.llm, "visual_model", "") or "opencode-go/muse-spark-1.3-contributor",
-                    "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "low"),
+                    "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "high"),
                     "recommended": {
                         "provider": "opencode-go",
                         "model": "opencode-go/muse-spark-1.3-contributor",
-                        "reasoning_effort": "low",
-                        "badge": "⭐ Recommended (Pedagogical Grounding)"
+                        "reasoning_effort": "high",
+                        "badge": "⭐ Recommended (Strict Grounding & Quality Distractors)"
                     },
                     "options": {
                         "providers": list(general_provider_models.keys()),
                         "provider_models": general_provider_models,
                         "models": general_provider_models.get(qg_prov, []),
                         "reasoning": [
-                            {"value": "none", "label": "None (Instant)"},
-                            {"value": "low", "label": "Low (Strict Distractors)", "badge": "⭐ Recommended"},
+                            {"value": "high", "label": "High (Strict Distractors)", "badge": "⭐ Recommended"},
                             {"value": "medium", "label": "Medium"},
-                            {"value": "high", "label": "High"}
+                            {"value": "low", "label": "Low (Faster)"},
+                            {"value": "none", "label": "None (Instant)"}
                         ]
                     }
                 },
