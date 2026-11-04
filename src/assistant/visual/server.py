@@ -907,6 +907,10 @@ class Handler(SimpleHTTPRequestHandler):
                         pass
             elif route == '/api/visual/live/verify-answer':
                 result = self.service.verify_quiz_answer(payload)
+            elif route == '/api/visual/live/import-lesson':
+                target_lesson = payload.get('lesson') if isinstance(payload.get('lesson'), dict) else payload
+                saved_lesson = self.service.live.import_lesson(target_lesson)
+                result = {'ok': True, 'lessonId': saved_lesson['id'], 'title': saved_lesson.get('title'), 'quizCount': len(saved_lesson.get('quiz') or [])}
             elif route == '/api/visual/settings':
                 result = self.service.save_settings(payload)
             elif route == '/api/visual/live/stream':

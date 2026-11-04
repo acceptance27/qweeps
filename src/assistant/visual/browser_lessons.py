@@ -1562,6 +1562,23 @@ Return JSON only; no markdown fences:
                             pass
         self._last_quiz_lesson_id = lesson_id
         return questions
+
+    def import_lesson(self, lesson: dict) -> dict:
+        if not isinstance(lesson, dict):
+            raise PlanError("Invalid lesson format for import")
+        lesson_id = lesson.get("id")
+        if not isinstance(lesson_id, str) or not ID.fullmatch(lesson_id):
+            lesson_id = hashlib.sha256(json.dumps(lesson, sort_keys=True).encode()).hexdigest()[:32]
+            lesson["id"] = lesson_id
+        out_dir = self.folder / lesson_id
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "lesson.json").write_text(json.dumps(lesson, ensure_ascii=False, indent=2))
+        (out_dir / "request.json").write_text(json.dumps({
+            "question": lesson.get("question") or lesson.get("title") or "Imported Lesson",
+            "imported": True,
+            "generateQuiz": bool(lesson.get("quiz")),
+        }, ensure_ascii=False))
+        return lesson
     def start(self,payload,context=None):
         native=bool(payload.get('native'))
         generate_quiz=bool(payload.get('generateQuiz'))

@@ -20,6 +20,7 @@ import {
   Volume2,
   VolumeX,
   Zap,
+  Download,
 } from 'lucide-react';
 import { ensureLessonQuiz, type LiveLesson, type QuizQuestion } from './lessonTypes';
 
@@ -566,6 +567,30 @@ export function ReinforcementQuizNavbar({
               )}
             </span>
           </div>
+          <button
+            type="button"
+            className="mastery-mode-toggle-btn standard"
+            onClick={() => {
+              const exportData = {
+                id: lesson.id,
+                title: lesson.title,
+                question: lesson.question,
+                quiz: baseQuestions,
+                chapters: lesson.chapters || [],
+              };
+              const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${(lesson.title || 'qweeps-quiz').replace(/[^a-zA-Z0-9_-]/g, '_')}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            title="Export this quiz/lesson as a JSON file to transfer to your phone"
+          >
+            <Download size={13} />
+            <span>Export</span>
+          </button>
           <button
             type="button"
             className="mastery-close-btn"

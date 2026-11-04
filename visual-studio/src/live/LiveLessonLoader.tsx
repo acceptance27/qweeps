@@ -2,7 +2,7 @@ import {useCompactLayout} from './useCompactLayout';
 import PixelQ from '../components/PixelQ';
 import LearningWorld from './LearningWorld';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Brain, Clock3, FileUp, Sliders, Zap } from 'lucide-react';
+import { ArrowLeft, BookOpen, Brain, Clock3, FileUp, Sliders, Upload, Zap } from 'lucide-react';
 import { api } from '../learning/types';
 import LiveLessonPlayer from './LiveLessonPlayer';
 import LivePreparation from './LivePreparation';
@@ -159,7 +159,34 @@ export default function LiveLessonLoader() {
 
   const initialized = useRef(false);
   const input = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const syncAvailable = useRef(false);
+
+  const handleImportLesson = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const res = await api<{ ok: boolean; lessonId: string }>('live/import-lesson', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      if (res.ok && res.lessonId) {
+        const cat = await api<{ lessons: CatalogLesson[] }>(`live/lessons?sort=${sortBy}`);
+        setCatalogLessons(cat.lessons || []);
+        if (data.quiz && (!data.chapters || data.chapters.length === 0)) {
+          window.location.search = `?lesson=${res.lessonId}&quiz_only=1`;
+        } else {
+          window.location.search = `?lesson=${res.lessonId}&quiz=1`;
+        }
+      }
+    } catch (err: any) {
+      alert(`Could not import lesson: ${err?.message || 'Invalid JSON file'}`);
+    } finally {
+      if (e.target) e.target.value = '';
+    }
+  };
 
   const checkApiStatus = async (): Promise<boolean> => {
     try {
@@ -567,6 +594,23 @@ export default function LiveLessonLoader() {
                   <span className="live-header-count">{catalogLessons.length} available</span>
                 </div>
                 <div className="live-sort-controls">
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept=".json"
+                    style={{ display: 'none' }}
+                    onChange={handleImportLesson}
+                  />
+                  <button
+                    type="button"
+                    className="live-menu-settings-btn"
+                    style={{ padding: '4px 9px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    onClick={() => importInputRef.current?.click()}
+                    title="Import a lesson or quiz JSON file transferred from your computer or phone"
+                  >
+                    <Upload size={12} />
+                    <span>Import JSON</span>
+                  </button>
                   <label htmlFor="live-lesson-sort" className="live-sort-label">
                     Sort by:
                   </label>
