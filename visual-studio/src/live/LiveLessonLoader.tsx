@@ -169,7 +169,19 @@ export default function LiveLessonLoader() {
     if (!file) return;
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
+      let data = JSON.parse(text);
+      if (Array.isArray(data)) {
+        data = {
+          title: file.name.replace(/\.json$/i, '').replace(/[-_]/g, ' ') || 'Imported Quiz',
+          kind: 'standalone_quiz',
+          quizOnly: true,
+          chapters: [],
+          quiz: data,
+        };
+      }
+      if (!data || typeof data !== 'object') {
+        throw new Error('File does not contain a valid JSON object or quiz array');
+      }
       const res = await api<{ ok: boolean; lessonId: string }>('live/import-lesson', data);
       if (res.ok && res.lessonId) {
         const cat = await api<{ lessons: CatalogLesson[] }>(`live/lessons?sort=${sortBy}`);
@@ -181,7 +193,7 @@ export default function LiveLessonLoader() {
         }
       }
     } catch (err: any) {
-      alert(`Could not import lesson: ${err?.message || 'Invalid JSON file'}`);
+      alert(`Could not import quiz/lesson: ${err?.message || 'Invalid JSON file'}`);
     } finally {
       if (e.target) e.target.value = '';
     }
@@ -614,7 +626,7 @@ export default function LiveLessonLoader() {
                   <input
                     ref={importInputRef}
                     type="file"
-                    accept=".json"
+                    accept=".json,application/json,text/plain"
                     style={{ display: 'none' }}
                     onChange={handleImportLesson}
                   />

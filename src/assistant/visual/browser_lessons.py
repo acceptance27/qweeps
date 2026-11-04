@@ -1566,9 +1566,22 @@ Return JSON only; no markdown fences:
         self._last_quiz_lesson_id = lesson_id
         return questions
 
-    def import_lesson(self, lesson: dict) -> dict:
+    def import_lesson(self, lesson: dict | list) -> dict:
+        if isinstance(lesson, list):
+            lesson = {
+                "title": "Imported Quiz",
+                "kind": "standalone_quiz",
+                "quizOnly": True,
+                "chapters": [],
+                "quiz": lesson,
+            }
         if not isinstance(lesson, dict):
             raise PlanError("Invalid lesson format for import")
+        if not lesson.get("chapters") and lesson.get("quiz"):
+            lesson["kind"] = "standalone_quiz"
+            lesson["quizOnly"] = True
+        if not lesson.get("title"):
+            lesson["title"] = "Imported Quiz" if lesson.get("kind") == "standalone_quiz" else "Imported Lesson"
         lesson_id = lesson.get("id")
         if not isinstance(lesson_id, str) or not ID.fullmatch(lesson_id):
             lesson_id = hashlib.sha256(json.dumps(lesson, sort_keys=True).encode()).hexdigest()[:32]
@@ -1580,6 +1593,7 @@ Return JSON only; no markdown fences:
             "question": lesson.get("question") or lesson.get("title") or "Imported Lesson",
             "imported": True,
             "generateQuiz": bool(lesson.get("quiz")),
+            "quizOnly": bool(lesson.get("quizOnly")),
         }, ensure_ascii=False))
         return lesson
     def start(self,payload,context=None):

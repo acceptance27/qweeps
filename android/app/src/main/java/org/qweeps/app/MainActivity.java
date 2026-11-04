@@ -65,9 +65,55 @@ public class MainActivity extends Activity {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (fileCallback != null) fileCallback.onReceiveValue(null);
                 fileCallback = callback;
-                Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("application/pdf").addCategory(Intent.CATEGORY_OPENABLE);
-                startActivityForResult(picker, PDF_REQUEST);
-                return true;
+                try {
+                    Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                            .addCategory(Intent.CATEGORY_OPENABLE)
+                            .setType("*/*");
+
+                    if (params != null && params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE) {
+                        picker.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                    }
+
+                    String[] accept = (params != null) ? params.getAcceptTypes() : null;
+                    boolean isJson = false;
+                    boolean isDoc = false;
+                    if (accept != null) {
+                        for (String a : accept) {
+                            if (a == null) continue;
+                            String lower = a.toLowerCase();
+                            if (lower.contains("json")) isJson = true;
+                            if (lower.contains("pdf") || lower.contains("ppt")) isDoc = true;
+                        }
+                    }
+
+                    if (isJson && !isDoc) {
+                        picker.setType("*/*");
+                        picker.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
+                            "application/json", "text/plain", "application/octet-stream", "*/*"
+                        });
+                    } else if (isDoc && !isJson) {
+                        picker.setType("*/*");
+                        picker.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
+                            "application/pdf",
+                            "application/vnd.ms-powerpoint",
+                            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                            "application/octet-stream"
+                        });
+                    }
+
+                    startActivityForResult(picker, PDF_REQUEST);
+                    return true;
+                } catch (Exception ex) {
+                    try {
+                        Intent fallback = (params != null) ? params.createIntent() : new Intent(Intent.ACTION_GET_CONTENT).setType("*/*");
+                        startActivityForResult(fallback, PDF_REQUEST);
+                        return true;
+                    } catch (Exception e) {
+                        fileCallback = null;
+                        callback.onReceiveValue(null);
+                        return false;
+                    }
+                }
             }
         });
         FrameLayout root = new FrameLayout(this);
@@ -99,7 +145,19 @@ public class MainActivity extends Activity {
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
         if (request == PDF_REQUEST && fileCallback != null) {
-            fileCallback.onReceiveValue(result == RESULT_OK && data != null && data.getData() != null ? new Uri[]{data.getData()} : null);
+            Uri[] results = null;
+            if (result == RESULT_OK && data != null) {
+                if (data.getClipData() != null) {
+                    int count = data.getClipData().getItemCount();
+                    results = new Uri[count];
+                    for (int i = 0; i < count; i++) {
+                        results[i] = data.getClipData().getItemAt(i).getUri();
+                    }
+                } else if (data.getData() != null) {
+                    results = new Uri[]{data.getData()};
+                }
+            }
+            fileCallback.onReceiveValue(results);
             fileCallback = null;
         }
     }
