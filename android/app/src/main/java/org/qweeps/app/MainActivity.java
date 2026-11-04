@@ -95,10 +95,18 @@ public class MainActivity extends Activity {
                         picker.setType("*/*");
                         picker.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
                             "application/pdf",
-                            "application/vnd.ms-powerpoint",
                             "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                            "application/octet-stream"
+                            "application/vnd.ms-powerpoint",
+                            "application/mspowerpoint",
+                            "application/powerpoint",
+                            "application/x-mspowerpoint",
+                            "application/x-zip-compressed",
+                            "application/zip",
+                            "application/octet-stream",
+                            "*/*"
                         });
+                    } else {
+                        picker.setType("*/*");
                     }
 
                     startActivityForResult(picker, PDF_REQUEST);

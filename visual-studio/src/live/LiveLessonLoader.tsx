@@ -787,7 +787,7 @@ export default function LiveLessonLoader() {
                 rows={3}
               />
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-                <label htmlFor="live-source">Source material (Multiple PDFs supported)</label>
+                <label htmlFor="live-source">Source material (Multiple PDFs/PPTX supported)</label>
                 {selectedDocs.length > 0 && (
                   <button
                     type="button"
@@ -800,7 +800,7 @@ export default function LiveLessonLoader() {
               </div>
               <select
                 id="live-source"
-                aria-label="Lesson PDF"
+                aria-label="Lesson PDF or PPTX"
                 value=""
                 onChange={e => {
                   const val = e.target.value;
@@ -810,7 +810,7 @@ export default function LiveLessonLoader() {
                   }
                 }}
               >
-                <option value="">{selectedDocs.length > 0 ? '+ Add another source document...' : 'Match a saved source, or use general knowledge'}</option>
+                <option value="">{selectedDocs.length > 0 ? '+ Add another source document...' : 'Match a saved source (PDF/PPTX), or use general knowledge'}</option>
                 {documents.map(d => (
                   <option key={d.id} value={d.id} disabled={selectedDocs.includes(d.id)}>
                     {selectedDocs.includes(d.id) ? '✓ ' : ''}{d.title} · {d.pageCount} pages
@@ -843,7 +843,7 @@ export default function LiveLessonLoader() {
                     );
                   })}
                   <span style={{fontSize:'10px',color:'#849da8',alignSelf:'center'}}>
-                    ({selectedDocs.length} PDF{selectedDocs.length > 1 ? 's' : ''} ·{' '}
+                    ({selectedDocs.length} PDF/PPTX ·{' '}
                     {selectedDocs.reduce((acc, id) => acc + (documents.find(d => d.id === id)?.pageCount || 0), 0)} total pages)
                   </span>
                 </div>
@@ -852,8 +852,8 @@ export default function LiveLessonLoader() {
                 ref={input}
                 type="file"
                 multiple
-                accept="application/pdf,.pdf,.pptx,.ppt"
-                aria-label="Attach source PDFs"
+                accept=".pdf,.pptx,.ppt,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint,*/*"
+                aria-label="Attach source PDF or PPTX files"
                 style={{display:'none'}}
                 onChange={e => {
                   if (e.target.files) void uploadMultiple(e.target.files);
@@ -918,8 +918,8 @@ export default function LiveLessonLoader() {
                 </label>
               )}
               <div className="live-generator-actions">
-                <button type="button" disabled={busy || busyQuiz} onClick={() => input.current?.click()} title="Upload one or multiple PDFs">
-                  <FileUp size={16} aria-hidden="true" /> {selectedDocs.length > 0 ? 'Attach more PDFs' : 'Attach PDF(s)'}
+                <button type="button" disabled={busy || busyQuiz} onClick={() => input.current?.click()} title="Upload one or multiple PDF or PPTX files">
+                  <FileUp size={16} aria-hidden="true" /> {selectedDocs.length > 0 ? 'Attach more PDF/PPTX' : 'Attach PDF/PPTX'}
                 </button>
                 <div className="live-generator-action-group">
                   <button
