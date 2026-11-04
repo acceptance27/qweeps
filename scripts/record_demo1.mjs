@@ -114,7 +114,7 @@ const playAt = Math.max(0, (playWall - videoStart) / 1000);
 const delayMs = Math.round(playAt * 1000);
 console.log(`Narration onset ${audioOnset.toFixed(2)}s · placed at ${playAt.toFixed(2)}s in the video`);
 
-const mp4Path = join(OUT_DIR, 'demo1-browser-lesson.mp4');
+const mp4Path = join(OUT_DIR, 'demo1-p-vs-np-lesson.mp4');
 console.log('Building MP4 with narration:', mp4Path);
 execSync(
   `ffmpeg -y -i "${rawWebm}" -ss ${audioOnset.toFixed(3)} -i "${AUDIO_FILE}" ` +
@@ -126,7 +126,7 @@ execSync(
 
 // The README GIF is the entire lesson at 8x speed so every beat is still
 // present without exceeding GitHub's practical inline-image size.
-const gifPath = join(OUT_DIR, 'demo1-browser-lesson.gif');
+const gifPath = join(OUT_DIR, 'demo1-p-vs-np-lesson.gif');
 console.log('Generating full-lesson overview GIF:', gifPath);
 execSync(
   `ffmpeg -y -i "${mp4Path}" -vf "setpts=PTS/8,fps=10,scale=720:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3" -loop 0 "${gifPath}"`,

@@ -16,18 +16,26 @@ Learners can pause, move through the explanation, inspect objects or a selected 
 ### 1. Full Live Browser Lesson: P vs NP
 Real-time browser playback of the complete **P vs NP: The $1,000,000 Question of Computer Science** lesson — all 20 beats, opened from the QWEEPS website and played through without skipping. The run combines native ManimGL mathematical animation with SVG/GSAP explanatory layouts, synchronized speech narration, and the full player chrome: chapter timeline, captions, seek controls, and lesson context.
 
-![Demo 1: Full P vs NP Live Browser Lesson](demos/demo1-browser-lesson.gif)
+![Demo 1: Full P vs NP Live Browser Lesson](demos/demo1-p-vs-np-lesson.gif)
 
 > [!NOTE]
-> High-definition video with speech audio is available at [`demos/demo1-browser-lesson.mp4`](demos/demo1-browser-lesson.mp4). The inline GIF is the complete lesson at 8× speed; no beats are omitted.
+> High-definition video with speech audio is available at [`demos/demo1-p-vs-np-lesson.mp4`](demos/demo1-p-vs-np-lesson.mp4). The inline GIF is the complete lesson at 8× speed; no beats are omitted.
 
 ### 2. "Ask Qweeps" Contextual Branch Mini-Lesson
 Interactive Q&A exploration on Beat 7 of the *P vs NP* lesson. Selecting **Branch mini-lesson** generates and streams a dedicated 3-beat visual explanation rendered with ManimGL, plays the whole branch, then returns through the persistent breadcrumb to the saved parent lesson position.
 
-![Demo 2: Ask Qweeps Contextual Branch Mini-Lesson](demos/demo2-ask-qweeps-branch.gif)
+![Demo 2: Ask Qweeps Contextual Branch Mini-Lesson](demos/demo2-ask-qweeps-full-branch.gif)
 
 > [!NOTE]
-> High-definition video with speech audio is available at [`demos/demo2-ask-qweeps-branch.mp4`](demos/demo2-ask-qweeps-branch.mp4).
+> High-definition video with speech audio is available at [`demos/demo2-ask-qweeps-full-branch.mp4`](demos/demo2-ask-qweeps-full-branch.mp4).
+
+### 3. Reinforcement Quiz: P vs NP
+The P vs NP lesson ships with a 20-card mastery quiz. The demo opens it from the website's generated-lesson list and answers core-inference and visual-mechanism cards with immediate explanations, live streak and mastery progress. One concept is deliberately missed to trigger **3-card spaced recall**, then cleared on its retry to show the reinforcement loop that repeats missed cards until mastery.
+
+![Demo 3: P vs NP Reinforcement Quiz](demos/demo3-quiz-p-vs-np.gif)
+
+> [!NOTE]
+> High-definition video with synthesized feedback audio is available at [`demos/demo3-quiz-p-vs-np.mp4`](demos/demo3-quiz-p-vs-np.mp4).
 
 ## Project status
 

@@ -132,7 +132,7 @@ const playAt = Math.max(0, (playWall - videoStart) / 1000);
 const delayMs = Math.round(playAt * 1000);
 console.log(`Narration onset ${audioOnset.toFixed(2)}s · placed at ${playAt.toFixed(2)}s in the video`);
 
-const mp4Path = join(OUT_DIR, 'demo2-ask-qweeps-branch.mp4');
+const mp4Path = join(OUT_DIR, 'demo2-ask-qweeps-full-branch.mp4');
 console.log('Building MP4 with narration:', mp4Path);
 execSync(
   `ffmpeg -y -i "${rawWebm}" -ss ${audioOnset.toFixed(3)} -i "${AUDIO_FILE}" ` +
@@ -142,7 +142,7 @@ execSync(
   { stdio: 'inherit' },
 );
 
-const gifPath = join(OUT_DIR, 'demo2-ask-qweeps-branch.gif');
+const gifPath = join(OUT_DIR, 'demo2-ask-qweeps-full-branch.gif');
 console.log('Generating optimized GIF:', gifPath);
 execSync(
   `ffmpeg -y -i "${mp4Path}" -vf "setpts=PTS/1.5,fps=12,scale=900:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=128:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3" -loop 0 "${gifPath}"`,
