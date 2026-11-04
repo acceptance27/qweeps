@@ -649,48 +649,13 @@
   box-shadow: 0 4px 14px rgba(237,202,130,0.4);
 }
 
-.settings-tabs-bar {
-  display: flex;
-  gap: 6px;
-  padding: 12px 24px 0;
-  border-bottom: 1px solid #1a3240;
-  overflow-x: auto;
-  scrollbar-width: none;
-  flex-shrink: 0;
-}
-.settings-tabs-bar::-webkit-scrollbar { display: none; }
-.settings-tab-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 13px;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: #8daab6;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-}
-.settings-tab-btn:hover {
-  color: #dbe7eb;
-}
-.settings-tab-btn.active {
-  color: #edca82;
-  border-bottom-color: #edca82;
-  background: rgba(237, 202, 130, 0.06);
-  border-radius: 6px 6px 0 0;
-}
-
 .settings-modal-body {
   flex: 1;
   overflow-y: auto;
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   scrollbar-width: thin;
   scrollbar-color: #2b4959 #0b1922;
 }
@@ -723,22 +688,150 @@
   color: #6ee7b7;
 }
 
+/* Card Themes with Rich Distinct Colors & Gradients */
 .settings-section-card {
-  background: #0d1f2a;
-  border: 1px solid #1f3745;
-  border-radius: 12px;
-  padding: 18px 20px;
+  border-radius: 14px;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  transition: border-color 0.15s ease;
+  gap: 16px;
+  transition: all 0.2s ease;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  background: #0d1f2a;
+  border: 1px solid #1f3745;
 }
-.settings-section-card:hover {
-  border-color: #2a4c60;
+
+/* 1. Amber / Gold Theme (Lesson Planning) */
+.settings-section-card.theme-amber {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(13, 31, 42, 0.95) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-left: 5px solid #f59e0b;
 }
-.settings-section-card.keys-card {
-  background: #0d1e29;
-  border-color: #284454;
+.settings-section-card.theme-amber:hover {
+  border-color: rgba(245, 158, 11, 0.6);
+  box-shadow: 0 8px 28px rgba(245, 158, 11, 0.12);
+}
+.settings-section-card.theme-amber .settings-proc-icon-wrap {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+.icon-amber { color: #fbbf24; }
+
+/* 2. Blue Theme (Visual Frame Review) */
+.settings-section-card.theme-blue {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.08) 0%, rgba(13, 31, 42, 0.95) 100%);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  border-left: 5px solid #0ea5e9;
+}
+.settings-section-card.theme-blue:hover {
+  border-color: rgba(14, 165, 233, 0.6);
+  box-shadow: 0 8px 28px rgba(14, 165, 233, 0.12);
+}
+.settings-section-card.theme-blue .settings-proc-icon-wrap {
+  background: rgba(14, 165, 233, 0.18);
+  border: 1px solid rgba(14, 165, 233, 0.4);
+}
+.icon-blue { color: #38bdf8; }
+
+/* 3. Emerald Theme (Quiz Generation) */
+.settings-section-card.theme-emerald {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(13, 31, 42, 0.95) 100%);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-left: 5px solid #10b981;
+}
+.settings-section-card.theme-emerald:hover {
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 8px 28px rgba(16, 185, 129, 0.12);
+}
+.settings-section-card.theme-emerald .settings-proc-icon-wrap {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.icon-emerald { color: #34d399; }
+
+/* 4. Volt Yellow Theme (Quiz Verification / Sub-second) */
+.settings-section-card.theme-yellow {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.09) 0%, rgba(13, 31, 42, 0.95) 100%);
+  border: 1px solid rgba(234, 179, 8, 0.38);
+  border-left: 5px solid #eab308;
+}
+.settings-section-card.theme-yellow:hover {
+  border-color: rgba(234, 179, 8, 0.65);
+  box-shadow: 0 8px 28px rgba(234, 179, 8, 0.15);
+}
+.settings-section-card.theme-yellow .settings-proc-icon-wrap {
+  background: rgba(234, 179, 8, 0.2);
+  border: 1px solid rgba(234, 179, 8, 0.45);
+}
+.icon-yellow { color: #fde047; }
+
+/* 5. Royal Purple Theme (Speech Synthesis / Narration TTS) */
+.settings-section-card.theme-purple {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08) 0%, rgba(13, 31, 42, 0.95) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  border-left: 5px solid #a855f7;
+}
+.settings-section-card.theme-purple:hover {
+  border-color: rgba(168, 85, 247, 0.6);
+  box-shadow: 0 8px 28px rgba(168, 85, 247, 0.12);
+}
+.settings-section-card.theme-purple .settings-proc-icon-wrap {
+  background: rgba(168, 85, 247, 0.18);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+.icon-purple { color: #c084fc; }
+
+/* 6. Cyan Theme (Voice Recognition STT) */
+.settings-section-card.theme-cyan {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(13, 31, 42, 0.95) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  border-left: 5px solid #06b6d4;
+}
+.settings-section-card.theme-cyan:hover {
+  border-color: rgba(6, 182, 212, 0.6);
+  box-shadow: 0 8px 28px rgba(6, 182, 212, 0.12);
+}
+.settings-section-card.theme-cyan .settings-proc-icon-wrap {
+  background: rgba(6, 182, 212, 0.18);
+  border: 1px solid rgba(6, 182, 212, 0.4);
+}
+.icon-cyan { color: #22d3ee; }
+
+/* 7. Copper / Bronze Theme (API Credentials) */
+.settings-section-card.theme-copper {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.08) 0%, rgba(13, 30, 41, 0.95) 100%);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  border-left: 5px solid #d97706;
+}
+.settings-section-card.theme-copper:hover {
+  border-color: rgba(217, 119, 6, 0.6);
+  box-shadow: 0 8px 28px rgba(217, 119, 6, 0.12);
+}
+.settings-proc-icon-wrap.icon-copper-bg {
+  background: rgba(217, 119, 6, 0.18);
+  border: 1px solid rgba(217, 119, 6, 0.4);
+}
+.icon-copper { color: #f59e0b; }
+
+.settings-custom-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #9cb5bf !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 5px !important;
+  padding: 2px 7px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.settings-custom-toggle:hover {
+  background: rgba(237, 202, 130, 0.2) !important;
+  color: #edca82 !important;
+  border-color: #edca82 !important;
 }
 .settings-card-header {
   display: flex;

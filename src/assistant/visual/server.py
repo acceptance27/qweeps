@@ -103,6 +103,120 @@ class VisualService:
         masked_or = (or_key[:8] + '••••••••' + or_key[-4:]) if (or_key and len(or_key) > 12) else ('••••••••' if or_key else '')
         masked_oc = (oc_key[:6] + '••••••••' + oc_key[-4:]) if (oc_key and len(oc_key) > 10) else ('••••••••' if oc_key else '')
 
+        # OpenCode-compatible Provider -> Model mappings
+        general_provider_models = {
+            "opencode-go": [
+                {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⭐ Recommended Free Tier & High Structure"},
+                {"value": "opencode-go/beam-free", "label": "beam-free", "badge": "Free Tier"},
+                {"value": "opencode-go/deepseek-v4.1-flash", "label": "deepseek-v4.1-flash", "badge": "⚡ Fast Flash"},
+                {"value": "opencode-go/qwen3.8-flash", "label": "qwen3.8-flash", "badge": "⚡ Fast Reasoning"},
+                {"value": "opencode-go/glm-5.3-flash", "label": "glm-5.3-flash", "badge": "⚡ Fast"},
+                {"value": "opencode-go/iceman-contributor-free", "label": "iceman-contributor-free", "badge": "Free Contributor"},
+                {"value": "opencode-go/kimi-k3", "label": "kimi-k3", "badge": "Deep Context"}
+            ],
+            "openrouter-free": [
+                {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ Recommended Free Multimodal & Sub-Second"},
+                {"value": "google/gemini-2.0-flash-exp:free", "label": "google/gemini-2.0-flash-exp:free", "badge": "⚡ Fast Free"},
+                {"value": "meta-llama/llama-3.3-70b-instruct:free", "label": "meta-llama/llama-3.3-70b-instruct:free", "badge": "Free 70B"},
+                {"value": "mistralai/mistral-small-24b-instruct-2501:free", "label": "mistral-small-24b:free", "badge": "Free 24B"}
+            ],
+            "openrouter": [
+                {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ Free Multimodal"},
+                {"value": "google/gemini-2.5-pro", "label": "google/gemini-2.5-pro", "badge": "💎 Deep Pedagogic Logic"},
+                {"value": "anthropic/claude-3.5-sonnet", "label": "anthropic/claude-3.5-sonnet", "badge": "Structured Code"},
+                {"value": "openai/gpt-4o", "label": "openai/gpt-4o", "badge": "Multimodal"},
+                {"value": "openrouter/auto", "label": "openrouter/auto", "badge": "Auto Best Routing"}
+            ],
+            "antigravity": [
+                {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "⭐ Recommended Antigravity Visual"},
+                {"value": "gemini-2.5-flash", "label": "gemini-2.5-flash", "badge": "⚡ Fast"},
+                {"value": "gemini-2.5-pro", "label": "gemini-2.5-pro", "badge": "💎 Deep Reasoning"}
+            ],
+            "offline": [
+                {"value": "offline-deterministic", "label": "offline-deterministic", "badge": "🔒 100% Offline Fallback"}
+            ]
+        }
+
+        vision_provider_models = {
+            "openrouter-free": [
+                {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ Recommended Vision Free"},
+                {"value": "google/gemini-2.0-flash-exp:free", "label": "google/gemini-2.0-flash-exp:free", "badge": "⚡ Fast Free Vision"}
+            ],
+            "opencode-go": [
+                {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⭐ Vision & SVG Review"},
+                {"value": "opencode-go/mimo-v2.6-flash", "label": "mimo-v2.6-flash", "badge": "Fast Vision"}
+            ],
+            "antigravity": [
+                {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "💎 Multimodal Vision"},
+                {"value": "gemini-2.5-flash", "label": "gemini-2.5-flash", "badge": "Fast Vision"}
+            ],
+            "offline": [
+                {"value": "offline-deterministic", "label": "offline-deterministic", "badge": "Offline"}
+            ]
+        }
+
+        verify_provider_models = {
+            "openrouter-free": [
+                {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⚡⭐ Recommended Sub-Second Free"},
+                {"value": "google/gemini-2.0-flash-exp:free", "label": "google/gemini-2.0-flash-exp:free", "badge": "⚡ Fast Free"}
+            ],
+            "opencode-go": [
+                {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⚡ Fast Go Fallback"},
+                {"value": "opencode-go/beam-free", "label": "beam-free", "badge": "Free"}
+            ],
+            "heuristic": [
+                {"value": "heuristic-fast", "label": "Zero-Latency Heuristic (0ms)", "badge": "⚡ 0ms Exact & Substring"}
+            ]
+        }
+
+        tts_provider_models = {
+            "openrouter": [
+                {"value": "fish-audio/s2.1-pro-free:free", "label": "Fish Audio S2.1 Pro Free", "badge": "⭐ Recommended Natural Free Voice"}
+            ],
+            "piper": [
+                {"value": "piper:en_US-lessac-medium", "label": "Piper en_US Lessac Medium", "badge": "🔒 100% Offline Local Neural"},
+                {"value": "piper:en_GB-alan-medium", "label": "Piper en_GB Alan Medium", "badge": "🔒 Offline British"}
+            ],
+            "espeak": [
+                {"value": "espeak-default", "label": "eSpeak Basic Synthetic Voice", "badge": "Synthetic Offline"}
+            ],
+            "none": [
+                {"value": "none", "label": "Muted / No Audio", "badge": "Silent"}
+            ]
+        }
+
+        stt_provider_engines = {
+            "voxtype": [
+                {"value": "whisper", "label": "Whisper (Local Neural)", "badge": "⭐ Recommended Local Sub-Second"},
+                {"value": "cohere", "label": "Cohere Engine", "badge": "Local Engine"},
+                {"value": "parakeet", "label": "NVIDIA Parakeet", "badge": "Fast Engine"}
+            ],
+            "openrouter": [
+                {"value": "fish-audio/transcribe-1", "label": "Fish Audio Transcribe", "badge": "Cloud Neural STT"}
+            ],
+            "none": [
+                {"value": "none", "label": "Disabled / Text-Only", "badge": "No Voice Input"}
+            ]
+        }
+
+        lp_prov = getattr(cfg.llm, "visual_provider", "") or getattr(cfg.llm, "auth_provider", "opencode-go")
+        if lp_prov not in general_provider_models: lp_prov = "opencode-go"
+
+        fr_prov = getattr(cfg.llm, "visual_provider", "") or "openrouter-free"
+        if fr_prov not in vision_provider_models: fr_prov = "openrouter-free"
+
+        qg_prov = getattr(cfg.llm, "visual_provider", "") or "opencode-go"
+        if qg_prov not in general_provider_models: qg_prov = "opencode-go"
+
+        qv_prov = getattr(cfg.llm, "quiz_verification_provider", "openrouter-free")
+        if qv_prov not in verify_provider_models: qv_prov = "openrouter-free"
+
+        tts_prov = getattr(cfg.tts, "provider", "openrouter")
+        if tts_prov not in tts_provider_models: tts_prov = "openrouter"
+
+        stt_prov = getattr(cfg.stt, "provider", "voxtype")
+        if stt_prov not in stt_provider_engines: stt_prov = "voxtype"
+
         return {
             "processes": {
                 "lesson_planning": {
@@ -110,7 +224,7 @@ class VisualService:
                     "title": "Live Visual Lesson Generation",
                     "subtitle": "Planning, Storyboard & Scene Synthesis",
                     "description": "Synthesizes pedagogical outline, scene architecture, and visual animation instructions from PDF/topics.",
-                    "provider": getattr(cfg.llm, "visual_provider", "") or getattr(cfg.llm, "auth_provider", "opencode-go"),
+                    "provider": lp_prov,
                     "model": getattr(cfg.llm, "visual_model", "") or getattr(cfg.llm, "model", "opencode-go/muse-spark-1.3-contributor"),
                     "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "low"),
                     "recommended": {
@@ -120,13 +234,9 @@ class VisualService:
                         "badge": "⭐ Recommended (Free Tier & High Structure)"
                     },
                     "options": {
-                        "providers": ["opencode-go", "openrouter-free", "antigravity", "openrouter", "offline"],
-                        "models": [
-                            {"value": "opencode-go/muse-spark-1.3-contributor", "label": "opencode-go/muse-spark-1.3-contributor", "badge": "⭐ Recommended Free Tier"},
-                            {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ OpenRouter Free"},
-                            {"value": "google/gemini-2.0-flash-exp:free", "label": "google/gemini-2.0-flash-exp:free", "badge": "⚡ Fast Free"},
-                            {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "💎 Antigravity High Quality"}
-                        ],
+                        "providers": list(general_provider_models.keys()),
+                        "provider_models": general_provider_models,
+                        "models": general_provider_models.get(lp_prov, []),
                         "reasoning": [
                             {"value": "none", "label": "None (Fastest ~1s)", "badge": "⚡ Fastest"},
                             {"value": "low", "label": "Low (Balanced ~2-4s)", "badge": "⭐ Recommended"},
@@ -140,7 +250,7 @@ class VisualService:
                     "title": "Visual Review & Gate Verification",
                     "subtitle": "Rendered Frame & SVG Quality Gate",
                     "description": "Multimodal vision gate that inspects rendered SVG frames and canvas snapshots for legibility, overlap, and alignment.",
-                    "provider": getattr(cfg.llm, "visual_provider", "") or "openrouter-free",
+                    "provider": fr_prov,
                     "model": getattr(cfg.llm, "visual_vision_model", "") or "nvidia/nemotron-3.5-super-vl:free",
                     "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "low"),
                     "recommended": {
@@ -150,12 +260,9 @@ class VisualService:
                         "badge": "⭐ Recommended (Multi-Modal Vision Free)"
                     },
                     "options": {
-                        "providers": ["openrouter-free", "opencode-go", "antigravity"],
-                        "models": [
-                            {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ Recommended Free Vision"},
-                            {"value": "opencode-go/muse-spark-1.3-contributor", "label": "opencode-go/muse-spark-1.3-contributor", "badge": "⚡ Fast Vision"},
-                            {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "💎 Antigravity Vision"}
-                        ],
+                        "providers": list(vision_provider_models.keys()),
+                        "provider_models": vision_provider_models,
+                        "models": vision_provider_models.get(fr_prov, []),
                         "reasoning": [
                             {"value": "none", "label": "None (Instant check)"},
                             {"value": "low", "label": "Low (Pedagogic gate)", "badge": "⭐ Recommended"},
@@ -169,7 +276,7 @@ class VisualService:
                     "title": "Reinforcement Quiz Generation",
                     "subtitle": "Mastery Question & Distractor Synthesis",
                     "description": "Extracts key concepts, creates fill-in-the-blank prompt stems, and synthesizes 3-5 word lead distractors grounded in reviewer notes.",
-                    "provider": getattr(cfg.llm, "visual_provider", "") or "opencode-go",
+                    "provider": qg_prov,
                     "model": getattr(cfg.llm, "visual_model", "") or "opencode-go/muse-spark-1.3-contributor",
                     "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "low"),
                     "recommended": {
@@ -179,12 +286,9 @@ class VisualService:
                         "badge": "⭐ Recommended (Pedagogical Grounding)"
                     },
                     "options": {
-                        "providers": ["opencode-go", "openrouter-free", "antigravity"],
-                        "models": [
-                            {"value": "opencode-go/muse-spark-1.3-contributor", "label": "opencode-go/muse-spark-1.3-contributor", "badge": "⭐ Recommended Free"},
-                            {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⚡ Free OpenRouter"},
-                            {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high"}
-                        ],
+                        "providers": list(general_provider_models.keys()),
+                        "provider_models": general_provider_models,
+                        "models": general_provider_models.get(qg_prov, []),
                         "reasoning": [
                             {"value": "none", "label": "None (Instant)"},
                             {"value": "low", "label": "Low (Strict Distractors)", "badge": "⭐ Recommended"},
@@ -198,7 +302,7 @@ class VisualService:
                     "title": "Semantic Quiz Answer Verification",
                     "subtitle": "Sub-Second Typed Recall Evaluation",
                     "description": "Evaluates short typed user answers with zero-latency heuristics and sub-second semantic LLM judgment.",
-                    "provider": getattr(cfg.llm, "quiz_verification_provider", "openrouter-free"),
+                    "provider": qv_prov,
                     "model": getattr(cfg.llm, "quiz_verification_model", "nvidia/nemotron-3.5-super-vl:free"),
                     "reasoning_effort": getattr(cfg.llm, "quiz_verification_reasoning", "none"),
                     "recommended": {
@@ -208,11 +312,9 @@ class VisualService:
                         "badge": "⚡⭐ Recommended (Sub-Second 400-800ms Latency)"
                     },
                     "options": {
-                        "providers": ["openrouter-free", "opencode-go", "heuristic"],
-                        "models": [
-                            {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⚡⭐ Recommended Sub-Second Free"},
-                            {"value": "opencode-go/muse-spark-1.3-contributor", "label": "opencode-go/muse-spark-1.3-contributor", "badge": "⚡ Fast Go Fallback"}
-                        ],
+                        "providers": list(verify_provider_models.keys()),
+                        "provider_models": verify_provider_models,
+                        "models": verify_provider_models.get(qv_prov, []),
                         "reasoning": [
                             {"value": "none", "label": "None (⚡ Sub-Second Speed)", "badge": "⭐ Recommended for Sub-Second"},
                             {"value": "low", "label": "Low (Adds 2-4s thinking)"}
@@ -224,7 +326,7 @@ class VisualService:
                     "title": "Speech Synthesis & Narration (TTS)",
                     "subtitle": "Neural Spoken Teaching Audio",
                     "description": "Synthesizes expressive spoken audio for scene explanations, key concepts, and interactive learner feedback.",
-                    "provider": getattr(cfg.tts, "provider", "openrouter"),
+                    "provider": tts_prov,
                     "model": getattr(cfg.tts, "model", "fish-audio/s2.1-pro-free:free"),
                     "voice": getattr(cfg.tts, "voice", "33a2191b8fda440cae962137e9793985"),
                     "recommended": {
@@ -234,11 +336,9 @@ class VisualService:
                         "badge": "⭐ Recommended (Fish Audio Natural Free Voice)"
                     },
                     "options": {
-                        "providers": ["openrouter", "piper", "espeak", "none"],
-                        "models": [
-                            {"value": "fish-audio/s2.1-pro-free:free", "label": "Fish Audio S2.1 Pro Free", "badge": "⭐ Recommended Natural Free Voice"},
-                            {"value": "piper:en_US-lessac-medium", "label": "Piper Local Neural Voice", "badge": "🔒 100% Offline Private"}
-                        ]
+                        "providers": list(tts_provider_models.keys()),
+                        "provider_models": tts_provider_models,
+                        "models": tts_provider_models.get(tts_prov, []),
                     }
                 },
                 "stt": {
@@ -246,7 +346,7 @@ class VisualService:
                     "title": "Voice Recognition & Transcription (STT)",
                     "subtitle": "Real-Time Microphone Question Input",
                     "description": "Transcribes live student spoken questions when pausing a visual lesson.",
-                    "provider": getattr(cfg.stt, "provider", "voxtype"),
+                    "provider": stt_prov,
                     "engine": getattr(cfg.stt, "engine", "whisper"),
                     "model": getattr(cfg.stt, "stt_model", "fish-audio/transcribe-1"),
                     "recommended": {
@@ -255,12 +355,9 @@ class VisualService:
                         "badge": "⭐ Recommended (Local Fast Whisper STT)"
                     },
                     "options": {
-                        "providers": ["voxtype", "openrouter", "none"],
-                        "engines": [
-                            {"value": "whisper", "label": "Whisper (Local Neural)", "badge": "⭐ Recommended Local"},
-                            {"value": "cohere", "label": "Cohere Engine"},
-                            {"value": "parakeet", "label": "NVIDIA Parakeet"}
-                        ]
+                        "providers": list(stt_provider_engines.keys()),
+                        "provider_engines": stt_provider_engines,
+                        "engines": stt_provider_engines.get(stt_prov, []),
                     }
                 }
             },

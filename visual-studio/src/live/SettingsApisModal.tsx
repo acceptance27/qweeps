@@ -14,9 +14,15 @@ import {
   AlertCircle,
   Eye,
   Layers,
-  HelpCircle,
+  Edit3,
 } from 'lucide-react';
 import { api } from '../learning/types';
+
+export type ModelOption = {
+  value: string;
+  label: string;
+  badge?: string;
+};
 
 export type ProcessConfig = {
   id: string;
@@ -38,9 +44,11 @@ export type ProcessConfig = {
   };
   options?: {
     providers?: string[];
-    models?: Array<{ value: string; label: string; badge?: string }>;
+    provider_models?: Record<string, ModelOption[]>;
+    provider_engines?: Record<string, ModelOption[]>;
+    models?: ModelOption[];
     reasoning?: Array<{ value: string; label: string; badge?: string }>;
-    engines?: Array<{ value: string; label: string; badge?: string }>;
+    engines?: ModelOption[];
   };
 };
 
@@ -64,10 +72,12 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<string>('all');
   const [settings, setSettings] = useState<SettingsData | null>(null);
 
-  // Form states for editable fields
+  // Custom model input toggles per process
+  const [customModelMode, setCustomModelMode] = useState<Record<string, boolean>>({});
+
+  // API Key inputs
   const [openRouterKeyInput, setOpenRouterKeyInput] = useState<string>('');
   const [opencodeKeyInput, setOpencodeKeyInput] = useState<string>('');
   const [showOrKey, setShowOrKey] = useState<boolean>(false);
@@ -110,6 +120,48 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  // When provider changes, update model to first model of that provider (or recommendation)
+  const handleProviderChange = (processId: string, newProvider: string) => {
+    if (!settings || !settings.processes[processId]) return;
+    const proc = settings.processes[processId];
+    const providerModels = proc.options?.provider_models?.[newProvider] || [];
+    const providerEngines = proc.options?.provider_engines?.[newProvider] || [];
+
+    let newModel = proc.model;
+    let newEngine = proc.engine;
+
+    // Check if current model exists in new provider
+    const hasModel = providerModels.some(m => m.value === proc.model);
+    if (!hasModel && providerModels.length > 0) {
+      // Pick recommended if matches provider, else first
+      if (proc.recommended.provider === newProvider && proc.recommended.model) {
+        newModel = proc.recommended.model;
+      } else {
+        newModel = providerModels[0].value;
+      }
+    }
+
+    if (providerEngines.length > 0) {
+      const hasEngine = providerEngines.some(e => e.value === proc.engine);
+      if (!hasEngine) {
+        newEngine = providerEngines[0].value;
+      }
+    }
+
+    setSettings({
+      ...settings,
+      processes: {
+        ...settings.processes,
+        [processId]: {
+          ...proc,
+          provider: newProvider,
+          model: newModel,
+          engine: newEngine,
+        },
+      },
+    });
+  };
 
   const updateProcessField = (processId: string, field: string, value: string) => {
     if (!settings) return;
@@ -203,22 +255,41 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
     }
   };
 
+  const getProcessThemeClass = (id: string) => {
+    switch (id) {
+      case 'lesson_planning':
+        return 'theme-amber';
+      case 'frame_review':
+        return 'theme-blue';
+      case 'quiz_generation':
+        return 'theme-emerald';
+      case 'quiz_verification':
+        return 'theme-yellow';
+      case 'tts':
+        return 'theme-purple';
+      case 'stt':
+        return 'theme-cyan';
+      default:
+        return 'theme-slate';
+    }
+  };
+
   const renderProcessIcon = (id: string) => {
     switch (id) {
       case 'lesson_planning':
-        return <Layers size={17} className="text-amber-400" />;
+        return <Layers size={18} className="icon-amber" />;
       case 'frame_review':
-        return <Eye size={17} className="text-blue-400" />;
+        return <Eye size={18} className="icon-blue" />;
       case 'quiz_generation':
-        return <Sparkles size={17} className="text-emerald-400" />;
+        return <Sparkles size={18} className="icon-emerald" />;
       case 'quiz_verification':
-        return <Zap size={17} className="text-yellow-400" />;
+        return <Zap size={18} className="icon-yellow" />;
       case 'tts':
-        return <Volume2 size={17} className="text-purple-400" />;
+        return <Volume2 size={18} className="icon-purple" />;
       case 'stt':
-        return <Mic size={17} className="text-cyan-400" />;
+        return <Mic size={18} className="icon-cyan" />;
       default:
-        return <Cpu size={17} className="text-slate-400" />;
+        return <Cpu size={18} className="icon-slate" />;
     }
   };
 
@@ -244,7 +315,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                 Settings / APIs & Models
               </h2>
               <p className="settings-modal-subtitle">
-                Configure APIs, AI Models & Thinking Effort for each process with highlighted recommendations.
+                Configure OpenCode-compatible APIs, models & thinking effort per process with highlighted recommendations.
               </p>
             </div>
           </div>
@@ -263,7 +334,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
           <div className="settings-preset-info">
             <div className="settings-preset-badge">⭐ Recommended Preset</div>
             <div className="settings-preset-desc">
-              <strong>Free Tier & Sub-Second Latency</strong>: OpenCode Go + OpenRouter Free models, Fisch Audio TTS,
+              <strong>Free Tier & Sub-Second Latency</strong>: OpenCode Go + OpenRouter Free models, Fish Audio TTS,
               Whisper STT, and 0-thinking instant typed quiz verification (&lt;800ms).
             </div>
           </div>
@@ -278,47 +349,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
           </button>
         </div>
 
-        {/* Tabs Bar */}
-        <div className="settings-tabs-bar" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'all'}
-            className={`settings-tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-            onClick={() => setActiveTab('all')}
-          >
-            All Processes (6)
-          </button>
-          {settings &&
-            Object.keys(settings.processes).map(key => {
-              const p = settings.processes[key];
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === key}
-                  className={`settings-tab-btn ${activeTab === key ? 'active' : ''}`}
-                  onClick={() => setActiveTab(key)}
-                >
-                  {renderProcessIcon(key)}
-                  <span>{p.title.split(' ')[0]}</span>
-                </button>
-              );
-            })}
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'keys'}
-            className={`settings-tab-btn ${activeTab === 'keys' ? 'active' : ''}`}
-            onClick={() => setActiveTab('keys')}
-          >
-            <Key size={14} />
-            <span>API Keys</span>
-          </button>
-        </div>
-
-        {/* Body Content */}
+        {/* Body Content (No redundant Nav Bar - clean, colorful, continuous scroll) */}
         <div className="settings-modal-body">
           {loading ? (
             <div className="settings-modal-loading">
@@ -339,16 +370,18 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                 </div>
               )}
 
-              {/* API Credentials Tab / Section */}
-              {(activeTab === 'all' || activeTab === 'keys') && settings?.api_keys && (
-                <section className="settings-section-card keys-card" aria-label="API Credentials">
+              {/* API Credentials Card */}
+              {settings?.api_keys && (
+                <section className="settings-section-card theme-copper" aria-label="API Credentials">
                   <div className="settings-card-header">
                     <div className="settings-card-title-group">
-                      <Key size={18} className="text-amber-400" />
+                      <div className="settings-proc-icon-wrap icon-copper-bg">
+                        <Key size={18} className="icon-copper" />
+                      </div>
                       <div>
                         <h3 className="settings-card-title">API Keys & Authentication</h3>
                         <p className="settings-card-desc">
-                          Credentials and CLI engines powering the visual generation pipeline.
+                          Manage OpenRouter and OpenCode credentials. Compatible with OpenCode’s API and model ecosystem.
                         </p>
                       </div>
                     </div>
@@ -370,8 +403,8 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                         )}
                       </div>
                       <div className="settings-key-meta">
-                        Masked:{' '}
-                        <code>{settings.api_keys.openrouter.masked || 'None (saved in secrets.toml)'}</code>
+                        Saved in: <code>{settings.api_keys.openrouter.source || 'secrets.toml'}</code> (
+                        <code>{settings.api_keys.openrouter.masked || 'None'}</code>)
                       </div>
                       <div className="settings-key-input-row">
                         <input
@@ -421,7 +454,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                         className="settings-input"
                       />
                       <p className="settings-key-hint">
-                        Powers <code>muse-spark-1.3-contributor</code> for structured visual scene layout and quizzes.
+                        Powers <code>muse-spark-1.3-contributor</code> for structured visual scenes and quizzes.
                       </p>
                     </div>
 
@@ -450,19 +483,27 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                 </section>
               )}
 
-              {/* Processes Cards */}
+              {/* Process Cards - Rich Colorful Visual Cards with Provider-Dependent Models */}
               {settings &&
                 Object.keys(settings.processes).map(procId => {
-                  if (activeTab !== 'all' && activeTab !== procId) return null;
                   const proc = settings.processes[procId];
                   const rec = proc.recommended;
+                  const themeClass = getProcessThemeClass(proc.id);
+
+                  // AI models strictly depending on selected Provider
+                  const providerModels = proc.options?.provider_models?.[proc.provider] || proc.options?.models || [];
+                  const providerEngines = proc.options?.provider_engines?.[proc.provider] || proc.options?.engines || [];
+                  const isCustom = customModelMode[proc.id] || false;
+
+                  const isRecProvider = proc.provider === rec.provider;
                   const isRecModel = proc.model === rec.model;
                   const isRecEffort = !rec.reasoning_effort || proc.reasoning_effort === rec.reasoning_effort;
+                  const allRec = isRecProvider && isRecModel && isRecEffort;
 
                   return (
                     <section
                       key={proc.id}
-                      className="settings-section-card"
+                      className={`settings-section-card ${themeClass}`}
                       aria-labelledby={`proc-heading-${proc.id}`}
                     >
                       {/* Card Header */}
@@ -486,7 +527,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                             <Sparkles size={13} className="text-amber-300" />
                             <span>{rec.badge}</span>
                           </div>
-                          {(!isRecModel || !isRecEffort) && (
+                          {!allRec && (
                             <button
                               type="button"
                               className="settings-rec-apply-single-btn"
@@ -499,68 +540,90 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                         </div>
                       </div>
 
-                      {/* Card Controls Grid */}
+                      {/* Card Controls Grid: Provider -> Dependent AI Models -> Thinking */}
                       <div className="settings-proc-controls-grid">
-                        {/* Provider Selection */}
+                        {/* 1. Provider Selection (Controls which models appear) */}
                         {proc.options?.providers && (
                           <div className="settings-control-group">
                             <label className="settings-label">
-                              Provider
+                              <span>1. Provider</span>
                               {rec.provider && (
                                 <span className="settings-rec-tag">Recommended: {rec.provider}</span>
                               )}
                             </label>
                             <select
                               value={proc.provider}
-                              onChange={e => updateProcessField(proc.id, 'provider', e.target.value)}
+                              onChange={e => handleProviderChange(proc.id, e.target.value)}
                               className="settings-select"
                             >
                               {proc.options.providers.map(prov => (
                                 <option key={prov} value={prov}>
-                                  {prov} {prov === rec.provider ? '★' : ''}
+                                  {prov} {prov === rec.provider ? '★ (Recommended)' : ''}
                                 </option>
                               ))}
                             </select>
                           </div>
                         )}
 
-                        {/* Model Selection */}
+                        {/* 2. AI Model Selection (Dependent on chosen Provider) */}
                         <div className="settings-control-group">
-                          <label className="settings-label">
-                            AI Model
+                          <div className="settings-label">
+                            <div className="flex items-center gap-2">
+                              <span>2. AI Model ({proc.provider})</span>
+                              <button
+                                type="button"
+                                className="settings-custom-toggle"
+                                onClick={() =>
+                                  setCustomModelMode(prev => ({
+                                    ...prev,
+                                    [proc.id]: !prev[proc.id],
+                                  }))
+                                }
+                                title={isCustom ? 'Switch to model list' : 'Type custom model string'}
+                              >
+                                <Edit3 size={11} />
+                                <span>{isCustom ? 'Pick from List' : 'Custom Model'}</span>
+                              </button>
+                            </div>
                             {rec.model && (
                               <span className="settings-rec-tag">
                                 Recommended: {rec.model.split('/').pop()}
                               </span>
                             )}
-                          </label>
-                          {proc.options?.models ? (
+                          </div>
+
+                          {isCustom ? (
+                            <input
+                              type="text"
+                              value={proc.model}
+                              onChange={e => updateProcessField(proc.id, 'model', e.target.value)}
+                              placeholder={`Enter custom model for ${proc.provider}`}
+                              className="settings-input"
+                            />
+                          ) : (
                             <select
                               value={proc.model}
                               onChange={e => updateProcessField(proc.id, 'model', e.target.value)}
                               className="settings-select"
                             >
-                              {proc.options.models.map(m => (
+                              {providerModels.map(m => (
                                 <option key={m.value} value={m.value}>
                                   {m.label} {m.badge ? `(${m.badge})` : ''}
                                 </option>
                               ))}
+                              {/* If current model is custom or not in list, keep it visible */}
+                              {!providerModels.some(m => m.value === proc.model) && (
+                                <option value={proc.model}>{proc.model} (Custom / Active)</option>
+                              )}
                             </select>
-                          ) : (
-                            <input
-                              type="text"
-                              value={proc.model}
-                              onChange={e => updateProcessField(proc.id, 'model', e.target.value)}
-                              className="settings-input"
-                            />
                           )}
                         </div>
 
-                        {/* Thinking / Reasoning Effort (for LLM processes) */}
+                        {/* 3. Thinking / Reasoning Effort (for LLM processes) */}
                         {proc.options?.reasoning && (
                           <div className="settings-control-group settings-reasoning-group">
                             <label className="settings-label">
-                              Thinking / Reasoning Effort
+                              <span>3. Thinking / Reasoning Effort</span>
                               {rec.reasoning_effort && (
                                 <span className="settings-rec-tag">
                                   Recommended: {rec.reasoning_effort.toUpperCase()}
@@ -596,11 +659,11 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                         )}
 
                         {/* TTS Voice Specific Fields */}
-                        {proc.id === 'tts' && (
+                        {proc.id === 'tts' && proc.provider === 'openrouter' && (
                           <div className="settings-control-group">
                             <label className="settings-label">
-                              Voice ID / Accent
-                              <span className="settings-rec-tag">Default: Fish Audio Natural Voice</span>
+                              <span>Fish Audio Voice ID</span>
+                              <span className="settings-rec-tag">Default Natural Voice</span>
                             </label>
                             <input
                               type="text"
@@ -612,11 +675,11 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                           </div>
                         )}
 
-                        {/* STT Engine Specific Fields */}
-                        {proc.id === 'stt' && proc.options?.engines && (
+                        {/* STT Engine Specific Fields (Dependent on Provider) */}
+                        {proc.id === 'stt' && providerEngines.length > 0 && (
                           <div className="settings-control-group">
                             <label className="settings-label">
-                              Recognition Engine
+                              <span>Recognition Engine ({proc.provider})</span>
                               <span className="settings-rec-tag">Recommended: Whisper</span>
                             </label>
                             <select
@@ -624,9 +687,9 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                               onChange={e => updateProcessField(proc.id, 'engine', e.target.value)}
                               className="settings-select"
                             >
-                              {proc.options.engines.map(eng => (
+                              {providerEngines.map(eng => (
                                 <option key={eng.value} value={eng.value}>
-                                  {eng.label}
+                                  {eng.label} {eng.badge ? `(${eng.badge})` : ''}
                                 </option>
                               ))}
                             </select>
