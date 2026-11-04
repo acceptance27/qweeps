@@ -129,6 +129,7 @@ class VisualService:
             ],
             "antigravity": [
                 {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "⭐ Recommended Antigravity Visual"},
+                {"value": "gemini-4-argon", "label": "gemini-4-argon", "badge": "💎 Gemini 4 Argon Multimodal"},
                 {"value": "gemini-2.5-flash", "label": "gemini-2.5-flash", "badge": "⚡ Fast"},
                 {"value": "gemini-2.5-pro", "label": "gemini-2.5-pro", "badge": "💎 Deep Reasoning"}
             ],
@@ -144,10 +145,12 @@ class VisualService:
             ],
             "opencode-go": [
                 {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⭐ Vision & SVG Review"},
+                {"value": "opencode-go/deepseek-v4.1-flash", "label": "deepseek-v4.1-flash", "badge": "⚡ Fast Vision Flash"},
                 {"value": "opencode-go/mimo-v2.6-flash", "label": "mimo-v2.6-flash", "badge": "Fast Vision"}
             ],
             "antigravity": [
                 {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "💎 Multimodal Vision"},
+                {"value": "gemini-4-argon", "label": "gemini-4-argon", "badge": "💎 Gemini 4 Argon Vision"},
                 {"value": "gemini-2.5-flash", "label": "gemini-2.5-flash", "badge": "Fast Vision"}
             ],
             "offline": [
@@ -161,8 +164,13 @@ class VisualService:
                 {"value": "google/gemini-2.0-flash-exp:free", "label": "google/gemini-2.0-flash-exp:free", "badge": "⚡ Fast Free"}
             ],
             "opencode-go": [
+                {"value": "opencode-go/deepseek-v4.1-flash", "label": "deepseek-v4.1-flash", "badge": "⚡ Fast Flash Evaluation"},
                 {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⚡ Fast Go Fallback"},
                 {"value": "opencode-go/beam-free", "label": "beam-free", "badge": "Free"}
+            ],
+            "antigravity": [
+                {"value": "gemini-3.8-flash-high", "label": "gemini-3.8-flash-high", "badge": "⚡ Fast Gemini Evaluation"},
+                {"value": "gemini-4-argon", "label": "gemini-4-argon", "badge": "💎 Gemini 4 Argon"}
             ],
             "heuristic": [
                 {"value": "heuristic-fast", "label": "Zero-Latency Heuristic (0ms)", "badge": "⚡ 0ms Exact & Substring"}
@@ -171,7 +179,7 @@ class VisualService:
 
         tts_provider_models = {
             "openrouter": [
-                {"value": "fish-audio/s2.1-pro-free:free", "label": "Fish Audio S2.1 Pro Free", "badge": "⭐ Recommended Natural Free Voice"}
+                {"value": "fish-audio/s2.1-pro-free:free", "label": "Fish Audio S2.1 Pro Free", "badge": "⭐ Recommended Natural Free Voice (Zero-Config)"}
             ],
             "piper": [
                 {"value": "piper:en_US-lessac-medium", "label": "Piper en_US Lessac Medium", "badge": "🔒 100% Offline Local Neural"},
@@ -186,27 +194,30 @@ class VisualService:
         }
 
         stt_provider_engines = {
+            "openrouter": [
+                {"value": "fish-audio/transcribe-1", "label": "Fish Audio Transcribe", "badge": "⭐ Recommended Cloud Free STT (Zero Local Setup)"}
+            ],
             "voxtype": [
-                {"value": "whisper", "label": "Whisper (Local Neural)", "badge": "⭐ Recommended Local Sub-Second"},
+                {"value": "whisper", "label": "Whisper (Local Neural)", "badge": "Local Whisper (Requires Local Binary)"},
                 {"value": "cohere", "label": "Cohere Engine", "badge": "Local Engine"},
                 {"value": "parakeet", "label": "NVIDIA Parakeet", "badge": "Fast Engine"}
-            ],
-            "openrouter": [
-                {"value": "fish-audio/transcribe-1", "label": "Fish Audio Transcribe", "badge": "Cloud Neural STT"}
             ],
             "none": [
                 {"value": "none", "label": "Disabled / Text-Only", "badge": "No Voice Input"}
             ]
         }
 
-        lp_prov = getattr(cfg.llm, "visual_provider", "") or getattr(cfg.llm, "auth_provider", "opencode-go")
-        if lp_prov not in general_provider_models: lp_prov = "opencode-go"
+        default_fallback_prov = "opencode-go" if (oc_key or agy_path) else "openrouter-free"
+        default_fallback_model = "opencode-go/muse-spark-1.3-contributor" if (oc_key or agy_path) else "nvidia/nemotron-3.5-super-vl:free"
+
+        lp_prov = getattr(cfg.llm, "visual_provider", "") or getattr(cfg.llm, "auth_provider", default_fallback_prov)
+        if lp_prov not in general_provider_models: lp_prov = default_fallback_prov
 
         fr_prov = getattr(cfg.llm, "visual_provider", "") or "openrouter-free"
         if fr_prov not in vision_provider_models: fr_prov = "openrouter-free"
 
-        qg_prov = getattr(cfg.llm, "visual_provider", "") or "opencode-go"
-        if qg_prov not in general_provider_models: qg_prov = "opencode-go"
+        qg_prov = getattr(cfg.llm, "visual_provider", "") or default_fallback_prov
+        if qg_prov not in general_provider_models: qg_prov = default_fallback_prov
 
         qv_prov = getattr(cfg.llm, "quiz_verification_provider", "openrouter-free")
         if qv_prov not in verify_provider_models: qv_prov = "openrouter-free"
@@ -214,8 +225,8 @@ class VisualService:
         tts_prov = getattr(cfg.tts, "provider", "openrouter")
         if tts_prov not in tts_provider_models: tts_prov = "openrouter"
 
-        stt_prov = getattr(cfg.stt, "provider", "voxtype")
-        if stt_prov not in stt_provider_engines: stt_prov = "voxtype"
+        stt_prov = getattr(cfg.stt, "provider", "openrouter")
+        if stt_prov not in stt_provider_engines: stt_prov = "openrouter"
 
         return {
             "processes": {
@@ -350,9 +361,10 @@ class VisualService:
                     "engine": getattr(cfg.stt, "engine", "whisper"),
                     "model": getattr(cfg.stt, "stt_model", "fish-audio/transcribe-1"),
                     "recommended": {
-                        "provider": "voxtype",
+                        "provider": "openrouter",
                         "engine": "whisper",
-                        "badge": "⭐ Recommended (Local Fast Whisper STT)"
+                        "model": "fish-audio/transcribe-1",
+                        "badge": "⭐ Recommended (Fish Audio Cloud STT - Zero Local Setup)"
                     },
                     "options": {
                         "providers": list(stt_provider_engines.keys()),

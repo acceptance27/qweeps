@@ -15,6 +15,12 @@ import {
   Eye,
   Layers,
   Edit3,
+  GraduationCap,
+  HelpCircle,
+  Gift,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
 } from 'lucide-react';
 import { api } from '../learning/types';
 
@@ -81,6 +87,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
   const [openRouterKeyInput, setOpenRouterKeyInput] = useState<string>('');
   const [opencodeKeyInput, setOpencodeKeyInput] = useState<string>('');
   const [showOrKey, setShowOrKey] = useState<boolean>(false);
+  const [showGuide, setShowGuide] = useState<boolean>(true);
 
   // Fetch settings on open
   useEffect(() => {
@@ -221,6 +228,128 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
     setTimeout(() => setSuccessMsg(null), 4000);
   };
 
+  const applyOpenRouterFreePreset = () => {
+    if (!settings) return;
+    const updated = { ...settings.processes };
+
+    if (updated.lesson_planning) {
+      updated.lesson_planning = {
+        ...updated.lesson_planning,
+        provider: 'openrouter-free',
+        model: 'nvidia/nemotron-3.5-super-vl:free',
+        reasoning_effort: 'high',
+      };
+    }
+    if (updated.frame_review) {
+      updated.frame_review = {
+        ...updated.frame_review,
+        provider: 'openrouter-free',
+        model: 'nvidia/nemotron-3.5-super-vl:free',
+        reasoning_effort: 'high',
+      };
+    }
+    if (updated.quiz_generation) {
+      updated.quiz_generation = {
+        ...updated.quiz_generation,
+        provider: 'openrouter-free',
+        model: 'nvidia/nemotron-3.5-super-vl:free',
+        reasoning_effort: 'high',
+      };
+    }
+    if (updated.quiz_verification) {
+      updated.quiz_verification = {
+        ...updated.quiz_verification,
+        provider: 'openrouter-free',
+        model: 'nvidia/nemotron-3.5-super-vl:free',
+        reasoning_effort: 'none',
+      };
+    }
+    if (updated.tts) {
+      updated.tts = {
+        ...updated.tts,
+        provider: 'openrouter',
+        model: 'fish-audio/s2.1-pro-free:free',
+        voice: '33a2191b8fda440cae962137e9793985',
+      };
+    }
+    if (updated.stt) {
+      updated.stt = {
+        ...updated.stt,
+        provider: 'openrouter',
+        engine: 'whisper',
+        model: 'fish-audio/transcribe-1',
+      };
+    }
+
+    setSettings({
+      ...settings,
+      processes: updated,
+    });
+    setSuccessMsg('🆓 Applied 100% Free OpenRouter Preset across all 6 processes!');
+    setTimeout(() => setSuccessMsg(null), 4000);
+  };
+
+  const applyAntigravityStudentPreset = () => {
+    if (!settings) return;
+    const updated = { ...settings.processes };
+
+    if (updated.lesson_planning) {
+      updated.lesson_planning = {
+        ...updated.lesson_planning,
+        provider: 'antigravity',
+        model: 'gemini-3.8-flash-high',
+        reasoning_effort: 'high',
+      };
+    }
+    if (updated.frame_review) {
+      updated.frame_review = {
+        ...updated.frame_review,
+        provider: 'antigravity',
+        model: 'gemini-3.8-flash-high',
+        reasoning_effort: 'high',
+      };
+    }
+    if (updated.quiz_generation) {
+      updated.quiz_generation = {
+        ...updated.quiz_generation,
+        provider: 'antigravity',
+        model: 'gemini-3.8-flash-high',
+        reasoning_effort: 'high',
+      };
+    }
+    if (updated.quiz_verification) {
+      updated.quiz_verification = {
+        ...updated.quiz_verification,
+        provider: 'openrouter-free',
+        model: 'nvidia/nemotron-3.5-super-vl:free',
+        reasoning_effort: 'none',
+      };
+    }
+    if (updated.tts) {
+      updated.tts = {
+        ...updated.tts,
+        provider: 'openrouter',
+        model: 'fish-audio/s2.1-pro-free:free',
+        voice: '33a2191b8fda440cae962137e9793985',
+      };
+    }
+    if (updated.stt) {
+      updated.stt = {
+        ...updated.stt,
+        provider: 'openrouter',
+        engine: 'whisper',
+        model: 'fish-audio/transcribe-1',
+      };
+    }
+
+    setSettings({
+      ...settings,
+      processes: updated,
+    });
+    setSuccessMsg('🎓 Applied Google Antigravity & Gemini Student Pass Preset!');
+    setTimeout(() => setSuccessMsg(null), 4000);
+  };
+
   const handleSave = async () => {
     if (!settings) return;
     setSaving(true);
@@ -332,21 +461,42 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
         {/* Global Preset Banner */}
         <div className="settings-preset-banner">
           <div className="settings-preset-info">
-            <div className="settings-preset-badge">⭐ Recommended Preset</div>
+            <div className="settings-preset-badge">⚡ Quick Presets</div>
             <div className="settings-preset-desc">
-              <strong>High Pedagogic Rigor & Sub-Second Recall</strong>: OpenCode Go + OpenRouter Free models,
-              High reasoning effort for lessons & quizzes (deep proofs & strict distractors), and 0-thinking for instant typed answer checks (&lt;800ms).
+              Choose your setup in one click: <strong>100% Free OpenRouter</strong> (zero-config, no card),{' '}
+              <strong>OpenCode Go</strong> ($10/mo = $80+ compute with Muse Spark & DeepSeek v4.1), or{' '}
+              <strong>Google Antigravity</strong> (free for .edu students).
             </div>
           </div>
-          <button
-            type="button"
-            className="settings-preset-apply-btn"
-            onClick={applyAllRecommendations}
-            title="Populate all processes with the recommended configuration"
-          >
-            <Zap size={15} />
-            <span>Apply All Recommendations</span>
-          </button>
+          <div className="settings-preset-actions">
+            <button
+              type="button"
+              className="settings-preset-btn-free"
+              onClick={applyOpenRouterFreePreset}
+              title="Configure all 6 processes using 100% free OpenRouter models (Zero-Config)"
+            >
+              <Gift size={14} />
+              <span>🆓 OpenRouter Free</span>
+            </button>
+            <button
+              type="button"
+              className="settings-preset-apply-btn"
+              onClick={applyAllRecommendations}
+              title="Populate all processes with OpenCode Go recommended models (Muse Spark + Sub-Second Recall)"
+            >
+              <Zap size={14} />
+              <span>⭐ OpenCode Go ($10)</span>
+            </button>
+            <button
+              type="button"
+              className="settings-preset-btn-edu"
+              onClick={applyAntigravityStudentPreset}
+              title="Configure all processes with Google Antigravity & Gemini multimodal models"
+            >
+              <GraduationCap size={14} />
+              <span>🎓 Antigravity .edu</span>
+            </button>
+          </div>
         </div>
 
         {/* Body Content (No redundant Nav Bar - clean, colorful, continuous scroll) */}
@@ -369,6 +519,127 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                   <span>{successMsg}</span>
                 </div>
               )}
+
+              {/* Beginner Guide Card: Free & Cheap Models Breakdown */}
+              <section className="settings-guide-card" aria-label="Free and Cheap Models Guide">
+                <div className="settings-guide-header" onClick={() => setShowGuide(!showGuide)}>
+                  <div className="settings-guide-title-box">
+                    <span className="settings-guide-badge">💡 Beginner Guide</span>
+                    <h3 className="settings-guide-title">
+                      How to Get AI Models 100% Free or Ultra-Cheap ($10)
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    className="settings-guide-toggle-btn"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setShowGuide(!showGuide);
+                    }}
+                    aria-label={showGuide ? 'Collapse guide' : 'Expand guide'}
+                  >
+                    <span>{showGuide ? 'Hide Guide' : 'Show Guide'}</span>
+                    {showGuide ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+                </div>
+                <p className="settings-guide-subtitle">
+                  Recommended capable models: <strong>DeepSeek v4.1 Flash</strong>,{' '}
+                  <strong>Muse Spark 1.3 Contributor</strong>, and <strong>Gemini 3.8 / Argon</strong>.
+                </p>
+
+                {showGuide && (
+                  <div className="settings-guide-grid">
+                    {/* Option 1: 100% Free OpenRouter */}
+                    <div className="settings-guide-col col-free">
+                      <div>
+                        <div className="settings-guide-col-header">
+                          <span className="settings-guide-price-badge badge-price-free">100% Free</span>
+                          <Gift size={16} className="text-emerald-400" />
+                        </div>
+                        <h4 className="settings-guide-col-title">OpenRouter Free Tier</h4>
+                        <div className="settings-guide-models-list">
+                          <code>nvidia/nemotron-3.5-super-vl:free</code> · <code>gemini-2.0-flash-exp:free</code> · Fish Audio
+                        </div>
+                        <p className="settings-guide-text">
+                          <strong>No credit card required</strong>: Sign up at openrouter.ai and generate a free API key in seconds.
+                          Powers sub-second typed quiz evaluations (&lt;800ms), visual frame reviews, and neural speech with <strong>zero monthly cost</strong>.
+                        </p>
+                      </div>
+                      <div className="settings-guide-col-footer">
+                        <button
+                          type="button"
+                          className="settings-guide-action-btn btn-free-action"
+                          onClick={applyOpenRouterFreePreset}
+                          title="Apply OpenRouter Free across all 6 processes"
+                        >
+                          <Zap size={13} />
+                          <span>Apply Free Preset</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Option 2: OpenCode Go */}
+                    <div className="settings-guide-col col-opencode">
+                      <div>
+                        <div className="settings-guide-col-header">
+                          <span className="settings-guide-price-badge badge-price-subsidized">$10/mo Subsidized</span>
+                          <Sparkles size={16} className="text-amber-400" />
+                        </div>
+                        <h4 className="settings-guide-col-title">OpenCode Go Compute ($10 = $80+)</h4>
+                        <div className="settings-guide-models-list">
+                          <code>muse-spark-1.3-contributor</code> · <code>deepseek-v4.1-flash</code>
+                        </div>
+                        <p className="settings-guide-text">
+                          <strong>Heavily subsidized quota</strong>: A $10/mo OpenCode Go plan unlocks token quotas equivalent to{' '}
+                          <strong>$80+</strong> of DeepSeek v4.1 and <strong>$60+</strong> of Muse Spark 1.3 Contributor.
+                          Enough to generate <strong>50+ visual lessons and quizzes every single day</strong> for a month without running out.
+                          Muse Spark 1.3 Contributor provides top-tier SVG scene structure and distractor quality.
+                        </p>
+                      </div>
+                      <div className="settings-guide-col-footer">
+                        <button
+                          type="button"
+                          className="settings-guide-action-btn btn-go-action"
+                          onClick={applyAllRecommendations}
+                          title="Apply OpenCode Go recommended configuration"
+                        >
+                          <Sparkles size={13} />
+                          <span>Apply Go Preset</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Option 3: Antigravity Student Pass */}
+                    <div className="settings-guide-col col-antigravity">
+                      <div>
+                        <div className="settings-guide-col-header">
+                          <span className="settings-guide-price-badge badge-price-edu">Free with .edu</span>
+                          <GraduationCap size={16} className="text-blue-400" />
+                        </div>
+                        <h4 className="settings-guide-col-title">Google Antigravity Student Pass</h4>
+                        <div className="settings-guide-models-list">
+                          <code>gemini-3.8-flash-high</code> · <code>gemini-4-argon</code>
+                        </div>
+                        <p className="settings-guide-text">
+                          <strong>Free for students</strong>: Active college and university students with a verified <code>.edu</code> email address can get free Google Gemini Advanced / Antigravity access, saving the standard <strong>$19.99/month</strong> subscription until graduation.
+                          Gemini 3.8 / Argon multimodal vision provides world-class SVG geometry reasoning and visual frame review.
+                        </p>
+                      </div>
+                      <div className="settings-guide-col-footer">
+                        <button
+                          type="button"
+                          className="settings-guide-action-btn btn-edu-action"
+                          onClick={applyAntigravityStudentPreset}
+                          title="Apply Google Antigravity student pass configuration"
+                        >
+                          <GraduationCap size={13} />
+                          <span>Apply Student Preset</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </section>
 
               {/* API Credentials Card */}
               {settings?.api_keys && (

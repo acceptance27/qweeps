@@ -96,7 +96,7 @@ quiz_verification_model = "nvidia/nemotron-3.5-super-vl:free"
 quiz_verification_reasoning = "none"
 
 [tts]
-provider = "espeak"          # none | openrouter | piper | espeak
+provider = "openrouter"          # openrouter | piper | espeak | none
 base_url = "https://openrouter.ai/api/v1"
 model = "fish-audio/s2.1-pro-free:free"
 voice = "33a2191b8fda440cae962137e9793985"
@@ -110,7 +110,7 @@ stream = true
 split_sentences = false
 
 [stt]
-provider = "voxtype"         # voxtype | openrouter | file | none
+provider = "openrouter"         # openrouter | voxtype | file | none
 engine = "cohere"            # cohere | whisper | parakeet | ...
 model = ""
 language = "en"
@@ -213,10 +213,10 @@ class LLMConfig:
 
 @dataclass
 class TTSConfig:
-    provider: str = "espeak"
+    provider: str = "openrouter"
     base_url: str = "https://openrouter.ai/api/v1"
     model: str = "fish-audio/s2.1-pro-free:free"
-    voice: str = ""
+    voice: str = "33a2191b8fda440cae962137e9793985"
     response_format: str = "mp3"
     api_key_env: str = "OPENROUTER_API_KEY"
     piper_model: str = ""
@@ -229,7 +229,7 @@ class TTSConfig:
 
 @dataclass
 class STTConfig:
-    provider: str = "voxtype"
+    provider: str = "openrouter"
     engine: str = "cohere"
     model: str = ""
     language: str = "en"

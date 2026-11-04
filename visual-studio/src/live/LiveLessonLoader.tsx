@@ -3,7 +3,7 @@ import { ArrowLeft, Sliders } from 'lucide-react';
 import { api } from '../learning/types';
 import LiveLessonPlayer from './LiveLessonPlayer';
 import LivePreparation from './LivePreparation';
-import SettingsApisModal from './SettingsApisModal';
+import SettingsApisModal, { type SettingsData } from './SettingsApisModal';
 import {
   ReinforcementQuizModal,
   ReinforcementQuizNavbar,
@@ -140,13 +140,34 @@ export default function LiveLessonLoader() {
   const [busyQuiz, setBusyQuiz] = useState(false);
   const [busyLessonQuizId, setBusyLessonQuizId] = useState<string | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(params.get('settings') === '1');
+  const [apiConfigured, setApiConfigured] = useState<boolean | null>(null);
 
   const initialized = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const syncAvailable = useRef(false);
 
+  const checkApiStatus = async (): Promise<boolean> => {
+    try {
+      const data = await api<SettingsData>('settings');
+      const isConfigured = Boolean(
+        data?.api_keys?.openrouter?.configured ||
+        data?.api_keys?.opencode_go?.configured ||
+        data?.api_keys?.antigravity?.available
+      );
+      setApiConfigured(isConfigured);
+      return isConfigured;
+    } catch {
+      return true;
+    }
+  };
+
   async function generateQuizOnly(doc = selected, q = question) {
     if (busy || busyQuiz) return;
+    if (apiConfigured === false) {
+      setError('⚠️ AI API Key Required: No API or Antigravity connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate quizzes.');
+      setShowSettingsModal(true);
+      return;
+    }
     if (!q.trim() && !doc) {
       setError('Please enter a learning topic or select a source document.');
       return;
@@ -214,7 +235,17 @@ export default function LiveLessonLoader() {
       setJob(null);
       history.replaceState(null, '', `/?quiz_only=1&doc=${docId || ''}`);
     } catch (e) {
-      setError((e as Error).message);
+      const msg = (e as Error).message || '';
+      setError(msg);
+      if (
+        msg.toLowerCase().includes('api key') ||
+        msg.toLowerCase().includes('openrouter_api_key') ||
+        msg.toLowerCase().includes('opencode go') ||
+        msg.toLowerCase().includes('unauthorized') ||
+        msg.toLowerCase().includes('subscription')
+      ) {
+        setShowSettingsModal(true);
+      }
     } finally {
       setBusyQuiz(false);
     }
@@ -222,6 +253,11 @@ export default function LiveLessonLoader() {
 
   async function generateQuizForLesson(lessonId: string) {
     if (busy || busyQuiz || busyLessonQuizId) return;
+    if (apiConfigured === false) {
+      setError('⚠️ AI API Key Required: No API or Antigravity connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate quizzes.');
+      setShowSettingsModal(true);
+      return;
+    }
     setBusyLessonQuizId(lessonId);
     setError('');
     try {
@@ -250,7 +286,17 @@ export default function LiveLessonLoader() {
       setJob(null);
       history.replaceState(null, '', `/?quiz_only=1&lesson=${lessonId}`);
     } catch (e) {
-      setError((e as Error).message);
+      const msg = (e as Error).message || '';
+      setError(msg);
+      if (
+        msg.toLowerCase().includes('api key') ||
+        msg.toLowerCase().includes('openrouter_api_key') ||
+        msg.toLowerCase().includes('opencode go') ||
+        msg.toLowerCase().includes('unauthorized') ||
+        msg.toLowerCase().includes('subscription')
+      ) {
+        setShowSettingsModal(true);
+      }
     } finally {
       setBusyLessonQuizId(null);
     }
@@ -264,6 +310,11 @@ export default function LiveLessonLoader() {
     withQuiz = generateQuiz
   ) {
     if (!q.trim() || busy) return;
+    if (apiConfigured === false) {
+      setError('⚠️ AI API Key Required: No API or Antigravity connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate visual lessons.');
+      setShowSettingsModal(true);
+      return;
+    }
     setBusy(true);
     setError('');
     setOpenQuizOnLoad(withQuiz);
@@ -288,13 +339,25 @@ export default function LiveLessonLoader() {
       });
       setJob(result.id);
     } catch (e) {
-      setError((e as Error).message);
+      const msg = (e as Error).message || '';
+      setError(msg);
+      if (
+        msg.toLowerCase().includes('api key') ||
+        msg.toLowerCase().includes('openrouter_api_key') ||
+        msg.toLowerCase().includes('opencode go') ||
+        msg.toLowerCase().includes('unauthorized') ||
+        msg.toLowerCase().includes('subscription')
+      ) {
+        setShowSettingsModal(true);
+      }
     } finally {
       setBusy(false);
     }
   }
 
   useEffect(() => {
+    void checkApiStatus();
+
     void api<{ documents: DocumentMeta[] }>('documents')
       .then(r => setDocuments(r.documents))
       .catch(e => setError(e.message));
@@ -549,6 +612,25 @@ export default function LiveLessonLoader() {
               </div>
             </section>
 
+            {apiConfigured === false && (
+              <div
+                className="live-api-warning-banner"
+                onClick={() => setShowSettingsModal(true)}
+                role="alert"
+                title="Click to configure AI models and API credentials"
+              >
+                <div className="live-api-warning-content">
+                  <span className="live-api-warning-icon">⚠️</span>
+                  <div>
+                    <strong>AI API Key Required</strong>: Connect a 100% free OpenRouter key or OpenCode Go to generate visual lessons & quizzes.
+                  </div>
+                </div>
+                <button type="button" className="live-api-warning-btn">
+                  Configure Settings/APIs →
+                </button>
+              </div>
+            )}
+
             <form
               onSubmit={e => {
                 e.preventDefault();
@@ -710,6 +792,7 @@ export default function LiveLessonLoader() {
         isOpen={showSettingsModal}
         onClose={() => {
           setShowSettingsModal(false);
+          void checkApiStatus();
           const p = new URLSearchParams(location.search);
           if (p.has('settings')) {
             p.delete('settings');

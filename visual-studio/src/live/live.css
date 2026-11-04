@@ -1159,3 +1159,300 @@
   cursor: not-allowed;
   transform: none;
 }
+
+/* Multi-Preset Buttons in Banner */
+.settings-preset-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.settings-preset-btn-free {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  background: #10b981 !important;
+  color: #042f2e !important;
+  border: none !important;
+  border-radius: 7px !important;
+  padding: 8px 12px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(16,185,129,0.25);
+}
+.settings-preset-btn-free:hover {
+  background: #34d399 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+}
+.settings-preset-btn-edu {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  background: #3b82f6 !important;
+  color: #082f49 !important;
+  border: none !important;
+  border-radius: 7px !important;
+  padding: 8px 12px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.25);
+}
+.settings-preset-btn-edu:hover {
+  background: #60a5fa !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+}
+
+/* Beginner Guide Card (Free & Cheap Models Breakdown) */
+.settings-guide-card {
+  background: linear-gradient(135deg, rgba(16, 37, 50, 0.95) 0%, rgba(10, 24, 33, 0.95) 100%);
+  border: 1px solid rgba(237, 202, 130, 0.4);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+.settings-guide-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+.settings-guide-title-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.settings-guide-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(237, 202, 130, 0.2);
+  color: #edca82;
+  border: 1px solid rgba(237, 202, 130, 0.4);
+  padding: 2px 8px;
+  border-radius: 5px;
+}
+.settings-guide-title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #f3f8fa;
+}
+.settings-guide-subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #9cb5bf;
+  line-height: 1.4;
+}
+.settings-guide-toggle-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #9cb5bf;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.settings-guide-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f6f7;
+}
+
+.settings-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.settings-guide-col {
+  background: rgba(8, 20, 28, 0.75);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.settings-guide-col:hover {
+  transform: translateY(-2px);
+}
+.settings-guide-col.col-free {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(8, 20, 28, 0.85) 100%);
+}
+.settings-guide-col.col-opencode {
+  border-color: rgba(237, 202, 130, 0.4);
+  background: linear-gradient(180deg, rgba(237, 202, 130, 0.08) 0%, rgba(8, 20, 28, 0.85) 100%);
+}
+.settings-guide-col.col-antigravity {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, rgba(8, 20, 28, 0.85) 100%);
+}
+
+.settings-guide-col-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.settings-guide-price-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.badge-price-free {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.badge-price-subsidized {
+  background: rgba(237, 202, 130, 0.2);
+  color: #edca82;
+  border: 1px solid rgba(237, 202, 130, 0.4);
+}
+.badge-price-edu {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+.settings-guide-col-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f1f6f7;
+}
+.settings-guide-models-list {
+  font-size: 11px;
+  color: #8daab6;
+  margin: 4px 0 10px;
+  line-height: 1.35;
+}
+.settings-guide-models-list code {
+  color: #dbe7eb;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.settings-guide-text {
+  font-size: 11.5px;
+  color: #b1c7ce;
+  line-height: 1.45;
+  margin: 0 0 12px;
+}
+.settings-guide-text strong {
+  color: #f1f6f7;
+}
+.settings-guide-col-footer {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.settings-guide-action-btn {
+  width: 100%;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent !important;
+}
+.btn-free-action {
+  background: rgba(16, 185, 129, 0.18) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(16, 185, 129, 0.35) !important;
+}
+.btn-free-action:hover {
+  background: #10b981 !important;
+  color: #042f2e !important;
+}
+.btn-go-action {
+  background: rgba(237, 202, 130, 0.18) !important;
+  color: #edca82 !important;
+  border-color: rgba(237, 202, 130, 0.35) !important;
+}
+.btn-go-action:hover {
+  background: #edca82 !important;
+  color: #0b1a23 !important;
+}
+.btn-edu-action {
+  background: rgba(59, 130, 246, 0.18) !important;
+  color: #93c5fd !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+}
+.btn-edu-action:hover {
+  background: #3b82f6 !important;
+  color: #082f49 !important;
+}
+
+/* Missing API Warning Banner in Live Generator */
+.live-api-warning-banner {
+  margin: 0 0 16px 0;
+  padding: 12px 16px;
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.18) 0%, rgba(20, 36, 46, 0.9) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.live-api-warning-banner:hover {
+  border-color: rgba(239, 68, 68, 0.7);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.25) 0%, rgba(20, 36, 46, 0.95) 100%);
+  transform: translateY(-1px);
+}
+.live-api-warning-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: #fecaca;
+  line-height: 1.4;
+}
+.live-api-warning-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.live-api-warning-btn {
+  background: #ef4444 !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.live-api-warning-btn:hover {
+  background: #dc2626 !important;
+}
