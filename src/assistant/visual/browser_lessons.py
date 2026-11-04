@@ -6,6 +6,7 @@ import datetime
 import hashlib
 import json
 import queue
+import random
 from pathlib import Path
 import re
 import threading
@@ -1127,15 +1128,17 @@ PEDAGOGICAL REQUIREMENTS (CRITICAL):
    - Ask clean, direct questions in natural English: "Why did...", "What was the purpose of...", "How did...", "Which principle governs...", "Who was...".
    - STRICTLY FORBIDDEN: NEVER write formulaic templates like "Which concept, condition, or component is defined as" or "In [Beat], which concept is defined as".
 
-3. SUBSTANTIVE, EDUCATIONAL OPTIONS:
-   - The correct answer must be clear, complete, and informative (1-2 articulate clauses). Reading the correct option should teach and reinforce the concept on its own.
-   - The 3 distractors must be plausible, contextually grounded alternatives from the same domain that challenge misconceptions, NOT absurd non sequiturs.
+3. SHORT, CONCISE, AND BALANCED OPTIONS (ZERO LENGTH BIAS):
+   - CRITICAL: All 4 options must be of approximately equal length and have the same grammatical form (e.g., all 1-4 word terms, names, or parallel concise phrases).
+   - NEVER make the correct option longer, more descriptive, or more detailed than the distractors! A learner must NEVER be able to deduce the correct answer by simply choosing the option with the most words.
+   - Put all explanatory reasoning into the 'explanation' field, NEVER inside the option string.
+   - The 3 distractors must be plausible alternatives from the exact same domain/taxonomy.
    - Every question must have exactly 4 distinct options and a valid correctIndex (0..3).
 
 4. COGNITIVE REINFORCEMENT:
    - Provide an authoritative 'explanation' clarifying why the correct option is right.
    - Provide a focused 'hint' giving a memorable mnemonic or visual cue.
-   - Provide 'acceptedAnswers' with 3-6 concise keyword variations for learners using typing/recall mode.
+   - Provide 'acceptedAnswers' with 2-4 concise keyword variations for learners using typing/recall mode.
 
 Return JSON only; no markdown fences or tools:
 {{"questions":[{{"id":"q-beat-1","chapterId":"beat-id","chapterIndex":0,"chapterTitle":"Beat Title","kind":"concept"|"mechanism"|"safeguard","prompt":"Clear direct question","options":["Option A","Option B","Option C","Option D"],"correctIndex":0,"explanation":"Why this answer is historically/scientifically right","safeguardNote":"Key misconception to avoid","hint":"Mnemonic cue for memory recall","acceptedAnswers":["Keyword 1","Keyword 2"]}}]}}'''
@@ -1156,6 +1159,27 @@ Return JSON only; no markdown fences or tools:
                 prompt=str(q.get('prompt') or '').strip()
                 explanation=str(q.get('explanation') or ch.get('insight') or '').strip()
                 if not prompt or not explanation:continue
+
+                # Reject severe length bias (correct answer conspicuously longer than distractors)
+                word_counts = [len(o.split()) for o in opts]
+                c_words = word_counts[correct_idx]
+                distractor_words = [w for i, w in enumerate(word_counts) if i != correct_idx]
+                max_dist_words = max(distractor_words) if distractor_words else 1
+                avg_dist_words = sum(distractor_words) / len(distractor_words) if distractor_words else 1
+                if c_words > 7 and c_words > 1.8 * avg_dist_words and (c_words - max_dist_words) >= 4:
+                    continue
+
+                # Shuffle options deterministically based on prompt to eliminate position-0 bias
+                correct_val = opts[correct_idx]
+                shuffled_opts = list(opts)
+                rng = random.Random(f"{ch.get('id', c_idx+1)}-{idx}-{prompt}")
+                rng.shuffle(shuffled_opts)
+                new_correct_idx = shuffled_opts.index(correct_val)
+
+                accepted = [str(a).strip() for a in (q.get('acceptedAnswers') or []) if str(a).strip()]
+                if not accepted or correct_val not in accepted:
+                    accepted = [correct_val, *[a for a in accepted if a != correct_val]]
+
                 cleaned.append({
                     'id':str(q.get('id') or f"q-{ch.get('id',c_idx+1)}-{idx+1}"),
                     'chapterId':str(q.get('chapterId') or ch.get('id') or f'beat-{c_idx+1}'),
@@ -1163,11 +1187,12 @@ Return JSON only; no markdown fences or tools:
                     'chapterTitle':str(q.get('chapterTitle') or ch.get('title') or f'Beat {c_idx+1}'),
                     'kind':kind,
                     'prompt':prompt,
-                    'options':opts,
-                    'correctIndex':correct_idx,
+                    'options':shuffled_opts,
+                    'correctIndex':new_correct_idx,
                     'explanation':explanation,
                     'safeguardNote':str(q.get('safeguardNote') or ch.get('safeguard') or '').strip() or None,
                     'hint':str(q.get('hint') or f"Inspect Beat {c_idx+1} ({ch.get('title','')}).").strip(),
+                    'acceptedAnswers':accepted[:5],
                 })
             if len(cleaned)<3:
                 raise PlanError('Insufficient valid quiz questions returned by model')
@@ -1184,12 +1209,14 @@ Return JSON only; no markdown fences or tools:
         pages = unit.get('pages') or []
         q_count = unit.get('target_questions', 20)
 
-        # Sample representative pages evenly across the unit if there are many pages
-        if len(pages) > 18:
-            step = len(pages) / 18
-            sampled_pages = [pages[int(i * step)] for i in range(18)]
+        # Include all non-empty pages unless text exceeds 45,000 characters
+        valid_pages = [p for p in pages if (p.get('text') or '').strip()]
+        total_text_len = sum(len(p.get('text', '')) for p in valid_pages)
+        if total_text_len > 45000 and len(valid_pages) > 30:
+            step = len(valid_pages) / 30
+            sampled_pages = [valid_pages[int(i * step)] for i in range(30)]
         else:
-            sampled_pages = pages
+            sampled_pages = valid_pages or pages
 
         pages_text = "\n---\n".join(
             f"Page {p.get('page')} ({p.get('sourceDoc', unit_title)}): {str(p.get('text', ''))[:1200]}"
@@ -1202,26 +1229,38 @@ Return JSON only; no markdown fences or tools:
 Generate {q_count} high-rigor multiple-choice mastery questions covering key concepts, mechanisms, distinctions, and nuances from the provided "{unit_title}" curriculum.
 
 Core Guidelines for High-Yield Mastery Questions:
-1. HIGH-YIELD MEMORIZATION & UNDERSTANDING:
-   - Prioritize essential core facts: key figures, definitions, causal drivers ("Why did X happen?"), business/technical principles, and practical scenarios.
-   - Every question must test an actionable concept from this unit.
+1. HIGH-YIELD MEMORIZATION & CORE IDENTIFICATION:
+   - Prioritize essential, memorable core knowledge directly from this unit:
+     * Specific Named Figures & Exemplars (e.g., founders, leaders, inventors mentioned in the text).
+     * Exact Concepts, Competencies & Terms (e.g., specific psychological biases, cognitive styles, business competencies, legal/economic definitions).
+     * Core Perspectives & Disciplines (e.g., Economics, Psychology, Management).
+     * Crucial Principles & Factors (e.g., Opportunity Creation, Risk, Initiative, Benefit vs Feature, Founding Team, Value Chain).
+   - Every question must test an authentic concept directly from this unit.
 
-2. NATURAL, DIRECT QUESTION STEMS:
-   - Ask clean, direct questions in natural English: "Why did...", "What was the purpose of...", "How did...", "Which factor...", "Who...".
+2. SHORT, CONCISE, AND LENGTH-BALANCED OPTIONS (ZERO LENGTH BIAS):
+   - CRITICAL: ALL 4 OPTIONS MUST BE APPROXIMATELY EQUAL IN LENGTH AND SHARE THE SAME GRAMMATICAL STRUCTURE.
+   - Typically, options should be 1 to 4 words (terms, names, or concise concepts).
+   - NEVER make the correct option longer, more descriptive, or more detailed than the distractors! A student must NEVER be able to guess the correct answer by simply choosing the option with the most words.
+   - Do NOT put explanations, qualifiers, or compound sentences inside the option text. Put all detailed explanations and rationales inside the 'explanation' field!
+
+3. HOMOGENEOUS, PLAUSIBLE TAXONOMICAL DISTRACTORS:
+   - The 3 distractors MUST be from the exact same category, taxonomy, or peer list as the correct answer:
+     * If the answer is a named figure (e.g., Mariano Que), all 3 distractors must be other figures/entrepreneurs from the curriculum.
+     * If the answer is a cognitive style/bias (e.g., Affect Infusion), all 3 distractors must be other cognitive styles/biases from the curriculum (e.g., Overconfidence, Attributional Style, Counterfactual Thinking).
+     * If the answer is an entrepreneurial competency (e.g., Tolerance for Failure), all 3 distractors must be other competencies (e.g., Calculated Risk-taking, Innovativeness, Commitment).
+     * If the answer is an academic discipline/perspective (e.g., Economics), all 3 distractors must be peer perspectives (e.g., Psychology, Management, Sociology).
+
+4. NATURAL, DIRECT QUESTION STEMS:
+   - Ask clean, direct questions in natural English: "Which cognitive style...", "Who founded...", "Which entrepreneurial competency...", "From which perspective...", "What quality describes...".
    - STRICTLY FORBIDDEN: NEVER write formulaic templates like "Which concept, condition, or component is defined as".
 
-3. SUBSTANTIVE, EDUCATIONAL OPTIONS:
-   - The correct answer must be clear, complete, and informative (1-2 articulate clauses).
-   - The 3 distractors must be plausible, contextually grounded alternatives from the same domain that challenge common misconceptions.
-   - Every question must have exactly 4 distinct options and a valid correctIndex (0..3).
-
-4. COGNITIVE REINFORCEMENT:
-   - Provide an authoritative 'explanation' clarifying why the correct option is right.
+5. COGNITIVE REINFORCEMENT:
+   - Provide an authoritative 'explanation' clarifying why the correct option is right and defining its context.
    - Provide a focused 'hint' giving a memorable mnemonic or cue.
-   - Provide 'acceptedAnswers' with 3-6 concise keyword variations for learners using typing/recall mode.
+   - Provide 'acceptedAnswers' with 2 to 4 concise keyword variations matching the term for typing/flashcard recall mode (e.g. ["Affect Infusion"], ["Tolerance for Failure"]).
 
 Return JSON only; no markdown fences:
-{{"questions":[{{"id":"q-{unit_id}-1","chapterId":"{unit_id}","chapterIndex":{unit_idx},"chapterTitle":"{unit_title}","kind":"concept","prompt":"Clear direct question in natural English","options":["Option A","Option B","Option C","Option D"],"correctIndex":0,"explanation":"Authoritative explanation","safeguardNote":"Misconception to avoid","hint":"Mnemonic cue","acceptedAnswers":["Keyword 1","Keyword 2"]}}]}}"""
+{{"questions":[{{"id":"q-{unit_id}-1","chapterId":"{unit_id}","chapterIndex":{unit_idx},"chapterTitle":"{unit_title}","kind":"concept","prompt":"Clear direct question in natural English","options":["Option A","Option B","Option C","Option D"],"correctIndex":0,"explanation":"Authoritative explanation","safeguardNote":"Misconception to avoid","hint":"Mnemonic cue","acceptedAnswers":["Term Variation 1","Term Variation 2"]}}]}}"""
 
         payload = {"unit": unit_title, "source": pages_text, "question": question}
         if extracted_qa:
@@ -1240,6 +1279,27 @@ Return JSON only; no markdown fences:
                 correct_idx = int(q.get("correctIndex", 0))
                 if not 0 <= correct_idx < 4:
                     correct_idx = 0
+
+                # Reject severe length bias (correct option conspicuously longer than all distractors)
+                word_counts = [len(o.split()) for o in opts]
+                c_words = word_counts[correct_idx]
+                distractor_words = [w for i, w in enumerate(word_counts) if i != correct_idx]
+                max_dist_words = max(distractor_words) if distractor_words else 1
+                avg_dist_words = sum(distractor_words) / len(distractor_words) if distractor_words else 1
+                if c_words > 7 and c_words > 1.8 * avg_dist_words and (c_words - max_dist_words) >= 4:
+                    continue
+
+                # Shuffle options deterministically based on prompt to eliminate position-0 bias
+                correct_val = opts[correct_idx]
+                shuffled_opts = list(opts)
+                rng = random.Random(f"{unit_id}-{idx}-{prompt}")
+                rng.shuffle(shuffled_opts)
+                new_correct_idx = shuffled_opts.index(correct_val)
+
+                accepted = [str(a).strip() for a in (q.get("acceptedAnswers") or []) if str(a).strip()]
+                if not accepted or correct_val not in accepted:
+                    accepted = [correct_val, *[a for a in accepted if a != correct_val]]
+
                 cleaned.append({
                     "id": f"q-{unit_id}-{idx+1}",
                     "chapterId": unit_id,
@@ -1247,12 +1307,12 @@ Return JSON only; no markdown fences:
                     "chapterTitle": unit_title,
                     "kind": q.get("kind") if q.get("kind") in {"concept", "mechanism", "safeguard"} else "concept",
                     "prompt": prompt,
-                    "options": opts,
-                    "correctIndex": correct_idx,
-                    "explanation": str(q.get("explanation") or opts[correct_idx]).strip(),
+                    "options": shuffled_opts,
+                    "correctIndex": new_correct_idx,
+                    "explanation": str(q.get("explanation") or correct_val).strip(),
                     "safeguardNote": str(q.get("safeguardNote") or "").strip() or None,
-                    "hint": str(q.get("hint") or "Recall the primary source evidence.").strip(),
-                    "acceptedAnswers": [str(a).strip() for a in (q.get("acceptedAnswers") or []) if str(a).strip()] or [opts[correct_idx][:35]],
+                    "hint": str(q.get("hint") or f"Recall key concepts from {unit_title}.").strip(),
+                    "acceptedAnswers": accepted[:5],
                 })
             if len(cleaned) < 3:
                 raise PlanError(f"Insufficient questions generated for {unit_title}")

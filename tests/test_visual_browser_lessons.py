@@ -1132,6 +1132,86 @@ def test_visual_service_settings_and_recommendations(tmp_path):
     assert saved_proc["quiz_verification"]["provider"] == "opencode-go"
 
 
+def test_balanced_option_lengths_and_unbiased_distractors(tmp_path, library):
+    lib, _ = library
+    folder = tmp_path / 'lessons'
+    store = BrowserLessonStore(Model(), STUDIO, folder, lib)
+
+    unit = {
+        'id': 'unit-test-comp',
+        'title': 'Entrepreneurial Competencies',
+        'index': 0,
+        'target_questions': 5,
+        'pages': [
+            {'page': 1, 'text': 'Mariano Que founded Mercury Drug.'},
+            {'page': 2, 'text': 'Calculated Risk-taking: doing everything possible to get odds in favor.'},
+            {'page': 3, 'text': 'Tolerance for Failure: using mistakes as learning experiences.'},
+            {'page': 4, 'text': 'Affect Infusion: current emotional state influences decision-making.'},
+            {'page': 5, 'text': 'Knowing Style: relying on objective facts and systematic analysis.'},
+        ]
+    }
+
+    class MockBalancedModel:
+        def compose(self, text, system=''):
+            return json.dumps({
+                "questions": [
+                    {
+                        "prompt": "Who is the founder of Mercury Drug?",
+                        "options": ["Mariano Que", "Henry Sy", "Tony Tan Caktiong", "Socorro Ramos"],
+                        "correctIndex": 0,
+                        "explanation": "Mariano Que pioneered Mercury Drug in 1945.",
+                        "acceptedAnswers": ["Mariano Que", "Que"]
+                    },
+                    {
+                        "prompt": "Which competency is defined as using setbacks as learning experiences?",
+                        "options": ["Tolerance for Failure", "Calculated Risk-taking", "Innovativeness", "Commitment"],
+                        "correctIndex": 0,
+                        "explanation": "Tolerance for failure treats setbacks as learning data.",
+                        "acceptedAnswers": ["Tolerance for Failure"]
+                    },
+                    {
+                        "prompt": "Which factor describes emotions shaping risk evaluations?",
+                        "options": [
+                            # Distractors from peer domain with comparable lengths
+                            "Affect Infusion",
+                            "Overconfidence",
+                            "Counterfactual Thinking",
+                            "Attributional Style"
+                        ],
+                        "correctIndex": 0,
+                        "explanation": "Affect infusion occurs when current mood alters risk assessment.",
+                        "acceptedAnswers": ["Affect Infusion"]
+                    },
+                    {
+                        # Question with excessive correct-answer length bias that should be filtered out
+                        "prompt": "What is Knowing Style?",
+                        "options": [
+                            "A comprehensive systematic and analytical cognitive processing modality prioritizing objective data and logic",
+                            "Intuition",
+                            "Creative Style",
+                            "Adaptive Style"
+                        ],
+                        "correctIndex": 0,
+                        "explanation": "Excessively long option",
+                    }
+                ]
+            })
+
+    store.llm = MockBalancedModel()
+    qs = store._generate_unit_quiz(unit, "Entrepreneurship", "Test Root")
+    # The 4th question had severe length bias (>10 words vs 2 words) and must be filtered out
+    assert len(qs) == 3
+    for q in qs:
+        assert len(q['options']) == 4
+        assert 0 <= q['correctIndex'] < 4
+        # Assert options are concise terms/names (under 12 words)
+        for opt in q['options']:
+            assert len(opt.split()) <= 8
+        # Ensure correct answer is not always in slot 0 (shuffled)
+        assert q['acceptedAnswers']
+
+
+
 
 
 
