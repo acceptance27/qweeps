@@ -165,6 +165,14 @@ class VisualService:
             self.active_id = sid
         return {"sessionId": sid, **reply}
 
+    def verify_quiz_answer(self, payload: dict) -> dict:
+        from .quiz_verifier import verify_answer
+        question = str(payload.get('question') or '').strip()
+        expected = str(payload.get('expected') or '').strip()
+        user_answer = str(payload.get('userAnswer') or '').strip()
+        accepted = payload.get('acceptedAnswers') or []
+        return verify_answer(question, expected, user_answer, accepted=accepted, cfg=self.cfg)
+
     def command(self, command: str, sid: str | None = None, **extra) -> dict:
         if command not in {"pause", "resume", "next", "previous", "branch", "close", "reply"}:
             raise PlanError("unknown playback command")
@@ -486,6 +494,8 @@ class Handler(SimpleHTTPRequestHandler):
                         result['lesson'] = self.service.live.lesson(lesson_id)
                     except Exception:
                         pass
+            elif route == '/api/visual/live/verify-answer':
+                result = self.service.verify_quiz_answer(payload)
             elif route == '/api/visual/live/stream':
                 result=self.service.live.start_stream(payload)
             elif route == '/api/visual/live/check':

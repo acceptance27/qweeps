@@ -51,6 +51,8 @@ export interface QuizProgressState {
         status: 'correct' | 'wrong' | 'revealed';
         userText: string;
         matchedText?: string;
+        semantic?: boolean;
+        feedback?: string;
       } | null;
       recalledItems?: string[];
       multiItemRevealed?: boolean;
@@ -67,10 +69,13 @@ export interface QuizProgressState {
   rapidScan: boolean;
   memoryLocked: boolean;
   typedInput: string;
+  isVerifyingSemantic?: boolean;
   typedFeedback: {
     status: 'correct' | 'wrong' | 'revealed';
     userText: string;
     matchedText?: string;
+    semantic?: boolean;
+    feedback?: string;
   } | null;
   recalledItems: string[];
   multiItemRevealed: boolean;
@@ -364,6 +369,7 @@ export function createInitialQuizState(
     rapidScan,
     memoryLocked: false,
     typedInput: '',
+    isVerifyingSemantic: false,
     typedFeedback: null,
     recalledItems: [],
     multiItemRevealed: false,
@@ -831,6 +837,7 @@ export function ReinforcementQuizModal({
     rapidScan,
     memoryLocked,
     typedInput,
+    isVerifyingSemantic,
     typedFeedback,
     recalledItems,
     multiItemRevealed,
@@ -1129,33 +1136,34 @@ export function ReinforcementQuizModal({
     }
   };
 
-  const submitTypedAnswer = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (isAnswered || !currentCard || isReviewing) return;
-    const rawInput = typedInput.trim();
-    if (!rawInput) return;
-
-    const result = matchesSingleAnswer(rawInput, currentCard);
-    const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
-    const expected = currentCard.acceptedAnswers?.[0] || currentCard.options[currentCard.correctIndex];
-
+  const applyTypedResult = (
+    isHit: boolean,
+    rawInput: string,
+    matchedText: string | undefined,
+    nextAttemptCount: number,
+    expected: string,
+    semantic = false,
+    feedback?: string
+  ) => {
+    if (!currentCard) return;
     const historyEntry = {
-      selectedOption: result.hit ? currentCard.correctIndex : -1,
-      typedFeedback: result.hit
-        ? { status: 'correct' as const, userText: rawInput, matchedText: result.matched }
-        : { status: 'wrong' as const, userText: rawInput, matchedText: expected },
+      selectedOption: isHit ? currentCard.correctIndex : -1,
+      typedFeedback: isHit
+        ? { status: 'correct' as const, userText: rawInput, matchedText: matchedText || expected, semantic, feedback }
+        : { status: 'wrong' as const, userText: rawInput, matchedText: expected, semantic: false, feedback },
       recalledItems: [],
       multiItemRevealed: false,
-      isCorrect: result.hit,
+      isCorrect: isHit,
     };
 
-    if (result.hit) {
+    if (isHit) {
       const nextStreak = streak + 1;
       playCorrectSound(nextStreak, currentCard.isReinforcement || Boolean(currentCard.isSpacedRecall), soundEnabled);
       setState(prev => ({
         ...prev,
+        isVerifyingSemantic: false,
         selectedOption: currentCard.correctIndex,
-        typedFeedback: { status: 'correct', userText: rawInput, matchedText: result.matched },
+        typedFeedback: { status: 'correct', userText: rawInput, matchedText: matchedText || expected, semantic, feedback },
         historyByQuestion: {
           ...prev.historyByQuestion,
           [currentCard.id]: historyEntry,
@@ -1191,9 +1199,10 @@ export function ReinforcementQuizModal({
         ];
         return {
           ...prev,
+          isVerifyingSemantic: false,
           queue: nextQueue,
           selectedOption: -1,
-          typedFeedback: { status: 'wrong', userText: rawInput, matchedText: expected },
+          typedFeedback: { status: 'wrong', userText: rawInput, matchedText: expected, semantic: false, feedback },
           historyByQuestion: {
             ...prev.historyByQuestion,
             [currentCard.id]: historyEntry,
@@ -1211,6 +1220,55 @@ export function ReinforcementQuizModal({
         };
       });
     }
+  };
+
+  const submitTypedAnswer = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isAnswered || !currentCard || isReviewing || state.isVerifyingSemantic) return;
+    const rawInput = typedInput.trim();
+    if (!rawInput) return;
+
+    // 1. Tier 0: Fast Instant Local Heuristic
+    const result = matchesSingleAnswer(rawInput, currentCard);
+    const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
+    const expected = currentCard.acceptedAnswers?.[0] || currentCard.options[currentCard.correctIndex];
+
+    if (result.hit) {
+      applyTypedResult(true, rawInput, result.matched, nextAttemptCount, expected, false);
+      return;
+    }
+
+    // 2. Tier 1: Sub-second Server LLM Semantic Verification (OpenRouter Free / OpenCode Go)
+    setState(prev => ({ ...prev, isVerifyingSemantic: true }));
+    try {
+      const resp = await fetch('/api/visual/live/verify-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: currentCard.prompt,
+          expected,
+          userAnswer: rawInput,
+          acceptedAnswers: currentCard.acceptedAnswers || [],
+        }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data && data.correct) {
+          applyTypedResult(true, rawInput, expected, nextAttemptCount, expected, true, data.feedback);
+          return;
+        } else if (data && data.correct === false) {
+          applyTypedResult(false, rawInput, undefined, nextAttemptCount, expected, false, data.feedback);
+          return;
+        }
+      }
+    } catch {
+      // Ignore network errors and fall back to local result
+    } finally {
+      setState(prev => ({ ...prev, isVerifyingSemantic: false }));
+    }
+
+    // Fallback if network failed or server unreachable: mark as incorrect
+    applyTypedResult(false, rawInput, undefined, nextAttemptCount, expected, false);
   };
 
   const submitMultiItem = (e?: React.FormEvent) => {
@@ -2009,7 +2067,7 @@ export function ReinforcementQuizModal({
                   <input
                     type="text"
                     value={isReviewing ? (effectiveTypedFeedback?.userText || '') : typedInput}
-                    disabled={isAnswered || isReviewing}
+                    disabled={isAnswered || isReviewing || Boolean(isVerifyingSemantic)}
                     onChange={e => setState(prev => ({ ...prev, typedInput: e.target.value }))}
                     placeholder="Type the correct term, concept, or condition..."
                     className="mastery-hard-input"
@@ -2019,9 +2077,13 @@ export function ReinforcementQuizModal({
                     <button
                       type="submit"
                       className="mastery-hard-submit-btn"
-                      disabled={!typedInput.trim()}
+                      disabled={!typedInput.trim() || Boolean(isVerifyingSemantic)}
                     >
-                      <span>Submit</span> <ArrowRight size={14} />
+                      {isVerifyingSemantic ? (
+                        <span className="mastery-verifying-text">Checking concept...</span>
+                      ) : (
+                        <><span>Submit</span> <ArrowRight size={14} /></>
+                      )}
                     </button>
                   )}
                 </div>
@@ -2032,10 +2094,16 @@ export function ReinforcementQuizModal({
                         <CheckCircle2 size={16} />
                         <span>
                           Your answer: <strong>"{effectiveTypedFeedback.userText}"</strong>{' '}
-                          {effectiveTypedFeedback.matchedText &&
+                          {effectiveTypedFeedback.semantic ? (
+                            <span className="mastery-semantic-pill" title="Concept verified with model">
+                              ✨ Concept Matched{effectiveTypedFeedback.feedback ? `: ${effectiveTypedFeedback.feedback}` : ''}
+                            </span>
+                          ) : (
+                            effectiveTypedFeedback.matchedText &&
                             effectiveTypedFeedback.matchedText.toLowerCase() !== effectiveTypedFeedback.userText.toLowerCase() && (
                               <small>(Matched: {effectiveTypedFeedback.matchedText})</small>
-                            )}
+                            )
+                          )}
                         </span>
                       </div>
                     ) : (
@@ -2044,6 +2112,11 @@ export function ReinforcementQuizModal({
                         <span>
                           Your answer: <strong>"{effectiveTypedFeedback.userText || '(empty)'}"</strong> · Expected:{' '}
                           <strong>"{effectiveTypedFeedback.matchedText}"</strong>
+                          {effectiveTypedFeedback.feedback && (
+                            <div className="mastery-semantic-feedback-note">
+                              <small>{effectiveTypedFeedback.feedback}</small>
+                            </div>
+                          )}
                         </span>
                       </div>
                     )}

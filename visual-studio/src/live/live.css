@@ -323,6 +323,9 @@
 .mastery-typed-callout.wrong{background:rgba(229,147,104,.14);border:1px solid rgba(229,147,104,.4);color:#f4b393}
 .mastery-typed-line{display:flex;align-items:center;gap:8px;line-height:1.4}
 .mastery-typed-line strong{color:#fff}
+.mastery-semantic-pill{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:4px;background:rgba(126,230,188,.2);border:1px solid rgba(126,230,188,.4);color:#a8f5d5;font-size:11px;font-weight:600}
+.mastery-semantic-feedback-note{margin-top:4px;font-size:11.5px;color:#f8c5ac;opacity:.9}
+.mastery-verifying-text{display:inline-flex;align-items:center;gap:6px;color:#a0b8c2;font-size:12px;font-style:italic}
 
 /* Multi-Item interactive recall slots */
 .mastery-multi-slots-container{display:flex;flex-direction:column;gap:10px;width:100%;box-sizing:border-box}

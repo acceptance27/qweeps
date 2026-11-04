@@ -984,6 +984,47 @@ def test_direct_document_quiz_fallback_with_extracted_qa(tmp_path, library):
         assert q['prompt'].endswith('?')
 
 
+def test_fast_heuristic_quiz_verification():
+    from assistant.visual.quiz_verifier import fast_heuristic_verify, verify_answer
+
+    # 1. Exact & Substring Matches
+    assert fast_heuristic_verify("Antonio de Morga", "Dr. Antonio de Morga Sánchez Garay") is True
+    assert fast_heuristic_verify("Kidlat Club", "Secret Kidlat Club in Paris") is True
+    assert fast_heuristic_verify("1609 in Mexico", "Published in 1609 in Mexico") is True
+
+    # 2. Accepted variations
+    assert fast_heuristic_verify("layman", "Civil official", accepted=["layman", "secular"]) is True
+
+    # 3. Mismatches
+    assert fast_heuristic_verify("Franciscan friar", "Secular civil official") is False
+    assert fast_heuristic_verify("Random text", "Antonio de Morga") is False
+
+    # 4. verify_answer wrapper
+    res_exact = verify_answer("Who wrote Sucesos?", "Antonio de Morga", "Dr. Antonio de Morga")
+    assert res_exact["correct"] is True
+    assert res_exact["source"] == "heuristic"
+
+    res_empty = verify_answer("Question", "Expected", "")
+    assert res_empty["correct"] is False
+
+
+def test_visual_service_verify_quiz_answer():
+    from assistant.visual.server import VisualService
+    from assistant.config import load_config
+    cfg = load_config()
+    service = VisualService(cfg=cfg, llm=Model())
+    res = service.verify_quiz_answer({
+        "question": "Who authored Sucesos de las Islas Filipinas?",
+        "expected": "Dr. Antonio de Morga",
+        "userAnswer": "Antonio de Morga",
+        "acceptedAnswers": ["Antonio de Morga", "Morga"]
+    })
+    assert res["correct"] is True
+    assert "source" in res
+
+
+
+
 
 
 
