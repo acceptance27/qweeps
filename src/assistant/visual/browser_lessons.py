@@ -1029,11 +1029,12 @@ class BrowserLessonStore:
                 if lid in seen or not ID.fullmatch(lid):continue
                 try:
                     data=json.loads(path.read_text())
-                    if data.get('quizOnly') or data.get('kind') == 'standalone_quiz':
-                        continue
                     chapters=data.get('chapters') or []
-                    if not chapters:continue
+                    quiz=data.get('quiz') or []
+                    if not chapters and not quiz:
+                        continue
                     seen.add(lid)
+                    is_quiz_only = bool(data.get('quizOnly') or data.get('kind') == 'standalone_quiz' or (not chapters and len(quiz) > 0))
                     has_native=bool(data.get('nativeScenes') or any(c.get('renderer')=='manimgl' or c.get('clip') for c in chapters))
                     mtime=round(path.stat().st_mtime,2)
                     items.append({
@@ -1043,7 +1044,9 @@ class BrowserLessonStore:
                         'beatCount':len(chapters),
                         'duration':round(float(data.get('duration') or 0),1),
                         'hasNative':has_native,
-                        'quizCount':len(data.get('quiz') or []) or len(chapters),
+                        'quizCount':len(quiz) or len(chapters),
+                        'isQuizOnly':is_quiz_only,
+                        'kind': 'standalone_quiz' if is_quiz_only else data.get('kind', 'lesson'),
                         'bundled':root==bundled,
                         'mtime':mtime,
                         'updatedAt':datetime.datetime.fromtimestamp(mtime).isoformat(),

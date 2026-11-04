@@ -38,6 +38,17 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(cfg.routes["standup"][0], "xdg-open")
         self.assertEqual(cfg.tts.model, "fish-audio/s2.1-pro-free:free")
 
+    def test_opencode_secret_loading(self):
+        from assistant.config import write_secret, load_config
+        from assistant.visual.quiz_verifier import get_opencode_go_key
+        with tempfile.TemporaryDirectory() as td:
+            cdir = Path(td)
+            write_secret(cdir, "OPENCODE_API_KEY", "custom_test_key_12345", "opencode")
+            cfg = load_config(config_dir=cdir)
+            self.assertEqual(cfg.secret("OPENCODE_API_KEY"), "custom_test_key_12345")
+            self.assertEqual(cfg.opencode_auth_key("opencode-go"), "custom_test_key_12345")
+            self.assertEqual(get_opencode_go_key(cfg), "custom_test_key_12345")
+
 
 if __name__ == "__main__":
     unittest.main()

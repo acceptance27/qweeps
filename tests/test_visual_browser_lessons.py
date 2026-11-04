@@ -889,6 +889,68 @@ def test_catalog_time_based_sorting(library, tmp_path):
     assert items_title[1]['id'] == id_b
 
 
+def test_catalog_includes_standalone_quizzes(library, tmp_path):
+    lib, _ = library
+    folder = tmp_path / 'lessons'
+    store = BrowserLessonStore(Model(), STUDIO, folder, lib)
+    store.bundled_folder = tmp_path / 'bundled'
+
+    # Standalone quiz with quizOnly and empty chapters
+    id_quiz = '1' * 32
+    path_quiz = folder / id_quiz
+    path_quiz.mkdir(parents=True)
+    (path_quiz / 'lesson.json').write_text(json.dumps({
+        'id': id_quiz,
+        'title': 'Chapter 1 Quiz',
+        'kind': 'standalone_quiz',
+        'quizOnly': True,
+        'chapters': [],
+        'quiz': [
+            {'prompt': 'Question 1', 'answer': 'Ans 1'},
+            {'prompt': 'Question 2', 'answer': 'Ans 2'},
+        ]
+    }))
+
+    # Normal visual lesson
+    id_lesson = '2' * 32
+    path_lesson = folder / id_lesson
+    path_lesson.mkdir(parents=True)
+    (path_lesson / 'lesson.json').write_text(json.dumps({
+        'id': id_lesson,
+        'title': 'Chapter 1 Visual Lesson',
+        'chapters': [{'id': 'c1', 'title': 'C1'}],
+        'quiz': [{'prompt': 'Q1', 'answer': 'A1'}]
+    }))
+
+    # Empty lesson with no chapters and no quiz (should be skipped)
+    id_empty = '3' * 32
+    path_empty = folder / id_empty
+    path_empty.mkdir(parents=True)
+    (path_empty / 'lesson.json').write_text(json.dumps({
+        'id': id_empty,
+        'title': 'Empty Draft',
+        'chapters': [],
+        'quiz': []
+    }))
+
+    catalog_items = store.catalog(sort_by='newest')
+    assert len(catalog_items) == 2
+    by_id = {item['id']: item for item in catalog_items}
+
+    quiz_item = by_id[id_quiz]
+    assert quiz_item['title'] == 'Chapter 1 Quiz'
+    assert quiz_item['isQuizOnly'] is True
+    assert quiz_item['kind'] == 'standalone_quiz'
+    assert quiz_item['quizCount'] == 2
+    assert quiz_item['beatCount'] == 0
+
+    lesson_item = by_id[id_lesson]
+    assert lesson_item['title'] == 'Chapter 1 Visual Lesson'
+    assert lesson_item['isQuizOnly'] is False
+    assert lesson_item['beatCount'] == 1
+    assert lesson_item['quizCount'] == 1
+
+
 def test_generate_quiz_from_payload_and_matching_lessons(library, tmp_path):
     lib, _ = library
     folder = tmp_path / 'lessons'

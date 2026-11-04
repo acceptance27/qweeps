@@ -23,6 +23,12 @@ def start(files_dir, studio_dir, port=4174):
         from assistant.llm import build_visual_llm, ModelProviderError
         from assistant.visual.server import VisualService, create_server
         cfg = load_config()
+        oc_key = cfg.secret("OPENCODE_API_KEY")
+        if oc_key:
+            os.environ["OPENCODE_API_KEY"] = oc_key
+        or_key = cfg.secret("OPENROUTER_API_KEY")
+        if or_key:
+            os.environ["OPENROUTER_API_KEY"] = or_key
         try:
             build_visual_llm(cfg)
         except ModelProviderError:

@@ -82,10 +82,33 @@ def get_openrouter_key(cfg=None) -> str | None:
 
 
 def get_opencode_go_key(cfg=None) -> str | None:
-    for env_var in ('OPENCODE_API_KEY', 'OPENROUTER_API_KEY'):
-        cand = (os.environ.get(env_var) or '').strip()
-        if cand.startswith('oc_sk_'):
-            return cand
+    if cfg and hasattr(cfg, 'secret'):
+        key = cfg.secret('OPENCODE_API_KEY')
+        if key:
+            return key
+    key = (os.environ.get('OPENCODE_API_KEY') or '').strip()
+    if key:
+        return key
+    cand = (os.environ.get('OPENROUTER_API_KEY') or '').strip()
+    if cand.startswith('oc_sk_'):
+        return cand
+    config_dirs = [
+        Path.home() / '.config/qweeps',
+        Path.home() / '.config/omarchy-assistant'
+    ]
+    if cfg and hasattr(cfg, 'config_dir') and cfg.config_dir:
+        config_dirs.insert(0, Path(cfg.config_dir))
+    for cdir in config_dirs:
+        path = cdir / 'secrets.toml'
+        if path.is_file():
+            try:
+                data = tomllib.loads(path.read_text())
+                for sec in ('opencode', 'opencode-go', 'opencode_go'):
+                    k = (data.get(sec) or {}).get('OPENCODE_API_KEY') or (data.get(sec) or {}).get('key')
+                    if k:
+                        return k
+            except Exception:
+                pass
     auth_file = Path.home() / '.local/share/opencode/auth.json'
     if auth_file.is_file():
         try:

@@ -56,14 +56,17 @@ class OpenCodeLLM:
         if self.provider != "opencode-go" or self.free_only:
             return None
         key = None
-        if hasattr(self, "cfg") and hasattr(self.cfg, "opencode_auth_key"):
-            key = self.cfg.opencode_auth_key("opencode-go") or self.cfg.opencode_auth_key("opencode")
+        if hasattr(self, "cfg"):
+            if hasattr(self.cfg, "secret"):
+                key = self.cfg.secret("OPENCODE_API_KEY")
+            if not key and hasattr(self.cfg, "opencode_auth_key"):
+                key = self.cfg.opencode_auth_key("opencode-go") or self.cfg.opencode_auth_key("opencode")
         if not key:
-            for env_var in ("OPENCODE_API_KEY", "OPENROUTER_API_KEY"):
-                candidate = (os.environ.get(env_var) or "").strip()
-                if candidate.startswith("oc_sk_"):
-                    key = candidate
-                    break
+            key = (os.environ.get("OPENCODE_API_KEY") or "").strip() or None
+        if not key:
+            cand = (os.environ.get("OPENROUTER_API_KEY") or "").strip()
+            if cand.startswith("oc_sk_"):
+                key = cand
         return key
 
     def _run_direct_go(self, model: str, instruction: str, system: str = "", frames=(), max_tokens: int | None = None, reasoning_effort: str | None = None) -> str:

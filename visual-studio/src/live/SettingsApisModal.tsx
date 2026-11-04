@@ -86,6 +86,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
   const [openRouterKeyInput, setOpenRouterKeyInput] = useState<string>('');
   const [opencodeKeyInput, setOpencodeKeyInput] = useState<string>('');
   const [showOrKey, setShowOrKey] = useState<boolean>(false);
+  const [showOcKey, setShowOcKey] = useState<boolean>(false);
   const [showGuide, setShowGuide] = useState<boolean>(true);
 
   // Fetch settings on open
@@ -613,16 +614,32 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                         )}
                       </div>
                       <div className="settings-key-meta">
-                        Detected from:{' '}
-                        <code>{settings.api_keys.opencode_go.source || '~/.local/share/opencode/auth.json'}</code>
+                        {settings.api_keys.opencode_go.configured ? (
+                          <>
+                            Saved in: <code>{settings.api_keys.opencode_go.source || 'secrets.toml'}</code> (
+                            <code>{settings.api_keys.opencode_go.masked || '••••'}</code>)
+                          </>
+                        ) : (
+                          <>Status: <code>Unconfigured</code></>
+                        )}
                       </div>
-                      <input
-                        type="password"
-                        placeholder="Optional custom oc_sk_... token"
-                        value={opencodeKeyInput}
-                        onChange={e => setOpencodeKeyInput(e.target.value)}
-                        className="settings-input"
-                      />
+                      <div className="settings-key-input-row">
+                        <input
+                          type={showOcKey ? 'text' : 'password'}
+                          placeholder="Update OPENCODE_API_KEY (oc_sk_... or custom key)"
+                          value={opencodeKeyInput}
+                          onChange={e => setOpencodeKeyInput(e.target.value)}
+                          className="settings-input"
+                        />
+                        <button
+                          type="button"
+                          className="settings-input-toggle-btn"
+                          onClick={() => setShowOcKey(!showOcKey)}
+                          title={showOcKey ? 'Hide key' : 'Show key'}
+                        >
+                          <Eye size={14} />
+                        </button>
+                      </div>
                       <p className="settings-key-hint">
                         Powers <code>muse-spark-1.3-contributor</code> for structured visual scenes and quizzes.
                       </p>

@@ -32,6 +32,8 @@ type CatalogLesson = {
   duration: number;
   hasNative: boolean;
   quizCount: number;
+  isQuizOnly?: boolean;
+  kind?: string;
   bundled: boolean;
   mtime?: number;
   updatedAt?: string;
@@ -168,10 +170,7 @@ export default function LiveLessonLoader() {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      const res = await api<{ ok: boolean; lessonId: string }>('live/import-lesson', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const res = await api<{ ok: boolean; lessonId: string }>('live/import-lesson', data);
       if (res.ok && res.lessonId) {
         const cat = await api<{ lessons: CatalogLesson[] }>(`live/lessons?sort=${sortBy}`);
         setCatalogLessons(cat.lessons || []);
@@ -501,6 +500,19 @@ export default function LiveLessonLoader() {
   }
 
   const ready = (value: LiveLesson, quizMode = false) => {
+    const isQuizOnly =
+      value.kind === 'standalone_quiz' ||
+      (value.chapters?.length === 0 && (value.quiz?.length || 0) > 0) ||
+      params.get('quiz_only') === '1';
+
+    if (isQuizOnly) {
+      setStandaloneQuiz(value);
+      setLesson(null);
+      setJob(null);
+      history.replaceState(null, '', `/?lesson=${value.id}&quiz_only=1`);
+      return;
+    }
+
     const isQuiz =
       quizMode ||
       openQuizOnLoad ||
@@ -523,7 +535,12 @@ export default function LiveLessonLoader() {
     history.replaceState(null, '', `/?${query}`);
   };
 
-  const lessonHref = (id: string) => (generateQuiz ? `/?lesson=${id}&quiz=1` : `/?lesson=${id}`);
+  const lessonHref = (item: CatalogLesson) => {
+    if (item.isQuizOnly || item.beatCount === 0 || item.kind === 'standalone_quiz') {
+      return `/?lesson=${item.id}&quiz_only=1`;
+    }
+    return generateQuiz ? `/?lesson=${item.id}&quiz=1` : `/?lesson=${item.id}`;
+  };
 
   const sortedLessons = useMemo(() => {
     const list = [...catalogLessons];
@@ -647,20 +664,28 @@ export default function LiveLessonLoader() {
                   </div>
                 ) : (
                   visibleLessons.map((item, idx) => {
+                    const isQuizOnly = item.isQuizOnly || item.beatCount === 0 || item.kind === 'standalone_quiz';
                     const variants = ['variant-gold', 'variant-blue', 'variant-emerald'] as const;
-                    const vClass = item.hasNative ? 'variant-gold' : variants[idx % variants.length];
+                    const vClass = isQuizOnly ? 'variant-quiz' : (item.hasNative ? 'variant-gold' : variants[idx % variants.length]);
                     const relTime = formatRelativeTime(item.mtime);
                     const durStr = formatDuration(item.duration);
                     return (
                       <div key={item.id} className={`live-generated-lesson-row ${vClass}`}>
                         <a
-                          href={lessonHref(item.id)}
+                          href={lessonHref(item)}
                           className="live-generated-lesson-main"
-                          title={`Play: ${item.title}`}
+                          title={isQuizOnly ? `Start Quiz: ${item.title}` : `Play: ${item.title}`}
                         >
                           <span className="live-generated-lesson-text">
-                            <BookOpen size={18} aria-hidden="true" />
-                            <span><strong>{item.title}</strong><small>{item.beatCount} chapters · {item.hasNative ? 'Hybrid lesson' : 'Visual lesson'}</small></span>
+                            {isQuizOnly ? <Brain size={18} aria-hidden="true" /> : <BookOpen size={18} aria-hidden="true" />}
+                            <span>
+                              <strong>{item.title}</strong>
+                              <small>
+                                {isQuizOnly
+                                  ? `${item.quizCount} quiz cards · Standalone Quiz`
+                                  : `${item.beatCount} chapters · ${item.hasNative ? 'Hybrid lesson' : 'Visual lesson'}`}
+                              </small>
+                            </span>
                           </span>
                           <div className="live-generated-lesson-meta">
                             {relTime && (
@@ -668,7 +693,14 @@ export default function LiveLessonLoader() {
                                 {relTime}
                               </span>
                             )}
-                            <span className="live-meta-badge live-badge-duration"><Clock3 size={12} aria-hidden="true" /> {durStr}</span>
+                            {!isQuizOnly && (
+                              <span className="live-meta-badge live-badge-duration"><Clock3 size={12} aria-hidden="true" /> {durStr}</span>
+                            )}
+                            {isQuizOnly && (
+                              <span className="live-meta-badge live-badge-duration" style={{ color: '#edca82', borderColor: 'rgba(237,202,130,0.4)' }}>
+                                🎯 Quiz Only
+                              </span>
+                            )}
                             <span className="live-generated-lesson-arrow">→</span>
                           </div>
                         </a>
@@ -677,10 +709,16 @@ export default function LiveLessonLoader() {
                             type="button"
                             className="live-generated-lesson-quiz-btn"
                             disabled={busyQuiz || busyLessonQuizId === item.id}
-                            onClick={() => void generateQuizForLesson(item.id)}
-                            title={`Take ${item.quizCount}-Question Reinforcement Quiz`}
+                            onClick={() => {
+                              if (isQuizOnly) {
+                                window.location.search = `?lesson=${item.id}&quiz_only=1`;
+                              } else {
+                                void generateQuizForLesson(item.id);
+                              }
+                            }}
+                            title={isQuizOnly ? `Start ${item.quizCount}-card reinforcement quiz` : `Take ${item.quizCount}-Question Reinforcement Quiz`}
                           >
-                            <Brain size={15} aria-hidden="true" /> Quiz ({item.quizCount})
+                            <Brain size={15} aria-hidden="true" /> {isQuizOnly ? `Play (${item.quizCount})` : `Quiz (${item.quizCount})`}
                           </button>
                         ) : (
                           <button

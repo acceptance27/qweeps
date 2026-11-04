@@ -385,7 +385,7 @@ class VisualService:
                 "opencode_go": {
                     "configured": bool(oc_key),
                     "masked": masked_oc,
-                    "source": "auth.json" if oc_key else "none"
+                    "source": "secrets.toml" if cfg.secret("OPENCODE_API_KEY") else ("auth.json" if oc_key else "none")
                 },
                 "antigravity": {
                     "available": bool(agy_path),
@@ -408,9 +408,11 @@ class VisualService:
         or_key = (api_keys.get("openrouter_key") or "").strip()
         if or_key and "••••" not in or_key:
             write_secret(config_dir, "OPENROUTER_API_KEY", or_key, "openrouter")
+            os.environ["OPENROUTER_API_KEY"] = or_key
         oc_key = (api_keys.get("opencode_key") or "").strip()
         if oc_key and "••••" not in oc_key:
             write_secret(config_dir, "OPENCODE_API_KEY", oc_key, "opencode")
+            os.environ["OPENCODE_API_KEY"] = oc_key
 
         # 2. Update config.toml
         text = config_path.read_text()
@@ -1027,10 +1029,14 @@ if __name__ == "__main__":
         raise SystemExit(0)
     signal.signal(signal.SIGTERM, terminate)
     cfg=load_config()
-    env_oc_key = os.environ.get("OPENCODE_API_KEY") or (
-        os.environ.get("OPENROUTER_API_KEY")
-        if (os.environ.get("OPENROUTER_API_KEY") or "").startswith("oc_sk_")
-        else None
+    env_oc_key = (
+        cfg.secret("OPENCODE_API_KEY")
+        or os.environ.get("OPENCODE_API_KEY")
+        or (
+            os.environ.get("OPENROUTER_API_KEY")
+            if (os.environ.get("OPENROUTER_API_KEY") or "").startswith("oc_sk_")
+            else None
+        )
     )
     if env_oc_key:
         auth_file = Path.home() / ".local" / "share" / "opencode" / "auth.json"

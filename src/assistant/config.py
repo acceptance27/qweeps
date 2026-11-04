@@ -413,6 +413,9 @@ class Config:
         return None
 
     def opencode_auth_key(self, provider: str, path: Path | None = None) -> str | None:
+        sec = self.secret("OPENCODE_API_KEY")
+        if sec:
+            return sec
         import json
 
         target = Path(path) if path else Path.home() / ".local" / "share" / "opencode" / "auth.json"
