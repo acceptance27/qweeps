@@ -282,3 +282,95 @@ def test_failed_native_scene_is_not_checkpointed(tmp_path, monkeypatch):
     with pytest.raises(PlanError, match='bad geometry'):
         native_author.generate_scene(llm, story(), 'python', tmp_path)
     assert not list(tmp_path.glob('native-source-*.py'))
+
+
+def test_lesson_native_prompt_gives_each_inference_reading_time_and_visual_evidence():
+    from assistant.visual.native_author import build_prompt, minimum_native_seconds
+    from assistant.visual.manim_code_prompt import lesson_manim_code_generation_prompt
+    data = story()
+    data['beats'][0].update(presentation={'visualEvidence': 'A sum changes the actual vector'},
+                            narration='Explain the visible relationship. ' * 12)
+    text = build_prompt(data)
+    assert 'A sum changes the actual vector' in text
+    assert '30-55 seconds' not in text
+    assert '30 to 50 seconds' not in lesson_manim_code_generation_prompt()
+    assert minimum_native_seconds(data['beats'][0]) > 8
+    assert 'minimum duration:' in text
+
+
+def test_too_fast_native_scene_cannot_pass_or_be_checkpointed(tmp_path, monkeypatch):
+    import pytest
+    from unittest.mock import Mock
+    from assistant.visual import native_author
+    from assistant.visual.plan import PlanError
+    llm = Mock(provider='test', model='test', visual_model=None)
+    llm.compose.return_value = 'class GenScene:\n    pass\n'
+    compiled = {'duration': 12, 'audit': [], 'beats': [
+        {'id': b['id'], 'start': i * 3, 'end': (i + 1) * 3}
+        for i, b in enumerate(story()['beats'])]}
+    monkeypatch.setattr(native_author, 'compile_source', Mock(return_value=compiled))
+    with pytest.raises(PlanError, match='too fast to teach'):
+        native_author.generate_scene(llm, story(), 'python', tmp_path)
+    assert not list(tmp_path.glob('native-source-*.py'))
+
+
+def test_native_cues_must_cover_real_stages_in_order_with_a_result_hold():
+    from assistant.visual.native_author import native_cue_contract, native_cue_findings
+    beat = story()['beats'][0]
+    data = {**story(), 'beats': [beat], 'nativeCuePlan': {beat['id']: native_cue_contract(beat)}}
+    compiled = {'beats': [{'id': beat['id'], 'start': 0, 'end': 12}], 'cues': [
+        {'id': f"{beat['id']}-setup", 'time': 0},
+        {'id': f"{beat['id']}-operation", 'time': 3},
+        {'id': f"{beat['id']}-result", 'time': 9}]}
+    assert native_cue_findings(data, compiled) == []
+    compiled['cues'].pop()
+    assert any(f['code'] == 'native-cue-coverage' for f in native_cue_findings(data, compiled))
+    compiled['cues'].append({'id': f"{beat['id']}-result", 'time': 3.1})
+    assert any(f['code'] == 'native-cue-order' for f in native_cue_findings(data, compiled))
+
+
+def test_native_assembly_keeps_the_construction_before_a_late_cue():
+    data = manifest()
+    data['cues'] = [{'id': 'important-result', 'time': 7}]
+    result = assemble(lesson(), story(), data, ['resting'])
+    assert result['chapters'][0]['nativeOffset'] == 2
+    assert result['chapters'][0]['nativeDuration'] == 6
+
+
+def test_native_effort_is_scoped_to_codegen_and_high_is_reserved_for_repairs(tmp_path, monkeypatch):
+    from unittest.mock import Mock
+    from assistant.visual import native_author
+    llm = Mock(provider='test', model='test-model', visual_model=None)
+    llm.compose.return_value = 'class GenScene:\n    pass\n'
+    compiled = {'duration': 40, 'beats': [
+        {'id': b['id'], 'start': i * 10, 'end': (i + 1) * 10}
+        for i, b in enumerate(story()['beats'])], 'audit': []}
+    bad = {**compiled, 'audit': [{'code': 'label-collision', 'detail': 'labels overlap'}]}
+    monkeypatch.setattr(native_author, 'compile_source', Mock(side_effect=[bad, compiled]))
+    monkeypatch.setenv('QWEEPS_NATIVE_SCENES', str(tmp_path / 'registry'))
+    native_author.generate_scene(llm, story(), 'python', tmp_path, reasoning_effort='medium')
+    assert [c.kwargs['reasoning_effort'] for c in llm.compose.call_args_list] == ['medium', 'high']
+
+
+def test_native_audit_allows_repeated_quantities_in_separate_cards(monkeypatch):
+    from types import SimpleNamespace
+    from assistant.visual import native_audit
+    scene = SimpleNamespace(duration=10, beats=[])
+    monkeypatch.setattr(native_audit, '_sample_times', lambda scene: [])
+    separate = [(1, 'score 0', [-4, 2.4, -2, 2.8]), (2, 'score 0', [2, 2.4, 4, 2.8])]
+    monkeypatch.setattr(native_audit, '_visible_texts', lambda *a: separate)
+    assert not native_audit.audit_scene(scene)
+    overlap = [(1, 'Title', [-2, 2.4, 2, 2.8]), (2, 'Title', [-2, 2.4, 2, 2.8])]
+    monkeypatch.setattr(native_audit, '_visible_texts', lambda *a: overlap)
+    assert any(f['code'] == 'duplicate-title' for f in native_audit.audit_scene(scene))
+
+
+def test_new_native_lessons_reserve_the_actual_player_caption_region(monkeypatch):
+    from types import SimpleNamespace
+    from assistant.visual import native_audit
+    scene = SimpleNamespace(duration=10, beats=[], cues=[{'id':'a-setup'}, {'id':'a-result'}])
+    monkeypatch.setattr(native_audit, '_sample_times', lambda scene: [1])
+    monkeypatch.setattr(native_audit, '_visible_texts', lambda *a: [(1, 'Required label', [-1, -3.2, 1, -2.8])])
+    assert any(f['code'] == 'subtitle-overlap' for f in native_audit.audit_scene(scene))
+    scene.cues=[]
+    assert not any(f['code'] == 'subtitle-overlap' for f in native_audit.audit_scene(scene)), 'saved legacy scenes retain their previous rendering contract'

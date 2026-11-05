@@ -149,3 +149,23 @@ def test_opencode_go_provider_with_deepseek_v4_1_flash():
         res = llm.compose("Explain something", "System prompt")
         assert res == '{"topic": "deepseek"}'
 
+
+
+def test_direct_go_receipt_preserves_real_usage_and_identifies_qweeps(tmp_path, monkeypatch):
+    from assistant.opencode_llm import OpenCodeLLM
+    cfg = Config()
+    cfg.llm.visual_model = 'opencode-go/muse-spark-1.3-contributor'
+    monkeypatch.setenv('OPENCODE_API_KEY', 'test-only-key')
+    monkeypatch.setenv('QWEEPS_CALL_LOG', str(tmp_path / 'calls.jsonl'))
+    llm = OpenCodeLLM(cfg)
+    def respond(url, payload, headers, **kwargs):
+        assert headers['User-Agent'] == 'qweeps-visual/0.2'
+        return {'choices': [{'message': {'content': 'complete'}, 'finish_reason': 'stop'}],
+                'usage': {'prompt_tokens': 10, 'completion_tokens': 20,
+                          'opencode': {'allowance': .000005}}}
+    with patch('assistant.http.post_json', side_effect=respond):
+        assert llm.compose('Synthetic benchmark question') == 'complete'
+    record = json.loads((tmp_path / 'calls.jsonl').read_text())
+    assert record['providerResponses'][0]['usage']['completion_tokens'] == 20
+    assert record['providerResponses'][0]['usage']['opencode']['allowance'] == .000005
+    assert 'test-only-key' not in json.dumps(record)

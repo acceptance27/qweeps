@@ -108,8 +108,21 @@ def audit_scene(scene, collision_threshold: float = 0.32,
     if duration <= 0:
         return [{"code": "empty-scene", "detail": "scene has no duration"}]
 
+    cue_ids = {c.get('id', '') for c in getattr(scene, 'cues', [])}
+    protect_caption = any(i.endswith('-setup') for i in cue_ids) and any(i.endswith('-result') for i in cue_ids)
+    caption_findings = set()
     for t in _sample_times(scene):
         texts = _visible_texts(scene, t)
+        if protect_caption:
+            frame = getattr(scene, 'frame', None)
+            center_y = float(frame.get_center()[1]) if frame is not None else 0.0
+            height = float(frame.get_height()) if frame is not None else 8.0
+            for _, text, box in texts:
+                bottom = (box[1] - center_y) * 8 / max(.001, height)
+                if bottom < -2.6 and text not in caption_findings:
+                    caption_findings.add(text)
+                    findings.append({'code': 'subtitle-overlap', 'time': round(t, 2),
+                        'detail': f"{text!r} enters the player subtitle region; move its entire bounds above camera y=-2.6."})
         active = _active_transform_ids(scene, t)
         for i, (id_a, text_a, box_a) in enumerate(texts):
             for id_b, text_b, box_b in texts[i + 1:]:
@@ -134,15 +147,15 @@ def audit_scene(scene, collision_threshold: float = 0.32,
                     break
 
     # A duplicated top title is almost always the scene plus the lesson HUD.
-    templates = [text for _id, text, box in _visible_texts(scene, min(0.5, duration))
+    templates = [(text, box) for _id, text, box in _visible_texts(scene, min(0.5, duration))
                  if box[1] > 2.0]
-    seen = {}
-    for text in templates:
-        seen[text] = seen.get(text, 0) + 1
-    for text, count in seen.items():
-        if count > 1:
+    for index, (text, box) in enumerate(templates):
+        # Separate input cards may legitimately repeat a quantity such as zero.
+        # A duplicate heading is the same text occupying the same reading area.
+        if any(other == text and _overlap(box, other_box) >= collision_threshold
+               for other, other_box in templates[index + 1:]):
             findings.append({"code": "duplicate-title", "time": 0.5,
-                             "detail": f"{text!r} appears {count} times near the top"})
+                             "detail": f"{text!r} is drawn twice in the same top region"})
 
     # Each beat must actually change. First require a non-wait animation in
     # the beat, then compare several frames so a slow crossfade is not called

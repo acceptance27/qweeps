@@ -87,7 +87,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
   const [opencodeKeyInput, setOpencodeKeyInput] = useState<string>('');
   const [showOrKey, setShowOrKey] = useState<boolean>(false);
   const [showOcKey, setShowOcKey] = useState<boolean>(false);
-  const [showGuide, setShowGuide] = useState<boolean>(true);
+  const [showGuide, setShowGuide] = useState<boolean>(false);
 
   // Fetch settings on open
   useEffect(() => {
@@ -397,7 +397,8 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
           </button>
         </div>
 
-        {/* Global Preset Banner */}
+        <div className="settings-modal-body">
+        {/* Presets scroll with the settings, leaving the controls usable on short screens. */}
         <div className="settings-preset-banner">
           <div className="settings-preset-info">
             <div className="settings-preset-badge">⚡ Quick Presets</div>
@@ -428,8 +429,6 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
           </div>
         </div>
 
-        {/* Body Content (No redundant Nav Bar - clean, colorful, continuous scroll) */}
-        <div className="settings-modal-body">
           {loading ? (
             <div className="settings-modal-loading">
               <RefreshCw className="animate-spin" size={24} />
@@ -898,7 +897,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                 <Check size={14} /> {successMsg}
               </span>
             ) : (
-              <span className="text-slate-400">Settings persist in ~/.config/qweeps</span>
+              <span className="text-slate-400">Settings are saved on this device</span>
             )}
           </div>
           <div className="settings-footer-actions">
@@ -912,7 +911,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
               disabled={saving || loading}
             >
               <Check size={16} />
-              <span>{saving ? 'Saving…' : 'Save & Apply Settings'}</span>
+              <span>{saving ? 'Saving…' : 'Save settings'}</span>
             </button>
           </div>
         </div>

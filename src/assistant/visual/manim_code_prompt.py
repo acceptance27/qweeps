@@ -112,3 +112,27 @@ def manim_code_generation_prompt(detail: str = "medium") -> str:
 
 # Backwards-compatible constant used by the video generation route.
 MANIM_CODE_GENERATION_PROMPT = manim_code_generation_prompt("medium")
+
+
+def lesson_manim_code_generation_prompt() -> str:
+    """Lesson timing comes from each inference, not a fixed short-video budget."""
+    base = _BASE.replace("Reserve the top 0.6 units for a title and keep 0.4 units of margin.",
+                         "Keep 0.4 units of margin.")
+    return base + (
+        "\n## QWEEPS lesson contract\n"
+        "The user prompt specifies the exact native beat subset and a minimum time per beat. "
+        "The total duration follows those individual beat budgets. Do not compress many "
+        "different inferences into a short montage. No scene title or chapter banners: "
+        "the player supplies those.\n"
+        "Preserve the worked example, numerical values, object identities and encodings "
+        "across beats. Show the actual calculation/construction that warrants each insight. "
+        "Anonymous boxes, scalar bars standing in for vectors, unexplained arrows and "
+        "labels naming an operation do not demonstrate it.\n"
+        "Use Text labels at least 26pt, clearly labelled quantities and readable geometry. "
+        "Keep every teaching label's complete bounds above y=-2.6 in camera coordinates; "
+        "the player overlays transparent subtitles below that safe region. "
+        "Finish the construction before a settled reading hold of at least 2 seconds. "
+        "Retain useful context across beats; do not clear and redraw the same generic cards. "
+        "Every self.play needs an explicit run_time. Use self.wait for genuine reading time. "
+        "Do not add a global empty frame or decorative title that shrinks the teaching geometry."
+    )

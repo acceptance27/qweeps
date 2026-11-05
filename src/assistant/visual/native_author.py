@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 
 from .alignment import phrase_range
-from .manim_code_prompt import manim_code_generation_prompt
+from .manim_code_prompt import manim_code_generation_prompt, lesson_manim_code_generation_prompt
 from .native_scenes import scene_id as make_scene_id, write_scene
 from .plan import PlanError
 from .visual_contract import contract_prompt
@@ -50,6 +50,62 @@ def native_beats_for(story: dict, mode: str = "per_beat") -> list[str]:
     return choose_native_beats(story)
 
 
+def native_cue_contract(beat: dict) -> list[dict]:
+    """Semantic markers connect real native actions to later measured speech."""
+    return [
+        {'id': f"{beat['id']}-setup", 'phase': 'setup', 'title': beat.get('title') or beat['id'],
+         'body': beat.get('question') or beat.get('title') or beat['id']},
+        {'id': f"{beat['id']}-operation", 'phase': 'operation', 'title': 'Visible reasoning',
+         'body': beat.get('visibleOperation') or beat.get('question') or ''},
+        {'id': f"{beat['id']}-result", 'phase': 'result', 'title': 'Result',
+         'body': beat.get('insight') or ''},
+    ]
+
+
+def native_cue_findings(story: dict, compiled: dict) -> list[dict]:
+    windows = {b['id']: b for b in compiled.get('beats') or []}
+    cues = compiled.get('cues') or []
+    findings = []
+    for beat in story.get('beats') or []:
+        window = windows.get(beat['id'])
+        budget = minimum_native_seconds(beat)
+        if window and window['end'] - window['start'] < budget - .1:
+            findings.append({'code': 'native-reading-time', 'beat': beat['id'],
+                'detail': f"Native beat '{beat['id']}' is too fast to teach; extend it to at least {budget} seconds."})
+    for beat_id, contract in (story.get('nativeCuePlan') or {}).items():
+        window = windows.get(beat_id)
+        if not window:
+            continue
+        positions = []
+        for cue in contract:
+            matches = [c for c in cues if c.get('id') == cue['id']]
+            if len(matches) != 1 or not window['start'] <= matches[0]['time'] < window['end']:
+                findings.append({'code': 'native-cue-coverage', 'beat': beat_id,
+                    'detail': f"Call self.cue({cue['id']!r}, relevant_mobject) exactly once inside its beat."})
+            else:
+                positions.append(matches[0]['time'])
+        if len(positions) == len(contract):
+            if positions[0] - window['start'] > .1:
+                findings.append({'code': 'native-setup-cue', 'beat': beat_id,
+                    'detail': 'Call the setup cue immediately at the beat boundary, before its transition/construction.'})
+            if any(b - a < .25 for a, b in zip(positions, positions[1:])):
+                findings.append({'code': 'native-cue-order', 'beat': beat_id,
+                    'detail': 'Place setup, operation and result cues at their actual distinct scene moments, in order.'})
+            if window['end'] - positions[-1] < 1.5:
+                findings.append({'code': 'native-result-hold', 'beat': beat_id,
+                    'detail': 'Leave at least 1.5 seconds of settled reading after the result cue.'})
+    return findings
+
+
+def minimum_native_seconds(beat: dict) -> float:
+    """Time to follow the explanation and inspect its settled result."""
+    narration = str(beat.get('narration') or beat.get('insight') or '')
+    bridge = str((beat.get('continuity') or {}).get('bridge') or '')
+    words = len(narration.split())
+    bridge_words = 0 if narration.startswith(bridge) else len(bridge.split())
+    return round(max(8.0, min(45.0, (words + bridge_words) / 2.4 + 2)), 1)
+
+
 def build_prompt(story: dict, nodes_by_beat: dict | None = None,
                  contract: dict | None = None) -> str:
     lines = [
@@ -61,6 +117,8 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None,
         f"Lesson: {story.get('title')}",
         f"Question: {story.get('question')}",
         f"Shared representation and encodings: {story.get('representation')}",
+        f"Worked example (preserve its values): {json.dumps(story.get('example'), ensure_ascii=False)}",
+        f"Established neighboring layouts (context only; do not animate these): {json.dumps(story.get('layoutContext', []), ensure_ascii=False)}",
     ]
     if contract:
         lines += contract_prompt(contract)
@@ -72,7 +130,18 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None,
             f'  learner question: {beat.get("question")}',
             f'  insight to make visible: {beat.get("insight")}',
             f'  visible operation: {beat.get("visibleOperation")}',
+            f'  teaching evidence: {json.dumps(beat.get("presentation"), ensure_ascii=False)}',
+            f'  misconception to prevent: {beat.get("safeguard")}',
+            f'  explanation: {beat.get("narration") or beat.get("insight")}',
+            f'  minimum duration: {minimum_native_seconds(beat)} seconds, including >=2 seconds settled reading time',
         ]
+        cue_plan = (story.get('nativeCuePlan') or {}).get(beat['id']) or []
+        if cue_plan:
+            lines.append('  REQUIRED speech synchronization cues: ' + json.dumps(cue_plan, ensure_ascii=False))
+            lines.append('  Call self.cue(id, relevant_mobject_or_group) at setup just before its construction, '
+                         'immediately at the beat boundary before any transition, at operation just before the meaningful change, and at result once the result is visible. '
+                         'Keep their order and at least 1.5 seconds settled reading after the result cue. '
+                         'These names must be exact; they are later anchored to actual spoken words.')
         nodes = nodes_by_beat.get(beat["id"]) or []
         if nodes:
             lines.append("  semantic objects (call self.cue(id) when each first matters): "
@@ -82,9 +151,11 @@ def build_prompt(story: dict, nodes_by_beat: dict | None = None,
         "Make the mechanism legible without narration: label the parts and the change. "
         "Do not draw a beat title, chapter banner or bottom caption inside the scene; "
         "the player supplies the question header and the spoken caption. "
-        "Every beat must show continuous motion, not a static diagram with labels appearing. "
+        "Each beat needs a visible change that demonstrates its inference, followed by settled reading time. "
         "Keep every beat's promised visible operation. Do not add, remove or reorder beats. "
-        "The whole scene should run roughly 30-55 seconds.",
+        "The total runtime is the sum of the per-beat budgets above, not a fixed short-video limit. "
+        "Call the next self.beat before beginning that next beat's transition; retain anchors "
+        "rather than spending a reading hold fading the entire diagram out.",
     ]
     return "\n".join(lines)
 
@@ -170,8 +241,8 @@ def _repair_prompt(prompt: str, source: str, audit: list[dict]) -> str:
         prompt
         + "\n\nYour previous scene compiled but failed the native visual audit:\n"
         + _audit_summary(audit)
-        + "\n\nReturn the complete corrected Python file. Preserve the same beat IDs, "
-          "order and duration. Move, shorten, fade or remove the colliding labels; do not "
+        + "\n\nReturn the complete corrected Python file. Preserve the same beat IDs and order. "
+          "Extend beat duration when reading-time findings require it. Move, shorten, fade or remove the colliding labels; do not "
           "add new beats. Do not leave text on top of another label. Here is the previous file:\n\n"
         + source
     )
@@ -305,16 +376,21 @@ def generate_contract_scene(
 
 def generate_scene(llm, story: dict, interpreter: str, folder: Path,
                    nodes_by_beat: dict | None = None,
-                   contract: dict | None = None, *, reuse: bool = True) -> dict:
+                   contract: dict | None = None, *, reuse: bool = True,
+                 reasoning_effort: str | None = None) -> dict:
+    effort = reasoning_effort or os.environ.get('QWEEPS_NATIVE_REASONING_EFFORT', 'medium')
+    if effort not in {'none', 'low', 'medium', 'high'}:
+        raise PlanError('Native code reasoning effort must be none, low, medium, or high.')
     prompt = build_prompt(story, nodes_by_beat, contract=contract)
-    system = manim_code_generation_prompt("high")
+    system = lesson_manim_code_generation_prompt()
     fingerprint = hashlib.sha256(json.dumps({
-        "prompt": prompt, "system": system,
+        "prompt": prompt, "system": system, "reasoningEffort": effort,
         "provider": getattr(llm, "provider", type(llm).__name__),
         "model": getattr(llm, "visual_model", None) or getattr(llm, "model", None),
     }, sort_keys=True).encode()).hexdigest()
     checkpoint = folder / f"native-source-{fingerprint}.py"
-    timings = {"cacheHit": bool(reuse and checkpoint.is_file()), "seconds": {}}
+    timings = {"cacheHit": bool(reuse and checkpoint.is_file()), "codeReasoningEffort": effort,
+               "repairReasoningEffort": "high", "seconds": {}}
 
     def measured(phase, operation):
         started = time.monotonic()
@@ -328,9 +404,9 @@ def generate_scene(llm, story: dict, interpreter: str, folder: Path,
             except OSError:
                 pass
 
-    def compose(instruction):
+    def compose(instruction, reasoning=effort):
         try:
-            return llm.compose(instruction, system, max_tokens=40000, reasoning_effort="high")
+            return llm.compose(instruction, system, max_tokens=40000, reasoning_effort=reasoning)
         except TypeError:
             return llm.compose(instruction, system)
     # Only successful scenes are checkpointed. Recompile and audit on every retry
@@ -351,19 +427,22 @@ def generate_scene(llm, story: dict, interpreter: str, folder: Path,
         source = clean_code(measured('code_generation', lambda: compose(prompt)))
         source_path.write_text(source)
         compiled = measured('compile_and_audit', lambda: compile_source(interpreter, source_path, folder))
-    audit = compiled.get("audit") or []
+    audit = list(compiled.get("audit") or []) + native_cue_findings(story, compiled)
+    repairs_used = 0
     if audit and os.environ.get("QWEEPS_NATIVE_AUDIT", "1") != "0" \
             and os.environ.get("QWEEPS_NATIVE_REPAIR", "1") != "0":
+        repairs_used += 1
         repair = _repair_prompt(prompt, source, audit)
-        source = clean_code(measured('code_repair', lambda: compose(repair)))
+        source = clean_code(measured('code_repair', lambda: compose(repair, 'high')))
         source_path.write_text(source)
         compiled = measured('compile_and_audit', lambda: compile_source(interpreter, source_path, folder))
-        audit = compiled.get("audit") or []
+        audit = list(compiled.get("audit") or []) + native_cue_findings(story, compiled)
     if audit and os.environ.get("QWEEPS_NATIVE_AUDIT", "1") != "0":
         details = "; ".join(
             f"{item.get('code')} {item.get('detail', '')}".strip()
             for item in audit[:4])
-        raise PlanError("Native scene audit failed after repair: " + details)
+        stage = "after one repair" if repairs_used else "before publication"
+        raise PlanError(f"Native scene audit failed {stage}: " + details)
     cues = compiled.get("cues") or []
     if cues and nodes_by_beat:
         def normalise(value):
@@ -384,8 +463,13 @@ def generate_scene(llm, story: dict, interpreter: str, folder: Path,
     if found != expected:
         raise PlanError(f"Native scene beats do not match the lesson: expected {expected}, got {found}")
     duration = float(compiled.get("duration") or 0)
-    if not 12 <= duration <= 120:
-        raise PlanError("Native scene duration is outside the usable range")
+    if not 8 <= duration <= max(120, 60 * len(expected)):
+        raise PlanError("Native scene duration is outside the per-beat usable range")
+    budgets = {beat['id']: minimum_native_seconds(beat) for beat in story.get('beats') or []}
+    for window in compiled['beats']:
+        if window['end'] - window['start'] < budgets[window['id']] - .1:
+            raise PlanError(f"Native beat '{window['id']}' is too fast to teach: "
+                            f"needs at least {budgets[window['id']]} seconds")
     for beat in compiled["beats"]:
         if beat["end"] <= beat["start"]:
             raise PlanError(f"Native beat '{beat['id']}' has no time window")
@@ -399,6 +483,7 @@ def generate_scene(llm, story: dict, interpreter: str, folder: Path,
         "beats": compiled["beats"],
         "cues": compiled.get("cues") or [],
         "tracks": compiled.get("tracks"),
+        "nativeCuePlan": story.get('nativeCuePlan') or {},
     }
     published = write_scene(source, manifest)
     temporary = folder / f".native-source-{fingerprint}.tmp"
@@ -499,7 +584,6 @@ def assemble(lesson: dict, story: dict, manifest: dict, native_ids: list[str],
              contract: dict | None = None) -> dict:
     by_id = {chapter["id"]: chapter for chapter in lesson.get("chapters") or []}
     windows = {beat["id"]: beat for beat in manifest["beats"]}
-    cue_times = [float(cue.get("time", 0.0)) for cue in manifest.get("cues") or []]
     transitions = {(row.get("from"), row.get("to")): row
                    for row in (contract or {}).get("transitions") or []}
     native = set(native_ids)
@@ -512,15 +596,19 @@ def assemble(lesson: dict, story: dict, manifest: dict, native_ids: list[str],
             raise PlanError(f"Layout direction omitted beat '{beat['id']}'")
         if beat["id"] in native:
             window = windows[beat["id"]]
-            # Start at the first semantic cue, not the scene's duplicated beat
-            # title. The player already shows the chapter header and caption.
-            inside = [t for t in cue_times
-                      if window["start"] + 1e-6 <= t < window["end"] - 0.5]
-            offset = min(inside) if inside else window["start"]
+            # A cue marks when a concept matters, not a disposable pre-roll.
+            # Preserve construction and reading time before the first cue.
+            offset = window["start"]
             duration = round(window["end"] - offset, 2)
             chapter.update(renderer="manimgl", nativeScene=manifest["sceneId"],
                            nativeOffset=round(offset, 3),
                            nativeDuration=round(duration, 3))
+            cue_plan = (manifest.get('nativeCuePlan') or {}).get(beat['id']) or []
+            if cue_plan:
+                times = {cue['id']: cue['time'] for cue in manifest.get('cues') or []}
+                chapter['nativeCueObjects'] = [{**cue, 'nativeTime': times[cue['id']]} for cue in cue_plan]
+                chapter['roles'] = {**chapter.get('roles', {}),
+                    **{cue['id']: f"{cue['title']}: {cue['body']}" for cue in cue_plan}}
         else:
             duration = round(float(chapter.get("targetDuration")
                                    or (chapter.get("end", 10.0) - chapter.get("start", 0.0))), 2)

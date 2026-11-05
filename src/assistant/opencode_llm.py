@@ -51,6 +51,7 @@ class OpenCodeLLM:
         self._session_id = getattr(cfg.llm, "session_id", "") or uuid.uuid4().hex
         self._limits = {}
         self._lock = threading.Lock()
+        self._call_context = threading.local()
 
     def _go_api_key(self) -> str | None:
         if self.provider != "opencode-go" or self.free_only:
@@ -75,6 +76,17 @@ class OpenCodeLLM:
         key = self._go_api_key()
         if not key:
             raise ModelProviderError(f"OpenCode Go API key not found for {model}.")
+        def go_json(*args, **kwargs):
+            data = post_json(*args, **kwargs)
+            responses = getattr(self._call_context, 'responses', None)
+            if responses is not None:
+                responses.append({'reasoningEffort': args[1].get('reasoning_effort'),
+                                  'maxTokens': args[1].get('max_tokens') or (args[1].get('generationConfig') or {}).get('maxOutputTokens'),
+                                  'usage': data.get('usage') or data.get('usageMetadata'),
+                                  'opencode': data.get('opencode'),
+                                  'finishReasons': [c.get('finish_reason') for c in (data.get('choices') or []) if isinstance(c, dict)]})
+            return data
+
         api_model = model.split("/", 1)[1] if "/" in model else model
         sys_prompt = (
             "Return the requested response only. Do not use tools or delegate. "
@@ -82,7 +94,7 @@ class OpenCodeLLM:
         ).strip()
         headers = {
             "Authorization": f"Bearer {key}",
-            "User-Agent": "opencode/1.19.5",
+            "User-Agent": "qweeps-visual/0.2",
             "x-opencode-session": self._session_id,
         }
         try:
@@ -107,7 +119,7 @@ class OpenCodeLLM:
                     "system": sys_prompt,
                     "messages": [{"role": "user", "content": user_content}],
                 }
-                data = post_json(
+                data = go_json(
                     "https://opencode.ai/inference/go/anthropic/v1/messages",
                     payload,
                     headers=headers,
@@ -130,7 +142,7 @@ class OpenCodeLLM:
                         "maxOutputTokens": max_tokens or 9000,
                     },
                 }
-                data = post_json(
+                data = go_json(
                     f"https://opencode.ai/inference/go/google/v1beta/models/{api_model}:generateContent",
                     payload,
                     headers=headers,
@@ -163,7 +175,7 @@ class OpenCodeLLM:
                 else:
                     payload["reasoning_effort"] = "low"
                     payload["provider_options"] = {"thinking": {"type": "disabled"}}
-                data = post_json(
+                data = go_json(
                     "https://opencode.ai/inference/go/openai/v1/chat/completions",
                     payload,
                     headers=headers,
@@ -177,7 +189,7 @@ class OpenCodeLLM:
                         payload["reasoning_effort"] = effort
                     else:
                         payload["reasoning_effort"] = "low"
-                    data = post_json(
+                    data = go_json(
                         "https://opencode.ai/inference/go/openai/v1/chat/completions",
                         payload,
                         headers=headers,
@@ -229,6 +241,9 @@ class OpenCodeLLM:
                 "out": estimate_tokens(text or ""),
             },
         }
+        responses = getattr(self._call_context, 'responses', [])
+        if responses:
+            record['providerResponses'] = responses
         if error:
             record["error"] = error
         path = Path(os.environ.get("QWEEPS_CALL_LOG") or
@@ -243,6 +258,7 @@ class OpenCodeLLM:
 
     def _run(self, instruction, system="", frames=(), max_tokens=None, reasoning_effort=None):
         started = time.monotonic()
+        self._call_context.responses = []
         text, error = None, ""
         try:
             text = self._run_inner(instruction, system, frames, max_tokens=max_tokens, reasoning_effort=reasoning_effort)

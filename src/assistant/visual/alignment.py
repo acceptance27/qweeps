@@ -48,10 +48,16 @@ def phrase_range(script,phrase,occurrence=1):
     if occurrence>len(matches):raise PlanError(f'Cue phrase is absent from the narration: {phrase[:90]}')
     start=matches[occurrence-1];return start,start+len(needle)
 
+def cue_objects(chapter):
+    if chapter.get('renderer') == 'manimgl' and chapter.get('nativeCueObjects'):
+        return chapter['nativeCueObjects']
+    return (chapter.get('visual') or {}).get('nodes') or []
+
+
 def validate_anchors(raw,chapters):
     if not isinstance(raw,dict) or not isinstance(raw.get('chapters'),list) or [c.get('id') for c in raw['chapters']]!=[c['id'] for c in chapters]:raise PlanError('Keep the actual chapter IDs and order')
     for item,c in zip(raw['chapters'],chapters):
-        anchors=item.get('anchors');ids={n['id'] for n in (c.get('visual') or {}).get('nodes') or []}
+        anchors=item.get('anchors');ids={n['id'] for n in cue_objects(c)}
         if not isinstance(anchors,list) or not 2<=len(anchors)<=30:raise PlanError('Give concise exact-phrase anchors for the scene')
         if not ids<={a.get('target') for a in anchors}:raise PlanError('Every object needs a spoken or explicitly grouped context anchor')
         if not {'context','takeaway'}<={a.get('target') for a in anchors}:raise PlanError('Anchor the introduction and takeaway too')
@@ -59,6 +65,11 @@ def validate_anchors(raw,chapters):
             if a.get('target') not in ids|{'context','takeaway'} or not isinstance(a.get('phrase'),str):raise PlanError('Cue target must be a real scene object')
             if type(a.get('attention',True)) is not bool:raise PlanError('Cue attention must be boolean')
             phrase_range(c['narration'],a['phrase'],a.get('occurrence',1))
+        if c.get('renderer') == 'manimgl' and c.get('nativeCueObjects'):
+            positions = [min(phrase_range(c['narration'], a['phrase'], a.get('occurrence', 1))[0]
+                             for a in anchors if a['target'] == obj['id']) for obj in cue_objects(c)]
+            if any(right <= left for left, right in zip(positions, positions[1:])):
+                raise PlanError('Native actions need distinct spoken anchors in the same order as the scene; no guessed cue timing.')
     return raw['chapters']
 
 def detect_language(text):

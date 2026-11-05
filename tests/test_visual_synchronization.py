@@ -211,3 +211,91 @@ def test_speech_provider_per_minute_limit_obeys_cooldown_then_resumes(tmp_path):
  with patch('assistant.visual.narration.post_raw',side_effect=[error,b'actual audio']) as request,patch('assistant.visual.narration.time.monotonic',side_effect=lambda:clock[0]),patch('assistant.visual.narration.time.time',side_effect=lambda:clock[0]),patch('assistant.visual.narration.time.sleep',side_effect=sleep):
   assert store._request(engine,{})==b'actual audio'
   assert request.call_count==2 and clock[0]>=103
+
+
+def native_lesson():
+ base=lesson();c=base['chapters'][0]
+ c.update(renderer='manimgl',nativeScene='gen_test',nativeOffset=10,nativeDuration=12,
+          nativeCueObjects=[{'id':i,'title':i,'body':i} for i in ['apple','orange','banana']])
+ base['nativeScenes']={'gen_test':{'cues':[{'id':'apple','time':10},{'id':'orange','time':14},{'id':'banana','time':19}]}}
+ return base
+
+
+def test_native_objects_are_anchored_to_actual_spoken_words_and_keep_initial_holds():
+ from assistant.visual.native_timing import native_time_at
+ base=native_lesson()
+ _,result=assemble_lesson(base,plan()['chapters'],bytes(RATE*2*9),alignment())
+ c=result['chapters'][0]
+ times={cue['target']:cue['start'] for cue in c['narrationCues']}
+ assert native_time_at(c,c['start']+times['apple'])==pytest.approx(10)
+ assert native_time_at(c,c['start']+times['orange'])==pytest.approx(14)
+ assert native_time_at(c,c['start']+times['banana'])==pytest.approx(19)
+ assert native_time_at(c,.6)==pytest.approx(10),'do not animate before the first spoken native action'
+ assert c['nativeMap'][0]['scene']==c['nativeMap'][1]['scene'],'hold points must survive compilation'
+
+
+def test_native_handoff_retains_the_previous_diagram_through_the_spoken_bridge():
+ base=native_lesson();first=copy.deepcopy(lesson()['chapters'][0]);second=base['chapters'][0]
+ second['id']='second';second['continuity']={'from':'fruit','bridge':'Consider fruit. Apple is crisp.'}
+ base['chapters']=[first,second]
+ _,result=assemble_lesson(base,plan()['chapters']*2,bytes(RATE*2*18),full_alignment())
+ first,second=result['chapters']
+ assert second['visualStart']==pytest.approx(.3+9+1.65)
+ assert first['visualEnd']==second['visualStart']>first['end']
+ from assistant.visual.native_timing import native_time_at
+ assert native_time_at(second,second['visualStart']-.2)==10
+ assert native_time_at(second,second['visualStart'])==10
+
+
+def test_native_anchor_validation_uses_native_events_and_rejects_wrong_or_collapsed_order():
+ base=native_lesson();c=base['chapters'][0]
+ c['visual']['nodes']=[{'id':'browser-placeholder-never-drawn-by-native'}]
+ assert validate_anchors(plan(),[c])
+ broken=plan()
+ broken['chapters'][0]['anchors'][2]['phrase']='Banana is soft'
+ with pytest.raises(PlanError,match='distinct spoken anchors'):
+  validate_anchors(broken,[c])
+
+
+def test_native_mapping_refuses_missing_spoken_or_scene_cues():
+ from assistant.visual.native_timing import native_map
+ c=native_lesson()['chapters'][0]
+ c['narrationCues']=[{'target':'apple','start':1}]
+ with pytest.raises(PlanError,match='no measured speech/scene anchor'):
+  native_map(c,[{'id':'apple','time':10}])
+
+
+def test_native_mapping_rejects_extreme_action_compression():
+ from assistant.visual.native_timing import native_map, NativeTimingError
+ c=native_lesson()['chapters'][0]
+ c['narrationCues']=[{'target':'apple','start':1},{'target':'orange','start':1.1},{'target':'banana','start':8}]
+ with pytest.raises(NativeTimingError,match='compress construction'):
+  native_map(c,native_lesson()['nativeScenes']['gen_test']['cues'])
+
+
+def test_native_anchor_repair_reuses_the_recording_and_word_alignment(tmp_path,monkeypatch):
+ from types import SimpleNamespace
+ from unittest.mock import Mock
+ from assistant.visual import synchronization as sync
+ from assistant.visual.native_timing import NativeTimingError
+ base=native_lesson();folder=tmp_path/base['id'];folder.mkdir()
+ audio_folder=tmp_path/'audio';audio_folder.mkdir()
+ (audio_folder/'clip.pcm').write_bytes(bytes(RATE*2*9))
+ narration=SimpleNamespace(folder=audio_folder,signature=lambda:'voice',prepare_lesson=Mock(return_value={'key':'clip','url':'/narration/clip.mp3'}))
+ store=SimpleNamespace(folder=tmp_path,narration=narration,llm=None,_request=lambda j,call:call())
+ j={'lessonId':base['id']}
+ mapper=Mock(side_effect=lambda llm,system,payload,validator,**kwargs:validator(plan()))
+ aligner=Mock(return_value=[alignment()])
+ actual=sync.assemble_lesson;attempts=[]
+ def assemble(*args):
+  attempts.append(1)
+  if len(attempts)==1:raise NativeTimingError('fruit','Action cues would compress construction by more than 6x')
+  return actual(*args)
+ monkeypatch.setattr(sync,'_model_json',mapper);monkeypatch.setattr(sync,'align_recordings',aligner);monkeypatch.setattr(sync,'assemble_lesson',assemble)
+ result=sync.compile_speech(store,j,base)
+ assert result['audioTrack']['clock']=='audio'
+ assert mapper.call_count==2
+ assert 'timingFeedback' in mapper.call_args.args[2]
+ narration.prepare_lesson.assert_called_once()
+ aligner.assert_called_once()
+ assert list(folder.glob('native-anchor-rejected-*.json'))

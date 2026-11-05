@@ -2,7 +2,7 @@ import {useCompactLayout} from './useCompactLayout';
 import PixelQ from '../components/PixelQ';
 import LearningWorld from './LearningWorld';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Brain, Clock3, FileUp, Sliders, Upload, Zap } from 'lucide-react';
+import { ArrowLeft, BookOpen, Brain, Clock3, FileUp, Sliders, Upload } from 'lucide-react';
 import { api } from '../learning/types';
 import LiveLessonPlayer from './LiveLessonPlayer';
 import LivePreparation from './LivePreparation';
@@ -142,6 +142,7 @@ export default function LiveLessonLoader() {
   };
   const [question, setQuestion] = useState(params.get('topic') || '');
   const [native, setNative] = useState(params.get('native') === '1');
+  const [nativeReady, setNativeReady] = useState(false);
   const [generateQuiz, setGenerateQuiz] = useState(params.get('quiz') === '1');
   const [openQuizOnLoad, setOpenQuizOnLoad] = useState(params.get('quiz') === '1');
   const [nativeMode, setNativeMode] = useState<'per_beat' | 'continuous'>(
@@ -428,6 +429,8 @@ export default function LiveLessonLoader() {
     void api('health')
       .then(h => {
         syncAvailable.current = h.tts === 'openrouter';
+        setNativeReady(Boolean(h.nativeManimReady));
+        if (!h.nativeManimReady) setNative(false);
         if (params.get('quiz_only') === '1') {
           const qLessonId = params.get('lesson');
           const qDocId = params.get('doc');
@@ -659,17 +662,6 @@ export default function LiveLessonLoader() {
               </div>
 
               <div className="live-generated-lessons-scroll">
-                {!compact&&<a
-                  href="/?stream=1"
-                  className="live-generated-lesson-item variant-quiz"
-                  title="Instant parallel chapter streaming demo"
-                >
-                  <span className="live-generated-lesson-text">
-                    <Zap size={17} aria-hidden="true" /><span><strong>Fast chapter stream</strong><small>Parallel chapter preview</small></span>
-                  </span>
-                  <span className="live-generated-lesson-arrow">→</span>
-                </a>}
-
                 {sortedLessons.length === 0 ? (
                   <div className="live-generated-lessons-empty">
                     Loading lesson catalog…
@@ -866,9 +858,12 @@ export default function LiveLessonLoader() {
                   <input
                     type="checkbox"
                     checked={native}
+                    disabled={!nativeReady}
                     onChange={e => setNative(e.target.checked)}
                   />{' '}
-                  Include native ManimGL beats
+                  <span title={nativeReady ? 'Adds AI-written Python scenes, compilation and possible repairs. Browser animations already work without this.' : 'Native Manim needs the desktop renderer; browser animations remain available.'}>
+                    Add native Manim {nativeReady ? '(slower)' : '(desktop renderer required)'}
+                  </span>
                 </label>
                 <label
                   style={{

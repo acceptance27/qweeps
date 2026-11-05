@@ -1312,3 +1312,64 @@ def test_phase_timing_is_saved_even_when_generation_fails(library, tmp_path):
     assert recorded['native'] is True
     assert recorded['seconds']['native_scene'] >= 0
     assert store.status('job')['timings'] == recorded['seconds']
+
+
+def test_native_compilation_cannot_bypass_actual_frame_review(tmp_path, library, monkeypatch):
+    from assistant.visual import native_author, native_review
+    lib, _ = library
+    model = Model()
+    store = BrowserLessonStore(model, STUDIO, tmp_path / 'lessons', lib)
+    monkeypatch.setattr(store, '_native_interpreter', lambda: 'python')
+    monkeypatch.setattr(native_author, 'condense_narration', lambda llm, candidate, *a: candidate)
+    generated = []
+    def generate(llm, story, interpreter, folder, **kwargs):
+        generated.append([b['id'] for b in story['beats']])
+        return {'sceneId': 'gen_test', 'source': str(folder / 'scene.py'), 'duration': 30,
+                'beats': [{'id': 'protection', 'start': 0, 'end': 30}], 'cues': []}
+    monkeypatch.setattr(native_author, 'generate_scene', generate)
+    job = store.start({'question': 'Teach me Module 12', 'native': True, 'nativeMode': 'per_beat'})
+    j = await_state(store, job['id'], {'awaiting_review', 'failed'})
+    assert j['status'] == 'awaiting_review', j
+    assert generated == [['protection']]  # Do not generate the unused layout beat in Python.
+    assert not (store.folder / j['lessonId'] / 'lesson.json').exists()
+    image = image_bytes()
+    captured = []
+    def capture(studio, candidate):
+        captured.append(candidate['id'])
+        return [image]*3, [{'chapter': 0, 'position': p, 'time': n, 'renderer': 'manimgl'}
+                          for n,p in enumerate(['early', 'middle', 'finished'])]
+    monkeypatch.setattr(native_review, 'capture_native_frames', capture)
+    browser_frames = [f for f in frames(j['candidate']) if f['chapter'] == 1]
+    store.review(j['id'], {'revision': 1, 'frames': browser_frames})
+    ready = await_state(store, j['id'], {'ready', 'failed'})
+    assert ready['status'] == 'ready', ready
+    assert captured == [j['lessonId']]
+    lesson = store.lesson(j['lessonId'])
+    assert lesson['sourceReview']['approved'] and lesson['narrativeReview']['approved']
+    assert lesson['review']['method'] == 'actual-native-and-browser-frames-and-vision-model'
+    assert len(model.image_calls[0]) == 5  # Two SVG samples plus three real native samples.
+
+
+def test_native_rejection_preserves_published_lesson(tmp_path, library, monkeypatch):
+    from assistant.visual import native_review
+    lib, d = library
+    model = Model(approve=False)
+    store = BrowserLessonStore(model, STUDIO, tmp_path / 'lessons', lib)
+    story, raw = sample()
+    candidate = validate_lesson(raw, d, store.icons)
+    lesson_id = 'a' * 32
+    candidate.update(id=lesson_id, nativeScenes={'gen_test': {'source': 'unused'}})
+    candidate['chapters'][0].update(renderer='manimgl', nativeScene='gen_test')
+    folder = store.folder / lesson_id
+    folder.mkdir()
+    previous = '{"title":"Previously reviewed lesson"}'
+    (folder / 'lesson.json').write_text(previous)
+    job = {'id': 'job', 'lessonId': lesson_id, 'candidate': candidate, 'storyboard': story,
+           'document': d, 'revision': 1, 'native': True, 'status': 'reviewing', 'stage': 'Review'}
+    store.jobs['job'] = job
+    monkeypatch.setattr(native_review, 'capture_native_frames', lambda *a: ([image_bytes()],
+        [{'chapter': 0, 'position': 'finished', 'time': 1, 'renderer': 'manimgl'}]))
+    store._review_worker(job, [image_bytes()], [{'chapter': 1, 'position': 'finished', 'time': 1}])
+    assert job['status'] == 'failed'
+    assert 'actual-frame teaching review' in job['error']
+    assert (folder / 'lesson.json').read_text() == previous

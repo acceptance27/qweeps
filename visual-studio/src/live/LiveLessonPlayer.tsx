@@ -1,3 +1,4 @@
+import {nativeSceneTime} from './nativeTiming';
 import PixelQ from '../components/PixelQ';
 import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ArrowLeft,ArrowUpRight,Brain,ChevronLeft,ChevronRight,Focus,MessageCircle,Menu,Pause,Play,Send,Sparkles,Volume2,VolumeX,X,RotateCcw,GitBranch} from 'lucide-react';
@@ -54,49 +55,7 @@ function EnhancedLiveLessonPlayer({initialLesson,initialTime=0,initialOpenQuiz=f
  const index=visualBeatIndex(manifest.chapters,state.time);
  const chapter=manifest.chapters[state.time>=manifest.duration?last:index];
  useLayoutEffect(()=>{const activeKey=quizBeatActive?'__quiz_beat__':chapter.id;if(!quizBeatActive&&chapter.transition?.type==='none'){stageKey.current=activeKey;setStageFading(false);return;}if(stageKey.current===activeKey)return;stageKey.current=activeKey;setStageFading(true);const timer=setTimeout(()=>setStageFading(false),70);return()=>clearTimeout(timer);},[chapter.id,chapter.transition?.type,quizBeatActive]);
- const nativeTime=(c:LiveChapter,t:number)=>{
-   if(c.renderer!=='manimgl')return t;
-   if(c.nativeMap?.length){
-     const p=Math.max(0,Math.min(c.end-c.start,t-c.start));
-     const map=c.nativeMap;
-     let lo=map[0],hi=map[map.length-1];
-     if(p<=lo.at)return lo.scene;
-     if(p>=hi.at)return hi.scene;
-     for(let i=0;i<map.length-1;i++)if(p>=map[i].at&&p<=map[i+1].at){lo=map[i];hi=map[i+1];break;}
-     const f=hi.at===lo.at?0:(p-lo.at)/(hi.at-lo.at);
-     return lo.scene+f*(hi.scene-lo.scene);
-   }
-   const offset=c.nativeOffset??c.start;
-   const duration=c.nativeDuration??(c.end-c.start);
-   const span=Math.max(.01,c.end-c.start);
-   const points=[{x:0,y:offset}];
-   const cues=(manifest.nativeScenes?.[c.nativeScene||'']?.cues)||[];
-   const anchors=new Map<string,{x:number;y:number}>();
-   for(const q of c.narrationCues||[]){
-     const hit=cues.find(x=>x.id===q.target);
-     if(!hit)continue;
-     const x=Math.max(0,Math.min(span,q.start));
-     const y=Math.max(offset,Math.min(offset+duration,hit.time));
-     const previous=anchors.get(hit.id);
-     if(!previous||x<previous.x)anchors.set(hit.id,{x,y});
-   }
-   for(const point of anchors.values())points.push(point);
-   points.push({x:span,y:offset+duration});
-   points.sort((a,b)=>a.x-b.x||a.y-b.y);
-   for(let i=1;i<points.length;i++)if(points[i].y<points[i-1].y)points[i].y=points[i-1].y;
-   const unique:typeof points=[];
-   for(const point of points){
-     const last=unique[unique.length-1];
-     if(last&&point.x===last.x)continue;
-     if(!last||point.y>last.y||point.x===0)unique.push(point);
-   }
-   points.length=0;points.push(...unique);
-   const p=Math.max(0,Math.min(span,t-c.start));
-   let lo=points[0],hi=points[points.length-1];
-   for(let i=0;i<points.length-1;i++)if(p>=points[i].x&&p<=points[i+1].x){lo=points[i];hi=points[i+1];break;}
-   const f=hi.x===lo.x?0:(p-lo.x)/(hi.x-lo.x);
-   return lo.y+f*(hi.y-lo.y);
- };
+ const nativeTime=(c:LiveChapter,t:number)=>nativeSceneTime(c,t,manifest.nativeScenes?.[c.nativeScene||'']?.cues||[]);
  const selectedDetails=state.selected.map(id=>{const node=chapter.visual?.nodes.find(n=>n.id===id);if(node)return node;const desc=chapter.roles?.[id];return{id,title:desc?desc.split(':')[0]:id.replaceAll('-',' '),body:desc?(desc.split(':').slice(1).join(':').trim()||desc):`${chapter.title} — ${chapter.insight}`};});
  const choice=chapter.visual?.experiment?.choices[state.experiments?.[chapter.id]??-1];
  const caption=(narrationIndex===index?choice?.explanation:undefined)||((narratingChapter.narrationCues||!generic)?[...narratingChapter.cues].reverse().find(c=>state.time-narratingChapter.start>=c.at)?.text:(state.time-narratingChapter.start>=generatedPacing(narratingChapter).conclusionAt?narratingChapter.visual!.takeaway:narratingChapter.question))||narratingChapter.question;

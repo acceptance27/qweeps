@@ -47,3 +47,33 @@ completed-section caches to the feedback plus the starting directed section.
 Identical requests can reuse their checkpoint; changed feedback or corrected
 source facts must reach the model. Test both reuse and invalidation, without
 editing a generated lesson to make the test appear successful.
+
+
+## Native lesson generation and measured speech
+
+A 20-beat native lesson passed mechanical checks while its displayed native beats
+lasted about two seconds, showed generic shapes instead of the promised reasoning,
+and contained no semantic cues for the speech mapper. Do not use the short-video
+30–55 second budget for a multi-beat lesson, or equate compilation with teaching
+approval. Generate only the native beat subset the player will actually use while
+retaining the full lesson sequence and worked example. Keep the complete target
+beat presentation contract; a global progression summary need not repeat every
+other beat's full presentation rationale in every Director request.
+
+For narrated native lessons, require real setup/operation/result markers in the
+compiled scene. Place them at distinct actual action times, bind meaningful scene
+groups, and pass their semantic descriptions to the existing exact-phrase/word
+alignment harness. Keep the previous diagram through the measured spoken bridge.
+Preserve hold points and one deterministic audio-to-scene map for play, pause,
+forward seek and arbitrary rewind. Missing or inverted native anchors must stop
+new publication, not silently fall back to linear animation stretching. Saved
+legacy lessons may still load; absent cues require regeneration to gain this check.
+
+Inspect actual native frames on the final measured audio clock, plus browser SVG
+frames, before publishing the hybrid. Keep new native teaching-label bounds above
+camera y=-2.6 so the player’s transparent subtitles cannot cover necessary labels. A native factual/visual rejection must retain
+the previously published lesson. A caption-free diagnostic must identify the
+relationship the construction establishes, with readable quantities and sufficient
+settled reading time. Record failed frames and specific revisions. Probe valid
+ManimCE output against the actual compatibility runtime before blaming a model;
+verify compatibility fixes without hand-editing generated benchmark sources.

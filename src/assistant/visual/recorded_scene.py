@@ -272,6 +272,23 @@ class VectorBrace(VMobject):
 Brace = VectorBrace
 
 
+_NativeArrow = Arrow
+
+
+class Arrow(_NativeArrow):
+    """Preserve CE's explicit tip length on the native filled-arrow geometry."""
+
+    def __init__(self, *args, tip_length=None, **kwargs):
+        self.ce_tip_length = None if tip_length is None else float(tip_length)
+        super().__init__(*args, **kwargs)
+
+    def get_key_dimensions(self, length):
+        width, tip_width, tip_length = super().get_key_dimensions(length)
+        if self.ce_tip_length is not None:
+            tip_length = min(self.ce_tip_length, max(0, length) * self.max_tip_length_to_length_ratio)
+        return width, tip_width, tip_length
+
+
 class DoubleArrow(VMobject):
     """Bidirectional arrow with tips at both endpoints, matching ManimCE."""
 
@@ -787,6 +804,12 @@ def _normalize_axis_config(config):
     if not isinstance(config, dict):
         return config
     config = dict(config)
+    tip = dict(config.get("tip_config") or {})
+    for ce_name, native_name in [('tip_width', 'width'), ('tip_height', 'length'), ('tip_length', 'length')]:
+        if ce_name in config:
+            tip.setdefault(native_name, config.pop(ce_name))
+    if tip:
+        config['tip_config'] = tip
     size = config.pop("font_size", None)
     if size is not None:
         numbers = dict(config.get("decimal_number_config") or {})
