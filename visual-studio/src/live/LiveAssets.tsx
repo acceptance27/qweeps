@@ -1,4 +1,3 @@
-import React from 'react';
 import {Copyright,FileCode2,LockKeyhole,BadgeCheck,Scale,BookOpen,Code2,Package,AppWindow,GitBranch,ShieldCheck,FileText,KeyRound,Lightbulb,HandHelping,Building2,UserRound,Search,ListChecks,ClipboardCheck,CircleHelp,Network,Database,Brain,Cpu,MapPin,Globe2,Wrench,Route,TriangleAlert,Check,X,GraduationCap,BriefcaseBusiness,FolderOpen,Eye,Heart,Coins,Bomb,Flame,FlaskConical,Atom,Zap,Sparkles,Skull,Factory,Grid3x3,SlidersHorizontal,Layers,Crown,Compass,Binary,Workflow,ShieldAlert,LockOpen,type LucideIcon} from 'lucide-react';
 import {SourcedEye,SourcedQuill} from './SourcedArtwork';
 

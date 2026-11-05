@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo} from 'react';
+import {useEffect,useMemo} from 'react';
 import SceneStage from './SceneStage';
 import {compileSceneProgram} from './sceneProgram';
 import {clamp,type LiveSnapshot} from './geometry';

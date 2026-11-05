@@ -4,7 +4,9 @@
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
     "module": "ESNext",
-    "types": ["vite/client"],
+    "types": [
+      "vite/client"
+    ],
     "lib": [
       "ES2022",
       "DOM",
@@ -17,13 +19,21 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
-      "@qweeps/hyperframes-adapter": ["./node_modules/@hyperframes/core/dist/adapters/gsap.js"],
+      "@qweeps/hyperframes-adapter": [
+        "../node_modules/@hyperframes/core/dist/adapters/gsap.js",
+        "./node_modules/@hyperframes/core/dist/adapters/gsap.js"
+      ],
       "@/*": [
         "./*"
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
-  "exclude": ["dist"]
+  "exclude": [
+    "dist",
+    "**/*.local/**"
+  ]
 }

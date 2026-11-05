@@ -1,4 +1,3 @@
-import React from 'react';
 export function EyeStudy(){return <g fill="none" strokeLinecap="round" strokeLinejoin="round">
  <path d="M20 110C64 36 161 34 220 110C164 177 67 180 20 110Z" stroke="#87cbd8" strokeWidth="2.4"/>
  <path d="M21 110Q65 82 85 110Q66 139 21 110" fill="#12343f" stroke="#87cbd8" strokeWidth="1.5"/>

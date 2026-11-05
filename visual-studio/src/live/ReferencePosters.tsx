@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import SceneStage from './SceneStage';
 import {compileSceneProgram} from './sceneProgram';
 import {GRAMMAR_LABELS,POSTER_ORDER,REFERENCE_POSTERS} from './referencePosters';

@@ -19,7 +19,10 @@ from .plan import PlanError
 ROOT = Path(__file__).resolve().parents[3]
 STUDIO = ROOT / "visual-studio"
 FONT = STUDIO / "public/live/teaching-serif.ttf"
-GSAP = STUDIO / "node_modules/gsap/dist/gsap.min.js"
+GSAP = next((path for path in (
+    ROOT / "node_modules/gsap/dist/gsap.min.js",
+    STUDIO / "node_modules/gsap/dist/gsap.min.js",
+) if path.is_file()), ROOT / "node_modules/gsap/dist/gsap.min.js")
 HYPERFRAMES = "hyperframes@0.8.223"
 MAX_SVG = 2_000_000
 SECTIONS = ("lint", "runtime", "layout", "contrast", "motion", "craft", "audio")

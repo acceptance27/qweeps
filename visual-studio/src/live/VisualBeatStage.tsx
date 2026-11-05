@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import GeneratedStage from './GeneratedStage';
 import {initialLiveSnapshot} from './geometry';
 import type {LiveChapter,LiveLesson} from './lessonTypes';

@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import {useEffect, useRef} from 'react';
 
 /** A quiet pixel landscape for the learning workspace, painted at a low resolution. */
 export default function LearningWorld() {

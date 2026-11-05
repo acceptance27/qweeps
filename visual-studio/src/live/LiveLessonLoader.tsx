@@ -131,15 +131,6 @@ export default function LiveLessonLoader() {
     .filter(Boolean);
   const [selectedDocs, setSelectedDocs] = useState<string[]>(initialDocs);
   const selected = selectedDocs.join(',');
-  const setSelected = (val: string | string[]) => {
-    if (Array.isArray(val)) {
-      setSelectedDocs(val);
-    } else if (!val) {
-      setSelectedDocs([]);
-    } else {
-      setSelectedDocs(val.split(',').map(s => s.trim()).filter(Boolean));
-    }
-  };
   const [question, setQuestion] = useState(params.get('topic') || '');
   const [native, setNative] = useState(params.get('native') === '1');
   const [nativeReady, setNativeReady] = useState(false);
@@ -508,10 +499,6 @@ export default function LiveLessonLoader() {
     } finally {
       setBusy(false);
     }
-  }
-
-  async function upload(file: File) {
-    return uploadMultiple([file]);
   }
 
   const ready = (value: LiveLesson, quizMode = false) => {

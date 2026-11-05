@@ -1,4 +1,4 @@
-import React,{useMemo,useState} from 'react';
+import {useMemo,useState} from 'react';
 import SceneStage from './SceneStage';
 import {REFERENCE_PROGRAM} from './referenceProgram';
 import {compileSceneProgram} from './sceneProgram';

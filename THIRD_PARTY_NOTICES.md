@@ -117,12 +117,6 @@ noncommercial license applies to QWEEPS-authored material, not to GSAP.
   held by Lucide Contributors 2025.
 - **Full text:** [LICENSES/ISC.txt](LICENSES/ISC.txt)
 
-### motion
-
-- **License:** MIT
-- **Copyright:** Copyright (c) 2024 Motion B.V.
-- **Full text:** [LICENSES/MIT.txt](LICENSES/MIT.txt)
-
 ### opentype.js
 
 - **License:** MIT
@@ -139,27 +133,13 @@ checkout. The full Apache-2.0 text is in
 
 ### HyperFrames
 
-- **Packages:** `@hyperframes/core`, `@hyperframes/player` and related packages
+- **Packages:** `@hyperframes/core` and related packages
 - **License:** Apache-2.0
 - **Full text:** [LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt)
 
-The current source uses HyperFrames primarily through type-only imports. If a
-build includes HyperFrames code, retain its Apache-2.0 license and any NOTICE
-content supplied by the package.
-
-### `@google/genai`
-
-- **License:** Apache-2.0
-- **Full text:** [LICENSES/Apache-2.0.txt](LICENSES/Apache-2.0.txt)
-
-This package is declared as a dependency but is not necessarily part of the
-browser bundle. Include this notice if a server or build output distributes it.
-
-### Server-side JavaScript dependencies
-
-`express` and `dotenv` are MIT-licensed. If a server bundle or container image is
-distributed, retain their copyright and permission notices together with the
-other MIT notices in [LICENSES/MIT.txt](LICENSES/MIT.txt).
+The current source uses HyperFrames' browser adapter and types. Retain its
+Apache-2.0 license and any NOTICE content supplied by the package when
+distributing that code. The Python backend does not require an Express server.
 
 ## Files with a different notice
 

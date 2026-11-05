@@ -81,7 +81,6 @@ export function compileArtworkIR(scene:IRScene,options:{artViewportPx:number;fon
   const lines:TextLine[]=m.lines.map((line,index)=>({text:line.text,x:-line.width/2,y:m.total/2-m.ascent-index*m.lineHeight,size:node.size}));
   return{node,box:{x1:-m.width/2,y1:-m.total/2,x2:m.width/2,y2:m.total/2},lines,hasText:true};
  }
- function place(item:Item,next:Box){const [cx,cy]=center(item.box);const [ncx,ncy]=center(next);const dx=ncx-cx,dy=ncy-cy;item.box=next;if(item.children)for(const child of item.children)place(child,translate(child.box,dx,dy));}
  function move(item:Item,dx:number,dy:number){item.box=translate(item.box,dx,dy);if(item.children)for(const child of item.children)move(child,dx,dy);item.lines?.forEach(line=>{line.x+=dx;line.y+=dy});if(item.arrow){item.arrow.from=[item.arrow.from[0]+dx,item.arrow.from[1]+dy];item.arrow.to=[item.arrow.to[0]+dx,item.arrow.to[1]+dy];if(item.arrow.label){item.arrow.label.x+=dx;item.arrow.label.y+=dy;}}}
 
  for(const node of scene.objects){
@@ -102,7 +101,8 @@ export function compileArtworkIR(scene:IRScene,options:{artViewportPx:number;fon
   }else if(node.kind==='arrow'){
    item.box={x1:0,y1:0,x2:0,y2:0};item.hasText=!!node.label;
   }else if(node.kind==='number-line'){
-   const m=measure(String(node.max),6);
+   // Measuring also validates the label's minimum rendered text size.
+   measure(String(node.max),6);
    item.box={x1:-node.width/2,y1:-12,x2:node.width/2,y2:14};
    item.hasText=true;
    item.lines=[]; // labels are emitted from the number-line itself
@@ -224,7 +224,7 @@ export function compileArtworkIR(scene:IRScene,options:{artViewportPx:number;fon
   }else if(node.node.kind==='number-line'){
    emitNumberLine(node.node,node.box,artwork,paint);
   }else if(node.node.kind==='bars'){
-   emitBars(node.node,node.box,artwork,paint,measure);
+   emitBars(node.node,node.box,artwork,paint);
   }
  }
  return{artwork,bbox:{x:round(inkBox.x1+dx),y:round(inkBox.y1+dy),width:round(width(inkBox)),height:round(height(inkBox))},findings};
@@ -245,7 +245,7 @@ function emitNumberLine(node:Extract<IRNode,{kind:'number-line'}>,box:Box,out:Re
   out.push({type:'text',x:round(x-4),y:y-7,size:7,fill:paint('gold'),text:fmt(node.value)});
  }
 }
-function emitBars(node:Extract<IRNode,{kind:'bars'}>,box:Box,out:Record<string,unknown>[],paint:(r?:IRRole)=>string,measure:(text:string,size:number)=>unknown){
+function emitBars(node:Extract<IRNode,{kind:'bars'}>,box:Box,out:Record<string,unknown>[],paint:(r?:IRRole)=>string){
  const n=node.values.length,gap=4,w=(width(box)-gap*(n-1))/n,base=box.y1+3,max=Math.max(...node.values.map(Math.abs),1);
  node.values.forEach((value,i)=>{
   const h=Math.max(2,(height(box)-14)*Math.abs(value)/max),x=box.x1+i*(w+gap);

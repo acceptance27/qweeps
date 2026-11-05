@@ -6,7 +6,6 @@ import {
   createInitialQuizState,
   partitionQuizSets,
   getQuizSets,
-  type QuizSet,
   type ActiveCard,
 } from './ReinforcementQuizModal';
 import type { LiveLesson, QuizQuestion } from './lessonTypes';

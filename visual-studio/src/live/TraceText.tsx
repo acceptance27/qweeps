@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {parse,type Font} from 'opentype.js';
 import {clamp} from './geometry';
 let fontPromise:Promise<Font>|null=null;

@@ -1,7 +1,7 @@
 import type {SceneProgram} from './sceneProgram';
 import {REFERENCE_PROGRAM} from './referenceProgram';
 
-const BLUE='#8bd0df',CORAL='#eda994',GOLD='#edca82',GREEN='#9dceb1',PURPLE='#c4b0e2';
+const BLUE='#8bd0df',GOLD='#edca82',GREEN='#9dceb1';
 
 const procedure:SceneProgram={
  title:'From evidence to decision',

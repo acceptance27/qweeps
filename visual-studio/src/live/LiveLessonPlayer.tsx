@@ -1,7 +1,7 @@
 import {nativeSceneTime} from './nativeTiming';
 import PixelQ from '../components/PixelQ';
-import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
-import {ArrowLeft,ArrowUpRight,Brain,ChevronLeft,ChevronRight,Focus,MessageCircle,Menu,Pause,Play,Send,Sparkles,Volume2,VolumeX,X,RotateCcw,GitBranch} from 'lucide-react';
+import {useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {ArrowLeft,ArrowUpRight,Brain,ChevronLeft,ChevronRight,MessageCircle,Menu,Pause,Play,Sparkles,Volume2,VolumeX,X,RotateCcw,GitBranch} from 'lucide-react';
 import rizalManifest from '../../public/lessons/rizal_live.json';
 import {api} from '../learning/types';
 import {NarrationTransport,type VoiceState} from '../learning/NarrationTransport';
@@ -36,7 +36,7 @@ function EnhancedLiveLessonPlayer({initialLesson,initialTime=0,initialOpenQuiz=f
  const[state,setState]=useState(()=>({...initialLiveSnapshot(),time:clamp(initialTime,0,manifest.duration)})),[playing,setPlaying]=useState(false),[ready,setReady]=useState(false);
  const[voice,setVoice]=useState(params.get('muted')!=='1'),[audioState,setAudioState]=useState<VoiceState>({loading:false,playing:false,ready:false}),[panel,setPanel]=useState(false);
  const[session,setSession]=useState<string|null>(null),[status,setStatus]=useState('Connecting to QWEEPS…'),[error,setError]=useState('');
- const[question,setQuestion]=useState(''),[messages,setMessages]=useState<Message[]>([]),[busy,setBusy]=useState(false),[parents,setParents]=useState<Parent[]>([]),[closed,setClosed]=useState(false);
+ const[question,setQuestion]=useState(''),[messages,setMessages]=useState<Message[]>([]),[busy,setBusy]=useState(false),[parents,setParents]=useState<Parent[]>([]);
  const[seekVersion,setSeekVersion]=useState(0),[focusRequest,setFocusRequest]=useState(0),[branchReason,setBranchReason]=useState('');
  const[stageFading,setStageFading]=useState(false);
  const stageKey=useRef('');
@@ -143,16 +143,15 @@ function EnhancedLiveLessonPlayer({initialLesson,initialTime=0,initialOpenQuiz=f
   finally{clearTimeout(timeout);request.current=null;setBusy(false);}
  }
  function returnToParent(){const p=parentRef.current.at(-1);if(!p)return;pause();setManifest(p.lesson);setState(checkpoint(p.snapshot));setParents(old=>old.slice(0,-1));resumeOffset.current=p.audioPosition;setSeekVersion(v=>v+1);setBranchReason('');setStatus('Returned to your saved time, camera, selection and narration position');}
- function focusSelection(){if(!state.selected.length)return;pause();setState(s=>({...s,focus:s.selected[0]}));setFocusRequest(v=>v+1);}
  useEffect(()=>{let active=true;Promise.all([api('session',{}),api('health')]).then(([s,h])=>{if(active){setSession(s.sessionId);setStatus(h.modelReady?`QWEEPS connected · ${h.model}`:'No AI model configured');}}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;request.current?.abort();lessonAudio.current?.dispose();answerAudio.current?.dispose();};},[]);
  useEffect(()=>{if(!session)return;const close=()=>{void fetch('/api/visual/native/close',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:session}),keepalive:true}).catch(()=>{});};window.addEventListener('pagehide',close);return()=>window.removeEventListener('pagehide',close);},[session]);
  useEffect(()=>{if(!session||chapter.renderer==='manimgl')return;const native=manifest.chapters.find(c=>c.renderer==='manimgl'&&c.nativeScene);if(!native)return;const t=(native.nativeOffset??native.start)+.1;void api('native/state',{sessionId:session,state:{lessonId:native.nativeScene,time:t,experiment:{},selected:[],camera:{x:0,y:0,zoom:1}}}).catch(()=>{});},[session,manifest.id,chapter.renderer]);
- useEffect(()=>{if(!session||closed)return;let pending=false;const poll=async()=>{if(pending)return;pending=true;try{
+ useEffect(()=>{if(!session)return;let pending=false;const poll=async()=>{if(pending)return;pending=true;try{
    await api('state',{sessionId:session,context:viewContext()});const result=await api<{commands:any[]}>(`events?sessionId=${session}`);
    for(const event of result.commands){if(event.command==='pause')pause();if(event.command==='resume'&&canStart)setPlaying(true);if(event.command==='next')step(1);if(event.command==='previous')step(-1);if(event.command==='close')close();if(event.command==='branch')void ask('branch',event.question||'Explain the selected detail visually.');if(event.command==='reply'){pause();applyResponse(event.reply,checkpoint(current.current),event.question);}}
   }catch(e){if((e as Error).message.includes('expired')){const replacement=await api('session',{});setSession(replacement.sessionId);}}finally{pending=false;}};
   void poll();const timer=setInterval(poll,900);return()=>clearInterval(timer);
- },[session,closed,voice,busy,manifest.id,canStart]);
+ },[session,voice,busy,manifest.id,canStart]);
  useEffect(()=>{for(const c of manifest.chapters)if(c.audio)lessonAudio.current!.seed(c.narration,c.audio);if(manifest.audioTrack)lessonAudio.current!.seed(manifest.audioTrack.key,manifest.audioTrack.url);},[manifest]);
  useEffect(()=>{if(!voice){lessonAudio.current?.pause();answerAudio.current?.pause();return;}let active=true;lessonAudio.current!.prepare(audioKey).catch(()=>{if(active){setStatus('Narration unavailable · captions remain available');setVoice(false);}});return()=>{active=false;};},[voice,manifest.id,audioKey]);
  useEffect(()=>{if(!voice||manifest.audioTrack)return;for(const next of manifest.chapters.slice(narrationIndex+1,narrationIndex+3))void lessonAudio.current!.prefetch(next.narration).catch(()=>{});},[voice,manifest.id,narratingChapter.id]);
@@ -160,7 +159,7 @@ function EnhancedLiveLessonPlayer({initialLesson,initialTime=0,initialOpenQuiz=f
   answerAudio.current?.pause();const restoredOffset=resumeOffset.current;resumeOffset.current=null;
   void lessonAudio.current!.prepare(audioKey).then(()=>{if(active&&playingRef.current)return lessonAudio.current!.playFrom(restoredOffset??(manifest.audioTrack?current.current.time:Math.max(0,current.current.time-narratingChapter.start-narratingChapter.narrationAt)));}).catch(()=>{if(active){setStatus('Narration unavailable · captions remain available');setVoice(false);}});return()=>{active=false;};
  },[playing,voice,manifest.id,audioKey,cueReached,seekVersion]);
- useEffect(()=>{if(!playing||!ready||closed||busy)return;let previous=performance.now(),id:number;
+ useEffect(()=>{if(!playing||!ready||busy)return;let previous=performance.now(),id:number;
   const tick=(now:number)=>{const dt=Math.min(.08,(now-previous)/1000);previous=now;setState(s=>{
     const finalEnd=Math.min(manifest.duration,manifest.chapters[last]?.end??manifest.duration);
     const limit=s.chapter===null?finalEnd:manifest.chapters[s.chapter].end;
@@ -179,12 +178,11 @@ function EnhancedLiveLessonPlayer({initialLesson,initialTime=0,initialOpenQuiz=f
     }
     return{...s,time:next};});id=requestAnimationFrame(tick);};
   id=requestAnimationFrame(tick);return()=>cancelAnimationFrame(id);
- },[playing,ready,closed,busy,manifest.id,last,quizState.soundEnabled]);
+ },[playing,ready,busy,manifest.id,last,quizState.soundEnabled]);
  useEffect(()=>{if(chapter.clip||chapter.renderer==='manimgl')setReady(true);},[chapter.id,chapter.clip?.video,chapter.renderer]);
  useEffect(()=>{const v=clipVideo.current;if(!v||!chapter.clip)return;const start=chapter.clip.offset||0,end=start+(chapter.clip.duration??chapter.end-chapter.start);const target=Math.max(start,Math.min(end-.05,start+(state.time-chapter.start)));if(Math.abs(v.currentTime-target)>.25)v.currentTime=target;if(playing&&!busy){void v.play().catch(()=>{});}else{v.pause();}},[state.time,playing,busy,chapter.id,chapter.clip?.video]);
  useEffect(()=>{transcript.current?.scrollTo({top:transcript.current.scrollHeight,behavior:'smooth'});},[messages,busy]);
  useEffect(()=>{const key=(e:KeyboardEvent)=>{if(e.key==='Escape'){if(menuOpen){e.preventDefault();setMenuOpen(false);return;}if(quizBeatActive){e.preventDefault();setQuizBeatActive(false);return;}e.preventDefault();close();return;}const target=e.target instanceof Element?e.target:null;if(target?.closest('textarea,select,[contenteditable="true"],input:not([type="range"])')||e.altKey||e.ctrlKey||e.metaKey)return;if(quizBeatActive&&['1','2','3','4','Enter',' '].includes(e.key))return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();step(e.key==='ArrowLeft'?-1:1,!e.shiftKey);return;}if(e.code==='Space'&&!target?.closest('button')){e.preventDefault();if(playing)pause();else if(canStart){if(quizBeatActive)setQuizBeatActive(false);if(state.time>=manifest.duration-.05)seek(0);setPlaying(true);}}if(e.key==='/'){e.preventDefault();setPanel(true);setTimeout(()=>sourceInput.current?.focus(),0);}};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);});
- if(closed)return <main className="live-closed"><p>Lesson closed.</p><a href={generic?`/?lesson=${manifest.id}&paused=1`:'/?scene=rizal_live&paused=1'}>Open the live lesson</a> · <a href="/?home=1">All lessons</a></main>;
  return <main className={`qweeps-live ${quizBeatActive?'quiz-active':'lesson-active'} ${panel?'chat-visible':''}`} data-playhead={state.time.toFixed(3)} data-scene={generic?'live_generated':'rizal_live'}>
   <button type="button" className="live-menu-toggle" aria-label={menuOpen?"Close lesson menu":"Open lesson menu"} aria-expanded={menuOpen} aria-controls="lesson-menu" onClick={()=>setMenuOpen(open=>!open)}>{menuOpen?<X size={20}/>:<Menu size={20}/>}</button>
   <header id="lesson-menu" className="live-header" hidden={!menuOpen}><a href="/?home=1" className="live-brand" title="Return to main menu"><PixelQ/><span>QWEEPS <small>VISUAL LEARNING</small></span></a><div className="live-lesson-name"><span>{generic?(manifest.documentTitle?'PDF / LIVE LESSON':'QWEEPS / LIVE LESSON'):'History / Philippines'}</span><h1 title={manifest.title}>{generic?manifest.title:<>José Rizal<span> · beyond the monument</span></>}</h1></div><nav><span className="live-mode"><i/>Live</span><button type="button" className="live-quiz-trigger" aria-label="Go to Quiz Beat" title="Jump to the final Quiz Beat" onClick={()=>{setMenuOpen(false);openQuizBeat();}}><Brain size={15}/><span>Quiz / Tests</span></button><button aria-label={voice?'Mute narration':'Enable narration'} onClick={()=>{pause();setVoice(v=>!v);setMenuOpen(false);}}>{voice?<Volume2 size={18}/>:<VolumeX size={18}/>}</button><button aria-label="Open QWEEPS conversation" onClick={()=>{setPanel(p=>!p);setMenuOpen(false);}}><MessageCircle size={18}/></button><button aria-label="Close lesson" onClick={close}><X size={19}/></button></nav></header>

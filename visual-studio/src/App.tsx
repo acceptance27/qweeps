@@ -1262,10 +1262,8 @@ const MethodsVisualDemo = React.lazy(() => import('./live/MethodsVisualDemo'));
 const Module6Model = React.lazy(() => import('./live/Module6Model'));
 const MotifModel = React.lazy(() => import('./live/MotifModel'));
 const HandArtModel = React.lazy(() => import('./live/HandArtModel'));
-const ManimTest = React.lazy(() => import('./learning/ManimTest'));
 const BeatFactory = React.lazy(() => import('./live/BeatFactory'));
 const LiveLessonLoader = React.lazy(() => import('./live/LiveLessonLoader'));
-const MorphPilot = React.lazy(() => import('./live/MorphPilot'));
 const MethodsScenes = React.lazy(() => import('./live/MethodsScenes'));
 const ReferenceScene = React.lazy(() => import('./live/ReferenceScene'));
 const ModelScenePreview = React.lazy(() => import('./live/ModelScenePreview'));
@@ -1274,7 +1272,6 @@ const MethodsPrograms = React.lazy(() => import('./live/MethodsPrograms'));
 export default function App() {
   const params = new URLSearchParams(location.search);
   if (params.get('factory') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Starting the beat factory…</div>}><BeatFactory/></React.Suspense>;
-  if (params.get('manimTest') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Starting native ManimGL…</div>}><ManimTest/></React.Suspense>;
   if (params.get('handartModel') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the handcrafted art test…</div>}><HandArtModel/></React.Suspense>;
   if (params.get('motifModel') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the motif model test…</div>}><MotifModel/></React.Suspense>;
   if (params.get('module6Model') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the model-authored Module 6…</div>}><Module6Model/></React.Suspense>;
@@ -1287,7 +1284,6 @@ export default function App() {
   if (params.get('posters') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the reference posters…</div>}><ReferencePosters/></React.Suspense>;
   if (params.get('reference') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the reference poster…</div>}><ReferenceScene/></React.Suspense>;
   if (params.get('scenes') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the eight scenes…</div>}><MethodsScenes/></React.Suspense>;
-  if (params.get('pilot') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the morph pilot…</div>}><MorphPilot/></React.Suspense>;
   if (params.get('stream') === '1') { location.replace('/?home=1'); return null; }
   if (params.get('examples') === '1') return <ExampleGallery />;
   if (params.get('mode') === 'studio') return <StudioApp />;

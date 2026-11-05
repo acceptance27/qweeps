@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {api} from '../learning/types';
 import {initialLiveSnapshot} from './geometry';
 import type {LiveJob,LiveLesson} from './lessonTypes';

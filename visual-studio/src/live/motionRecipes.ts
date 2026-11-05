@@ -13,7 +13,7 @@ function hull(layout:CompoundLayout,at:number):SceneAction{return show(layout.hu
 function slots(layout:CompoundLayout,at:number,stagger=.05):SceneAction[]{
  return layout.slots.map((slot,index)=>({at:at+.26+index*stagger,duration:.3,kind:'show',id:slot.id}));
 }
-function placed(program:SceneProgram,layouts:Placed[],kind:Compound['kind']):Placed[]{
+function placed(layouts:Placed[],kind:Compound['kind']):Placed[]{
  return layouts.filter(item=>item.compound.kind===kind).sort((a,b)=>a.layout.box.x-b.layout.box.x||a.layout.box.y-b.layout.box.y);
 }
 function primitives(program:SceneProgram,at:number):SceneAction[]{
@@ -29,7 +29,7 @@ function primitives(program:SceneProgram,at:number):SceneAction[]{
 /** Old construction: build left-to-right, then let the relation land. */
 function construction(program:SceneProgram,layouts:Placed[],extras:Extras):SceneAction[]{
  const actions=[...extras.actions,...primitives(program,.35)];
- const nodes=placed(program,layouts,'sum-node');
+ const nodes=placed(layouts,'sum-node');
  const span=Math.max(1,(program.duration-4.4)/Math.max(nodes.length,1));
  nodes.forEach((node,index)=>{
   const at=.4+index*span;
@@ -42,7 +42,7 @@ function construction(program:SceneProgram,layouts:Placed[],extras:Extras):Scene
 /** Old mechanism: inputs arrive first, the chain closes, then the hub is marked. */
 function mechanism(program:SceneProgram,layouts:Placed[],extras:Extras):SceneAction[]{
  const actions=[...extras.actions,...primitives(program,.3)];
- const nodes=placed(program,layouts,'icon-chip');
+ const nodes=placed(layouts,'icon-chip');
  const span=Math.max(1,(program.duration-4.4)/Math.max(nodes.length,1));
  nodes.forEach((node,index)=>actions.push(hull(node.layout,.4+index*span),...slots(node.layout,.55+index*span)));
  if(nodes.length)actions.push(indicate(nodes[Math.min(1,nodes.length-1)].layout.hull.id,program.duration-3.2));
@@ -52,7 +52,7 @@ function mechanism(program:SceneProgram,layouts:Placed[],extras:Extras):SceneAct
 /** Old quantitative: chart first, annotations second, peak indicated. */
 function quantitative(program:SceneProgram,layouts:Placed[],extras:Extras):SceneAction[]{
  const actions=[...extras.actions,...primitives(program,.3)];
- const chart=placed(program,layouts,'bars')[0]??placed(program,layouts,'axis')[0]??placed(program,layouts,'number-line')[0];
+ const chart=placed(layouts,'bars')[0]??placed(layouts,'axis')[0]??placed(layouts,'number-line')[0];
  if(chart){
   actions.push(hull(chart.layout,.2),...slots(chart.layout,.35,.035));
   const values=chart.compound.slots.bars??[];
@@ -63,14 +63,14 @@ function quantitative(program:SceneProgram,layouts:Placed[],extras:Extras):Scene
   }
   actions.push(indicate(chart.layout.hull.id,program.duration-3.4));
  }
- placed(program,layouts,'callout').forEach((note,index)=>actions.push(hull(note.layout,1.8+index*.8),...slots(note.layout,1.95+index*.8)));
+ placed(layouts,'callout').forEach((note,index)=>actions.push(hull(note.layout,1.8+index*.8),...slots(note.layout,1.95+index*.8)));
  return actions;
 }
 
 /** Old procedure: rail, then each step, then the result. */
 function procedure(program:SceneProgram,layouts:Placed[],extras:Extras):SceneAction[]{
  const actions=[...extras.actions,...primitives(program,.3)];
- const steps=placed(program,layouts,'step-card');
+ const steps=placed(layouts,'step-card');
  const span=Math.max(1.1,(program.duration-4.2)/Math.max(steps.length,1));
  steps.forEach((step,index)=>{
   const at=.4+index*span;
@@ -83,7 +83,7 @@ function procedure(program:SceneProgram,layouts:Placed[],extras:Extras):SceneAct
 /** Old algorithm: rows reveal, the highlight sweeps down, state text follows. */
 function algorithm(program:SceneProgram,layouts:Placed[],extras:Extras):SceneAction[]{
  const actions=[...extras.actions,...primitives(program,.25)];
- const rows=placed(program,layouts,'trace-row');
+ const rows=placed(layouts,'trace-row');
  rows.forEach((row,index)=>{
   const at=.3+index*.85;
   actions.push(hull(row.layout,at),...slots(row.layout,at+.2));
@@ -105,9 +105,9 @@ function algorithm(program:SceneProgram,layouts:Placed[],extras:Extras):SceneAct
 /** Old narrative: axis, stations, travel dot, dated captions. */
 function narrative(program:SceneProgram,layouts:Placed[],extras:Extras):SceneAction[]{
  const actions=[...extras.actions,...primitives(program,.3)];
- const axis=placed(program,layouts,'axis')[0];
+ const axis=placed(layouts,'axis')[0];
  if(axis)actions.push(hull(axis.layout,.2),...slots(axis.layout,.35,.04));
- const stations=placed(program,layouts,'station');
+ const stations=placed(layouts,'station');
  const travel=extras.objects.find(object=>object.id==='narrative-travel');
  const first=stations[0];
  const span=stations.length>1?Math.max(1.1,(program.duration-4.6)/(stations.length-1)):0;
@@ -124,7 +124,7 @@ function narrative(program:SceneProgram,layouts:Placed[],extras:Extras):SceneAct
 /** Old recall: route draws, stations land, mnemonic badges follow. */
 function recall(program:SceneProgram,layouts:Placed[],extras:Extras):SceneAction[]{
  const actions=[...extras.actions,...primitives(program,.15)];
- const stations=placed(program,layouts,'station');
+ const stations=placed(layouts,'station');
  const span=stations.length>1?Math.max(1.1,(program.duration-4.6)/(stations.length-1)):0;
  stations.forEach((station,index)=>{
   const at=.8+index*span;

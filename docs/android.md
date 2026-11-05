@@ -89,6 +89,11 @@ SDK paths, provider credentials, signing keys, or generated build output. To
 produce a release for distribution, configure a private release signing key and
 run `:app:assembleRelease` with the matching signing configuration.
 
+The build script also exports a copy to `dist/qweeps.apk`. Web builds leave that
+export alone and use `visual-studio/dist/` as their sole output directory. Android's
+`app/build/` and project `.gradle/` directories are regenerable intermediates;
+preserve an exported APK before clearing them if you still need that installer.
+
 Device verification should cover launching without credentials, entering a key,
 PDF selection, generation with the screen off, returning during frame review,
 rotation during playback, narration pause/resume, quizzes, background timeout,

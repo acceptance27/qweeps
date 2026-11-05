@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import SceneStage from './SceneStage';
 import {compileSceneProgram,type SceneProgram} from './sceneProgram';
 import './live.css';

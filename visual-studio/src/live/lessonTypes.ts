@@ -112,56 +112,6 @@ export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
   const chapters = lesson.chapters || [];
   if (!chapters.length) return [];
 
-  const allInsights = chapters
-    .map(c => (c.insight || c.visual?.takeaway || c.cues?.[c.cues.length - 1]?.text || '').trim())
-    .filter(Boolean);
-  const allSafeguards = chapters
-    .map(c => cleanSafeguardForStudent(c.safeguard || ''))
-    .filter(s => s.length >= 16);
-  const allNodeBodies: string[] = [];
-  for (const ch of chapters) {
-    for (const n of ch.visual?.nodes || []) {
-      if (n.body && n.body.trim().length >= 16) allNodeBodies.push(n.body.trim());
-    }
-    for (const val of Object.values(ch.roles || {})) {
-      if (!val) continue;
-      const idx = val.indexOf(':');
-      const body = idx >= 0 ? val.slice(idx + 1).trim() : val.trim();
-      if (body.length >= 16) allNodeBodies.push(body);
-    }
-  }
-
-  const fallbackDistractors = [
-    'It relies on unconstrained brute-force enumeration without structural bounds or conservation laws.',
-    'It bypasses intermediate verification steps by assuming every local transition is automatically reversible.',
-    'It treats the representation as a static label rather than an active transformation with measurable invariants.',
-    'It treats isolated component successes as a substitute for verifying total end-to-end system reliability.',
-    'It assumes local procedural adherence automatically resolves structural accountability across boundaries.',
-  ];
-
-  const pickDistractors = (correct: string, pool: string[], seed: string): string[] => {
-    const seen = new Set([correct.toLowerCase().trim()]);
-    const unique: string[] = [];
-    for (const item of [...pool, ...fallbackDistractors]) {
-      const norm = item.toLowerCase().trim();
-      if (item.trim().length >= 10 && !seen.has(norm)) {
-        seen.add(norm);
-        unique.push(item.trim());
-      }
-    }
-    // Balance option lengths: prioritize distractors close in character length to correct answer
-    // so that the correct answer is not identifiable merely by being the longest text.
-    const targetLen = correct.length;
-    const lengthMatched = [...unique].sort((a, b) => {
-      const diffA = Math.abs(a.length - targetLen);
-      const diffB = Math.abs(b.length - targetLen);
-      if (Math.abs(diffA - diffB) > 20) return diffA - diffB;
-      return 0;
-    });
-    return hashSort(lengthMatched.slice(0, 10), seed).slice(0, 3);
-  };
-
-  const total = chapters.length;
   const indices: number[] = chapters.map((_, i) => i);
 
   const questions: QuizQuestion[] = [];

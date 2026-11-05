@@ -120,9 +120,6 @@ export function glyph(icon?:string){return icon?GLYPHS[icon]??'◈':'◈';}
 function text(id:string,x:number,y:number,value:string,size:number,fill:string,anchor:'start'|'middle'|'end'='start',opacity=0):SceneObject{
  return{id,kind:'text',x,y,text:value,size,fill,anchor,opacity};
 }
-function rect(id:string,x:number,y:number,w:number,h:number,rx:number,stroke:string,opacity=0,fillOpacity=.1):SceneObject{
- return{id,kind:'rect',x,y,width:w,height:h,rx,fill:stroke,fillOpacity,stroke,opacity};
-}
 function path(id:string,d:string,stroke:string,opacity=0,strokeWidth=1.5):HullObject{
  return{id,kind:'path',d,stroke,strokeWidth,opacity,fill:'none'};
 }

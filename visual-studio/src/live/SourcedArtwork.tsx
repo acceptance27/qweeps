@@ -1,4 +1,3 @@
-import React from 'react';
 import illustrations from './illustrations.json';
 
 export function SourcedEye(){return <g data-asset="wikimedia-eye" aria-label="Anatomical eye cross-section">

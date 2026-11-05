@@ -1,4 +1,4 @@
-import React,{useId} from 'react';
+import {useId} from 'react';
 import data from './geography.json';
 type Extent=[number,number,number,number];
 export function projection(extent:Extent,box:{x:number;y:number;width:number;height:number}){

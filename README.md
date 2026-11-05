@@ -240,6 +240,12 @@ npm run build
 
 Automated tests exercise software behavior, including routing, validation, cue timing, navigation and saved branch state. Fixture or mocked-provider tests do not establish successful fresh model generation or teaching effectiveness.
 
+The web build writes to `visual-studio/dist/`, which the Python server and Android
+packager use directly. There is no second copy of the web bundle in the root
+`dist/`; that directory holds the exported `qweeps.apk` after an Android build.
+TypeScript lint also rejects unused locals and parameters. Local preview folders
+ending in `.local` are excluded from production type checks.
+
 ## Citation and attribution
 
 Author: **Rayven Pahignalo** · [ORCID 0009-0003-2325-7968](https://orcid.org/0009-0003-2325-7968)

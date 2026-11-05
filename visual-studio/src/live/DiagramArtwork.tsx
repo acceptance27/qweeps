@@ -1,4 +1,3 @@
-import React from 'react';
 import type {LiveNode} from './lessonTypes';
 import {LiveAsset,palette} from './LiveAssets';
 

@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, GitBranch, Mic, Pause, Play, Send, Volume2, VolumeX, X, RotateCcw, Download } from 'lucide-react';
 import { ManimCanvas, ManimRenderConfig } from '../components/ManimCanvas';
 import { MANIM_SCENES, SceneId } from '../scenes/sceneData';
 import { GridCanvas } from './GridCanvas';
-import { searchFrame, gridKey, walls } from './astar';
+import { searchFrame, walls } from './astar';
 import { PlanCanvas } from './PlanCanvas';
 import { ProductionControls } from './ProductionControls';
 import { NativeLessonCanvas, NativeFrame } from './NativeLessonCanvas';

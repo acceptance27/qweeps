@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import {useState} from 'react';
 import SceneStage from './SceneStage';
 import {METHODS_SCENES} from './methodsScenes';
 import './live.css';

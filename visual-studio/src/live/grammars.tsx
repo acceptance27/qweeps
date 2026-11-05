@@ -1,4 +1,4 @@
-import React,{memo,useMemo} from 'react';
+import {memo,useMemo} from 'react';
 import type {Font} from 'opentype.js';
 import {fitCopy} from './layout';
 import type {NodeBox} from './layout';
@@ -58,7 +58,7 @@ const Copy=memo(function Copy({font,text,x,y,width,height,size,minSize=14,color=
  return <g>{fit.lines.map((line,i)=><text key={i} x={center?x+width/2:x} y={y+i*fit.size*1.36} textAnchor={center?'middle':undefined} fontSize={fit.size} fill={color} style={{fontFamily:'QweepsTeachingSerif,serif'}}>{line}</text>)}</g>;
 });
 
-export function GrammarDecor({v,g,font}:{v:LiveVisual;g:Grammar;font:Font|null}){
+export function GrammarDecor({v,g}:{v:LiveVisual;g:Grammar;font:Font|null}){
  const n=v.nodes.length;
  if(g==='comparison'){
   return <g className="comparison-table">
@@ -104,7 +104,7 @@ export function GrammarDecor({v,g,font}:{v:LiveVisual;g:Grammar;font:Font|null})
  return null;
 }
 
-export function GrammarNode({v,g,node,box,index,font,chosen}:{v:LiveVisual;g:Grammar;node:LiveNode;box:NodeBox;index:number;font:Font|null;chosen:boolean}){
+export function GrammarNode({g,node,box,index,font,chosen}:{v:LiveVisual;g:Grammar;node:LiveNode;box:NodeBox;index:number;font:Font|null;chosen:boolean}){
  const color=palette[node.color]||palette.blue,w=box.width,h=box.height;
  if(g==='comparison'){
   return <g>

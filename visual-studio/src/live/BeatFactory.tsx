@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {api} from '../learning/types';
 import VisualBeatStage from './VisualBeatStage';
 import type {LiveChapter} from './lessonTypes';

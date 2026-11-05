@@ -14,7 +14,6 @@ export default function SceneStage({scene,onComplete,playing=true,time,onSelect,
  const refs=useRef<Record<string,SVGElement>>({});
  const timeline=useRef<gsap.core.Timeline|null>(null);
  const clones=useRef<SVGElement[]>([]);
- const timelineCurrent=()=>timeline.current;
  const done=useRef(onComplete);done.current=onComplete;
  const playRef=useRef(playing);playRef.current=playing;
  const timeRef=useRef(time);timeRef.current=time;

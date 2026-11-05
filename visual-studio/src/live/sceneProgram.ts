@@ -250,7 +250,7 @@ function placeCompounds(program:SceneProgram,compounds:Compound[]):{compound:Com
   const route=program.objects.find(isLine) as ProgramLine|undefined;
   const left=route?Math.min(route.from[0],route.to[0]):180;
   const right=route?Math.max(route.from[0],route.to[0]):1260;
-  const width=260,height=118;
+  const width=260;
   const placed:{compound:Compound;box:{x:number;y:number;width:number;height:number}}[]=[];
   if(program.teaching==='narrative'){
    const axisY=170,baseline=axisY+130*.55,stationY=baseline-20;
@@ -300,7 +300,6 @@ function comparisonPlacement(compounds:Compound[],comparison:boolean){
  const height=300,startX=(1440-(cards.length*width+(cards.length-1)*gap))/2;
  return[...cards.map((compound,index)=>({compound,box:{x:startX+index*(width+gap),y:150,width,height}})),...rest.map(compound=>({compound,box:compoundBox(compound)}))];
 }
-function stepGap(count:number){return count>=4?24:36;}
 
 function grammarExtras(program:SceneProgram,boxes:ReturnType<typeof layoutBoxes>){
  const objects:SceneObject[]=[];

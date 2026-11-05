@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   MANIM_PALETTE,
   clamp,
@@ -236,7 +236,7 @@ export const ManimCanvas: React.FC<ManimCanvasProps> = ({
     }
   };
 
-  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMouseUp = () => {
     isRightDraggingRef.current = false;
     dragStartRef.current = null;
     draggingNodeRef.current = null;
@@ -638,9 +638,6 @@ function renderAStarScene(
 
   // C2-continuous smooth rate progress curves
   const pBeat1 = windowProgress(t, 0.2, 1.8);
-  const pBeat2 = windowProgress(t, 5.0, 7.8);
-  const pBeat3 = windowProgress(t, 9.4, 11.2);
-  const pBeat4 = windowProgress(t, 14.8, 16.5);
   const pBeat5 = windowProgress(t, 19.8, 21.8);
 
   // =========================================================================

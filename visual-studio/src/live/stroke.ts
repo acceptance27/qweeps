@@ -1,8 +1,8 @@
-import gsap from 'gsap';
+import type {gsap} from 'gsap';
 
 const geometry='path,rect,circle,ellipse,line,polyline,polygon';
 /** Measure once; reconstruct every stroke and fill from absolute timeline time. */
-export function traceGeometry(timeline:gsap.core.Timeline,root:Element,selector:string,start:number,duration=2.4,staggerWindow=.65){
+export function traceGeometry(timeline:ReturnType<typeof gsap.timeline>,root:Element,selector:string,start:number,duration=2.4,staggerWindow=.65){
  const nodes=Array.from(root.querySelectorAll<SVGGeometryElement>(selector)).flatMap(node=>node.matches(geometry)?[node]:Array.from(node.querySelectorAll<SVGGeometryElement>(geometry)))
   .filter(node=>!node.closest('.live-trace-text,[data-no-trace]'));
  const unique=[...new Set(nodes)];

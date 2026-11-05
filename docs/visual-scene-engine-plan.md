@@ -71,7 +71,8 @@ of retention.
   quantitative fixtures.
 - `visual-studio/src/live/morph.ts` — canonical 8-cubic loops, line as a
   zero-thickness loop, rect loops, path emission, transform baking, pacing.
-- `visual-studio/src/live/MorphPilot.tsx` — standalone morph pilot:
+- Historical `MorphPilot.tsx` — standalone morph pilot (retired during cleanup;
+  the shared morph engine and its tests remain):
   route → left/right comparison, ship movement/copy, docked retained thumbnail,
   clickable group, proposal build.
 - `visual-studio/src/live/morph.test.ts` and `ir.test.ts` — 8 tests.
@@ -797,7 +798,7 @@ poster does not count.
 - `visual-studio/src/live/ir.ts` — IR compiler (v0).
 - `visual-studio/src/live/ir.fixtures.ts` — scene fixtures.
 - `visual-studio/src/live/morph.ts` — canonical loops and pacing.
-- `visual-studio/src/live/MorphPilot.tsx` — standalone morph proof.
+- Historical `MorphPilot.tsx` — retired standalone morph proof; shared morph code remains.
 - `visual-studio/src/live/scene.ts` — scene IR types.
 - `visual-studio/src/live/SceneStage.tsx` — scene timeline renderer.
 - `visual-studio/src/live/methodsScenes.ts` — eight hand-authored primitive scenes.
