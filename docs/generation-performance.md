@@ -3,6 +3,14 @@
 Investigation: 2026-11-05. This describes the current home-screen lesson generator,
 not the retired experimental chapter-stream viewer or the separate v3 benchmarks.
 
+**Follow-up harness update, 6 November:** the native path now uses a dedicated
+lesson prompt, generates only selected native beats, defaults to medium code
+reasoning with high reasoning for bounded repair, and requires source/narrative
+plus actual-frame review. Native speech is measured before its final frame review.
+The measurements below describe the older run, not a post-fix benchmark. See the
+[native harness investigation](native-harness-review-2026-11-05.md) and
+[current technical report](technical-report.md) for the resulting implementation.
+
 ## What the checkbox changes
 
 Browser-only generation already builds a storyboard. It then directs SVG artwork,
@@ -37,8 +45,9 @@ Manim-on versus Manim-off benchmark was available, so an exact seven-minute pena
 cannot be established from these records. Longer code generation, compilation,
 repairs, rate limits, and the browser review cycle can each add time.
 
-No live provider benchmark was run as part of this fix, and no first-generation
-speedup is claimed.
+No live provider benchmark was run in the initial investigation described here.
+The follow-up includes small bounded provider and synchronization probes, not a
+fresh 20-beat first-generation speedup measurement.
 
 ## Changes
 

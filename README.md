@@ -60,7 +60,7 @@ These are reproducible demonstration artifacts, not a guarantee that every new r
 
 ### Requirements
 
-- Python 3.11 or newer and a browser. The primary development environment is Linux/Omarchy; other platforms have not been established as supported.
+- Python 3.11 or newer and a browser for desktop use. Linux/Omarchy is the primary development host; a clean-machine Windows setup has not been verified. The separate Android wrapper bundles Python; see its documented runtime boundaries above.
 - The supplied `visual-studio/dist/` and `bundled-lessons/` directories, retained alongside the source checkout. A Python package installation alone does not bundle the whole studio.
 - For **new lesson generation and contextual Q&A**: an OpenRouter API key (supports 100% free models like `nvidia/nemotron-3.5-super-vl:free`), OpenCode Go credentials, or a local CLI runner.
 - For **new Fish narration**: an OpenRouter API key and the configured Fish model/voice, plus the local speech-alignment runtime described in [visual learning documentation](docs/visual-learning.md). Playing the included recording does not require generating it again.
@@ -138,7 +138,7 @@ flowchart TD
     Plan --> Direction[Per-beat presentation and scene data]
     Direction --> Contract[Audio-visual scene contract validation]
     Contract --> Content[Content, factual and narrative checks]
-    Content --> Frames[Browser-rendered frame capture]
+    Content --> Frames[Actual browser and optional native frame capture]
     Frames --> Review[Automated visual review]
     Review -->|Approved| Live[Live interactive lesson]
     Review -->|Needs revision| Repair[Surgical slot and layout revision]
@@ -155,6 +155,7 @@ flowchart TD
 - **Elastic duration and pacing:** stretches beat windows up to 1.20x max stretch cap to fit spoken narration, or triggers surgical slot condensing if narration exceeds budget.
 - **Validate scene data:** reject unsupported fields, AABB collisions, or incomplete outputs rather than inventing missing geometry.
 - **Inspect actual frames:** review early and completed states, plus intermediate states for diagrams. Failed candidates remain unapproved after the bounded revision allowance is exhausted.
+- **Review native lessons too:** native compilation is separate from teaching approval. New hybrid lessons require content/narrative checks and actual native frames; semantic setup, operation and result cues align with measured narration, including spoken bridge holds. Older cue-less saved lessons need regeneration to gain these checks.
 - **Preserve exploration context:** include the parent scene, time, selection, camera and experiment state when branching.
 
 The maintained teaching skill draws on PDF Explainer, Math 01, A* Pathfinding & Heuristics and the accepted Rizal reference. These are authoring references, not evidence of equivalence to their visual quality or to 3Blue1Brown's work.
@@ -168,7 +169,7 @@ The maintained teaching skill draws on PDF Explainer, Math 01, A* Pathfinding & 
 - **Proposed, not implemented as a general system:** perimeter-port routing for diagrams, relative annotation constraints, failed-frame images supplied directly to the reviser, and selective bounding-box collision telemetry. Existing text-fit checks are more limited.
 - No controlled model ranking, learning-outcome study or fixed recall improvement is claimed.
 
-Read the [technical report](docs/QWEEPS_Live_Visual_Teaching_Technical_Report.pdf) for the implementation audit, proposed layout/revision design and evaluation plan.
+Read the [technical report, version 2.0 (6 November 2026)](docs/QWEEPS_Live_Visual_Teaching_Technical_Report.pdf) for the current hybrid architecture, native quality gates, measured narration synchronization, mobile interface, Android delivery, generation measurements and remaining evaluation work. Its [editable source](docs/technical-report.md) is maintained alongside the code; rebuild it with `python scripts/build_technical_report.py` in an environment with ReportLab, Pillow and Liberation fonts.
 
 ## Models, narration and configuration
 
@@ -177,7 +178,7 @@ Configuration is stored at `~/.config/qweeps/config.toml` (or via environment va
 | Role | Default route |
 |---|---|
 | General conversation and orchestration text | OpenRouter: `nvidia/nemotron-3.5-super-vl:free` |
-| Lesson planning, direction, review, narration writing and lesson Q&A | OpenRouter Free: `nvidia/nemotron-3.5-super-vl:free` (or OpenCode Go) |
+| Lesson planning, direction, review, narration writing and lesson Q&A | OpenCode Go: `opencode-go/muse-spark-1.3-contributor` (OpenRouter and other configured routes remain available) |
 | Speech synthesis | Configurable independently; default is Fish via OpenRouter, with Piper and eSpeak as options |
 | Speech recognition | OpenRouter Cloud STT (`fish-audio/transcribe-1`) by default; Voxtype local as an option |
 
@@ -192,9 +193,9 @@ api_key_env = "OPENROUTER_API_KEY"
 model = "nvidia/nemotron-3.5-super-vl:free"
 fallback_models = []
 fallback_provider = "offline"
-visual_provider = "openrouter-free"
-visual_model = "nvidia/nemotron-3.5-super-vl:free"
-visual_vision_model = "nvidia/nemotron-3.5-super-vl:free"
+visual_provider = "opencode-go"
+visual_model = "opencode-go/muse-spark-1.3-contributor"
+visual_vision_model = "opencode-go/muse-spark-1.3-contributor"
 reasoning_effort = "none"
 
 # Fish synthesis

@@ -1,0 +1,18 @@
+{
+  "recordingSeconds": 34.0314166667,
+  "publishedLesson": false,
+  "frames": [
+    {
+      "file": "attention-normalized.jpg",
+      "sha256": "f8d664a1a3e41e555d9d71f55983ae17b29d8c35e2f916bdd1da08581c05b481",
+      "origin": "Native synchronization integration fixture; generated source was not hand-edited.",
+      "capture": "1-finished.jpg"
+    },
+    {
+      "file": "attention-context.jpg",
+      "sha256": "55a3d9668f9ec708aae0985e091cd90744cf9e21c4df093446123d1a8376d5a5",
+      "origin": "Native synchronization integration fixture; generated source was not hand-edited.",
+      "capture": "2-finished.jpg"
+    }
+  ]
+}

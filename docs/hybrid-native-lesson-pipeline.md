@@ -1,5 +1,12 @@
 # Hybrid native Manim + layout lesson pipeline
 
+> Historical design document. The manual/unfinished status tables below describe
+> the original orchestration plan, not the current implementation. Hybrid
+> generation, dynamic registration, semantic runtime cues, measured narration
+> mapping and actual native-frame publication review are now implemented. For
+> current behavior, see the [technical report](technical-report.md) and
+> [native harness investigation](native-harness-review-2026-11-05.md).
+
 How QWEEPS should turn a question like **“How does a neuron fire?”** into one
 lesson that interleaves native ManimGL beats with traditional SVG/GSAP layout
 beats. This document separates what already works from the orchestration that is
