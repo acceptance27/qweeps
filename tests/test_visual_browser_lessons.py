@@ -7,11 +7,17 @@ import time
 import zlib
 from unittest.mock import Mock,patch
 import pytest
-from assistant.visual.browser_lessons import BrowserLessonStore,validate_lesson,validate_presentation_review
+from assistant.visual.browser_lessons import BrowserLessonStore,MAX_LESSON_BEATS,_require_target_beats,validate_lesson,validate_presentation_review
 from assistant.visual.documents import DocumentLibrary
 from assistant.visual.plan import PlanError
 
 STUDIO=Path(__file__).resolve().parents[1]/'visual-studio'
+
+def test_target_beat_count_allows_twenty_and_rejects_short_plans():
+ assert MAX_LESSON_BEATS==20
+ beats=[{'id':f'beat-{i}'} for i in range(20)]
+ assert _require_target_beats({'targetBeats':20},beats) is beats
+ with pytest.raises(PlanError,match='exactly 20'):_require_target_beats({'targetBeats':20},beats[:-1])
 
 def sample():
  def chapter(id,layout,page):return {'id':id,'title':'Compare protections' if page==1 else 'Inspect the dependency','question':'What changes in this example?',
@@ -1281,3 +1287,28 @@ def test_balanced_option_lengths_and_unbiased_distractors(tmp_path, library):
 
 
 
+
+
+def test_android_native_request_fails_before_planning(library, tmp_path, monkeypatch):
+    lib, _ = library
+    llm = Mock()
+    store = BrowserLessonStore(llm, STUDIO, tmp_path / 'lessons', lib)
+    monkeypatch.setenv('QWEEPS_PLATFORM', 'android')
+    with pytest.raises(PlanError, match='desktop renderer'):
+        store.start({'question': 'Explain polynomial time', 'native': True})
+    llm.compose.assert_not_called()
+    assert not store.jobs
+
+
+def test_phase_timing_is_saved_even_when_generation_fails(library, tmp_path):
+    lib, _ = library
+    store = BrowserLessonStore(Mock(), STUDIO, tmp_path / 'lessons', lib)
+    job = {'id': 'job', 'lessonId': 'a' * 32, 'native': True, 'status': 'failed', 'stage': 'Stopped'}
+    store.jobs[job['id']] = job
+    with pytest.raises(PlanError):
+        with store._measure(job, 'native_scene'):
+            raise PlanError('Compilation failed')
+    recorded = json.loads((store.folder / job['lessonId'] / 'generation-timings.json').read_text())
+    assert recorded['native'] is True
+    assert recorded['seconds']['native_scene'] >= 0
+    assert store.status('job')['timings'] == recorded['seconds']

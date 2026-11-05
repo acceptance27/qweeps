@@ -1,0 +1,56 @@
+{
+  "question": "Create a 20-beat visual lesson explaining how transformer language models learn. Follow one running sentence from tokenization and embeddings through positional encoding, query-key-value attention, softmax, multi-head attention, residual and normalization layers, feed-forward blocks, next-token prediction, cross-entropy loss, backpropagation, gradient descent, learning-rate effects, training versus inference, and generalization. Return exactly 20 beats.",
+  "targetBeats": 20,
+  "createdAt": "2026-11-05T20:08:13+08:00",
+  "runs": [
+    {
+      "label": "native-hybrid",
+      "native": true,
+      "nativeMode": "continuous",
+      "targetBeats": 20,
+      "jobId": "711b8ab282ca4a23b16d4332541cf1c2",
+      "status": "ready",
+      "stage": "Hybrid native lesson ready",
+      "error": null,
+      "lessonId": "c292a6f916197a9e83768f53e3bcbd75",
+      "startedAt": "2026-11-05T20:08:13+08:00",
+      "finishedAt": "2026-11-05T20:18:03+08:00",
+      "wallSeconds": 590.251,
+      "jobTimings": {
+        "storyboard": 81.831,
+        "artwork": 283.884,
+        "native_scene": 211.116,
+        "narration_fitting": 10.602
+      },
+      "timingFiles": {
+        "generation-timings.json": {
+          "native": true,
+          "seconds": {
+            "storyboard": 81.831,
+            "artwork": 283.884,
+            "native_scene": 211.116,
+            "narration_fitting": 10.602
+          }
+        },
+        "native-generation-timings.json": {
+          "cacheHit": false,
+          "seconds": {
+            "code_generation": 193.686,
+            "compile_and_audit": 17.396
+          }
+        }
+      },
+      "lesson": {
+        "title": "How Transformer Language Models Learn",
+        "duration": 175.9,
+        "chapters": 20,
+        "nativeChapters": 7,
+        "hasNativeScene": true,
+        "audioTrack": false,
+        "quizCount": 94,
+        "representation": "Follow running example 'The cat sat' -> 'on'. Shared encodings: token blocks blue, vectors teal, position orange, attention weight=line thickness, correction signals red-purple. Chain: split text -> vectorize -> contextualize with attention -> deepen with blocks -> predict -> measure error -> send credit backward -> step weights -> contrast use vs learning. Methods shift with question: segmentation, vector construction, quantitative weighting, mechanism tracing, counterfactual comparison."
+      }
+    }
+  ],
+  "totalWallSeconds": 590.272
+}

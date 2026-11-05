@@ -237,3 +237,48 @@ def test_audit_overlap_distinguishes_a_collision_from_a_duplicate_box():
     assert _iou(a, same) == 1.0
     assert _iou(a, moved) == 1 / 3
     assert _overlap(a, [2.0, 0.0, 3.0, 1.0]) == 0.0
+
+
+def test_native_retry_reuses_code_but_recompiles_and_invalidates_changed_prompt(tmp_path, monkeypatch):
+    from unittest.mock import Mock
+    from assistant.visual import native_author
+
+    llm = Mock(provider='test', model='test-model', visual_model=None)
+    llm.compose.return_value = 'class GenScene:\n    pass\n'
+    compiled = {'duration': 40, 'beats': [
+        {'id': beat['id'], 'start': index * 10, 'end': (index + 1) * 10}
+        for index, beat in enumerate(story()['beats'])], 'audit': []}
+    compiler = Mock(return_value=compiled)
+    monkeypatch.setattr(native_author, 'compile_source', compiler)
+    monkeypatch.setenv('QWEEPS_NATIVE_SCENES', str(tmp_path / 'registry'))
+
+    first = native_author.generate_scene(llm, story(), 'python', tmp_path)
+    second = native_author.generate_scene(llm, story(), 'python', tmp_path)
+    assert first['sceneId'] == second['sceneId']
+    assert llm.compose.call_count == 1
+    assert compiler.call_count == 2  # Reusing code never skips the current audit.
+
+    changed = {**story(), 'representation': 'A different visual encoding'}
+    native_author.generate_scene(llm, changed, 'python', tmp_path)
+    assert llm.compose.call_count == 2
+    native_author.generate_scene(llm, story(), 'python', tmp_path, reuse=False)
+    assert llm.compose.call_count == 3
+
+    from assistant.visual.plan import PlanError
+    compiler.side_effect = [PlanError('runtime changed'), compiled]
+    native_author.generate_scene(llm, story(), 'python', tmp_path)
+    assert llm.compose.call_count == 4  # An unusable checkpoint falls back to fresh code.
+
+
+def test_failed_native_scene_is_not_checkpointed(tmp_path, monkeypatch):
+    import pytest
+    from unittest.mock import Mock
+    from assistant.visual import native_author
+    from assistant.visual.plan import PlanError
+
+    llm = Mock(provider='test', model='test-model', visual_model=None)
+    llm.compose.return_value = 'class GenScene:\n    pass\n'
+    monkeypatch.setattr(native_author, 'compile_source', Mock(side_effect=PlanError('bad geometry')))
+    with pytest.raises(PlanError, match='bad geometry'):
+        native_author.generate_scene(llm, story(), 'python', tmp_path)
+    assert not list(tmp_path.glob('native-source-*.py'))

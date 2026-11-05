@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 import os
 import re
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 from .alignment import phrase_range
@@ -303,28 +305,59 @@ def generate_contract_scene(
 
 def generate_scene(llm, story: dict, interpreter: str, folder: Path,
                    nodes_by_beat: dict | None = None,
-                   contract: dict | None = None) -> dict:
+                   contract: dict | None = None, *, reuse: bool = True) -> dict:
     prompt = build_prompt(story, nodes_by_beat, contract=contract)
     system = manim_code_generation_prompt("high")
-    try:
-        code = llm.compose(prompt, system, max_tokens=40000, reasoning_effort="high")
-    except TypeError:
-        code = llm.compose(prompt, system)
-    source = clean_code(code)
+    fingerprint = hashlib.sha256(json.dumps({
+        "prompt": prompt, "system": system,
+        "provider": getattr(llm, "provider", type(llm).__name__),
+        "model": getattr(llm, "visual_model", None) or getattr(llm, "model", None),
+    }, sort_keys=True).encode()).hexdigest()
+    checkpoint = folder / f"native-source-{fingerprint}.py"
+    timings = {"cacheHit": bool(reuse and checkpoint.is_file()), "seconds": {}}
+
+    def measured(phase, operation):
+        started = time.monotonic()
+        try:
+            return operation()
+        finally:
+            timings["seconds"][phase] = round(
+                timings["seconds"].get(phase, 0) + time.monotonic() - started, 3)
+            try:
+                (folder / "native-generation-timings.json").write_text(json.dumps(timings))
+            except OSError:
+                pass
+
+    def compose(instruction):
+        try:
+            return llm.compose(instruction, system, max_tokens=40000, reasoning_effort="high")
+        except TypeError:
+            return llm.compose(instruction, system)
+    # Only successful scenes are checkpointed. Recompile and audit on every retry
+    # so runtime/compiler updates cannot bypass validation of reused model output.
+    if reuse and checkpoint.is_file():
+        source = checkpoint.read_text()
+    else:
+        source = clean_code(measured('code_generation', lambda: compose(prompt)))
     source_path = folder / "generated_neuron.py"
     source_path.write_text(source)
-    compiled = compile_source(interpreter, source_path, folder)
+    try:
+        compiled = measured('compile_and_audit', lambda: compile_source(interpreter, source_path, folder))
+    except (PlanError, subprocess.TimeoutExpired):
+        if not timings['cacheHit']:
+            raise
+        # A runtime change or damaged checkpoint must not trap every retry on
+        # the same unusable source. Generate fresh code and validate normally.
+        source = clean_code(measured('code_generation', lambda: compose(prompt)))
+        source_path.write_text(source)
+        compiled = measured('compile_and_audit', lambda: compile_source(interpreter, source_path, folder))
     audit = compiled.get("audit") or []
     if audit and os.environ.get("QWEEPS_NATIVE_AUDIT", "1") != "0" \
             and os.environ.get("QWEEPS_NATIVE_REPAIR", "1") != "0":
         repair = _repair_prompt(prompt, source, audit)
-        try:
-            code = llm.compose(repair, system, max_tokens=40000, reasoning_effort="high")
-        except TypeError:
-            code = llm.compose(repair, system)
-        source = clean_code(code)
+        source = clean_code(measured('code_repair', lambda: compose(repair)))
         source_path.write_text(source)
-        compiled = compile_source(interpreter, source_path, folder)
+        compiled = measured('compile_and_audit', lambda: compile_source(interpreter, source_path, folder))
         audit = compiled.get("audit") or []
     if audit and os.environ.get("QWEEPS_NATIVE_AUDIT", "1") != "0":
         details = "; ".join(
@@ -367,7 +400,11 @@ def generate_scene(llm, story: dict, interpreter: str, folder: Path,
         "cues": compiled.get("cues") or [],
         "tracks": compiled.get("tracks"),
     }
-    return write_scene(source, manifest)
+    published = write_scene(source, manifest)
+    temporary = folder / f".native-source-{fingerprint}.tmp"
+    temporary.write_text(source)
+    temporary.replace(checkpoint)
+    return published
 
 
 

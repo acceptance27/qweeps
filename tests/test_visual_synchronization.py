@@ -83,6 +83,18 @@ def test_alignment_failure_does_not_fall_back_to_guessed_times():
   measured_cues(lesson()['chapters'][0]['narration'],plan()['chapters'][0]['anchors'],bad,9)
 
 
+def test_lesson_text_is_not_used_as_the_alignment_prompt(tmp_path):
+ import hashlib,json
+ from unittest.mock import Mock,patch
+ audio=tmp_path/'clip.mp3';audio.write_bytes(b'lesson recording')
+ key=hashlib.sha256(audio.read_bytes()+ENGINE.encode()).hexdigest()
+ (tmp_path/(key+'.words.json')).write_text(json.dumps(alignment()))
+ narration=Mock(folder=tmp_path)
+ with patch('assistant.visual.alignment.runtime',side_effect=PlanError('runtime requested')):
+  result=align_recordings(narration,[{'key':'clip','text':'a long lesson script that must not become an initial prompt'}],lambda _:None)
+ assert result==[alignment()]
+
+
 def test_different_recording_cannot_reuse_old_word_timestamps(tmp_path):
  import hashlib,json
  from unittest.mock import Mock,patch

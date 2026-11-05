@@ -1,0 +1,67 @@
+{
+  "question": "Create a 20-beat visual lesson explaining how transformer language models learn. Follow one running sentence from tokenization and embeddings through positional encoding, query-key-value attention, softmax, multi-head attention, residual and normalization layers, feed-forward blocks, next-token prediction, cross-entropy loss, backpropagation, gradient descent, learning-rate effects, training versus inference, and generalization. Return exactly 20 beats.",
+  "targetBeats": 20,
+  "topic": "How transformer language models learn",
+  "createdAt": "2026-11-05T20:19:28+08:00",
+  "runs": [
+    {
+      "label": "browser-only",
+      "native": false,
+      "status": "ready",
+      "lessonId": "e733da0bd0c4ba279b3dc30e1bd5927c",
+      "title": "How Transformers Learn: One Sentence's Journey",
+      "chapters": 20,
+      "nativeChapters": 0,
+      "durationSeconds": 722.62,
+      "wallSeconds": 199.0,
+      "phaseTimings": {
+        "storyboard": 14.522,
+        "artwork": 112.394,
+        "factual_review": 32.416,
+        "narrative_review": 6.966
+      },
+      "notes": "Wall time to the reviewed lesson.json. Narration synchronization was completed separately in about 110s after the alignment fix; the lesson now has continuous audio.",
+      "audioTrack": true,
+      "speechSync": {
+        "status": "ready",
+        "wallSeconds": 110,
+        "note": "Post-benchmark synchronization after fixing the alignment initial-prompt bug."
+      }
+    },
+    {
+      "label": "native-hybrid",
+      "native": true,
+      "nativeMode": "continuous",
+      "status": "ready",
+      "lessonId": "c292a6f916197a9e83768f53e3bcbd75",
+      "title": "How Transformer Language Models Learn",
+      "chapters": 20,
+      "nativeChapters": 7,
+      "durationSeconds": 175.9,
+      "wallSeconds": 590.251,
+      "phaseTimings": {
+        "storyboard": 81.831,
+        "artwork": 283.884,
+        "native_scene": 211.116,
+        "narration_fitting": 10.602
+      },
+      "nativeCodeTimings": {
+        "code_generation": 193.686,
+        "compile_and_audit": 17.396
+      },
+      "notes": "TTS disabled for this benchmark run. 7 of 20 chapters use the generated native ManimGL scene."
+    }
+  ],
+  "comparison": {
+    "nativeMinusBrowserSeconds": 391.251,
+    "nativeToBrowserRatio": 2.97,
+    "dominantNativeCostSeconds": 211.116,
+    "note": "Native code generation and compilation are the unique native cost; artwork and storyboard variance also contribute."
+  },
+  "caveats": [
+    "Runs were sequential but not started from an identical OS/model cache state.",
+    "The browser-only lesson was reviewed at ~199s and later given continuous narration in a separate ~110s synchronization pass.",
+    "The native lesson was generated with TTS disabled after the long-script alignment failure; it currently plays with captions.",
+    "Browser narration required a fix: the aligner was given the whole lesson script as an initial prompt, which made Whisper skip the opening words of long recordings."
+  ]
+}

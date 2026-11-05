@@ -1,6 +1,7 @@
 """Document/topic -> model-directed, reviewed, live browser lesson. No model code runs."""
 from __future__ import annotations
 import base64
+from contextlib import contextmanager
 import copy
 import datetime
 import hashlib
@@ -42,6 +43,7 @@ def methods_storyboard():
             'example':plan['example'],'beats':beats}
 COLORS={'blue','gold','green','coral','purple'}
 MAX_VISUAL_REVISIONS=3
+MAX_LESSON_BEATS=20
 ICON_ALIASES={
     'tnt': 'bomb', 'dynamite': 'bomb', 'explosive': 'bomb', 'explosion': 'bomb', 'blast': 'bomb', 'ordnance': 'bomb',
     'chemical': 'flask-conical', 'chemistry': 'flask-conical', 'reaction': 'flask-conical', 'acid': 'flask-conical', 'reagent': 'flask-conical',
@@ -93,6 +95,11 @@ def browser_guidance(stage):
 def _list(value,name,minimum=0,maximum=12):
     if not isinstance(value,list) or not minimum<=len(value)<=maximum:raise PlanError(f'{name} needs {minimum}–{maximum} entries')
     return value
+def _require_target_beats(j,beats):
+    target=j.get('targetBeats')
+    if target and len(beats)!=target:
+        raise PlanError(f'Return exactly {target} storyboard beats because the request requires {target}; this plan has {len(beats)}. Split the reasoning into {target} distinct, non-repeating beats without dropping source coverage.')
+    return beats
 def _id(value):
     value=_text(value,'object ID',64)
     if not re.fullmatch(r'[a-zA-Z][a-zA-Z0-9_-]*',value):raise PlanError('Use short alphanumeric semantic object IDs starting with a letter')
@@ -171,7 +178,7 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
         else:raise PlanError(f"Choose a sourced icon from the asset catalog (got '{example_icon}'). Allowed: {', '.join(sorted(icons)[:15])}...")
     out['example']={'title':_text(example.get('title'),'worked example title',120),'description':_text(example.get('description'),'worked example',450),'icon':example_icon}
     out['chapters']=[];clock=0.;ids=set();prior_insights=set()
-    for index,c in enumerate(_list(raw.get('chapters'),'chapters',1,12)):
+    for index,c in enumerate(_list(raw.get('chapters'),'chapters',1,MAX_LESSON_BEATS)):
         cid=_id(c.get('id'))
         if cid in ids:raise PlanError('Chapter IDs must be unique')
         ids.add(cid);layout=c.get('layout')
@@ -940,6 +947,25 @@ class BrowserLessonStore:
         self.bundled_folder=Path(__file__).resolve().parents[3]/'bundled-lessons/browser-lessons'
         self.documents=documents or DocumentLibrary();self.icons=json.loads((self.studio/'public/live/catalog.json').read_text())['icons']
         self.jobs={};self.streams={};self.lock=threading.RLock()
+    @contextmanager
+    def _measure(self, j, phase):
+        """Record wall time for real pipeline work, including failures and retries."""
+        started = time.monotonic()
+        try:
+            yield
+        finally:
+            with self.lock:
+                timings = j.setdefault('timings', {})
+                timings[phase] = round(timings.get(phase, 0) + time.monotonic() - started, 3)
+                try:
+                    folder = self.folder / j['lessonId']
+                    folder.mkdir(exist_ok=True)
+                    temporary = folder / f'.timings-{uuid.uuid4().hex}.tmp'
+                    temporary.write_text(json.dumps({'native': bool(j.get('native')), 'seconds': timings}))
+                    temporary.replace(folder / 'generation-timings.json')
+                except OSError:
+                    pass  # Diagnostic output must not stop lesson generation.
+
     def _request(self,j,call):
         try:return call()
         except ModelProviderError as exc:
@@ -1087,7 +1113,7 @@ class BrowserLessonStore:
     def status(self,job_id):
         with self.lock:
             if job_id not in self.jobs:raise PlanError('The lesson preparation session expired. Try again.')
-            j=self.jobs[job_id];result={k:copy.deepcopy(j[k]) for k in ('id','status','stage','revision','lessonId','error','candidate','speechSync','generateQuiz') if k in j}
+            j=self.jobs[job_id];result={k:copy.deepcopy(j[k]) for k in ('id','status','stage','revision','lessonId','error','candidate','speechSync','generateQuiz','timings') if k in j}
             if 'revisedBeats' in j:
                 value=j['revisedBeats']
                 # Internal revision tracking uses a set; the job API is JSON.
@@ -1602,11 +1628,21 @@ Return JSON only; no markdown fences:
         native_mode=str(payload.get('nativeMode') or 'per_beat')
         if native_mode not in {'continuous','per_beat'}:
             raise PlanError("nativeMode must be 'continuous' or 'per_beat'")
+        raw_target=payload.get('beats') or payload.get('beatCount') or payload.get('targetBeats')
+        try:
+            target_beats=int(raw_target) if raw_target not in (None,'') else None
+        except (TypeError,ValueError):
+            raise PlanError('Beat count must be a whole number')
+        if target_beats is not None and not 1<=target_beats<=MAX_LESSON_BEATS:
+            raise PlanError(f'Beat count must be between 1 and {MAX_LESSON_BEATS}')
+        if native:
+            # Fail before spending model calls on a runtime this device cannot use.
+            self._native_interpreter()
         question=_text(payload.get('question') or payload.get('topic'),'lesson request',4000)
         document=self.documents.resolve(question,payload.get('documentIds') or payload.get('documentId'))
         context=copy.deepcopy(context or payload.get('context') or {})
         if (context.get('documentIds') or context.get('documentId')) and not document:document=self.documents.resolve('',context.get('documentIds') or context.get('documentId'))
-        signature=json.dumps({'engine':7,'native':native,'nativeMode':native_mode,'question':question,'document':document['id'] if document else None,'context':context,
+        signature=json.dumps({'engine':7,'native':native,'nativeMode':native_mode,'targetBeats':target_beats,'question':question,'document':document['id'] if document else None,'context':context,
                              'model':{'provider':getattr(self.llm,'provider',type(self.llm).__name__),
                                       'generation':getattr(self.llm,'visual_model',None) or getattr(self.llm,'model',None),
                                       'vision':getattr(self.llm,'vision_model',None)},
@@ -1638,10 +1674,10 @@ Return JSON only; no markdown fences:
                 finished=next((k for k,j in self.jobs.items() if j['status'] in {'ready','failed'}),None)
                 if finished:self.jobs.pop(finished)
                 else:raise PlanError('Too many lessons are preparing. Wait for one to finish.')
-            job={'id':job_id,'lessonId':key,'status':'preparing','stage':'Reading source material','revision':0,'question':question,'document':document,'context':context,'native':native,'nativeMode':native_mode,'generateQuiz':generate_quiz}
+            job={'id':job_id,'lessonId':key,'status':'preparing','stage':'Reading source material','revision':0,'question':question,'document':document,'context':context,'native':native,'nativeMode':native_mode,'targetBeats':target_beats,'generateQuiz':generate_quiz,'regenerate':bool(payload.get('regenerate'))}
             self.jobs[job_id]=job
             folder=self.folder/key;folder.mkdir(exist_ok=True)
-            (folder/'request.json').write_text(json.dumps({'question':question,'documentId':document['id'] if document else None,'documentIds':[d['id'] for d in document.get('documents',[])] if document and 'documents' in document else ([document['id']] if document else []),'context':context,'generateQuiz':generate_quiz},ensure_ascii=False))
+            (folder/'request.json').write_text(json.dumps({'question':question,'documentId':document['id'] if document else None,'documentIds':[d['id'] for d in document.get('documents',[])] if document and 'documents' in document else ([document['id']] if document else []),'context':context,'targetBeats':target_beats,'generateQuiz':generate_quiz},ensure_ascii=False))
             cached=self.folder/key/'lesson.json'
             if cached.is_file() and not payload.get('regenerate'):
                 try: cached_lesson=json.loads(cached.read_text())
@@ -1702,7 +1738,7 @@ Return JSON only; no markdown fences:
             yield event
     def _check_story(self,raw,document):
         if not isinstance(raw,dict) or not raw.get('representation'):raise PlanError('Explain the presentation choice')
-        beats=_list(raw.get('beats'),'storyboard beats',1,12)
+        beats=_list(raw.get('beats'),'storyboard beats',1,MAX_LESSON_BEATS)
         used_native=set()
         for i,b in enumerate(beats):
             if b.get('layout') not in LAYOUTS or not b.get('visibleOperation'):
@@ -1892,10 +1928,11 @@ Return JSON only; no markdown fences:
             document=j['document'];pages=document['pages'] if document else []
             request={'question':j['question'],'source':{'title':document['title'],'pages':pages} if document else None,
                      'pausedContext':j['context'],'assets':self.icons,'branch':bool(j['context'])}
+            if j.get('targetBeats'):request['targetBeatCount']=j['targetBeats']
             j['stage']='Planning the teaching method and source coverage'
             def check_plan(raw,require_presentation=True):
                 if not isinstance(raw,dict) or not raw.get('representation'):raise PlanError('Explain the presentation choice')
-                beats=_list(raw.get('beats'),'storyboard beats',1,12)
+                beats=_require_target_beats(j,_list(raw.get('beats'),'storyboard beats',1,MAX_LESSON_BEATS))
                 for i,b in enumerate(beats):
                     if b.get('layout') not in LAYOUTS or not b.get('visibleOperation'):raise PlanError('Plan a supported visible operation for each beat')
                     if require_presentation or 'presentation' in b:validate_presentation(b.get('presentation'),b.get('layout'))
@@ -1909,7 +1946,8 @@ Return JSON only; no markdown fences:
             folder=self.folder/j['lessonId'];folder.mkdir(exist_ok=True);checkpoint=folder/'storyboard.json'
             if checkpoint.is_file():story=check_plan(json.loads(checkpoint.read_text()),require_presentation=False)
             else:
-                story=self._request(j,lambda:_model_json(self.llm,PLAN+'\n\n'+browser_guidance('planner'),request,check_plan,tokens=5000))
+                with self._measure(j, 'storyboard'):
+                    story=self._request(j,lambda:_model_json(self.llm,PLAN+'\n\n'+browser_guidance('planner'),request,check_plan,tokens=12000 if j.get('targetBeats') and j['targetBeats']>12 else 5000))
                 checkpoint.write_text(json.dumps(story,ensure_ascii=False))
             j['storyboard']=story;j['request']=request
             j['stage']='Directing artwork, descriptions and motion in small sections'
@@ -1926,6 +1964,10 @@ Return JSON only; no markdown fences:
             self._candidate(j,candidate)
         except Exception as exc:self._failed(j,exc)
     def _direct(self,j,findings=None):
+        with self._measure(j, 'artwork'):
+            return self._direct_impl(j,findings)
+
+    def _direct_impl(self,j,findings=None):
         story=j['storyboard'];request=j['request'];document=j['document'];folder=self.folder/j['lessonId'];folder.mkdir(exist_ok=True)
         previous=self._raw(j['candidate']) if findings and j.get('candidate') else None
         affected={f.get('beat') for f in findings or []}
@@ -2061,6 +2103,10 @@ Return JSON only; no markdown fences:
         return validate_lesson(raw,document,self.icons,require_continuity=True,fallback_icons=True,
                                require_presentation=any('presentation' in b for b in story['beats']))
     def _source_check(self,j,candidate):
+        with self._measure(j, 'factual_review'):
+            return self._source_check_impl(j,candidate)
+
+    def _source_check_impl(self,j,candidate):
         ids={c['id'] for c in candidate['chapters']}
         def check(raw,target_ids=ids):
             if not isinstance(raw,dict) or type(raw.get('approved')) is not bool:raise PlanError('Source review needs an explicit verdict')
@@ -2206,6 +2252,10 @@ Approval requires no findings and supported:true for every supplied beat.'''
                 candidate=self._direct(j,review['findings'])
             else:candidate=self._direct(j,combined) if legacy else self._repair_source(j,candidate,review['findings'])
     def _narrative_check(self,j,candidate):
+        with self._measure(j, 'narrative_review'):
+            return self._narrative_check_impl(j,candidate)
+
+    def _narrative_check_impl(self,j,candidate):
         chapters=candidate['chapters'];pairs=[(a['id'],b['id']) for a,b in zip(chapters,chapters[1:])]
         if not pairs:return {'approved':True,'links':[],'findings':[],'method':'single focused explanation'}
         def check(raw):
@@ -2311,6 +2361,8 @@ replacements, only those needed.'''
     def _native_interpreter(self):
         import os
         from pathlib import Path
+        if os.environ.get("QWEEPS_PLATFORM") == "android":
+            raise PlanError("Native Manim requires the desktop renderer. Use browser animations on Android.")
         candidate = Path(os.environ.get("QWEEPS_MANIMGL_PYTHON", "")) if os.environ.get("QWEEPS_MANIMGL_PYTHON") else None
         if candidate and candidate.is_file():
             return str(candidate)
@@ -2425,12 +2477,14 @@ replacements, only those needed.'''
             request = {"question": j["question"],
                        "source": {"title": document["title"], "pages": pages} if document else None,
                        "pausedContext": j["context"], "assets": self.icons, "branch": bool(j["context"])}
+            if j.get("targetBeats"):
+                request["targetBeatCount"] = j["targetBeats"]
             j["stage"] = "Planning the teaching method and source coverage"
 
             def check_plan(raw, require_presentation=True):
                 if not isinstance(raw, dict) or not raw.get("representation"):
                     raise PlanError("Explain the presentation choice")
-                beats = _list(raw.get("beats"), "storyboard beats", 1, 12)
+                beats = _require_target_beats(j, _list(raw.get("beats"), "storyboard beats", 1, MAX_LESSON_BEATS))
                 for i, b in enumerate(beats):
                     if b.get("layout") not in LAYOUTS or not b.get("visibleOperation"):
                         raise PlanError("Plan a supported visible operation for each beat")
@@ -2452,8 +2506,10 @@ replacements, only those needed.'''
             if checkpoint.is_file():
                 story = check_plan(json.loads(checkpoint.read_text()), require_presentation=False)
             else:
-                story = self._request(j, lambda: _model_json(
-                    self.llm, PLAN + "\n\n" + browser_guidance("planner"), request, check_plan, tokens=5000))
+                with self._measure(j, 'storyboard'):
+                    story = self._request(j, lambda: _model_json(
+                        self.llm, PLAN + "\n\n" + browser_guidance("planner"), request, check_plan,
+                        tokens=12000 if j.get("targetBeats") and j["targetBeats"] > 12 else 5000))
                 checkpoint.write_text(json.dumps(story, ensure_ascii=False))
             j["storyboard"] = story
             j["request"] = request
@@ -2507,10 +2563,13 @@ replacements, only those needed.'''
             j["stage"] = "Generating and compiling the native ManimGL scene"
             nodes_by_beat = {c["id"]: [n["id"] for n in (c.get("visual") or {}).get("nodes") or []]
                              for c in candidate.get("chapters") or []}
-            manifest = generate_scene(self.llm, story, self._native_interpreter(), folder,
-                                      nodes_by_beat=nodes_by_beat, contract=contract)
+            with self._measure(j, 'native_scene'):
+                manifest = generate_scene(self.llm, story, self._native_interpreter(), folder,
+                                          nodes_by_beat=nodes_by_beat, contract=contract,
+                                          reuse=not j.get('regenerate', False))
             j["stage"] = "Fitting native narration to its scene window"
-            candidate = condense_narration(self.llm, candidate, manifest, native_ids)
+            with self._measure(j, 'narration_fitting'):
+                candidate = condense_narration(self.llm, candidate, manifest, native_ids)
             lesson = assemble(candidate, story, manifest, native_ids, contract=contract)
             lesson["visualContract"] = contract
             lesson["nativeMode"] = mode
@@ -2524,7 +2583,8 @@ replacements, only those needed.'''
             if self.narration is not None:
                 j["stage"] = "Recording and measuring the lesson narration"
                 from .synchronization import compile_speech
-                lesson = compile_speech(self, j, lesson)
+                with self._measure(j, 'speech'):
+                    lesson = compile_speech(self, j, lesson)
             lesson["review"] = {"approved": True, "method": "native-and-layout-hybrid",
                                 "findings": [], "observations": []}
             lesson["quiz"] = _build_reinforcement_quiz(lesson)
@@ -2549,7 +2609,7 @@ replacements, only those needed.'''
             j=self.jobs.get(job_id)
             if not j:raise PlanError('Lesson preparation expired')
             if j['status']!='awaiting_review' or payload.get('revision')!=j['revision']:return self.status(job_id)
-            samples=_list(payload.get('frames'),'browser review frames',2,36)
+            samples=_list(payload.get('frames'),'browser review frames',2,60)
             candidate=j['candidate'];expected={(i,pos) for i,c in enumerate(candidate['chapters']) for pos in (('early','middle','finished') if c['visual']['layout']=='diagram' else ('early','finished'))};seen=set();frames=[];labels=[]
             for sample in samples:
                 pair=(sample.get('chapter'),sample.get('position'))

@@ -160,7 +160,7 @@ def align_recordings(narration,clips,progress,*,timeout=None):
     for clip in clips:
         audio=narration.folder/(clip['key']+'.mp3')
         lang=clip.get('language') or detect_language(clip.get('text',''))
-        prompt=clip.get('prompt') or clip.get('text','')
+        prompt=clip.get('prompt') or ''
         sig=ENGINE if lang=='en' and not prompt else f"{ENGINE}:{lang}:{prompt[:100]}"
         key=hashlib.sha256(audio.read_bytes()+sig.encode()).hexdigest();output=narration.folder/(key+'.words.json');outputs.append(output)
         if not output.exists():pending.append({'audio':str(audio),'output':str(output),'language':lang,'prompt':prompt})

@@ -78,6 +78,11 @@ class VisualService:
         self.visual_beats = VisualBeatFactory(self.llm, STUDIO_DIR)
 
     def health(self) -> dict:
+        try:
+            self.live._native_interpreter()
+            native_ready = True
+        except PlanError:
+            native_ready = False
         return {"service": "qweeps-visual", "version": 1, "platform": os.environ.get("QWEEPS_PLATFORM", "desktop"),
                 "model": (self.llm.visual_model or os.environ.get('QWEEPS_ANTIGRAVITY_VISUAL_MODEL','gemini-3.8-flash-high')
                           if isinstance(self.llm, AntigravityLLM) else getattr(self.llm,'model',self.cfg.llm.model)),
@@ -87,7 +92,7 @@ class VisualService:
                 "freeOnly": getattr(self.llm,'free_only',False),
                 "modelUsage": self.llm.metrics() if hasattr(self.llm,'metrics') else None,
                 "fallbackProvider": None if isinstance(self.llm, AntigravityLLM) or getattr(self.llm,'free_only',False) else self.cfg.llm.fallback_provider,
-                "manimReady": self.renderer is not None, "tts": self.cfg.tts.provider,
+                "manimReady": self.renderer is not None, "nativeManimReady": native_ready, "tts": self.cfg.tts.provider,
                 "renderBackend": os.environ.get("QWEEPS_RENDER_BACKEND", "local"),
                 "rendererUrl": os.environ.get("QWEEPS_GM_URL", "http://127.0.0.1:8080"),
                 "teachingMethod": "qweeps-visual-teaching",
@@ -872,7 +877,7 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             route = urlsplit(self.path).path
             length = int(self.headers.get("Content-Length", "0"))
-            limit=150_000_000 if route=='/api/visual/documents' else 24_000_000 if route=='/api/visual/live/review' else 2_000_000 if route=='/api/visual/live/check' else 250_000
+            limit=150_000_000 if route=='/api/visual/documents' else 48_000_000 if route=='/api/visual/live/review' else 2_000_000 if route=='/api/visual/live/check' else 250_000
             if not 0 < length <= limit:
                 raise PlanError(f"Request must be 1–{limit} bytes")
             payload = json.loads(self.rfile.read(length))

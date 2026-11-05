@@ -50,8 +50,35 @@ _CE_COLOR_ALIASES = {
     "LOGO_RED": "#E07A5F", "LOGO_WHITE": "#ECE7E2",
     "PURE_BLUE": "#0000FF", "PURE_CYAN": "#00FFFF", "PURE_GREEN": "#00FF00",
     "PURE_MAGENTA": "#FF00FF", "PURE_RED": "#FF0000", "PURE_YELLOW": "#FFFF00",
+    # Common generated-scene spellings that ManimCE authors use informally.
+    "BG": "#071117", "BG_COLOR": "#071117", "BACKGROUND": "#071117",
+    "CYAN": "#00FFFF", "AQUA": "#00FFFF", "MAGENTA": "#FF00FF",
+    "LIME": "#00FF00", "NAVY": "#000080", "SKYBLUE": "#87CEEB",
 }
 globals().update(_CE_COLOR_ALIASES)
+
+
+def _ce_point(value):
+    """ManimCE accepts list points; ManimGL's curved geometry subtracts them."""
+    if isinstance(value, (list, tuple)):
+        return np.asarray(value, dtype=float)
+    return value
+
+
+def _ce_curved_geometry(factory):
+    def wrapped(*args, **kwargs):
+        args = tuple(_ce_point(value) for value in args[:2]) + args[2:]
+        for key in ("start_point", "end_point", "start", "end"):
+            if key in kwargs:
+                kwargs[key] = _ce_point(kwargs[key])
+        return factory(*args, **kwargs)
+    return wrapped
+
+
+for _name in ("CurvedArrow", "CurvedDoubleArrow", "ArcBetweenPoints"):
+    _factory = globals().get(_name)
+    if _factory is not None:
+        globals()[_name] = _ce_curved_geometry(_factory)
 
 
 class ManimColor(str):
