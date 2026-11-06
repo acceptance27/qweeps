@@ -110,6 +110,7 @@ python -m assistant.visual.server
 
 Open [the studio](http://127.0.0.1:4174), or launch any of the bundled lessons:
 - [P vs NP: The $1,000,000 Question (20 beats hybrid)](http://127.0.0.1:4174/?lesson=b1b20bea700000000000000000000001)
+- [Architecture & code tracing: a RAG answer with 17 function modules](http://127.0.0.1:4174/?lesson=a7c4e71f90d3426b84c719ea064bd230)
 - [Binary Search Algorithm (6 beats walkthrough)](http://127.0.0.1:4174/?lesson=1ac198aec0efc9ba04dfa14bd242bd33)
 - [How Massless Light Materializes into Matter (4 beats)](http://127.0.0.1:4174/?lesson=61d56323819e14949204a5e95f1214fc)
 
@@ -127,6 +128,8 @@ The supplied build requires no npm command for playback. Provider construction h
 - **Ask Qweeps:**
   - **Text reply:** provides instant contextual answers and speech without altering or interrupting the scene.
   - **Branch mini-lesson:** generates a focused multi-beat visual sub-lesson (using native ManimGL or layout) diving into the queried concept, with breadcrumb navigation returning seamlessly to the saved parent timestamp, camera, and selection.
+
+For connected component diagrams and linked code/state walkthroughs, choose **Architecture & code trace** on the home screen. See [architecture tracing controls, authoring and limits](docs/architecture-flow.md).
 
 See [setup, controls, architecture and limitations](docs/visual-learning.md) for details.
 

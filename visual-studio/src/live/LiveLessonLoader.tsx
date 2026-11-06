@@ -133,6 +133,7 @@ export default function LiveLessonLoader() {
   const selected = selectedDocs.join(',');
   const [question, setQuestion] = useState(params.get('topic') || '');
   const [native, setNative] = useState(params.get('native') === '1');
+  const [presentation,setPresentation]=useState<'auto'|'architecture_flow'>('auto');
   const [nativeReady, setNativeReady] = useState(false);
   const [generateQuiz, setGenerateQuiz] = useState(params.get('quiz') === '1');
   const [openQuizOnLoad, setOpenQuizOnLoad] = useState(params.get('quiz') === '1');
@@ -383,6 +384,7 @@ export default function LiveLessonLoader() {
         documentIds: docIdsArray.length > 0 ? docIdsArray : undefined,
         resumeLessonId,
         native,
+        presentation,
         nativeMode: mode,
         generateQuiz: withQuiz,
       });
@@ -838,6 +840,12 @@ export default function LiveLessonLoader() {
                   if (e.target.files) void uploadMultiple(e.target.files);
                 }}
               />
+              <label className="live-presentation-choice" htmlFor="live-presentation">Presentation
+                <select id="live-presentation" aria-label="Lesson presentation" value={presentation} onChange={e=>{const value=e.target.value as 'auto'|'architecture_flow';setPresentation(value);if(value==='architecture_flow')setNative(false);}}>
+                  <option value="auto">Choose the best teaching method</option>
+                  <option value="architecture_flow">Architecture &amp; code trace</option>
+                </select>
+              </label>
               <div className="live-generator-options">
                 <label className="live-native-option"
                   style={{display:'flex',gap:6,alignItems:'center',color:'#9fb6bf',cursor:'pointer'}}
@@ -845,7 +853,7 @@ export default function LiveLessonLoader() {
                   <input
                     type="checkbox"
                     checked={native}
-                    disabled={!nativeReady}
+                    disabled={!nativeReady||presentation==='architecture_flow'}
                     onChange={e => setNative(e.target.checked)}
                   />{' '}
                   <span title={nativeReady ? 'Adds AI-written Python scenes, compilation and possible repairs. Browser animations already work without this.' : 'Native Manim needs the desktop renderer; browser animations remain available.'}>

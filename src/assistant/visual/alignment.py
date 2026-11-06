@@ -51,7 +51,11 @@ def phrase_range(script,phrase,occurrence=1):
 def cue_objects(chapter):
     if chapter.get('renderer') == 'manimgl' and chapter.get('nativeCueObjects'):
         return chapter['nativeCueObjects']
-    return (chapter.get('visual') or {}).get('nodes') or []
+    visual=chapter.get('visual') or {}
+    nodes=visual.get('nodes') or []
+    if visual.get('layout')=='architecture_flow':
+        nodes=[*nodes,*[{'id':p['id'],'title':p['payload'],'body':'Transfer '+p['payload']+' along '+p['edgeId'],'phase':'transfer'} for p in visual.get('flow',{}).get('packets',[])]]
+    return nodes
 
 
 def validate_anchors(raw,chapters):

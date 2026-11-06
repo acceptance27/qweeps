@@ -28,7 +28,8 @@ Each new live beat declares:
 `method` is a specific free-form approach, not a closed subject-to-style table.
 `why` explains the fit to this inference; `visualEvidence` identifies the actual
 observable change and what the learner can infer. `textMode: labels` requires the
-live `diagram` layout: use geometry, short labels/equations and a concise takeaway
+live `diagram`, `fanin` or `architecture_flow` layout: use visible geometry or
+code/data transformations, short labels/equations and a concise takeaway
 (at most 120 characters). Object `body` explanations remain available through
 selection/Details and Q&A, not as paragraphs on the construction. Do not hide
 paragraphs in artwork text or use labels mode merely to suppress necessary context.
@@ -64,3 +65,10 @@ and can an unfamiliar viewer understand the complete presentation? A
 caption-free diagnostic is helpful for a geometric proof or mechanism. For an
 infographic, retain its essential names, definitions and descriptions when
 judging comprehension. Reject decorative motion, not useful text.
+
+## Architecture/code traces
+
+For components, function drill-downs and source-linked execution traces, read
+[architecture flow](architecture-flow.md). The browser supports automatic graph
+layout, routed data packets and inspectable prepared function modules. Code is
+displayed, never executed by the renderer.

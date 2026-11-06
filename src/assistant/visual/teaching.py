@@ -9,12 +9,13 @@ from __future__ import annotations
 from .plan import PlanError
 
 TEACHING_LAYOUTS = {
+    "architecture": {"architecture_flow"},
     "construction": {"diagram"},
-    "mechanism": {"fanin", "diagram"},
+    "mechanism": {"fanin", "diagram", "architecture_flow"},
     "quantitative": {"diagram", "matrix"},
     "comparison": {"comparison", "matrix", "diagram"},
-    "procedure": {"process", "timeline"},
-    "algorithm": {"timeline", "process"},
+    "procedure": {"process", "timeline", "architecture_flow"},
+    "algorithm": {"timeline", "process", "architecture_flow"},
     "narrative": {"timeline"},
     "recall": {"loci", "concept"},
 }

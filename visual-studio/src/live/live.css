@@ -1959,3 +1959,5 @@
   .live-preparation-actions { padding: 8px 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .live-preparation-pixels i { animation: none; opacity: .7; } }
+
+.live-presentation-choice{display:grid;gap:7px;font-size:14px;margin:4px 0 12px}.live-presentation-choice select{width:100%;min-height:40px;background:#142923;color:#e8efdf;border:1px solid #70836c;border-radius:0;padding:8px 10px;font:14px var(--font-sans)}

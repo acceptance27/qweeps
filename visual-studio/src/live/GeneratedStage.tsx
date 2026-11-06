@@ -13,6 +13,7 @@ import {nodeBoxes,fitCopy,nodeCopy,diagramCopy,diagramEdge,conceptUsesGrid,gridR
 import {LiveAsset as Asset,palette} from './LiveAssets';
 import {DiagramArtwork} from './DiagramArtwork';
 import {diagramMotions} from './diagramMotion';
+const ArchitectureStage=React.lazy(()=>import('./architecture/ArchitectureStage'));
 const LiveAsset=memo(Asset);
 
 const TextBlock=memo(function TextBlock({font,text,x,y,width,height,size=23,minSize=18,className='node-copy',center=false,halo=false}:{font:Font|null;text:string;x:number;y:number;width:number;height:number;size?:number;minSize?:number;className?:string;center?:boolean;halo?:boolean}){
@@ -38,7 +39,7 @@ function edgeLabelPoint(p:{from:{x:number;y:number};to:{x:number;y:number}},offs
  return{x:x+nx*offset,y:y+ny*offset};
 }
 function Chapter({lesson,c,index,font,time,snapshot,role}:{lesson:LiveLesson;c:LiveChapter;index:number;font:Font|null;time:number;snapshot:LiveSnapshot;role:(id:string)=>React.SVGProps<SVGGElement>}){
- if(c.scene||c.renderer==='manimgl')return null;
+ if(c.scene||c.renderer==='manimgl'||c.visual?.layout==='architecture_flow')return null;
  const v=c.visual!,textMode=v.presentation?.textMode||'descriptive',grammar=chapterGrammar(c),boxes=useMemo(()=>grammar==='cards'?nodeBoxes(v):grammarBoxes(v,grammar),[v,grammar]),copies=useMemo(()=>boxes.map(b=>nodeCopy(font,b.node,b.width,b.height,v.layout)),[boxes,font,v.layout]),active=time>=(c.visualStart??c.start)&&time<(c.visualEnd??c.end)||time>=lesson.duration&&index===lesson.chapters.length-1;
  const choice=c.visual?.experiment?.choices[snapshot.experiments?.[c.id]??-1];
  const narrating=speechTarget(c,time),narratingObjects=speechTargets(c,time);
@@ -79,7 +80,7 @@ function Chapter({lesson,c,index,font,time,snapshot,role}:{lesson:LiveLesson;c:L
   <g className="generated-conclusion"><path d="M70 516H1370" stroke="#496776" strokeWidth="1"/><TextBlock font={font} text={v.takeaway} x={70} y={548} width={1300} height={50} size={textMode==='labels'?30:25}/></g>
  </g>;
 }
-export default function GeneratedStage({lesson,snapshot:s,focusRequest,update,pause,onReady,interactive=true}:StageProps){
+function LegacyGeneratedStage({lesson,snapshot:s,focusRequest,update,pause,onReady,interactive=true}:StageProps){
  const root=useRef<SVGSVGElement>(null),adapter=useRef<ReturnType<typeof createLessonAdapter>|null>(null),drag=useRef<{x:number;y:number;camera:LiveSnapshot['camera'];kind:'region'|'pan'}|null>(null);
  const {font,error}=useLessonFont();const[region,setRegion]=useState<LiveSnapshot['region']>(null);
  const index=visualBeatIndex(lesson.chapters,s.time),active=lesson.chapters[s.time>=lesson.duration?lesson.chapters.length-1:index],cx=720,cy=300,labelsMode=active.visual?.presentation?.textMode==='labels';
@@ -89,7 +90,7 @@ export default function GeneratedStage({lesson,snapshot:s,focusRequest,update,pa
   if(!root.current||!font)return;const element=root.current;
   const ctx=gsap.context(()=>{const t=gsap.timeline({paused:true});t.set('.generated-beat',{opacity:0});
    lesson.chapters.forEach((c,i)=>{
-    if(c.scene||c.renderer==='manimgl')return;
+    if(c.scene||c.renderer==='manimgl'||c.visual?.layout==='architecture_flow')return;
     const pacing=generatedPacing(c);
     const selector=`.generated-beat-${i}`;
     const visualStart=c.visualStart??c.start;
@@ -139,4 +140,9 @@ export default function GeneratedStage({lesson,snapshot:s,focusRequest,update,pa
    {region&&<rect x={region.x1} y={region.y1} width={region.x2-region.x1} height={region.y2-region.y1} stroke="#edca82" fill="#edca82" fillOpacity=".08"/>}
   </svg>
  </div>;
+}
+
+export default function GeneratedStage(props:StageProps){
+ const chapter=props.lesson.chapters[visualBeatIndex(props.lesson.chapters,props.snapshot.time)];
+ return chapter?.visual?.layout==='architecture_flow'&&props.lesson.architecture?<React.Suspense fallback={<div className="live-loading">Opening architecture…</div>}><ArchitectureStage {...props}/></React.Suspense>:<LegacyGeneratedStage {...props}/>;
 }

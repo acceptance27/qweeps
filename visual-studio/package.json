@@ -16,6 +16,7 @@
     "@hyperframes/core": "0.8.211",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",
+    "elkjs": "^0.12.1",
     "gsap": "^3.15.0",
     "lucide-react": "^0.546.0",
     "opentype.js": "^2.0.0",

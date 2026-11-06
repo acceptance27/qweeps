@@ -1,10 +1,11 @@
+import type {Architecture,FlowStep} from './architecture/types';
 import type {LiveSnapshot} from './geometry';
 import type {SceneProgram} from './sceneProgram';
 export type DiagramPrimitive={type:'path'|'circle'|'ellipse'|'rect'|'line'|'text';d?:string;text?:string;stroke:string;fill:string;strokeWidth:number;[key:string]:string|number|undefined};
 export type DiagramMotion={cue:string;dx:number;dy:number;scale:number;opacity:number;duration:number;delay:number};
 export type LiveNode={id:string;title:string;body:string;icon:string;color:string;at:number;tag:string;cells?:string[];position?:{x:number;y:number;width:number;height:number};artwork?:DiagramPrimitive[];motion?:DiagramMotion[]};
 export type BeatPresentation={method:string;why:string;visualEvidence:string;textMode:'labels'|'descriptive'};
-export type LiveVisual={layout:'comparison'|'process'|'matrix'|'concept'|'timeline'|'loci'|'diagram'|'fanin';presentation?:BeatPresentation;nodes:LiveNode[];connections:{from:string;to:string;label:string;at:number}[];columns:string[];takeaway:string;experiment?:{prompt:string;choices:{label:string;target:string;explanation:string}[]}|null};
+export type LiveVisual={flow?:FlowStep;layout:'architecture_flow'|'comparison'|'process'|'matrix'|'concept'|'timeline'|'loci'|'diagram'|'fanin';presentation?:BeatPresentation;nodes:LiveNode[];connections:{from:string;to:string;label:string;at:number}[];columns:string[];takeaway:string;experiment?:{prompt:string;choices:{label:string;target:string;explanation:string}[]}|null};
 export type SpeechCue={target:string;text:string;start:number;end:number;attention?:boolean;phrase?:string};
 export type LiveClip={video:string;offset?:number;duration?:number};
 export type LiveHotspot={id:string;label:string;x:number;y:number;w:number;h:number};
@@ -29,9 +30,9 @@ export interface QuizQuestion {
   itemLabel?: string;
 }
 
-export type LiveLesson={id:string;kind?:string;title:string;question:string;duration:number;audioTrack?:{url:string;key:string;duration:number;clock:'audio'};representation?:string;documentId?:string|null;documentTitle?:string|null;example?:{title:string;description:string;icon:string};chapters:LiveChapter[];nativeMode?:'per_beat'|'continuous';nativeScenes?:Record<string,NativeSceneManifest>;sources:{id?:string;title:string;url:string}[];quiz?:QuizQuestion[];reinforcementQuiz?:QuizQuestion[]};
+export type LiveLesson={id:string;rootLessonId?:string;architectureScope?:string;architecture?:Architecture;kind?:string;title:string;question:string;duration:number;audioTrack?:{url:string;key:string;duration:number;clock:'audio'};representation?:string;documentId?:string|null;documentTitle?:string|null;example?:{title:string;description:string;icon:string};chapters:LiveChapter[];nativeMode?:'per_beat'|'continuous';nativeScenes?:Record<string,NativeSceneManifest>;sources:{id?:string;title:string;url:string}[];quiz?:QuizQuestion[];reinforcementQuiz?:QuizQuestion[]};
 export type LiveJob={id:string;lessonId:string;status:'preparing'|'awaiting_review'|'reviewing'|'ready'|'failed';stage:string;revision:number;error?:string;candidate?:LiveLesson;speechSync?:boolean;canResume?:boolean;generateQuiz?:boolean};
-export type StageProps={lesson:LiveLesson;snapshot:LiveSnapshot;focusRequest:number;update:(fn:(s:LiveSnapshot)=>LiveSnapshot)=>void;pause:()=>void;onReady:(v:boolean)=>void;interactive?:boolean};
+export type StageProps={lesson:LiveLesson;snapshot:LiveSnapshot;focusRequest:number;update:(fn:(s:LiveSnapshot)=>LiveSnapshot)=>void;pause:()=>void;onReady:(v:boolean)=>void;interactive?:boolean;onDrill?:(functionId:string)=>void;onAskNode?:(nodeId:string)=>void;onSeek?:(time:number)=>void;};
 
 function cleanTitle(raw: string): string {
   return (raw || 'Concept').replace(/^\s*\d+[\.\)]\s*/, '').trim();

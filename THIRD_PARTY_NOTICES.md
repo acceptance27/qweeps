@@ -141,6 +141,20 @@ The current source uses HyperFrames' browser adapter and types. Retain its
 Apache-2.0 license and any NOTICE content supplied by the package when
 distributing that code. The Python backend does not require an Express server.
 
+### ELK.js
+
+- **Package:** `elkjs` 0.12.1, Eclipse Layout Kernel algorithms for JavaScript.
+- **Source:** https://github.com/kieler/elkjs
+- **License:** Eclipse Public License 2.0.
+- **Full text:** [LICENSES/EPL-2.0.txt](LICENSES/EPL-2.0.txt).
+- **Use:** unmodified layout engine for QWEEPS architecture/code graphs. The
+  application supplies graph data and consumes computed node/edge geometry.
+
+The RAG architecture reference was adapted from the user's Google AI Studio
+prototype. Its prepared examples are illustrative; QWEEPS displays their code and
+data rather than executing a model, vector database or Python source. The adaptation
+corrects the worked vector normalization and makes toy-tokenizer filtering explicit.
+
 ## Files with a different notice
 
 ### `visual-studio/src/App.tsx`
