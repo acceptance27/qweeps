@@ -1,10 +1,14 @@
 # Architecture and code traces
 
+The user explicitly rejected a simplified reinterpretation of the supplied architecture/code-tracing ZIP. Its original React components and interaction design are authoritative. Preserve the compound containers, nested blocks/ports/wires, full goal/input/output sidebar, specialized visual variants, minimap, resizable split, citation/evidence modal, authored questions, mini-explanation and playback/breadcrumb controls. Use `visual-studio/src/live/architecture/prototype/`; do not recreate a reduced UI. QWEEPS integrations belong behind those existing controls. Keep authored responses labelled and use the real provider for new learner questions.
+
+The reference uses the ZIP's prepared coordinates and routed port geometry for fidelity. New generated graphs use automatic layout. Do not describe the reference's ELK fixed-layout verification as automatic placement. Frame review must capture the actual prototype workspace, including its HTML visual cards and source/goal sidebar.
+
 Use `teaching: architecture` with `layout: architecture_flow` when the learner
 needs to follow a component boundary, function call, data transfer or code/state
 change. Mechanism, algorithm and procedure methods can also use this renderer.
 The one shared graph lives in `lesson.architecture`; chapters reference its IDs
-through `visual.flow`. ELK computes geometry and routed edges. Do not author node
+through `visual.flow`. For generated topologies, ELK computes geometry and routed edges. Do not author node
 coordinates or label a fixed-position diagram as automatic layout.
 
 Plan a concrete input, operation, result and the inference supported by that

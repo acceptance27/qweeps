@@ -1,34 +1,29 @@
 # Architecture and code tracing
 
-QWEEPS includes the architecture/code-tracing experience adapted from the supplied Google AI Studio prototype. It uses QWEEPS' green and gold theme, lesson library, narration transport, quizzes and contextual questions.
+The architecture workspace uses the actual React components supplied in `qweeps-architecture-&-code-tracing-prototype.zip`. The complete component tree, compound diagrams, port wiring, minimap, goals/inputs/outputs sidebar, visual cards, evidence modal, prepared questions, mini-explanation and playback bar are retained under `visual-studio/src/live/architecture/prototype/`.
 
-## Try it
+## Open the workspace
 
-Open [How a RAG answer is assembled](http://127.0.0.1:4174/?lesson=a7c4e71f90d3426b84c719ea064bd230) after starting QWEEPS. The authored example includes seven main beats and seventeen function modules. Gold code lines and **Enter function** open prepared reasoning steps. **Return** restores the parent's time, view and selection.
+Start QWEEPS and open [How a RAG answer is assembled](http://127.0.0.1:4174/?lesson=a7c4e71f90d3426b84c719ea064bd230). The supplied reference keeps its seven beats, 58-second visual timeline and seventeen function modules. It opens directly without generating replacement narration first.
 
-On the home screen choose **Architecture & code trace** under Presentation to generate a new explanation. Supply the relevant code or describe the system and a concrete input. This is a browser presentation and cannot be combined with native Manim. Automatic presentation selection remains available for other subjects.
+Use **Inspect Function ↘** on the compound diagram, or click an `@step` in the sidebar. **Back**, **L0** and the canvas breadcrumbs restore the saved parent view. **Overview / Fit All**, **Follow Beat**, zoom, pan and the minimap behave as in the ZIP. The divider resizes the sidebar. **Play** continues across beats; seeking and arrow-key navigation reconstruct the scene. Portrait uses the supplied Diagram/Code tabs; landscape uses the split workspace. Long sidebar content scrolls inside its bounded pane.
 
-## Interaction and layout
+**Verify [refund-policy]** and the citation badge open the original prepared-document evidence view. **Ask QWEEPS** retains the prototype's authored answers and three-step mini-explanation, explicitly labelled as local prototype content. **Ask your own question · QWEEPS AI** uses the configured QWEEPS provider with the current selection, function, code and values. These are separate, honestly labelled features.
 
-- Code and diagram share the same lesson playhead. Highlighted source lines, before/after values and traveling data packets reconstruct when seeking or rewinding.
-- Inspect a component for its complete data, code reference and connections. **Ask QWEEPS** opens the existing question composer with that selection; replies use the configured provider.
-- Gold function lines open prepared modules. Other mapped code lines seek to the corresponding beat.
-- The diagram follows the explanation. Drag empty space to pan, use the zoom controls, or choose the compass for the entire graph. The focus control resumes following.
-- Narrow portrait screens use **Diagram / Code** tabs. Short landscape screens retain the split view. The lesson page fits the viewport; long inspector contents scroll within the inspector.
-- The normal playback controls, keyboard navigation, reinforcement quiz and branch mini-lessons remain available.
+The workspace menu also connects to QWEEPS' lesson library, reinforcement quiz and narration toggle. Narration is off by default for the authored reference, matching its original presentation. Enabling it uses QWEEPS' narration transport. Generated lessons with an existing continuous recording use that measured audio playhead; prepared reference/function explanations use individual clips and proportional authored timing, which is not measured word alignment.
 
-## Runtime and authoring
+## New explanations
 
-`architecture_flow.py` validates a shared, coordinate-free graph, source excerpts, prepared functions and per-beat transfers/state. Nodes and packets have stable semantic IDs; edges declare data, control, lookup or reference relationships. Code references must identify displayed lines. ELK computes layered, routed geometry; the cache includes topology and content rather than only a graph ID. Its bundle loads only for architecture lessons.
+On the home screen select **Architecture & code trace**. The existing Python generation, source/factual checks, narration and review pipeline produces the shared graph/code contract. The supplied workspace components display it through `workspace.ts`. The prepared RAG example keeps its original compound geometry and routing. New graph topologies use actual layered ELK layout; layout cache keys include graph content.
 
-New generation builds the shared graph/code contract before directing each beat. The existing source, factual, narrative and rendered review pipeline also receives graph/code context. The preparation view captures actual SVG frames at early, intermediate and finished states, including the source pane. Continuous narration maps packet IDs to exact spoken phrases and measured word times; the renderer uses the same audio playhead. Prepared function modules use the existing per-chapter narration transport, with authored timing until measured cues are supplied.
+The preparation screen renders the same workspace used for playback. `captureWorkspace.ts` freezes computed presentation into a self-contained browser image, retaining HTML cards, the goals/output sidebar and diagram. Early, middle and finished review frames are captured from the actual renderer. Mixed lessons continue using their existing per-chapter presentation.
 
-This is an educational visualization, not a Python sandbox, debugger, repository indexer or real database/model executor. Displayed source and illustrative runtime values must be identified honestly. The RAG example uses prepared vectors, retrieval scores and generated text. The prototype's incorrect normalization was corrected; its toy stopword rules are explicit. Similarity scores remain illustrative because their document vectors were not supplied. Real model generation still depends on configured providers and review and may take several minutes.
+The code is displayed teaching material; the visualization does not execute Python or a live retrieval/model pipeline. The prepared examples and similarity scores remain illustrative. Content-only corrections retain the supplied layout: the unit vector is recalculated from the actual norm 1.8891267824, the input length is 39, and toy stopword filtering is stated. The reference's original playhead maps to the saved backend lesson scope for contextual answers and quizzes.
 
-The renderer runs in the same web interface on Windows/Linux and the Android WebView. A responsive browser check does not establish testing on a physical Android device. After source changes, rebuild the APK with `npm run android:build`; desktop development uses `npm run dev`.
+## Source and checks
 
-## Checks
+The original ZIP is untouched. Its SHA-256 is `ec69064957bec290f7829723f10ae7edb18e340792cb8a50cbceac8aafc87a6c`. The original data modules and component implementations are copied into the repository. Integration changes are limited to QWEEPS entry points, data binding, review capture, narration, scoped typography, TypeScript compatibility and the noted content corrections. No extra prototype server or API credential is required.
 
-`npm run lint`, `npm test`, and `.venv/bin/python -m pytest tests/ -q` cover the frontend and Python suite. Architecture checks include graph/reference validation, real ELK node separation and cycle routing, changed-topology cache invalidation, measured packet timing, deterministic rewind, nested scope context, and atomic publication of synchronized saved lessons.
+Run `npm run lint`, `npm test` and `.venv/bin/python -m pytest tests/test_architecture_flow.py tests/test_visual_browser_lessons.py tests/test_visual_synchronization.py -q`. The fidelity tests cover all seventeen modules, specialized visual variants, original compound port geometry, rewind, generated-graph layout and question-clock mapping. See [browser verification notes](architecture-flow-review.md).
 
-The original reference ZIP remains untouched. `bench/convert_architecture_reference.py` reproduces the adaptation from its exported data; it does not execute uploaded application code. ELK's EPL-2.0 license and notices are included in the distributed app.
+Use `npm run android:build` to rebuild the APK after changes. The same React workspace is bundled into the Android WebView; a successful build and responsive browser checks do not establish testing on physical hardware.

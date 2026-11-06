@@ -110,6 +110,7 @@ def test_different_recording_cannot_reuse_old_word_timestamps(tmp_path):
 
 def test_interrupted_mapping_resumes_only_missing_beats_without_publishing_partial_audio(tmp_path):
  import json,time
+ from threading import Event
  from unittest.mock import Mock,patch
  from assistant.visual.synchronization import compile_speech,fingerprint
  base=lesson();base['chapters'][0]['visual']['nodes']=[{'id':n['id'],'title':n['id'],'body':n['id']} for n in base['chapters'][0]['visual']['nodes']]
@@ -118,10 +119,13 @@ def test_interrupted_mapping_resumes_only_missing_beats_without_publishing_parti
  narration=Mock(folder=tmp_path);narration.signature.return_value={'voice':'test'};narration.prepare_lesson.return_value={'key':'clip'}
  (tmp_path/'clip.pcm').write_bytes(bytes(RATE*2*18))
  store=Mock(folder=tmp_path,narration=narration);store._request.side_effect=lambda job,call:call()
+ mapped_first=Event()
  def mapping(_llm,_system,payload,validator,**_kwargs):
   chapter=payload['chapters'][0]
-  if chapter['id']=='second':raise PlanError('provider interrupted')
-  p=plan();p['chapters'][0]['id']=chapter['id'];return validator(p)
+  if chapter['id']=='second':
+   assert mapped_first.wait(2),'the resume scenario requires a completed first mapping'
+   raise PlanError('provider interrupted')
+  p=plan();p['chapters'][0]['id']=chapter['id'];result=validator(p);mapped_first.set();return result
  with patch('assistant.visual.synchronization._model_json',side_effect=mapping):
   with pytest.raises(PlanError,match='interrupted'):compile_speech(store,{'lessonId':base['id']},base)
  deadline=time.monotonic()+2

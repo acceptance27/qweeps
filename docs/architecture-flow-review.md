@@ -1,26 +1,23 @@
-# Architecture tracing verification — 6 November 2026
+# Supplied prototype restoration — 6 November 2026
 
-The user-supplied prototype was adapted as an authored reference, not presented as an AI-generated result. All seven main final states were inspected in the actual QWEEPS browser player, together with representative outer/inner function views, inspector contents and code references. The reference contains seventeen validated function modules; this does not claim an independent learning-outcome evaluation or visual review of every module state.
+The first implementation (`ff105be`) simplified the supplied ZIP into a different player. The user rejected that reinterpretation and explicitly requested the original implementation. This revision copies and uses the original React component tree, compound port geometry, rich visual variants and interaction design. QWEEPS' existing lesson URL now opens that workspace.
 
-Corrections made during adaptation/review:
+## Browser checks
 
-- Replaced fixed coordinates and an ID-only layout cache with actual ELK layout keyed by full graph content.
-- Preserved source indentation and monospace rendering; kept long values accessible in the inspector.
-- Corrected the worked raw-vector norm from 2 to 1.8891267824 and recalculated the unit vector. The displayed rounded result has norm approximately 0.999990.
-- Made the toy stopword and punctuation rules explicit, corrected the input string length to 39 characters, and identified prepared similarity scores.
-- Removed promises of an app-wide clickable citation link which the adapted viewer does not implement; inspection shows the connected illustrative source passage.
-- Kept text replies on the real QWEEPS provider and discarded the prototype's canned-answer system.
-- Created the writable speech-checkpoint directory before synchronizing a bundled lesson and atomically published the returned synchronized lesson.
+Compared the original ZIP running on port 3001 with the restored QWEEPS route on port 4174. Both were opened at 1280×720. The overview, compact header, original 34% sidebar, nested compound blocks and wires, minimap, caption region, gold playback controls and seven beat tabs are retained. The original data modules remain intact; numerical corrections are applied separately without flattening their fields or illustrations.
 
-Playback checks:
+Checked the outer `embed(question)` view and inner `@tokenize` view in the actual browser. Both preserve the full goal/input/output sidebar and detailed static/input/logic/output cards. The inner view retains colored token tiles, the cleanup mapping and discard bin. All seventeen function modules and the specialized visual variants are also covered by fidelity tests.
 
-- Browser viewport 390×844: Diagram/Code tabs and transport fit the portrait page.
-- Browser viewport 844×390: split code/diagram view and compact controls fit landscape.
-- Seek at 28 seconds → 122 seconds → 28 seconds: identical packet progress 0.76199, SVG transform and camera after rewind.
-- Nested function return: restored the saved parent at 139.01 seconds.
-- Real generated lesson audio: paused audio at 17.384911 seconds, visual playhead 17.368 seconds; both remained paused across subsequent observations.
-- Real contextual text reply explained the selected `embed()` call, retained the exact displayed vector and identified its illustrative nature.
+The original evidence interaction opens the prepared three-document modal, highlighting the refund-policy sentence, keeping returns-guide as procedural context and showing shipping-guide excluded. The drawer retains prepared question cards, explicitly authored responses and its three-step mini-explanation. The added real-question composer received a provider-backed answer correctly naming the raw input string and Beat 1 from the paused context.
 
-A separate fresh three-beat `double(3) → 6` lesson ran through the configured generation provider, factual/narrative checks, continuous Fish narration, measured word alignment, nine actual browser review frames and the vision reviewer. Its local lesson ID is `b9b5f4202374e5509e1cbe05c1dd44d2`; the review receipt reports approval without findings. Recorded phases: storyboard 43.722 s; shared architecture 113.345 s; artwork 277.973 s (includes architecture work); factual review 23.663 s; narrative review 13.196 s; speech 168.518 s. These are one smoke run, not a speed benchmark. Cached receipts live with that generated lesson in the normal runtime cache and are not shipped as source fixtures.
+At 10 seconds, seeking to 45 seconds and back reconstructed an identical serialized diagram. Playback from 7.95 seconds advanced automatically into Beat 2 and paused at 8.467 seconds. Navigation does not require clicking Next for each beat.
 
-The Android release APK builds successfully with the bundled frontend, Python and authored example. Mobile browser QA and an APK build are not a claim of testing on a physical Android device. Prepared function modules use ordinary per-chapter narration and authored timing unless measured cues are supplied; the generated root lesson used measured continuous narration.
+A local browser probe captured the actual restored workspace as a self-contained image, including HTML visual cards, the full goals/output sidebar, compound diagram, minimap, caption, header and playback bar. The capture was visually inspected. `LivePreparation` uses the same renderer and capture path for architecture-only candidates; its desktop review surface is 1280×720 even when generation is initiated from a narrow viewport.
+
+The previously generated `double(3) → 6` lesson also opens through the supplied workspace components using the QWEEPS contract adapter and actual automatic layout for its new graph. Its earlier generation/vision-review receipt predates this UI restoration and must not be presented as a new model review of the restored renderer.
+
+## Validation and scope
+
+Frontend type checking and 91 tests pass. The architecture/browser/synchronization Python selection passes 99 tests. An existing interruption/resume test exposed an ordering assumption: its mocked second request could fail before the supposed completed first request ran. Its setup now explicitly coordinates that completed mapping before triggering interruption; production cancellation behavior is unchanged.
+
+The Android release APK builds with the restored workspace. Browser viewport checks cover portrait and landscape. These checks and a successful APK build are not a claim of physical-device testing. The authored reference retains its original short visual timeline; optional reference/function speech uses individual clips with authored proportional timing. Existing generated continuous tracks keep their measured audio clock.

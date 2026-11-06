@@ -150,8 +150,9 @@ distributing that code. The Python backend does not require an Express server.
 - **Use:** unmodified layout engine for QWEEPS architecture/code graphs. The
   application supplies graph data and consumes computed node/edge geometry.
 
-The RAG architecture reference was adapted from the user's Google AI Studio
-prototype. Its prepared examples are illustrative; QWEEPS displays their code and
+The RAG architecture workspace preserves the React components, illustrations and
+interaction design from the user's supplied Google AI Studio prototype under
+`visual-studio/src/live/architecture/prototype/`. Its prepared examples are illustrative; QWEEPS displays their code and
 data rather than executing a model, vector database or Python source. The adaptation
 corrects the worked vector normalization and makes toy-tokenizer filtering explicit.
 

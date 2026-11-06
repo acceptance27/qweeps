@@ -1,0 +1,10 @@
+/* The supplied ZIP's typography and bounded workspace, scoped to its own player. */
+.qweeps-architecture-prototype { --q-bg:#0B1717;--q-panel:#142B25;--q-panel-elevated:#1A362E;--q-border:#486356;--q-text:#EEF3E9;--q-muted:#B5C5BD;--q-gold:#E0BE72;--q-mint:#7BD3B0;--q-blue:#91B9CC;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.01em; }
+.qweeps-architecture-prototype code,.qweeps-architecture-prototype pre,.qweeps-architecture-prototype .font-mono {font-family:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-variant-numeric:tabular-nums}
+.qweeps-architecture-prototype .font-pixel{font-family:'Silkscreen',monospace}
+.qweeps-architecture-prototype ::-webkit-scrollbar{width:6px;height:6px}
+.qweeps-architecture-prototype ::-webkit-scrollbar-track{background:#0B1717}
+.qweeps-architecture-prototype ::-webkit-scrollbar-thumb{background:#354D42;border-radius:3px}
+.qweeps-architecture-prototype ::-webkit-scrollbar-thumb:hover{background:#486356}
+
+.prototype-review [data-workspace-mobile-tabs]{display:none!important}.prototype-review [data-workspace-pane=code]{display:flex!important;width:34%!important}.prototype-review [data-workspace-pane=diagram]{display:flex!important}

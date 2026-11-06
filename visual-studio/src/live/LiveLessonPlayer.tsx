@@ -1,7 +1,7 @@
 import {architectureModule,flowContext,functionLesson} from './architecture/timeline';
 import {nativeSceneTime} from './nativeTiming';
 import PixelQ from '../components/PixelQ';
-import {useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {lazy,Suspense,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ArrowLeft,ArrowUpRight,Brain,ChevronLeft,ChevronRight,MessageCircle,Menu,Pause,Play,Sparkles,Volume2,VolumeX,X,RotateCcw,GitBranch} from 'lucide-react';
 import rizalManifest from '../../public/lessons/rizal_live.json';
 import {api} from '../learning/types';
@@ -225,6 +225,8 @@ function EnhancedLiveLessonPlayer({initialLesson,initialTime=0,initialOpenQuiz=f
  {pendingBranch&&<LivePreparation jobId={pendingBranch.jobId} onCancel={()=>setPendingBranch(null)} onReady={lesson=>{pause();setParents(p=>[...p,{snapshot:pendingBranch.snapshot,label:pendingBranch.label,audioPosition:pendingBranch.audioPosition,lesson:pendingBranch.lesson}]);setManifest(lesson);setState(initialLiveSnapshot());resumeOffset.current=null;setSeekVersion(v=>v+1);setPendingBranch(null);setBranchReason('A focused explanation of your question · return to your saved place at any time.');setStatus('Focused live lesson ready');}}/>}
  </main>;
 }
+const PrototypePlayer=lazy(()=>import('./architecture/prototype/PrototypePlayer'));
 export default function LiveLessonPlayer(props: {initialLesson?:LiveLesson;initialTime?:number;initialOpenQuiz?:boolean}={}) {
+ if(props.initialLesson?.architecture&&props.initialLesson.chapters.every(c=>c.visual?.layout==='architecture_flow'))return <Suspense fallback={<div className="live-loading">Opening architecture workspace…</div>}><PrototypePlayer initialLesson={props.initialLesson} initialTime={props.initialTime} initialOpenQuiz={props.initialOpenQuiz}/></Suspense>;
  return <EnhancedLiveLessonPlayer {...props}/>;
 }

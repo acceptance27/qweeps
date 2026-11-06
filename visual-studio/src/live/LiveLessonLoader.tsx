@@ -523,7 +523,7 @@ export default function LiveLessonLoader() {
       generateQuiz ||
       params.get('quiz') === '1' ||
       params.get('beat') === 'quiz';
-    if (!isQuiz && value.kind === 'live_generated' && !value.audioTrack && syncAvailable.current && params.get('nosync') !== '1') {
+    if (!isQuiz && value.id !== 'a7c4e71f90d3426b84c719ea064bd230' && value.kind === 'live_generated' && !value.audioTrack && syncAvailable.current && params.get('nosync') !== '1') {
       void api<LiveJob>('live/synchronize', { lessonId: value.id })
         .then(j => setJob(j.id))
         .catch(e => setError(e.message));

@@ -34,6 +34,7 @@ export class NarrationTransport {
  async resume(){this.wanted=true;const epoch=this.epoch;if(this.current)await this.current;if(!this.wanted||epoch!==this.epoch||!this.ready||this.audio.ended||this.audio.currentTime>=this.audio.duration-.03)return;await this.audio.play();}
  stop(){this.pause();this.epoch++;this.ready=false;this.loading=false;this.text='';this.current=null;this.audio.removeAttribute('src');this.emit();}
  dispose(){this.stop();(this.audio as HTMLAudioElement).remove?.();}
+ get duration(){return Number.isFinite(this.audio.duration)?this.audio.duration:0;}
  get position(){return this.audio.currentTime;}
  get isReady(){return this.ready;}
  get isPlaying(){return this.playing;}

@@ -1,10 +1,12 @@
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {captureWorkspace} from './architecture/prototype/captureWorkspace';
+import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {api} from '../learning/types';
 import {initialLiveSnapshot} from './geometry';
 import type {LiveJob,LiveLesson} from './lessonTypes';
 import GeneratedStage from './GeneratedStage';
 import PreparationCard from './PreparationCard';
 
+const PrototypeWorkspace=lazy(()=>import('./architecture/prototype/PrototypeWorkspace'));
 const afterPaint=()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));
 let fontData:Promise<string>|null=null;
 async function capture(svg:SVGSVGElement){
@@ -25,7 +27,7 @@ export default function LivePreparation({jobId,onReady,onCancel,onRetry}:{jobId:
  useEffect(()=>{let alive=true,pending=false;const poll=async()=>{if(pending||completed.current)return;pending=true;try{const result=await api<LiveJob>(`live/jobs/${jobId}`);if(!alive)return;setJob(result);if(result.status==='ready'){const lesson=await api<LiveLesson>(`live/lessons/${result.lessonId}`);if(alive){completed.current=true;callback.current(lesson);}}else if(result.status==='failed')setError(result.error||'Lesson preparation failed.');}catch(e){if(alive)setError((e as Error).message);}finally{pending=false;}};
   void poll();const id=setInterval(poll,1200);return()=>{alive=false;clearInterval(id);};},[jobId]);
  useEffect(()=>{if(job?.status!=='awaiting_review'||!candidate)return;const key=jobId+':'+job.revision;if(reviewed.current===key)return;reviewed.current=key;let cancelled=false;
-  async function inspect(){try{await document.fonts.ready;const frames=[];for(let i=0;i<candidate!.chapters.length;i++){const c=candidate!.chapters[i];if(c.renderer==='manimgl')continue;const positions=['diagram','architecture_flow'].includes(c.visual?.layout||'')?['early','middle','finished'] as const:['early','finished'] as const;for(const position of positions){if(cancelled)return;const time=position==='finished'?c.finishedAt:position==='middle'?((c.visualStart??c.start)+c.finishedAt)/2:(c.visualStart??c.start)+Math.min(3,(c.end-(c.visualStart??c.start))*.15);setCaptureStatus(`Checking illustration ${i+1} of ${candidate!.chapters.length}`);setSnapshot({...initialLiveSnapshot(),time});await afterPaint();const deadline=Date.now()+15000;while(!drawingReady.current){if(cancelled)return;if(Date.now()>deadline)throw new Error('The lesson renderer did not become ready for frame review.');await afterPaint();}await afterPaint();const svg=sheet.current?.querySelector('svg.live-stage-svg') as SVGSVGElement|null;if(!svg)throw new Error('The live review surface did not mount.');frames.push({chapter:i,position,time,base64:await capture(svg)});}}
+  async function inspect(){try{await document.fonts.ready;const frames=[];for(let i=0;i<candidate!.chapters.length;i++){const c=candidate!.chapters[i];if(c.renderer==='manimgl')continue;const positions=['diagram','architecture_flow'].includes(c.visual?.layout||'')?['early','middle','finished'] as const:['early','finished'] as const;for(const position of positions){if(cancelled)return;const time=position==='finished'?c.finishedAt:position==='middle'?((c.visualStart??c.start)+c.finishedAt)/2:(c.visualStart??c.start)+Math.min(3,(c.end-(c.visualStart??c.start))*.15);setCaptureStatus(`Checking illustration ${i+1} of ${candidate!.chapters.length}`);setSnapshot({...initialLiveSnapshot(),time});await afterPaint();const deadline=Date.now()+15000;while(!drawingReady.current){if(cancelled)return;if(Date.now()>deadline)throw new Error('The lesson renderer did not become ready for frame review.');await afterPaint();}await afterPaint();const prototype=sheet.current?.querySelector('.qweeps-architecture-prototype') as HTMLElement|null;const svg=sheet.current?.querySelector('svg.live-stage-svg') as SVGSVGElement|null;if(!svg)throw new Error('The live review surface did not mount.');frames.push({chapter:i,position,time,base64:prototype?await captureWorkspace(prototype):await capture(svg)});}}
    if(!cancelled){setCaptureStatus('Reviewing the explanation against its sources…');const layoutIssues=Array.from(sheet.current?.querySelectorAll('[data-layout-issue]')||[]).map(e=>({beat:e.closest('[data-chapter]')?.getAttribute('data-chapter'),problem:e.getAttribute('data-layout-issue')}));await api('live/review',{jobId,revision:job!.revision,frames,layoutIssues});}
   }catch(e){if(!cancelled)setError((e as Error).message);}}
   void inspect();return()=>{cancelled=true;};
@@ -38,6 +40,6 @@ export default function LivePreparation({jobId,onReady,onCancel,onRetry}:{jobId:
    onCancel={onCancel}
    onRetry={error&&job?.status==='failed'&&onRetry?()=>onRetry(job):undefined}
   />
-  {candidate&&<div ref={sheet} className="live-review-surface" aria-hidden="true"><GeneratedStage lesson={candidate} snapshot={snapshot} focusRequest={0} update={setSnapshot} pause={()=>{}} onReady={drawingChanged} interactive={false}/></div>}
+  {candidate&&<div ref={sheet} className="live-review-surface" style={candidate.architecture&&candidate.chapters.every(c=>c.visual?.layout==='architecture_flow')?{height:720}:undefined} aria-hidden="true">{candidate.architecture&&candidate.chapters.every(c=>c.visual?.layout==='architecture_flow')?<Suspense fallback={null}><PrototypeWorkspace lesson={candidate} reviewTime={snapshot.time} onRenderReady={drawingChanged} onQuiz={()=>{}} onClose={()=>{}} onToggleVoice={()=>{}}/></Suspense>:<GeneratedStage lesson={candidate} snapshot={snapshot} focusRequest={0} update={setSnapshot} pause={()=>{}} onReady={drawingChanged} interactive={false}/>}</div>}
  </div>;
 }

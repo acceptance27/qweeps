@@ -62,7 +62,7 @@ def data_visual(value):
     if value.get('variant') not in VARIANTS:
         raise PlanError('Choose a supported data visual variant')
     visual = {'variant': value['variant']}
-    for key in ('title', 'subtitle', 'highlightText', 'footerNote'):
+    for key in ('title', 'subtitle', 'highlightText', 'footerNote', 'headerBadge', 'normLabel'):
         if key in value:
             visual[key] = text(value[key], 'Visual ' + key, 600, optional=True)
     if 'lines' in value:
