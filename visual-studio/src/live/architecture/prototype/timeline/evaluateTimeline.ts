@@ -6,6 +6,7 @@ import {
   NodeBeatState,
   NodeId,
   Step,
+  CustomVisualCardSpec,
 } from '../types/lesson';
 
 export interface ActivePacketFrame {
@@ -19,6 +20,8 @@ export interface ActivePacketFrame {
 }
 
 export interface EvaluatedNodeFrame {
+  valueRef?: string;
+  visual?: CustomVisualCardSpec;
   id: NodeId;
   isFocused: boolean;
   isActive: boolean;
@@ -63,13 +66,15 @@ export function computeFocusCameraForNodes(
   focusNodeIds: NodeId[],
   layout: ComputedGraphLayout,
   viewportWidth: number,
-  viewportHeight: number
+  viewportHeight: number,
+  minimumZoom=.54
 ): CameraState {
-  const safeW = Math.max(320, viewportWidth);
-  const safeH = Math.max(260, viewportHeight);
-  const topInset = 52;
-  const bottomInset = 98;
-  const sideInset = 36;
+  const generated = minimumZoom < .5;
+  const safeW = Math.max(generated ? 1 : 320, viewportWidth);
+  const safeH = Math.max(generated ? 1 : 260, viewportHeight);
+  const topInset = generated ? Math.min(52, safeH * .1) : 52;
+  const bottomInset = generated ? Math.min(98, safeH * .25) : 98;
+  const sideInset = generated ? Math.min(36, safeW * .1) : 36;
 
   const targetIds =
     focusNodeIds.length > 0 ? focusNodeIds : (Object.keys(layout.nodes) as NodeId[]);
@@ -92,16 +97,16 @@ export function computeFocusCameraForNodes(
     return { x: safeW / 2, y: safeH / 2, zoom: 0.75 };
   }
 
-  const padX = 115;
-  const padY = 85;
-  const boxW = Math.max(520, maxX - minX + padX * 2);
-  const boxH = Math.max(320, maxY - minY + padY * 2);
+  const padX = generated ? 24 : 115;
+  const padY = generated ? 24 : 85;
+  const boxW = Math.max(generated ? 1 : 520, maxX - minX + padX * 2);
+  const boxH = Math.max(generated ? 1 : 320, maxY - minY + padY * 2);
 
-  const availW = Math.max(220, safeW - sideInset * 2);
-  const availH = Math.max(160, safeH - topInset - bottomInset);
+  const availW = Math.max(generated ? 1 : 220, safeW - sideInset * 2);
+  const availH = Math.max(generated ? 1 : 160, safeH - topInset - bottomInset);
 
   const rawZoom = Math.min(availW / boxW, availH / boxH);
-  const zoom = Math.max(0.54, Math.min(0.95, rawZoom));
+  const zoom = Math.max(minimumZoom, Math.min(0.95, rawZoom));
 
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
@@ -118,14 +123,16 @@ export function computeFocusCameraForNodes(
 export function computeOverviewCamera(
   layout: ComputedGraphLayout,
   viewportWidth: number,
-  viewportHeight: number
+  viewportHeight: number,
+  minimumZoom=.32
 ): CameraState {
   const allIds = Object.keys(layout.nodes) as NodeId[];
-  const safeW = Math.max(320, viewportWidth);
-  const safeH = Math.max(260, viewportHeight);
-  const topInset = 44;
-  const bottomInset = 96;
-  const sideInset = 28;
+  const generated = minimumZoom < .32;
+  const safeW = Math.max(generated ? 1 : 320, viewportWidth);
+  const safeH = Math.max(generated ? 1 : 260, viewportHeight);
+  const topInset = generated ? Math.min(44, safeH * .1) : 44;
+  const bottomInset = generated ? Math.min(96, safeH * .25) : 96;
+  const sideInset = generated ? Math.min(28, safeW * .1) : 28;
 
   let minX = Infinity;
   let minY = Infinity;
@@ -144,10 +151,10 @@ export function computeOverviewCamera(
   const boxW = Math.max(400, maxX - minX + 90);
   const boxH = Math.max(260, maxY - minY + 90);
 
-  const availW = Math.max(220, safeW - sideInset * 2);
-  const availH = Math.max(160, safeH - topInset - bottomInset);
+  const availW = Math.max(generated ? 1 : 220, safeW - sideInset * 2);
+  const availH = Math.max(generated ? 1 : 160, safeH - topInset - bottomInset);
 
-  const zoom = Math.max(0.32, Math.min(0.95, Math.min(availW / boxW, availH / boxH)));
+  const zoom = Math.max(minimumZoom, Math.min(0.95, Math.min(availW / boxW, availH / boxH)));
   const centerX = (minX + maxX) / 2;
   const centerY = (minY + maxY) / 2;
 
@@ -156,6 +163,30 @@ export function computeOverviewCamera(
     y: topInset + availH / 2 - centerY * zoom,
     zoom,
   };
+}
+
+function cameraForStep(step:Step,time:number,graph:ArchitectureGraph,layout:ComputedGraphLayout,width:number,height:number,reduced:boolean):CameraState {
+  const generated=graph.id.startsWith('generated-');
+  const all=computeFocusCameraForNodes(step.focusNodes,layout,width,height,generated?.04:.54);
+  if(!generated||all.zoom>=.7||step.focusNodes.length===1)return all;
+  // Keep follow mode readable; overview remains the explicit whole-graph view.
+  const transfer=[...step.packets].sort((a,b)=>b.start-a.start).find(packet=>packet.start<=time);
+  const edge=graph.edges.find(edge=>edge.id===(transfer?.edgeId||step.activeEdges[0]));
+  const source=edge?.source||step.focusNodes[0],target=edge?.target||source;
+  const before=computeFocusCameraForNodes([source],layout,width,height,.04);
+  const after=computeFocusCameraForNodes([target],layout,width,height,.04);
+  if(!transfer)return before;
+  if(reduced)return time>=transfer.end?after:before;
+  const route=layout.edges[transfer.edgeId],from=layout.nodes[source],to=layout.nodes[target];
+  if(!route||!from||!to)return after;
+  const progress=Math.max(0,Math.min(1,(time-transfer.start)/Math.max(.001,transfer.end-transfer.start)));
+  const point=interpolatePointOnPolyline(route.points,easeInOutCubic(progress));
+  const enter=easeInOutCubic((time-transfer.start)/.6),settle=easeInOutCubic((time-transfer.end)/.6);
+  const x=(from.x+from.width/2)*(1-enter)+point.x*enter;
+  const y=(from.y+from.height/2)*(1-enter)+point.y*enter;
+  const zoom=Math.min(before.zoom,after.zoom);
+  const top=Math.min(52,height*.1),bottom=Math.min(98,height*.25);
+  return{zoom,x:width/2-(x+(to.x+to.width/2-x)*settle)*zoom,y:top+(height-top-bottom)/2-(y+(to.y+to.height/2-y)*settle)*zoom};
 }
 
 /**
@@ -245,7 +276,7 @@ export function evaluateTimeline(
   }
 
   // Apply current step's nodeDataBefore or nodeDataAfter
-  const currentStepNodeMap = isTransformComplete ? step.nodeDataAfter : step.nodeDataBefore;
+  const currentStepNodeMap = {...step.nodeDataBefore,...(isTransformComplete?step.nodeDataAfter:{})};
   for (const [nodeId, data] of Object.entries(currentStepNodeMap)) {
     if (data) {
       cumulativeNodeState[nodeId as NodeId] = data;
@@ -272,6 +303,8 @@ export function evaluateTimeline(
     const beatState = cumulativeNodeState[node.id];
 
     nodeFrames[node.id] = {
+      valueRef: beatState?.valueRef ?? node.valueRef,
+      visual: beatState?.visual,
       id: node.id,
       isFocused,
       isActive,
@@ -285,23 +318,13 @@ export function evaluateTimeline(
   }
 
   // Compute deterministic camera interpolation across step transitions
-  const currentStepCamera = computeFocusCameraForNodes(
-    step.focusNodes,
-    layout,
-    viewportWidth,
-    viewportHeight
-  );
+  const currentStepCamera = cameraForStep(step,stepLocalTime,graph,layout,viewportWidth,viewportHeight,reducedMotion);
 
   let targetCamera = currentStepCamera;
   const cameraTransitionDuration = 1.15;
   if (!reducedMotion && stepIndex > 0 && stepLocalTime < cameraTransitionDuration) {
     const prevStep = steps[stepIndex - 1];
-    const prevCamera = computeFocusCameraForNodes(
-      prevStep.focusNodes,
-      layout,
-      viewportWidth,
-      viewportHeight
-    );
+    const prevCamera = cameraForStep(prevStep,prevStep.duration,graph,layout,viewportWidth,viewportHeight,reducedMotion);
     const tCam = easeInOutCubic(stepLocalTime / cameraTransitionDuration);
     targetCamera = {
       x: prevCamera.x + (currentStepCamera.x - prevCamera.x) * tCam,

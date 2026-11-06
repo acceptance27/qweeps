@@ -1,0 +1,192 @@
+{
+  "examples": [
+    {
+      "id": "c2f23f412a9ebe90c9eb4ea2ec59ea01",
+      "title": "RAG with Headset Return",
+      "grounding": "illustrative",
+      "chapters": 4,
+      "duration": 123.81429166666666,
+      "sourceReviewApproved": true,
+      "narrativeReviewApproved": true,
+      "frameReviewApproved": true,
+      "frameReviewMethod": "actual-browser-svg-frames-and-vision-model",
+      "frames": [
+        {
+          "chapter": 0,
+          "position": "early",
+          "time": 2.8
+        },
+        {
+          "chapter": 0,
+          "position": "middle",
+          "time": 18.6
+        },
+        {
+          "chapter": 0,
+          "position": "finished",
+          "time": 33.7
+        },
+        {
+          "chapter": 1,
+          "position": "early",
+          "time": 41.65
+        },
+        {
+          "chapter": 1,
+          "position": "middle",
+          "time": 52.2
+        },
+        {
+          "chapter": 1,
+          "position": "finished",
+          "time": 65.65
+        },
+        {
+          "chapter": 2,
+          "position": "early",
+          "time": 73.8
+        },
+        {
+          "chapter": 2,
+          "position": "middle",
+          "time": 82.95
+        },
+        {
+          "chapter": 2,
+          "position": "finished",
+          "time": 95.2
+        },
+        {
+          "chapter": 3,
+          "position": "early",
+          "time": 102.1
+        },
+        {
+          "chapter": 3,
+          "position": "middle",
+          "time": 111.05
+        },
+        {
+          "chapter": 3,
+          "position": "finished",
+          "time": 122.9
+        }
+      ],
+      "calculationMethod": "deterministic-example-calculations",
+      "generation": {
+        "provider": "opencode-go",
+        "model": "opencode-go/muse-spark-1.3-contributor",
+        "visionModel": "opencode-go/muse-spark-1.3-contributor"
+      }
+    },
+    {
+      "id": "a8493a9501e6d83711faf9347c7ef9fb",
+      "title": "Small Shop Support RAG \u2014 Modest Proposed Design",
+      "grounding": "proposed",
+      "chapters": 3,
+      "duration": 91.47470833333333,
+      "sourceReviewApproved": true,
+      "narrativeReviewApproved": true,
+      "frameReviewApproved": true,
+      "frameReviewMethod": "actual-browser-svg-frames-and-vision-model",
+      "frames": [
+        {
+          "chapter": 0,
+          "position": "early",
+          "time": 3
+        },
+        {
+          "chapter": 0,
+          "position": "middle",
+          "time": 16.735
+        },
+        {
+          "chapter": 0,
+          "position": "finished",
+          "time": 33.47
+        },
+        {
+          "chapter": 1,
+          "position": "early",
+          "time": 44.199999999999996
+        },
+        {
+          "chapter": 1,
+          "position": "middle",
+          "time": 52.44499999999999
+        },
+        {
+          "chapter": 1,
+          "position": "finished",
+          "time": 63.69
+        },
+        {
+          "chapter": 2,
+          "position": "early",
+          "time": 73.44
+        },
+        {
+          "chapter": 2,
+          "position": "middle",
+          "time": 80.28999999999999
+        },
+        {
+          "chapter": 2,
+          "position": "finished",
+          "time": 90.13999999999999
+        }
+      ],
+      "calculationMethod": "deterministic-example-calculations",
+      "generation": {
+        "provider": "opencode-go",
+        "model": "opencode-go/muse-spark-1.3-contributor",
+        "visionModel": "opencode-go/muse-spark-1.3-contributor"
+      }
+    }
+  ],
+  "physicalAndroidTest": false,
+  "timingScope": "Interrupted and resumed real runs. No single end-to-end speed benchmark is claimed.",
+  "browserChecks": [
+    "source file and selected-line switching",
+    "generated function drill-down and exact parent restoration",
+    "continuous audio clock advances without Next",
+    "pause stable at 53.485081 seconds",
+    "arbitrary forward seek and rewind",
+    "390x844 portrait and 844x390 landscape form controls fit without page overflow",
+    "portrait Diagram/Code tabs",
+    "twelve current UI screenshot frames independently reviewed by real provider"
+  ],
+  "sharedContractRepair": {
+    "patches": [
+      {
+        "op": "add",
+        "path": "/workedExample/calculations/0/parameters/metric",
+        "value": "dot"
+      },
+      {
+        "op": "replace",
+        "path": "/codeFiles/0/lines/28/text",
+        "value": "    ranked = sorted([(\"policy\", s_policy), (\"shipping\", s_ship)], key=lambda x: x[1], reverse=True)"
+      },
+      {
+        "op": "replace",
+        "path": "/graph/nodes/1/defaultPreview",
+        "value": "{\"id\": \"policy\", \"text\": \"Refunds within 30 days\", \"score\": 0.9}"
+      },
+      {
+        "op": "replace",
+        "path": "/graph/nodes/1/visual/lines/0",
+        "value": "{\"id\": \"policy\", \"text\": \"Refunds within 30 days\", \"score\": 0.9}"
+      }
+    ]
+  },
+  "validation": {
+    "pythonPassed": 573,
+    "pythonSkipped": 2,
+    "frontendPassed": 99,
+    "typescript": "passed",
+    "androidReleaseBuild": "passed",
+    "apkSignature": "verified",
+    "apkSha256": "2214f91f7f9de70d578c593985bd9b99ad20a4aa2a28dc2518b8af7285b8d0d1"
+  }
+}

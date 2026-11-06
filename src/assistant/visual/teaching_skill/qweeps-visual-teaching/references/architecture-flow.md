@@ -46,3 +46,47 @@ Keep full source and values accessible through inspection instead of shrinking
 them into unreadable cards. Use readable focus by default and an explicit whole
 graph overview. The Android browser route uses the same SVG renderer and bundled
 layout engine, with code/diagram tabs on narrow portrait screens.
+
+## Generation goals and calculated examples
+
+Choose the requested goal, rather than requiring a repository for every system:
+Learn uses an illustrative worked example; Design proposes a system with explicit
+assumptions and tradeoffs; Inspect requires supplied source and preserves its
+structural evidence. Repository scans describe selected files and static imports,
+not a complete call graph or runtime execution. Do not invent edges between
+unconnected files. JS/TS import heuristics must remain marked inferred.
+
+Learn contracts include `workedExample: {inputs, calculations}`. Supported operations
+are normalize, mean, dot, cosine, similarities, rank, take, get, tokenize, concat and
+format. Each calculation references earlier named values. The server computes
+`workedExample.values`; it does not execute authored code. Bind graph nodes,
+packets and nodeData entries with `valueRef`, and variable state with
+`stateBeforeRefs` / `stateAfterRefs`. Review the computed results independently
+and use the same facts in prose, diagrams, function modules and displayed source.
+Toy vectors do not become real model embeddings because their arithmetic is checked.
+
+Populate the actual renderer fields: vector-bars uses floats; token-tiles uses
+tiles; lookup-table, funnel-pool, score-meter, podium-rank, gate-keep-drop,
+blueprint-slots, heatmap-spotlight and citation-verifier use rows; paper-card,
+doc-scroll and dropped-bin use lines; output-pill uses highlightText. Avoid empty
+specialized cards. Keep focused groups small and inspect code-file changes,
+portrait and short landscape viewports, pause, seek and rewind on the real host.
+Keep the original prototype interface and reference coordinates unchanged.
+
+For repository-generated chapters keep packets empty and variable states empty;
+a source scan has no execution trace. Show real static imports and source excerpts.
+For Design, a component proposal normally needs no function modules. Add one only
+when the learner needs the internal inference, rather than making each storyboard
+beat a redundant function. Review the card summaries as rendered: full JSON belongs
+in inspection, document cards should expose IDs/text/vectors concisely, and score
+bar scale must be explicit. State changes must update actual bars/tables, not just
+text previews, and card bounds must accommodate later results.
+
+When review finds a material shared-contract error, correct the shared authored
+specification before revising chapters that consume it. Recompute derived values;
+never patch calculated receipts directly. For similarities declare metric cosine
+or dot explicitly when their distinction matters, and keep code and wording in
+agreement. In generated follow mode, a broad group may become an unreadable
+poster: follow its measured transfer at readable scale and retain Overview as the
+explicit whole-system view. Packet labels should summarize IDs/results concisely;
+full records stay available in inspection.

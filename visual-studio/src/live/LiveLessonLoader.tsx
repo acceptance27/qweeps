@@ -134,6 +134,8 @@ export default function LiveLessonLoader() {
   const [question, setQuestion] = useState(params.get('topic') || '');
   const [native, setNative] = useState(params.get('native') === '1');
   const [presentation,setPresentation]=useState<'auto'|'architecture_flow'>('auto');
+  const [repoPath,setRepoPath]=useState(params.get('repoPath')||'');
+  const [architectureMode,setArchitectureMode]=useState<'learn'|'design'|'inspect'>(params.get('repoPath')?'inspect':params.get('architectureMode')==='design'?'design':'learn');
   const [nativeReady, setNativeReady] = useState(false);
   const [generateQuiz, setGenerateQuiz] = useState(params.get('quiz') === '1');
   const [openQuizOnLoad, setOpenQuizOnLoad] = useState(params.get('quiz') === '1');
@@ -385,6 +387,8 @@ export default function LiveLessonLoader() {
         resumeLessonId,
         native,
         presentation,
+        repoPath: presentation==='architecture_flow'&&architectureMode==='inspect'?repoPath.trim()||undefined:undefined,
+        architectureMode: presentation==='architecture_flow'?architectureMode:undefined,
         nativeMode: mode,
         generateQuiz: withQuiz,
       });
@@ -751,7 +755,7 @@ export default function LiveLessonLoader() {
               </div>
             )}
 
-            <form className="live-create-form"
+            <form className="live-create-form" data-presentation={presentation}
               onSubmit={e => {
                 e.preventDefault();
                 void start();
@@ -767,7 +771,7 @@ export default function LiveLessonLoader() {
                 placeholder="Explain how a neuron sends a signal..."
                 rows={3}
               />
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
+              <div className="live-source-heading" style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
                 <label htmlFor="live-source">Source material (Multiple PDFs/PPTX supported)</label>
                 {selectedDocs.length > 0 && (
                   <button
@@ -846,6 +850,26 @@ export default function LiveLessonLoader() {
                   <option value="architecture_flow">Architecture &amp; code trace</option>
                 </select>
               </label>
+              {presentation==='architecture_flow'&&<label className="live-presentation-choice" htmlFor="architecture-goal">Goal
+                <select id="architecture-goal" aria-label="Architecture goal" value={architectureMode} onChange={e=>setArchitectureMode(e.target.value as 'learn'|'design'|'inspect')}>
+                  <option value="learn">Learn how a system works</option><option value="design">Design a new system</option><option value="inspect">Inspect supplied source</option>
+                </select>
+                <small style={{color:'#9db5a5'}}>{architectureMode==='learn'?'Follow a worked example with calculated values. No repository needed.':architectureMode==='design'?'Describe your requirements. The proposal includes assumptions and tradeoffs.':'Select a source document above, or enter a local repository below.'}</small>
+              </label>}
+              {presentation === 'architecture_flow' && architectureMode==='inspect' && (
+                <label className="live-repo-choice" htmlFor="live-repo-path" style={{display:'grid',gap:6,marginTop:10}}>
+                  <span>Repository path <small style={{color:'#8ba3ac'}}>(optional; scans real files, imports and line evidence)</small></span>
+                  <input
+                    id="live-repo-path"
+                    aria-label="Repository path"
+                    value={repoPath}
+                    onChange={e=>setRepoPath(e.target.value)}
+                    placeholder="Path to your local source folder"
+                    style={{background:'#10242e',color:'#dbe6e6',border:'1px solid #365360',borderRadius:5,padding:'8px 10px',fontFamily:'ui-monospace,monospace',fontSize:'0.8rem'}}
+                  />
+                  <small style={{color:'#8ba3ac'}}>The scan shows source relationships; it does not execute your code.</small>
+                </label>
+              )}
               <div className="live-generator-options">
                 <label className="live-native-option"
                   style={{display:'flex',gap:6,alignItems:'center',color:'#9fb6bf',cursor:'pointer'}}

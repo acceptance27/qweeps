@@ -17,6 +17,7 @@ import {
 
 interface CodePaneProps {
   rootCodeLines:CodeLineItem[];
+  sourceFile?:{file:string;language:string;lines:CodeLineItem[]};
   resolveFunction:(id:string|null)=>SubFunctionLesson|null;
   rootStepCount:number;
   showPreparedEvidence:boolean;
@@ -40,6 +41,7 @@ interface CodePaneProps {
 }
 
 export const CodePane: React.FC<CodePaneProps> = ({
+  sourceFile,
   rootCodeLines:ANSWER_PY_LINES,
   resolveFunction:resolveSubFunctionLesson,
   rootStepCount,
@@ -60,12 +62,11 @@ export const CodePane: React.FC<CodePaneProps> = ({
   onReturnToMacroPipeline,
   backTargetLabel,
 }) => {
-  const highlightSet = new Set(highlightedLines);
-
   // If the learner clicked a node on the canvas, find that node and its incoming/outgoing edges
   const selectedNode = selectedNodeId
     ? activeGraph.nodes.find((n) => n.id === selectedNodeId) ?? null
     : null;
+  const highlightSet = new Set(selectedNode && sourceFile && selectedNode.codeReference.file === sourceFile.file ? selectedNode.codeReference.lines : highlightedLines);
 
   const incomingEdges = selectedNodeId
     ? activeGraph.edges.filter((e) => e.target === selectedNodeId)
@@ -86,7 +87,7 @@ export const CodePane: React.FC<CodePaneProps> = ({
   const beatAtTitle = !activeSubFunction
     ? representedBeatLesson
       ? `@${representedBeatLesson.functionName}`
-      : showPreparedEvidence?'@question (Entry Input)':currentStep.code.file
+      : showPreparedEvidence?'@question (Entry Input)':(sourceFile?.file||currentStep.code.file)
     : activeSubFunction.functionName.startsWith('@')
     ? activeSubFunction.functionName
     : `@${activeSubFunction.functionName}`;
@@ -101,7 +102,7 @@ export const CodePane: React.FC<CodePaneProps> = ({
       if (scopedStepLines.length === 0) scopedStepLines = [ANSWER_PY_LINES[0]];
     }
   } else {
-    scopedStepLines = activeSubFunction.codeLines;
+    scopedStepLines = sourceFile?.lines.filter(line=>highlightSet.has(line.lineNumber))||activeSubFunction.codeLines;
   }
 
   const totalBeatsCount = activeSubFunction ? activeSubFunction.steps.length : rootStepCount;
@@ -248,6 +249,27 @@ export const CodePane: React.FC<CodePaneProps> = ({
           </div>
         )}
 
+        {selectedNode && (selectedNode.evidence?.length || selectedNode.confidence) && (
+          <div className="rounded border border-[#486356] bg-[#0B1717] p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#7BD3B0]">Evidence</span>
+              {selectedNode.confidence && <span className="font-mono text-[9px] uppercase tracking-wider text-[#E0BE72]">{selectedNode.confidence}</span>}
+            </div>
+            {(selectedNode.evidence||[]).length === 0 && <p className="text-[11px] text-[#8AA399]">No source evidence attached; treat this node as illustrative.</p>}
+            {(selectedNode.evidence||[]).map((ref, idx) => (
+              <div key={idx} className="rounded bg-[#142B25]/80 border border-[#486356]/60 px-2 py-1.5 text-[10.5px] font-mono text-[#B5C5BD] space-y-0.5">
+                <div className="text-[#7BD3B0]">{ref.kind}{ref.path?` · ${ref.path}`:''}{ref.symbol?` · ${ref.symbol}`:''}{ref.page?` · p.${ref.page}`:''}{ref.lines?.length?` · L${ref.lines.join(',')}`:''}</div>
+                {ref.quote && <div className="text-[#EEF3E9]/80 whitespace-pre-wrap">{ref.quote}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {sourceFile&&!showPreparedEvidence&&<div className="rounded border border-[#486356] bg-[#0B1717] overflow-hidden" aria-label="Displayed source code">
+          <div className="px-3 py-2 text-xs font-mono text-[#7BD3B0] border-b border-[#486356]">{sourceFile.file} · {sourceFile.language}</div>
+          <pre className="overflow-x-auto p-3 text-[12px] leading-relaxed font-mono select-text">{sourceFile.lines.filter(line=>Math.abs(line.lineNumber-Math.min(...(selectedNode?.codeReference.lines||currentStep.code.lines)))<=5).map(line=><span key={line.lineNumber} className={`block whitespace-pre ${highlightSet.has(line.lineNumber)?'text-[#E0BE72] bg-[#1A362E]':'text-[#B5C5BD]'}`}>{String(line.lineNumber).padStart(3)}  {line.text||' '}</span>)}</pre>
+        </div>}
+        {selectedNode?.valueRef&&<div className="rounded border border-[#486356] bg-[#0B1717] p-3 text-xs text-[#7BD3B0]">Calculated example: <code>{selectedNode.valueRef}</code><p className="mt-1 text-[#B5C5BD] whitespace-pre-wrap break-words">{selectedNode.defaultPreview}</p></div>}
         {/* Step Goals & Outputs for the @ represented by the current beat */}
         <div className="rounded border border-[#486356] bg-[#0B1717] overflow-hidden shadow-sm">
           <div className="px-3 py-2 border-b border-[#486356]/70 bg-[#142B25]/70 flex items-center justify-between gap-2">

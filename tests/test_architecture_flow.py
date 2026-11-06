@@ -143,3 +143,30 @@ def test_source_indentation_and_blank_lines_are_preserved():
     lines=validate_architecture(architecture)['codeFiles'][0]['lines']
     assert lines[1]['text']=='    return value * 2'
     assert lines[2]['text']==''
+
+
+def test_misplaced_complete_referenced_function_is_recovered_without_inventing_data():
+    raw=draft();a=raw['architecture'];chapter=raw['chapters'][0]
+    module={'title':'Double','summary':'One displayed doubling operation.',
+        'graph':copy.deepcopy(a['graph']),'codeFiles':copy.deepcopy(a['codeFiles']),
+        'steps':[{k:copy.deepcopy(chapter[k]) for k in ('id','title','question','narration','insight','safeguard','duration','flow')}]}
+    a['graph']['nodes'][0]['drillDownFunctionId']='double_fn';a['double_fn']=module
+    result=validate_architecture(a)
+    assert result['functions']['double_fn']['graph']==validate_architecture({'version':1,'graph':module['graph'],'codeFiles':module['codeFiles']})['graph']
+    assert a['functions']=={},'Normalizing a provider shape must not mutate the response receipt'
+    a.pop('double_fn')
+    with pytest.raises(PlanError,match='double_fn'):validate_architecture(a)
+
+
+def test_incomplete_function_error_identifies_the_module_and_missing_parts():
+    a=draft()['architecture'];a['functions']['broken']={'title':'Broken','summary':'Missing details','codeFiles':a['codeFiles']}
+    with pytest.raises(PlanError,match='Function broken is incomplete: missing graph, steps'):validate_architecture(a)
+
+
+def test_function_navigation_cycle_via_step_is_rejected():
+    raw=draft();a=raw['architecture'];chapter=raw['chapters'][0]
+    a['functions']['again']={'title':'Again','summary':'Step navigation cannot recurse forever.',
+        'graph':copy.deepcopy(a['graph']),'codeFiles':copy.deepcopy(a['codeFiles']),
+        'steps':[{k:copy.deepcopy(chapter[k]) for k in ('id','title','question','narration','insight','safeguard','duration','flow')}]}
+    a['functions']['again']['steps'][0]['flow']['drillDownFunctionId']='again'
+    with pytest.raises(PlanError,match='acyclic'):validate_architecture(a)

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Volume2, VolumeX, Brain, LogOut, HelpCircle, Menu, RotateCcw, CheckCircle2, Eye, FileText, X } from 'lucide-react';
+import { Volume2, VolumeX, Brain, LogOut, HelpCircle, Menu, RotateCcw, CheckCircle2, Eye, FileText, X, ShieldCheck, FlaskConical, GitBranch } from 'lucide-react';
 import { PixelQMark } from './PixelQMark';
 
 interface HeaderProps {
@@ -9,6 +9,11 @@ interface HeaderProps {
   voice?:boolean;
   onToggleVoice?:()=>void;
   isReference?:boolean;
+  grounding?:'illustrative'|'proposed'|'source-backed';
+  assumptions?:string[];
+  tradeoffs?:string[];
+  limitations?:string[];
+  evidenceCount?:number;
   lessonTitle: string;
   currentBeatNumber: number;
   currentBeatTitle: string;
@@ -25,7 +30,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  totalSteps=7,onCloseLesson,onOpenQuiz,voice,onToggleVoice,isReference=true,
+  totalSteps=7,onCloseLesson,onOpenQuiz,voice,onToggleVoice,
+  grounding='illustrative',assumptions=[],tradeoffs=[],limitations=[],evidenceCount=0,
   lessonTitle,
   currentBeatNumber,
   currentBeatTitle,
@@ -73,9 +79,36 @@ export const Header: React.FC<HeaderProps> = ({
           <h1 className="text-sm sm:text-base font-semibold text-[#EEF3E9] truncate">
             {lessonTitle}
           </h1>
-          <span className="text-[11px] sm:text-xs text-[#B5C5BD] whitespace-nowrap shrink-0">
-            {isReference?'Illustrative prototype':'Architecture walkthrough'}
-          </span>
+          <details className="relative shrink-0 group">
+            <summary
+              className={`list-none cursor-pointer text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider px-2 py-1 rounded border flex items-center gap-1.5 whitespace-nowrap ${
+                grounding === 'source-backed'
+                  ? 'border-[#7BD3B0]/70 text-[#7BD3B0] bg-[#7BD3B0]/10'
+                  : grounding === 'proposed'
+                  ? 'border-[#38BDF8]/70 text-[#38BDF8] bg-[#38BDF8]/10'
+                  : 'border-[#E0BE72]/70 text-[#E0BE72] bg-[#E0BE72]/10'
+              }`}
+              title="Grounding, assumptions, limitations and evidence"
+            >
+              {grounding === 'source-backed' ? <GitBranch className="w-3 h-3" /> : grounding === 'proposed' ? <FlaskConical className="w-3 h-3" /> : <ShieldCheck className="w-3 h-3" />}
+              <span>{grounding === 'source-backed' ? 'Source-backed' : grounding === 'proposed' ? 'Proposed' : 'Illustrative'}</span>
+              {evidenceCount > 0 && <span className="hidden sm:inline opacity-70">· {evidenceCount} evidence</span>}
+            </summary>
+            <div className="fixed left-3 top-14 mt-1 z-50 w-80 max-w-[calc(100vw-24px)] max-h-[calc(100dvh-80px)] overflow-y-auto rounded border border-[#486356] bg-[#0B1717] p-3 text-left normal-case tracking-normal font-sans shadow-xl">
+              <div className="text-xs font-semibold text-[#EEF3E9] mb-1">Grounding</div>
+              <p className="text-[11px] leading-relaxed text-[#B5C5BD]">
+                {grounding === 'source-backed'
+                  ? 'Structural claims are tied to supplied source evidence. Runtime values still require a trace or fixture.'
+                  : grounding === 'proposed'
+                  ? 'This is a proposed design. Assumptions and tradeoffs are part of the explanation, not measured facts.'
+                  : 'This is an authored worked example. Values and code are illustrative, not measured from a running system.'}
+              </p>
+              {assumptions.length > 0 && <><div className="text-[10px] font-mono text-[#38BDF8] mt-2 mb-0.5">ASSUMPTIONS</div><ul className="list-disc pl-4 space-y-1 text-[11px] text-[#B5C5BD]">{assumptions.map((a,i)=><li key={i}>{a}</li>)}</ul></>}
+              {tradeoffs.length>0&&<><div className="text-[10px] font-mono text-[#38BDF8] mt-2 mb-0.5">TRADEOFFS</div><ul className="list-disc pl-4 space-y-1 text-[11px] text-[#B5C5BD]">{tradeoffs.map((a,i)=><li key={i}>{a}</li>)}</ul></>}
+              {limitations.length > 0 && <><div className="text-[10px] font-mono text-[#E0BE72] mt-2 mb-0.5">LIMITATIONS</div><ul className="list-disc pl-4 space-y-1 text-[11px] text-[#B5C5BD]">{limitations.map((a,i)=><li key={i}>{a}</li>)}</ul></>}
+              <div className="text-[10px] font-mono text-[#8AA399] mt-2">{evidenceCount} evidence reference{evidenceCount===1?'':'s'} in this graph</div>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -100,9 +133,10 @@ export const Header: React.FC<HeaderProps> = ({
               : 'bg-[#0B1717]/80 text-[#EEF3E9] border-[#486356] hover:border-[#E0BE72] hover:text-[#E0BE72]'
           }`}
           aria-expanded={isAskOpen}
+          aria-label="Ask QWEEPS"
         >
           <HelpCircle className="w-4 h-4 shrink-0" />
-          <span>Ask QWEEPS</span>
+          <span className="hidden sm:inline">Ask QWEEPS</span>
         </button>
 
         <div className="relative" ref={menuRef}>

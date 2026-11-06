@@ -1,0 +1,102 @@
+{
+  "approved": true,
+  "findings": [],
+  "observations": [
+    "question-embedding: Early frames show Question card with Can I return my headset?, Toy query [1,0] bars +1.00/+0.00, and Toy docs with [0.9,0.1], [0.65,0.35], [0,1]; finished frame adds L2 norm 1.0000 and Ready states with full caption readable and no overlap.",
+    "cosine-rank: Early frame centers Cosine ranking bars 0.9939/0.8805/0.0 with orthogonal note, middle frame shows packet returns-policy:0.9939 support-guide:0.8805 flowing to Ranked order, finished frame shows Ranked order 1-returns-policy kept, 2-support-guide kept, 3-shipping-guide dropped as Ready, all captions readable.",
+    "assemble-prompt: frames 73.8 to 95.2 progress from cosine bars 0.9939/0.8805 to two kept texts funneling into Context then into Prompt ready card with full `Question: Can I return my headset? Context: Returns are accepted... | Include your order number...` readable and code answer.py build_context/build_prompt highlighted.",
+    "illustrative-answer: frames 102.1 to 122.9 progress from prompt-to-generator inputs to gen-to-answer packet with returns-policy/support-guide IDs to finished Illustrative answer card showing both cited texts plus `Cited: returns-policy, support-guide - Calculated example` and header ILLUSTRATIVE - 17 EVIDENCE retained throughout."
+  ],
+  "presentationChecks": [
+    {
+      "beat": "question-embedding",
+      "methodFits": true,
+      "evidenceVisible": true,
+      "textSupports": true,
+      "observation": "Concrete case grounding visible as query pill, three doc cards with vector-bars, blue Question-to-Toy-query edge, and retrieval.py lines 1-6 highlighted; establishes one trackable question and three fixed toy vectors before math."
+    },
+    {
+      "beat": "cosine-rank",
+      "methodFits": true,
+      "evidenceVisible": true,
+      "textSupports": true,
+      "observation": "Worked execution visible as three vectors converging on Rank by cosine with score-meter bars, then ordered IDs emerging to Ranked view with kept/kept/dropped; establishes why 0.9939, 0.8805 keep and 0.0 drops via alignment with [1,0]."
+    },
+    {
+      "beat": "assemble-prompt",
+      "methodFits": true,
+      "evidenceVisible": true,
+      "textSupports": true,
+      "observation": "Mechanism demonstration visible: two kept doc lines funnel through blue packet into Context node then join question in Prompt card; build_context lines 2-4 highlighted in answer.py and left Step Goals shows kept_docs scores and full_prompt, directly answering how top two assemble."
+    },
+    {
+      "beat": "illustrative-answer",
+      "methodFits": true,
+      "evidenceVisible": true,
+      "textSupports": true,
+      "observation": "Annotated illustration visible: prompt enters Generator Inputs (QUESTION/CONTEXT), answer card emerges with returns-policy and support-guide chips plus shipping-guide not used, footer Calculated example, and bottom narration caption states retrieval does not update weights and citations do not guarantee correctness, supporting listening while watching."
+    }
+  ],
+  "frames": [
+    {
+      "chapter": 0,
+      "position": "early",
+      "time": 2.8
+    },
+    {
+      "chapter": 0,
+      "position": "middle",
+      "time": 18.6
+    },
+    {
+      "chapter": 0,
+      "position": "finished",
+      "time": 33.7
+    },
+    {
+      "chapter": 1,
+      "position": "early",
+      "time": 41.65
+    },
+    {
+      "chapter": 1,
+      "position": "middle",
+      "time": 52.2
+    },
+    {
+      "chapter": 1,
+      "position": "finished",
+      "time": 65.65
+    },
+    {
+      "chapter": 2,
+      "position": "early",
+      "time": 73.8
+    },
+    {
+      "chapter": 2,
+      "position": "middle",
+      "time": 82.95
+    },
+    {
+      "chapter": 2,
+      "position": "finished",
+      "time": 95.2
+    },
+    {
+      "chapter": 3,
+      "position": "early",
+      "time": 102.1
+    },
+    {
+      "chapter": 3,
+      "position": "middle",
+      "time": 111.05
+    },
+    {
+      "chapter": 3,
+      "position": "finished",
+      "time": 122.9
+    }
+  ]
+}

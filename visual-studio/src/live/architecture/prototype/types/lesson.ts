@@ -1,4 +1,7 @@
 export type NodeId = string;
+export type EvidenceKind = 'file' | 'symbol' | 'doc' | 'page' | 'trace' | 'requirement';
+export type Confidence = 'exact' | 'inferred' | 'illustrative';
+export interface EvidenceRef { kind: EvidenceKind; path?: string; symbol?: string; lines?: number[]; quote?: string; page?: number; }
 
 export type NodeKind =
   | 'input'
@@ -89,6 +92,8 @@ export interface CustomVisualCardSpec {
 }
 
 export interface GraphNode {
+  runtimeRows?:boolean;
+  valueRef?:string;
   id: NodeId;
   stepBadge?: string;
   label: string;
@@ -116,6 +121,8 @@ export interface GraphNode {
   staticData?: StaticDataSpec;
   /** Dynamic function-specific visual flowchart node specification for Level-2 inspection */
   customVisual?: CustomVisualCardSpec;
+  evidence?: EvidenceRef[];
+  confidence?: Confidence;
 }
 
 export interface GraphEdge {
@@ -125,6 +132,8 @@ export interface GraphEdge {
   label: string;
   relationship: 'data' | 'lookup' | 'reference';
   description: string;
+  evidence?: EvidenceRef[];
+  confidence?: Confidence;
 }
 
 export interface SubsystemGroup {
@@ -158,6 +167,8 @@ export interface PacketSpec {
 }
 
 export interface NodeBeatState {
+  valueRef?: string;
+  visual?: CustomVisualCardSpec;
   statusLabel: string;
   previewLines: string[];
   highlightToken?: string;
@@ -225,6 +236,7 @@ export interface SubFunctionLesson {
   sidebarInputs?: NonSummaryInputItem[];
   graph: ArchitectureGraph;
   codeLines: CodeLineItem[];
+  codeFiles?:{file:string;language:string;lines:CodeLineItem[]}[];
   steps: Step[];
 }
 

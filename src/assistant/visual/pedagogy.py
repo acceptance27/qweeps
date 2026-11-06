@@ -5,6 +5,7 @@ valid animation does not pass this harness until its visual argument is reviewed
 """
 from __future__ import annotations
 
+from collections import deque
 import json
 from pathlib import Path
 import re
@@ -110,6 +111,16 @@ def _extract_json(raw: str) -> dict | None:
             return value
     except ValueError:
         pass
+    # An invalid object that starts the reply is a broken contract, not prose
+    # around a later result. Do not silently promote a trailing node/function
+    # fragment to the entire lesson. Send the full response to JSON repair.
+    if text.lstrip().startswith('{'):
+        decoder=json.JSONDecoder()
+        try:
+            value,_=decoder.raw_decode(text.lstrip())
+            return value if isinstance(value,dict) else None
+        except ValueError:
+            return None
     start = text.find("{")
     while start >= 0:
         depth, in_string, escaped = 0, False, False
@@ -147,6 +158,43 @@ def _extract_json(raw: str) -> dict | None:
     return None
 
 
+def _repair_json_punctuation(raw: str) -> dict | None:
+    """Repair only JSON punctuation outside strings; never synthesize literal values."""
+    if len(raw)>120000:return None
+    queue=deque([(raw,0)]);seen={raw};tried=0
+    while queue and tried<96:
+        text,edits=queue.popleft();tried+=1
+        try:
+            value=json.loads(text)
+            if isinstance(value,dict):return value
+        except json.JSONDecodeError as error:
+            if edits>=6:continue
+            at=error.pos;char=text[at:at+1];stack=[];quoted=False;escaped=False
+            for c in text[:at]:
+                if quoted:
+                    if escaped:escaped=False
+                    elif c=='\\':escaped=True
+                    elif c=='"':quoted=False
+                elif c=='"':quoted=True
+                elif c in '[{':stack.append(c)
+                elif c in ']}':
+                    if stack and stack[-1]=={']':'[','}':'{'}[c]:stack.pop()
+            if quoted:continue
+            candidates=[]
+            previous=at-1
+            while previous>=0 and text[previous].isspace():previous-=1
+            if char in (']','}'):
+                if stack and stack[-1]!={']':'[','}':'{'}[char]:candidates.append(text[:at]+{'[':']','{':'}'}[stack[-1]]+text[at:])
+                if previous>=0 and text[previous]==',':candidates.append(text[:previous]+text[previous+1:])
+                candidates.append(text[:at]+text[at+1:])
+            # Never complete a truncated reply at EOF: missing content is not a
+            # punctuation typo, even if the visible prefix could form an object.
+            if error.msg=="Expecting ',' delimiter" and char and char not in ',]}':candidates.append(text[:at]+','+text[at:])
+            for candidate in candidates:
+                if candidate not in seen:seen.add(candidate);queue.append((candidate,edits+1))
+    return None
+
+
 TRANSIENT = ("timeout", "timed out", "did not finish", "deadline",
              "connection reset", "temporarily unavailable", "rate limit",
              "no complete response")
@@ -167,7 +215,7 @@ def _call_model(llm: Any, system: str, prompt: str, tokens: int) -> str:
         return once()
 
 
-def _json_recovery(llm: Any, prompt: str, raw: str) -> dict | None:
+def _json_recovery(llm: Any, prompt: str, raw: str, tokens: int = 8000) -> dict | None:
     """Cheaply convert a prose/fenced reply into the requested JSON, without re-sending the skill."""
     base = prompt.split("\n\n--- ", 1)[0].strip()
     try:
@@ -179,11 +227,11 @@ def _json_recovery(llm: Any, prompt: str, raw: str) -> dict | None:
                         "requested below. Preserve the intended content. Return JSON only, with no "
                         "prose, headings, markdown fences or commentary."),
         "request": request_body,
-        "previous_reply": raw[:20000],
+        "previous_reply": raw[:120000],
     }
     try:
         repaired = _call_model(llm, "You convert a reply into one strict JSON object. Return JSON only.",
-                               json.dumps(instruction, ensure_ascii=False), 8000)
+                               json.dumps(instruction, ensure_ascii=False), max(8000,min(16000,tokens)))
     except Exception:
         return None
     return _extract_json(repaired or "")
@@ -390,7 +438,7 @@ def _targeted_revision(llm: Any, result: dict, storyboard: dict, review: dict, r
 
 
 def _model_json(llm: Any, system: str, request: dict, validator, tokens: int = 6500,
-                max_attempts: int = 3, repair=None):
+                max_attempts: int = 3, repair=None, response_receipt=None):
     feedback = ""
     last_cleaned = ""
     system = system + ("\n\nReturn ONLY one JSON object matching the requested shape. "
@@ -409,9 +457,12 @@ def _model_json(llm: Any, system: str, request: dict, validator, tokens: int = 6
             raise
         if not isinstance(raw, str) or not raw.strip():
             raise PlanError("The teaching model returned no result. Check QWEEPS model access.")
+        if response_receipt is not None:response_receipt(raw,attempt)
         parsed = _extract_json(raw)
         if parsed is None:
-            parsed = _json_recovery(llm, prompt, raw)
+            parsed = _repair_json_punctuation(raw.strip())
+        if parsed is None:
+            parsed = _json_recovery(llm, prompt, raw,tokens=tokens)
         if parsed is not None:
             last_cleaned = json.dumps(parsed, ensure_ascii=False)
             try:

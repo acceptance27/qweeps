@@ -266,3 +266,38 @@ def test_negative_bars_are_rejected_and_non_finite_values_clamp():
 def test_unsupported_svg_elements_are_named():
     with pytest.raises(PlanError, match="Unsupported SVG element 'text'"):
         validate_svg('<svg viewBox="0 0 10 10"><text>hi</text></svg>')
+
+
+def test_broken_root_cannot_be_replaced_by_a_later_node_fragment():
+    assert _extract_json('{"version":1,"graph": invalid} {"id":"just-one-node"}') is None
+    assert _extract_json('```json\n{"version":1,"graph": invalid} {"id":"just-one-node"}\n```') is None
+    assert _extract_json('{"version":1,"graph":{"nodes":[]}} trailing prose')=={'version':1,'graph':{'nodes':[]}}
+
+
+def test_json_repair_keeps_large_architecture_tail_and_original_output_budget():
+    import json
+    from assistant.visual.pedagogy import _json_recovery
+    class Model:
+        def _chat(self,messages,max_tokens):
+            prompt=json.loads(messages[1]['content'])
+            assert prompt['previous_reply'].endswith('FUNCTION_MODULE_AT_END')
+            assert len(prompt['previous_reply'])>20000
+            assert max_tokens==16000
+            return '{"repaired": true}'
+    assert _json_recovery(Model(),'{}','x'*22000+'FUNCTION_MODULE_AT_END',tokens=16000)=={'repaired':True}
+
+
+def test_punctuation_repair_preserves_strings_and_values_without_another_model_call():
+    from assistant.visual.pedagogy import _repair_json_punctuation,_model_json
+    # A missing object closer, a trailing comma, and source punctuation inside a string.
+    raw='{"codeFiles":[{"file":"x.py","lines":[{"text":"return {a: [1, 2]}"}]],"score":0.9939,}'
+    result=_repair_json_punctuation(raw)
+    assert result=={'codeFiles':[{'file':'x.py','lines':[{'text':'return {a: [1, 2]}'}]}],'score':.9939}
+    class Model:
+        calls=0
+        def compose(self,*args,**kwargs):self.calls+=1;return raw
+    model=Model()
+    assert _model_json(model,'Return the contract',{},lambda value:value)==result
+    assert model.calls==1
+    assert _repair_json_punctuation('{"value": unquoted invented prose}') is None
+    assert _repair_json_punctuation('{"value": "truncated') is None

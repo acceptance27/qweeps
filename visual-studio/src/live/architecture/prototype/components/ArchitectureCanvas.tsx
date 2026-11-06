@@ -1,3 +1,4 @@
+import {normalizeVisual} from '../visualData';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Compass,
@@ -462,6 +463,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
   onExitMiniMode,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const [viewportSize, setViewportSize] = useState({ width: 920, height: 560 });
   const [isDragging, setIsDragging] = useState(false);
   const didMoveDuringDragRef = useRef(false);
@@ -473,7 +475,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
   } | null>(null);
 
   useEffect(() => {
-    const el = containerRef.current;
+    const el = svgRef.current;
     if (!el) return;
 
     const updateSize = () => {
@@ -817,6 +819,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
 
       {/* Main Interactive 2D SVG Compound Block & Port Diagram */}
       <svg
+        ref={svgRef}
         className={`live-stage-svg prototype-diagram w-full h-full flex-1 block ${
           isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
@@ -928,6 +931,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
             const pos = layout.nodes[node.id];
             if (!pos) return null;
 
+            const visual=node.customVisual?(isGenerated?normalizeVisual(node.customVisual,node.defaultPreview,node.accentColor):node.customVisual):undefined;
             const frame = nodeFrames[node.id];
             const isSelected = selectedNodeId === node.id;
             const isInputSourceForSelected = selectedInputNodeIds.has(node.id);
@@ -1090,7 +1094,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                 <rect
                   width={pos.width}
                   height={pos.height}
-                  rx={node.customVisual ? 12 : 3}
+                  rx={visual ? 12 : 3}
                   fill="#0E1D1A"
                   stroke={borderColor}
                   strokeWidth={borderWidth}
@@ -1252,7 +1256,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                       );
                     })}
                   </g>
-                ) : node.customVisual ? (
+                ) : visual ? (
                   /* DYNAMIC FUNCTION-SPECIFIC VISUAL FLOWCHART CARDS */
                   <foreignObject
                     x={10}
@@ -1261,18 +1265,18 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                     height={pos.height - 20}
                   >
                     <div className="w-full h-full flex flex-col justify-center items-center select-none overflow-hidden font-sans">
-                      {node.customVisual.variant === 'paper-card' && (
+                      {visual.variant === 'paper-card' && (
                         <div className="w-full h-full rounded-lg bg-[#F5F7F2] border-2 border-[#91B9CC] shadow-md flex flex-col justify-between p-3 text-[#0B1717]">
                           <div className="flex items-center justify-between border-b border-[#CBD5E1] pb-1">
                             <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#0F172A] bg-[#BAE6FD] px-2 py-0.5 rounded">
-                              {node.customVisual.headerBadge ?? 'Input'}
+                              {visual.headerBadge ?? 'Input'}
                             </span>
                             <span className="font-mono text-[10.5px] font-bold text-[#334155]">
-                              {node.customVisual.title}
+                              {visual.title}
                             </span>
                           </div>
                           <div className="my-auto py-1.5 space-y-1 text-center border-y border-dashed border-[#CBD5E1]">
-                            {(node.customVisual.lines ?? []).map((ln, idx) => (
+                            {(visual.lines ?? []).map((ln, idx) => (
                               <div
                                 key={idx}
                                 className="font-mono text-[13.5px] font-extrabold text-[#0B1717] leading-snug"
@@ -1281,21 +1285,21 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               </div>
                             ))}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] text-center font-medium text-[#475569]">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'token-tiles' && (
+                      {visual.variant === 'token-tiles' && (
                         <div className="w-full h-full flex flex-col justify-between p-2.5">
                           <div className="text-[11px] font-mono text-[#B5C5BD] text-center font-bold">
-                            {node.customVisual.title}
+                            {visual.title}
                           </div>
                           <div className="flex flex-wrap items-center justify-center gap-2 my-auto py-1">
-                            {(node.customVisual.tiles ?? []).map((tile, tidx) => {
+                            {(visual.tiles ?? []).map((tile, tidx) => {
                               const tileBg =
                                 tile.color === 'sky'
                                   ? '#BAE6FD'
@@ -1330,28 +1334,28 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               );
                             })}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10.5px] text-center text-[#EEF3E9] bg-[#142B25] border border-[#486356] rounded px-2 py-1">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'lookup-table' && (
+                      {visual.variant === 'lookup-table' && (
                         <div className="w-full h-full rounded-xl bg-[#142B25] border-2 border-[#E0BE72] p-2.5 flex flex-col justify-between shadow-lg">
                           <div className="text-center border-b border-[#486356] pb-1">
                             <div className="text-[13.5px] font-extrabold text-[#EEF3E9] tracking-wide">
-                              {node.customVisual.title}
+                              {visual.title}
                             </div>
-                            {node.customVisual.subtitle && (
+                            {visual.subtitle && (
                               <div className="text-[10px] font-mono text-[#E0BE72]">
-                                {node.customVisual.subtitle}
+                                {visual.subtitle}
                               </div>
                             )}
                           </div>
                           <div className="my-auto space-y-1.5 py-1">
-                            {(node.customVisual.rows ?? []).map((row, ridx) => {
+                            {(visual.rows ?? []).map((row, ridx) => {
                               const chipBg =
                                 row.color === 'sky'
                                   ? '#BAE6FD'
@@ -1399,46 +1403,46 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               );
                             })}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] font-mono text-center text-[#7BD3B0]">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'output-pill' && (
+                      {visual.variant === 'output-pill' && (
                         <div className="w-full h-full flex flex-col justify-between p-2.5">
                           <div className="text-[10.5px] font-mono text-[#7BD3B0] text-center uppercase tracking-wider font-bold">
-                            {node.customVisual.headerBadge ?? node.customVisual.title}
+                            {visual.headerBadge ?? visual.title}
                           </div>
                           <div className="my-auto rounded-2xl bg-[#F5F7F2] border-4 border-[#38BDF8] px-3 py-3 shadow-lg text-center">
                             <div className="font-mono text-[12.5px] font-extrabold text-[#0B1717] break-words leading-snug">
-                              {node.customVisual.highlightText ?? node.customVisual.title}
+                              {visual.highlightText ?? visual.title}
                             </div>
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10.5px] text-center text-[#B5C5BD] leading-snug">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'vector-bars' && (
+                      {visual.variant === 'vector-bars' && (
                         <div className="w-full h-full rounded-xl bg-[#142B25] border border-[#486356] p-2.5 flex flex-col justify-between">
                           <div className="flex items-center justify-between border-b border-[#486356] pb-1">
                             <span className="text-[12px] font-bold text-[#EEF3E9]">
-                              {node.customVisual.title}
+                              {visual.title}
                             </span>
-                            {(node.customVisual.normLabel ?? node.customVisual.headerBadge) && (
+                            {(visual.normLabel ?? visual.headerBadge) && (
                               <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#0B1717] text-[#E0BE72] border border-[#E0BE72]/50">
-                                {node.customVisual.normLabel ?? node.customVisual.headerBadge}
+                                {visual.normLabel ?? visual.headerBadge}
                               </span>
                             )}
                           </div>
                           <div className="my-auto space-y-1.5 py-1">
-                            {(node.customVisual.floats ?? []).map((val, bidx) => {
+                            {(visual.floats ?? []).map((val, bidx) => {
                               const isNeg = val < 0;
                               const barHex = isNeg ? '#F472B6' : hex;
                               const pct = Math.min(100, Math.round(Math.abs(val) * 62));
@@ -1466,28 +1470,28 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               );
                             })}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] text-center text-[#91B9CC] font-mono">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'funnel-pool' && (
+                      {visual.variant === 'funnel-pool' && (
                         <div className="w-full h-full rounded-xl bg-[#142B25] border-2 border-[#E0BE72] p-2.5 flex flex-col justify-between">
                           <div className="flex items-center justify-between border-b border-[#486356] pb-1">
                             <span className="text-[12px] font-extrabold text-[#EEF3E9]">
-                              {node.customVisual.title}
+                              {visual.title}
                             </span>
-                            {node.customVisual.headerBadge && (
+                            {visual.headerBadge && (
                               <span className="font-mono text-[9.5px] uppercase font-bold px-1.5 py-0.5 rounded bg-[#0B1717] text-[#E0BE72] border border-[#E0BE72]/60">
-                                {node.customVisual.headerBadge}
+                                {visual.headerBadge}
                               </span>
                             )}
                           </div>
                           <div className="my-auto space-y-1.5 py-1">
-                            {(node.customVisual.rows ?? []).map((row, ridx) => {
+                            {(visual.rows ?? []).map((row, ridx) => {
                               const rHex = ACCENT_HEX[row.color] ?? '#7BD3B0';
                               return (
                                 <div
@@ -1507,31 +1511,31 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               );
                             })}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] text-[#B5C5BD] text-center leading-snug">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'score-meter' && (
+                      {visual.variant === 'score-meter' && (
                         <div className="w-full h-full rounded-xl bg-[#142B25] border border-[#486356] p-2.5 flex flex-col justify-between">
                           <div className="flex items-center justify-between border-b border-[#486356] pb-1">
                             <span className="font-mono text-[11.5px] font-bold text-[#EEF3E9]">
-                              {node.customVisual.title}
+                              {visual.title}
                             </span>
-                            {node.customVisual.headerBadge && (
+                            {visual.headerBadge && (
                               <span
                                 className="font-mono text-[9.5px] font-extrabold px-1.5 py-0.5 rounded bg-[#0B1717]"
                                 style={{ color: hex }}
                               >
-                                {node.customVisual.headerBadge}
+                                {visual.headerBadge}
                               </span>
                             )}
                           </div>
                           <div className="my-auto space-y-1.5 py-1">
-                            {(node.customVisual.rows ?? []).map((r, ridx) => {
+                            {(visual.rows ?? []).map((r, ridx) => {
                               const rHex = ACCENT_HEX[r.color] ?? hex;
                               const pct = r.barPercent ?? 50;
                               return (
@@ -1557,28 +1561,28 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               );
                             })}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] text-[#E0BE72] font-mono text-center">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'podium-rank' && (
+                      {visual.variant === 'podium-rank' && (
                         <div className="w-full h-full rounded-xl bg-[#142B25] border-2 border-[#E0BE72] p-2.5 flex flex-col justify-between">
                           <div className="text-center border-b border-[#486356] pb-1">
                             <div className="text-[13px] font-extrabold text-[#EEF3E9]">
-                              {node.customVisual.title}
+                              {visual.title}
                             </div>
-                            {node.customVisual.subtitle && (
+                            {visual.subtitle && (
                               <div className="text-[10px] font-mono text-[#E0BE72]">
-                                {node.customVisual.subtitle}
+                                {visual.subtitle}
                               </div>
                             )}
                           </div>
                           <div className="my-auto space-y-1.5 py-1">
-                            {(node.customVisual.rows ?? []).map((p, pidx) => {
+                            {(visual.rows ?? []).map((p, pidx) => {
                               const pHex = ACCENT_HEX[p.color] ?? '#7BD3B0';
                               return (
                                 <div
@@ -1607,23 +1611,23 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               );
                             })}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] text-center text-[#B5C5BD]">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'gate-keep-drop' && (
+                      {visual.variant === 'gate-keep-drop' && (
                         <div className="w-full h-full rounded-xl bg-[#142B25] border-2 border-[#E0BE72] p-2.5 flex flex-col justify-between">
                           <div className="text-center border-b border-[#486356] pb-1">
                             <div className="text-[12.5px] font-extrabold text-[#E0BE72]">
-                              {node.customVisual.title}
+                              {visual.title}
                             </div>
                           </div>
                           <div className="my-auto space-y-1.5 py-1">
-                            {(node.customVisual.rows ?? []).map((r, ridx) => {
+                            {(visual.rows ?? []).map((r, ridx) => {
                               const rHex = ACCENT_HEX[r.color] ?? '#7BD3B0';
                               return (
                                 <div
@@ -1651,26 +1655,26 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               );
                             })}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] text-center text-[#B5C5BD]">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'dropped-bin' && (
+                      {visual.variant === 'dropped-bin' && (
                         <div className="w-full h-full rounded-xl bg-[#2A1215]/90 border-2 border-dashed border-[#F472B6] p-2.5 flex flex-col justify-between text-center">
                           <div className="flex items-center justify-between border-b border-[#F472B6]/40 pb-1">
                             <span className="font-mono text-[10px] font-extrabold px-2 py-0.5 rounded bg-[#F472B6] text-[#0B1717]">
-                              {node.customVisual.headerBadge ?? 'DISCARDED'}
+                              {visual.headerBadge ?? 'DISCARDED'}
                             </span>
                             <span className="font-mono text-[11px] font-bold text-[#F472B6]">
-                              {node.customVisual.title}
+                              {visual.title}
                             </span>
                           </div>
                           <div className="my-auto space-y-1">
-                            {(node.customVisual.lines ?? []).map((ln, idx) => (
+                            {(visual.lines ?? []).map((ln, idx) => (
                               <div
                                 key={idx}
                                 className="font-mono text-[11.5px] font-bold text-[#FECDD3] line-through decoration-[#F472B6]"
@@ -1679,28 +1683,28 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               </div>
                             ))}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] text-[#F472B6]">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'doc-scroll' && (
+                      {visual.variant === 'doc-scroll' && (
                         <div className="w-full h-full rounded-xl bg-[#0B1717] border-2 border-[#7BD3B0] p-2.5 flex flex-col justify-between">
                           <div className="flex items-center justify-between border-b border-[#486356] pb-1">
                             <span className="font-mono text-[11.5px] font-bold text-[#7BD3B0]">
-                              {node.customVisual.title}
+                              {visual.title}
                             </span>
-                            {node.customVisual.headerBadge && (
+                            {visual.headerBadge && (
                               <span className="font-mono text-[9.5px] px-1.5 py-0.5 rounded bg-[#142B25] text-[#E0BE72] border border-[#E0BE72]/50">
-                                {node.customVisual.headerBadge}
+                                {visual.headerBadge}
                               </span>
                             )}
                           </div>
                           <div className="my-auto space-y-1.5 py-1">
-                            {(node.customVisual.lines ?? []).map((ln, idx) => (
+                            {(visual.lines ?? []).map((ln, idx) => (
                               <div
                                 key={idx}
                                 className="font-mono text-[11px] text-[#EEF3E9] bg-[#142B25] border-l-2 border-[#7BD3B0] px-2 py-1 rounded-r"
@@ -1709,23 +1713,23 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               </div>
                             ))}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] text-center text-[#91B9CC]">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'blueprint-slots' && (
+                      {visual.variant === 'blueprint-slots' && (
                         <div className="w-full h-full rounded-xl bg-[#142B25] border-2 border-[#E0BE72] p-2.5 flex flex-col justify-between">
                           <div className="text-center border-b border-[#486356] pb-1">
                             <span className="text-[12.5px] font-extrabold text-[#EEF3E9]">
-                              {node.customVisual.title}
+                              {visual.title}
                             </span>
                           </div>
                           <div className="my-auto space-y-1.5 py-1">
-                            {(node.customVisual.rows ?? []).map((slot, sidx) => {
+                            {(visual.rows ?? []).map((slot, sidx) => {
                               const sHex = ACCENT_HEX[slot.color] ?? '#7BD3B0';
                               return (
                                 <div
@@ -1746,23 +1750,23 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               );
                             })}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] text-center text-[#7BD3B0] font-mono">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'heatmap-spotlight' && (
+                      {visual.variant === 'heatmap-spotlight' && (
                         <div className="w-full h-full rounded-xl bg-[#142B25] border-2 border-[#E0BE72] p-2.5 flex flex-col justify-between">
                           <div className="text-center border-b border-[#486356] pb-1">
                             <span className="text-[12.5px] font-extrabold text-[#E0BE72]">
-                              {node.customVisual.title}
+                              {visual.title}
                             </span>
                           </div>
                           <div className="my-auto space-y-1.5 py-1">
-                            {(node.customVisual.rows ?? []).map((w, widx) => {
+                            {(visual.rows ?? []).map((w, widx) => {
                               const wHex = ACCENT_HEX[w.color] ?? '#E0BE72';
                               const pct = w.barPercent ?? 50;
                               return (
@@ -1791,28 +1795,28 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               );
                             })}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] text-center text-[#B5C5BD]">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
                       )}
 
-                      {node.customVisual.variant === 'citation-verifier' && (
+                      {visual.variant === 'citation-verifier' && (
                         <div className="w-full h-full rounded-xl bg-[#142B25] border-2 border-[#7BD3B0] p-2.5 flex flex-col justify-between">
                           <div className="flex items-center justify-between border-b border-[#486356] pb-1">
                             <span className="text-[12px] font-extrabold text-[#7BD3B0]">
-                              {node.customVisual.title}
+                              {visual.title}
                             </span>
-                            {node.customVisual.headerBadge && (
+                            {visual.headerBadge && (
                               <span className="font-mono text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-[#0B1717] text-[#7BD3B0] border border-[#7BD3B0]">
-                                {node.customVisual.headerBadge}
+                                {visual.headerBadge}
                               </span>
                             )}
                           </div>
                           <div className="my-auto space-y-1.5 py-1">
-                            {(node.customVisual.rows ?? []).map((r, ridx) => {
+                            {(visual.rows ?? []).map((r, ridx) => {
                               const rHex = ACCENT_HEX[r.color] ?? '#7BD3B0';
                               return (
                                 <div
@@ -1825,8 +1829,8 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                                   >
                                     {r.leftChip}
                                   </span>
-                                  <span className="font-mono text-[10px] text-[#7BD3B0]">
-                                    ✓
+                                  <span className="font-mono text-[10px]" style={{color:isGenerated&&r.color==='rose'?'#FB7185':'#7BD3B0'}}>
+                                    {isGenerated&&r.color==='rose'?'×':'✓'}
                                   </span>
                                   <span className="font-mono text-[10.5px] text-[#EEF3E9]">
                                     {r.rightValue}
@@ -1835,9 +1839,9 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               );
                             })}
                           </div>
-                          {node.customVisual.footerNote && (
+                          {visual.footerNote && (
                             <div className="text-[10px] text-center text-[#91B9CC]">
-                              {node.customVisual.footerNote}
+                              {visual.footerNote}
                             </div>
                           )}
                         </div>
@@ -2345,7 +2349,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
             </div>
           </div>
 
-          <p className="text-xs sm:text-[14px] text-[#EEF3E9] leading-snug line-clamp-3 sm:line-clamp-2">
+          <p className="text-xs sm:text-[14px] text-[#EEF3E9] leading-snug whitespace-pre-wrap">
             {miniModeActive && miniStep ? miniStep.caption : currentStep.narration}
           </p>
         </div>

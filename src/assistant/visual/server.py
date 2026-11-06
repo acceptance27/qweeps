@@ -895,6 +895,11 @@ class Handler(SimpleHTTPRequestHandler):
                 result=self.service.beats.start(payload)
             elif route == '/api/visual/live/jobs':
                 result=self.service.live.start(payload)
+            elif route == '/api/visual/live/architecture/scan':
+                from .repo_architecture import scan_repository
+                path=payload.get('path') or payload.get('repoPath')
+                if not path:raise PlanError('Repository path is required')
+                result=scan_repository(path, max_files=int(payload.get('maxFiles') or 12))
             elif route == '/api/visual/live/quiz':
                 target=payload.get('lessonId') or payload.get('lesson') or payload
                 force=bool(payload.get('force') or payload.get('regenerate'))

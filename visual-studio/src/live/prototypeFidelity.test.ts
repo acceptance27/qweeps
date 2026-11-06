@@ -60,3 +60,116 @@ test('generated values populate the original goal/output pane and output visuali
  assert.equal(shown.nodes[0].customVisual?.highlightText,'result = 6');
  assert.equal(graphForFrame(graph,{},true),graph,'The source reference uses its original visual data unchanged');
 });
+
+import {sourceForStep} from './architecture/prototype/workspace';
+import {normalizeVisual,ROW_VISUALS} from './architecture/prototype/visualData';
+import {computeFocusCameraForNodes,computeOverviewCamera} from './architecture/prototype/timeline/evaluateTimeline';
+import type {CustomVisualCardSpec} from './architecture/prototype/types/lesson';
+
+test('generated playback and node inspection select the correct source file despite shared line numbers',()=>{
+ const input=structuredClone(lesson);input.id='e'.repeat(32);
+ const first=input.architecture!.codeFiles[0];
+ const second={file:'second.py',language:'python',lines:[{lineNumber:first.lines[0].lineNumber,text:'answer = assemble(context)',explanation:'Assemble the answer'}]};
+ input.architecture!.codeFiles.push(second);
+ const c=input.chapters[1];c.visual!.flow!.code={file:second.file,lines:[second.lines[0].lineNumber]};
+ input.architecture!.graph.nodes[0].codeReference={file:first.file,lines:[first.lines[0].lineNumber]};
+ const workspace=workspaceForLesson(input);
+ assert.equal(sourceForStep(workspace,null,workspace.steps[1])?.file,'second.py');
+ assert.equal(sourceForStep(workspace,null,workspace.steps[1],workspace.graph.nodes[0].id)?.file,first.file);
+ assert.equal(sourceForStep(workspace,null,workspace.steps[0])?.file,first.file);
+ assert.ok(workspace.codeFiles!.find(f=>f.file==='second.py')!.lines[0].goalText);
+});
+
+test('all row-based visual variants display legacy payloads and retain correctly authored rows',()=>{
+ for(const variant of ROW_VISUALS){
+  const raw={variant,title:'Transform',lines:['request -> storyboard','storyboard -> scene']} as CustomVisualCardSpec;
+  const visible=normalizeVisual(raw,'fallback');
+  assert.equal(visible.rows?.length,2,variant);
+  assert.equal(visible.rows?.[1].rightValue,'storyboard -> scene',variant);
+  assert.equal(raw.rows,undefined,'Compatibility conversion must not mutate lesson data');
+  assert.deepEqual(normalizeVisual(visible,'other').rows,visible.rows);
+ }
+});
+
+test('generated frames retain input states after a result arrives and reconstruct on rewind',async()=>{
+ const workspace=workspaceForLesson({...lesson,id:'e'.repeat(32)}),step=structuredClone(workspace.steps[0]);
+ const [input,output]=workspace.graph.nodes;
+ step.nodeDataBefore={[input.id]:{statusLabel:'Input',previewLines:['query = [1, 0]']}};
+ step.nodeDataAfter={[output.id]:{statusLabel:'Ranked',previewLines:['policy = 0.9939']}};
+ step.resultAt=2;
+ const layout=await computeElkGraphLayout(workspace.graph);
+ const evaluate=(time:number)=>evaluateTimeline(time,[step],workspace.graph,layout,900,600,true);
+ const before=evaluate(0),after=evaluate(3);
+ assert.deepEqual(after.nodeFrames[input.id].previewLines,['query = [1, 0]']);
+ assert.deepEqual(after.nodeFrames[output.id].previewLines,['policy = 0.9939']);
+ assert.deepEqual(evaluate(0),before);
+});
+
+test('generated focus and overview keep distant nodes inside short and portrait viewports',async()=>{
+ const workspace=workspaceForLesson({...lesson,id:'e'.repeat(32)}),layout=await computeElkGraphLayout(workspace.graph);
+ for(const [width,height] of [[360,480],[740,210],[1200,650]]){
+  for(const camera of [computeFocusCameraForNodes(Object.keys(layout.nodes),layout,width,height,.04),computeOverviewCamera(layout,width,height,.04)]){
+   for(const node of Object.values(layout.nodes)){
+    assert.ok(node.x*camera.zoom+camera.x>=0);
+    assert.ok(node.y*camera.zoom+camera.y>=0);
+    assert.ok((node.x+node.width)*camera.zoom+camera.x<=width);
+    assert.ok((node.y+node.height)*camera.zoom+camera.y<=height);
+   }
+  }
+ }
+});
+
+test('calculated state changes update the actual vector bars and restore the earlier vector on rewind',async()=>{
+ const workspace=workspaceForLesson({...lesson,id:'e'.repeat(32)}),step=structuredClone(workspace.steps[0]),id=workspace.graph.nodes[0].id;
+ step.nodeDataBefore={[id]:{statusLabel:'Raw',previewLines:['3','4'],valueRef:'raw',visual:{variant:'vector-bars',title:'Vector',floats:[3,4]}}};
+ step.nodeDataAfter={[id]:{statusLabel:'Unit',previewLines:['0.6','0.8'],valueRef:'unit',visual:{variant:'vector-bars',title:'Vector',floats:[.6,.8]}}};step.resultAt=2;
+ const layout=await computeElkGraphLayout(workspace.graph);
+ const graphAt=(time:number)=>graphForFrame(workspace.graph,evaluateTimeline(time,[step],workspace.graph,layout,900,600,true).nodeFrames,false);
+ assert.deepEqual(graphAt(0).nodes[0].customVisual?.floats,[3,4]);
+ assert.deepEqual(graphAt(3).nodes[0].customVisual?.floats,[.6,.8]);
+ assert.equal(graphAt(3).nodes[0].valueRef,'unit');
+ assert.deepEqual(graphAt(0).nodes[0].customVisual?.floats,[3,4]);
+});
+
+test('generated playback keeps the previous diagram through the measured reasoning bridge',async()=>{
+ const input=structuredClone(lesson);input.id='e'.repeat(32);
+ const next=input.chapters[1],handoff=next.start+2;next.visualStart=handoff;
+ const packet=next.visual!.flow!.packets[0];
+ next.narrationCues=[{target:packet.id,start:3,end:5,text:'transfer',phrase:'transfer'},{target:'takeaway',start:6,end:7,text:'result',phrase:'result'}];
+ const workspace=workspaceForLesson(input),layout=await computeElkGraphLayout(workspace.graph);
+ const frame=(time:number)=>evaluateTimeline(time,workspace.steps,workspace.graph,layout,900,600,true);
+ assert.equal(frame(next.start+1).step.id,input.chapters[0].id);
+ assert.equal(frame(handoff+1).step.id,next.id);
+ assert.equal(workspace.steps[1].packets[0].start,1);
+ assert.equal(workspace.steps[1].packets[0].end,3);
+ assert.equal(workspace.steps[1].resultAt,4);
+ assert.equal(backendPlayhead(input,null,workspace.steps[1],handoff+1,workspace.steps),handoff+1);
+ assert.ok(Math.abs(workspace.steps.reduce((n,s)=>n+s.duration,0)-input.duration)<.001);
+});
+
+test('generated document cards use compact records and score bars carry relative numerical evidence',()=>{
+ const docs=normalizeVisual({variant:'lookup-table',title:'Documents',rows:[{leftChip:'policy',rightValue:JSON.stringify({id:'policy',text:'Returns within 30 days',vector:[.9,.1]}),color:'sky'}]},'');
+ assert.equal(docs.rows?.[0].rightValue,'[0.9,0.1]');assert.equal(docs.rows?.[0].note,'Returns within 30 days');
+ const scores=normalizeVisual({variant:'score-meter',title:'Score',rows:[{leftChip:'policy',rightValue:'0.9939',color:'sky'},{leftChip:'shipping',rightValue:'0',color:'sky'}]},'');
+ assert.equal(scores.rows?.[0].barPercent,100);assert.equal(scores.rows?.[1].barPercent,0);
+ assert.match(scores.footerNote!,/score/);
+});
+
+import {transferLabel} from './architecture/prototype/visualData';
+
+test('generated follow mode tracks a transfer at readable scale and restores the source on rewind',async()=>{
+ const workspace=workspaceForLesson({...lesson,id:'e'.repeat(32)}),[source,target]=workspace.graph.nodes;
+ const edge={...workspace.graph.edges[0],id:'transfer',source:source.id,target:target.id};
+ const graph={...workspace.graph,nodes:[{...source,width:340,height:180},{...target,width:340,height:180}],edges:[edge]};
+ const base=await computeElkGraphLayout(graph),layout={...base,nodes:{[source.id]:{id:source.id,x:0,y:0,width:340,height:180},[target.id]:{id:target.id,x:1800,y:0,width:340,height:180}},edges:{transfer:{...base.edges.transfer,points:[{x:340,y:90},{x:1800,y:90}]}}};
+ const step={...workspace.steps[0],focusNodes:[source.id,target.id],activeNodes:[source.id,target.id],activeEdges:['transfer'],packets:[{id:'moving-value',edgeId:'transfer',start:2,end:4,payload:'3 → 6'}],nodeDataBefore:{},nodeDataAfter:{},resultAt:5};
+ const frame=(time:number)=>evaluateTimeline(time,[step],graph,layout,390,650,false);
+ const before=frame(0),after=frame(5.5);
+ assert.ok(before.targetCamera.zoom>=.7);assert.ok(after.targetCamera.zoom>=.7);
+ assert.ok(before.targetCamera.x>after.targetCamera.x);
+ const box=layout.nodes[target.id],camera=after.targetCamera;
+ assert.ok(box.x*camera.zoom+camera.x>=0);assert.ok((box.x+box.width)*camera.zoom+camera.x<=390);
+ assert.deepEqual(frame(0),before);
+ assert.equal(transferLabel([{id:'policy',score:.9938837},{id:'support',score:.8804711}]),'policy: 0.9939 · support: 0.8805');
+ assert.ok(transferLabel('x'.repeat(400)).length<=100);
+});

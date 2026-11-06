@@ -2,7 +2,7 @@ import {usePrototypeNarration} from './usePrototypeNarration';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Code2, Network } from 'lucide-react';
 import { MINI_EXPLANATION_STEPS } from './data/askQweepsData';
-import { graphForFrame,workspaceForLesson } from './workspace';
+import { graphForFrame,workspaceForLesson,sourceForStep } from './workspace';
 import type {LiveLesson} from '../../lessonTypes';
 import './prototype.css';
 import {
@@ -96,8 +96,11 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
     height: 560,
   });
 
-  // Start in 'overview' by default so the learner immediately sees the full Ptolemy/ELK compound block diagram
-  const [cameraMode, setCameraMode] = useState<'follow' | 'manual' | 'overview'>('overview');
+  // The authored reference opens on the full supplied blueprint. Generated lessons
+  // open focused on the active beat so packet labels and node previews stay legible.
+  const [cameraMode, setCameraMode] = useState<'follow' | 'manual' | 'overview'>(
+    workspace.isReference ? 'overview' : 'follow'
+  );
   const [manualCamera, setManualCamera] = useState<CameraState>({
     x: 36,
     y: 36,
@@ -150,6 +153,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
   );
 
   const visibleGraph=useMemo(()=>graphForFrame(activeGraph,frame.nodeFrames,workspace.isReference),[activeGraph,frame.nodeFrames,workspace.isReference]);
+  const codeSource=useMemo(()=>sourceForStep(workspace,activeSubFunction,frame.step,selectedNodeId??undefined),[workspace,activeSubFunction,frame.step,selectedNodeId]);
   const narration=usePrototypeNarration(lesson,activeSteps,frame.stepIndex,playhead,isPlaying,voice,activeSubFunctionId,workspace.isReference,()=>setIsPlaying(false));
 
   // Compute active camera based on mode (or Mini-Explanation focus)
@@ -164,7 +168,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
       );
     }
     if (cameraMode === 'overview') {
-      return computeOverviewCamera(layout, canvasViewport.width, canvasViewport.height);
+      return computeOverviewCamera(layout, canvasViewport.width, canvasViewport.height,workspace.isReference?.32:.04);
     }
     if (cameraMode === 'manual') {
       return manualCamera;
@@ -351,15 +355,15 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
   const backTargetLabel = useMemo(() => {
     if (navigationStack.length > 0) {
       const prev = navigationStack[navigationStack.length - 1];
-      if (!prev.subFunctionId) return 'answer.py';
+      if (!prev.subFunctionId) return workspace.isReference?'answer.py':'Full system';
       const prevLesson = resolveSubFunctionLesson(prev.subFunctionId);
       return prevLesson ? prevLesson.functionName.split('(')[0] : prev.subFunctionId;
     }
     if (activeSubFunction?.parentFunctionId) {
       return activeSubFunction.parentFunctionId.replace('fn-', '');
     }
-    return 'answer.py';
-  }, [navigationStack, activeSubFunction]);
+    return workspace.isReference?'answer.py':'Full system';
+  }, [navigationStack, activeSubFunction,workspace.isReference]);
 
   const handleSelectNode = useCallback((nodeId: NodeId | null) => {
     setIsPlaying(false);
@@ -540,6 +544,11 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
         voice={voice}
         onToggleVoice={()=>{setIsPlaying(false);onToggleVoice();}}
         isReference={workspace.isReference}
+        grounding={workspace.grounding}
+        assumptions={workspace.assumptions}
+        tradeoffs={workspace.tradeoffs}
+        limitations={workspace.limitations}
+        evidenceCount={workspace.graph.nodes.reduce((n,node)=>n+(node.evidence?.length||0),0)+workspace.graph.edges.reduce((n,edge)=>n+(edge.evidence?.length||0),0)}
         validationPassed={validation.valid}
         validationIssueCount={validation.issues.length}
       />
@@ -577,7 +586,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
         <div className="text-xs font-mono text-[#7BD3B0] truncate">
           {activeSubFunction
             ? `${activeSubFunction.functionName.split('(')[0]}() · B${frame.step.beatNumber}`
-            : `Beat ${frame.step.beatNumber}/7 · ${frame.step.title}`}
+            : `Beat ${frame.step.beatNumber}/${RAG_STEPS.length} · ${frame.step.title}`}
         </div>
       </div>
 
@@ -596,7 +605,8 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
           }}
         >
           <CodePane
-            rootCodeLines={workspace.codeLines}
+            rootCodeLines={codeSource?.lines||workspace.codeLines}
+            sourceFile={codeSource}
             resolveFunction={resolveSubFunctionLesson}
             rootStepCount={RAG_STEPS.length}
             showPreparedEvidence={workspace.isReference}
@@ -614,7 +624,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
             onReturnToParentFunction={handleReturnToParentFunction}
             onReturnToMacroPipeline={handleReturnToMacroPipeline}
             backTargetLabel={backTargetLabel}
-            activeGraph={activeGraph}
+            activeGraph={visibleGraph}
             activeSteps={activeSteps}
             selectedNodeId={selectedNodeId}
             onSelectNode={handleSelectNode}

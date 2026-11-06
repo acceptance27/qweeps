@@ -1,0 +1,32 @@
+{
+  "question": "How does a lesson request travel from browser UI to playback?",
+  "targetBeats": 3,
+  "presentation": "architecture_flow",
+  "repoPath": "/home/anonymous/Work/qweeps",
+  "jobId": "42c2bb5abaa548fabfe156a61e514ea8",
+  "lessonId": "a9bda0e52f972fab43db37d27229b2ea",
+  "status": "ready",
+  "stage": "Reviewed live lesson ready",
+  "error": null,
+  "wallSeconds": 485.4,
+  "jobTimings": {
+    "storyboard": 23.356,
+    "architecture": 0.233,
+    "artwork": 156.16,
+    "factual_review": 40.396,
+    "narrative_review": 47.362,
+    "speech": 159.004
+  },
+  "lesson": {
+    "title": "QWEEPS Visual Lesson Pipeline",
+    "duration": 114.72366666666666,
+    "chapters": 3,
+    "architecture": true,
+    "grounding": "source-backed",
+    "audioTrack": true,
+    "assumptions": 2,
+    "limitations": 2,
+    "nodes": 12,
+    "edges": 5
+  }
+}
