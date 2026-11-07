@@ -1,0 +1,122 @@
+[
+  {
+    "scope": "root",
+    "nodes": 13,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-eef757bc12962962",
+    "nodes": 22,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-6945f7e0a5da6b34",
+    "nodes": 18,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-eb85953b23d64c5e",
+    "nodes": 13,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-59eb7193adecda6b",
+    "nodes": 7,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-aed4f0f2d21196be",
+    "nodes": 5,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-ae75bae37cb8f26c",
+    "nodes": 3,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-6b6771d579ff5410",
+    "nodes": 8,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-8e0d22c85ecc5002",
+    "nodes": 3,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-64124fd40d033888",
+    "nodes": 16,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-1f00cd697c2424e3",
+    "nodes": 14,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-0da9111344e00ba5",
+    "nodes": 10,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-aece9fc374977a5f",
+    "nodes": 4,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-ab58f4322d4dd00f",
+    "nodes": 5,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-7b824dc88f881e89",
+    "nodes": 3,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-7c818cc28cd755ca",
+    "nodes": 18,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-3c2b6c148d78d5a0",
+    "nodes": 8,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-575d0bb7d7ff164e",
+    "nodes": 5,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-093d28fe84be6f76",
+    "nodes": 5,
+    "engine": "elk",
+    "issues": []
+  },
+  {
+    "scope": "function-760fd2d0cc87fe52",
+    "nodes": 3,
+    "engine": "elk",
+    "issues": []
+  }
+]

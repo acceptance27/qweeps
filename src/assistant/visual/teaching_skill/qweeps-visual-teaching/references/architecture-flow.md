@@ -1,8 +1,12 @@
 # Architecture and code traces
 
-The user explicitly rejected a simplified reinterpretation of the supplied architecture/code-tracing ZIP. Its original React components and interaction design are authoritative. Preserve the compound containers, nested blocks/ports/wires, full goal/input/output sidebar, specialized visual variants, minimap, resizable split, citation/evidence modal, authored questions, mini-explanation and playback/breadcrumb controls. Use `visual-studio/src/live/architecture/prototype/`; do not recreate a reduced UI. QWEEPS integrations belong behind those existing controls. Keep authored responses labelled and use the real provider for new learner questions.
+The user explicitly rejected a simplified reinterpretation of the supplied architecture/code-tracing ZIP. Its original React components and interaction design are authoritative. Preserve the compound containers, nested blocks/ports/wires, full goal/input/output sidebar, specialized visual variants, minimap, resizable split, citation/evidence modal, authored questions, mini-explanation and playback/breadcrumb controls. The user subsequently replaced the entire feature with `remix-qweeps-architecture-&-code-tracing-prototype (3).zip`, including its engines and Gemini backend. The active source is `vendor/architecture-remix/`; the host is `visual-studio/src/live/architecture/remix/`. Preserve the supplied compilers, layout, data and interaction logic. Do not rebuild them in an adapter. Earlier `prototype/` code is legacy compatibility only. QWEEPS integrations belong behind those existing controls. Keep authored responses labelled and use the real provider for new learner questions.
 
 The reference uses the ZIP's prepared coordinates and routed port geometry for fidelity. New generated graphs use automatic layout. Do not describe the reference's ELK fixed-layout verification as automatic placement. Frame review must capture the actual prototype workspace, including its HTML visual cards and source/goal sidebar.
+
+## Legacy saved-lesson authoring format
+
+The following authoring contract applies to older saved lessons and their review. New architecture work uses the complete imported compiler and its own bundle format; see `docs/architecture-remix.md`. Gemini uses its separate `.env`, as explicitly requested. Fixture data and claimed performance in the ZIP are not evidence of live generation or recorded execution.
 
 Use `teaching: architecture` with `layout: architecture_flow` when the learner
 needs to follow a component boundary, function call, data transfer or code/state
@@ -54,7 +58,7 @@ Learn uses an illustrative worked example; Design proposes a system with explici
 assumptions and tradeoffs; Inspect requires supplied source and preserves its
 structural evidence. Repository scans describe selected files and static imports,
 not a complete call graph or runtime execution. Do not invent edges between
-unconnected files. JS/TS import heuristics must remain marked inferred.
+unconnected files. Use Python AST and Babel JS/TS/TSX parsing for static imports and definitions. Bind only actual selected targets; do not substitute a folder neighbour for an unselected imported file. Lexical call matches remain inferred, not observed invocation.
 
 Learn contracts include `workedExample: {inputs, calculations}`. Supported operations
 are normalize, mean, dot, cosine, similarities, rank, take, get, tokenize, concat and
@@ -90,3 +94,38 @@ agreement. In generated follow mode, a broad group may become an unreadable
 poster: follow its measured transfer at readable scale and retain Overview as the
 explicit whole-system view. Packet labels should summarize IDs/results concisely;
 full records stay available in inspection.
+
+
+## Compound topology and updated reference
+
+Use the supplied version-4 prototype’s procedural frame and compound sizing for the authored reference and its seventeen prepared function lessons. Arbitrary generated subjects use bottom-up ELK child and parent layouts. They must never acquire sequential wires from child list order. Bind cross-container edges to actual `sourceChild` / `targetChild` endpoints when known; source imports remain references, not runtime data flow. Source selection must cover the requested responsibilities before alphabetical helpers. Show the bounded scan coverage and preserve disconnected files.
+
+A shared function ID alone does not authorize replacement of a generated lesson’s code, values or timing with reference content. Restrict curated module reuse to the explicit reference render contract. Inspect actual whole-system and focused views; check containment, wall alignment, branch routes, distinct role icons and source coverage. Use the approved reference image only for composition, never to invent subject-specific structure or runtime values.
+
+
+## Source-backed function inspection and review
+
+Repository inspection must navigate folder → file → callable → selected source operations. Keep a searchable catalog for all indexed callables in the selected files, even when only a few fit the overview. Load additional modules from pinned source snapshots; never evaluate inspected files or silently read a changed live file. IDs include definition locations to distinguish repeated callback names. State scan/file/catalog limits and label selected operation views honestly: they are bounded syntactic paths, not exhaustive control-flow analysis or execution.
+
+Imports are References / Referenced by, not runtime inputs. Shared references may share a wall port for their exact endpoint. Never draw input-to-input links or redirect unresolved/unselected targets into a group. Functions need their own actual source and operations; generic Learn/Design modules derive from the authored child connections/code, not the prepared RAG modules.
+
+Capture representative file/function inspector frames plus the root overview and each root beat. Wait for the requested scope's completed layout before capture, including return to root. Keep both transfer endpoints visible while teaching a connection; a moving dot on an otherwise empty wire cannot establish the relationship. Verify nested inspect/back restores the parent's time, selection and camera. Preserve source limitations in narration and the inspection pane.
+
+Generated source inspectors should open focused, not as an unreadable whole-function poster. Show declared parameters and possible source paths honestly, keep operation reading groups compact, and retain exact bounded source internally for evidence. The user has requested removal of raw Python lines from the learner interface; show input/output contracts and readable operation explanations instead. Check that highlighted branch lines remain visible after a result, and that wrapping retains the original line number rather than implying an extra statement.
+
+
+## Source-backed system composition
+
+A file/import index is evidence for authoring, not a substitute for the requested system architecture. Compose explicit named input boundaries, processing stages with real internal functions, dependencies/stores and final output boundaries. Require a directed data/control path from an input to an output and named incoming/outgoing contracts for processing stages. Static import edges alone cannot establish that path. Cite actual pinned source and mark inferred relationships honestly; do not invent observed values or external service internals. Review success, failure/revision and asynchronous response paths when supported by the requested system.
+
+Function inspection must expose arguments, configured dependencies, returned values and outward effects. A function returning no value may still produce a response, saved artifact or updated state; distinguish those from a return. Derive interfaces from the full function body, excluding nested function returns. Keep code internally as evidence while removing raw Python/source-line panels and syntax dumps from the learner view. Use meaningful names and descriptions; a file/line number is evidence, never an output value. Match sidebar and diagram boundary contracts and preserve Inspect/Back checkpoints.
+
+The reference input means the visible composition: external Question → square wall port on the named answer(question) enclosure → internal embed() function. It does not mean only a list of parameters in a sidebar. Keep inputs and results outside the enclosure, function stages inside, and support sources opaque and separate. Render an explicit enclosing-call marker as the frame, not a duplicate box. Arrange children, internal stages and external cards in separate layout passes; balance large systems across rows without changing their declared topology. Keep the question and destination together in the opening view. Show the complete feedback route and output distinctions at their takeaway. Use distinct role icons and preserve control/reference semantics.
+
+Review actual entry, internal-stage and playback inspectors as well as the root overview. Supply these global interaction images to every chapter-review group. Preserve measured audio for layout-only/nested-module changes, and regenerate and align it when spoken words change.
+
+Use the same compact enclosure/port/block grammar inside source function inspection. Group only consecutive operations and stop grouping at branches/joins; preserve original operation and edge IDs. Keep explicit boundary cards outside the function. Direction markers may illustrate declared routes on the lesson clock, but must not imply recorded execution or invent payload values. Leave references static. Keep macro stage/input/output names readable in a whole-system view; show detailed operation labels when focused.
+
+Do not reuse an earlier image approval after the chapter content, shared architecture, inspector/overview image, or chapter frames change. Scope visual-approval caching to the actual reviewed content and images.
+
+Use the original reference sidebar component for generated systems and inspectors too: @step goal, then a compact dark input/output inset with the same fonts, colors and spacing. Populate it from actual system ports, declared function contracts, child endpoints and the lesson's own computed values; never substitute reference facts. Keep large function catalogs, full contracts, connections and evidence collapsed below the teaching cards. Preserve reference goal text and prepared example values.

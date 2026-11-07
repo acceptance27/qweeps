@@ -1,4 +1,7 @@
-import React from 'react';
+import React,{useState,useEffect} from 'react';
+import type {FunctionCatalogEntry} from '../../types';
+import {generatedSidebarGoals,type SidebarGoal} from '../sidebarGoals';
+import {GoalOutputCards} from './GoalOutputCards';
 import {
   ExternalLink,
   FileCode2,
@@ -16,6 +19,8 @@ import {
 } from '../types/lesson';
 
 interface CodePaneProps {
+  functionCatalog?:FunctionCatalogEntry[];
+  functionStatus?:string;
   rootCodeLines:CodeLineItem[];
   sourceFile?:{file:string;language:string;lines:CodeLineItem[]};
   resolveFunction:(id:string|null)=>SubFunctionLesson|null;
@@ -27,6 +32,7 @@ interface CodePaneProps {
   selectedNodeId: NodeId | null;
   onSelectNode: (nodeId: NodeId | null) => void;
   highlightedLines: number[];
+  showResult?:boolean;
   onSelectBeatByLine: (lineNumber: number) => void;
   highlightedEvidenceId: string | null;
   onHighlightEvidence: (docId: string | null) => void;
@@ -42,6 +48,7 @@ interface CodePaneProps {
 
 export const CodePane: React.FC<CodePaneProps> = ({
   sourceFile,
+  functionCatalog=[],functionStatus,
   rootCodeLines:ANSWER_PY_LINES,
   resolveFunction:resolveSubFunctionLesson,
   rootStepCount,
@@ -62,18 +69,13 @@ export const CodePane: React.FC<CodePaneProps> = ({
   onReturnToMacroPipeline,
   backTargetLabel,
 }) => {
+  const [functionSearch,setFunctionSearch]=useState('');
   // If the learner clicked a node on the canvas, find that node and its incoming/outgoing edges
-  const selectedNode = selectedNodeId
-    ? activeGraph.nodes.find((n) => n.id === selectedNodeId) ?? null
-    : null;
-  const highlightSet = new Set(selectedNode && sourceFile && selectedNode.codeReference.file === sourceFile.file ? selectedNode.codeReference.lines : highlightedLines);
-
-  const incomingEdges = selectedNodeId
-    ? activeGraph.edges.filter((e) => e.target === selectedNodeId)
-    : [];
-  const outgoingEdges = selectedNodeId
-    ? activeGraph.edges.filter((e) => e.source === selectedNodeId)
-    : [];
+  const inspectorNodes=[...activeGraph.nodes,...activeGraph.nodes.flatMap(parent=>(parent.children||[]).map(child=>({...parent,id:child.id,label:child.label,drillDownFunctionId:child.drillDownFunctionId,description:child.description||parent.description,defaultPreview:child.value||'',codeReference:child.codeReference?{...child.codeReference,snippet:''}:parent.codeReference,evidence:child.codeReference?[{kind:'file' as const,path:child.codeReference.file,lines:child.codeReference.lines}]:parent.evidence,children:undefined})))];
+  const selectedNode=inspectorNodes.find(n=>n.id===selectedNodeId)||null;
+  const inspectorEdges=[...activeGraph.edges,...activeGraph.nodes.flatMap(parent=>(parent.connections||[]).map(connection=>({id:connection.id,source:connection.from.child,target:connection.to.child,label:connection.label||'reference',description:'Declared internal connection',relationship:connection.relationship})))];
+  const incomingEdges=selectedNodeId?inspectorEdges.filter(e=>e.target===selectedNodeId||('targetChild' in e&&e.targetChild===selectedNodeId)):[];
+  const outgoingEdges=selectedNodeId?inspectorEdges.filter(e=>e.source===selectedNodeId||('sourceChild' in e&&e.sourceChild===selectedNodeId)):[];
 
   // Determine the @ function lesson represented by the current macro beat (when at Level 0)
   const effectiveDrillDownId =
@@ -83,11 +85,22 @@ export const CodePane: React.FC<CodePaneProps> = ({
     ? resolveSubFunctionLesson(effectiveDrillDownId)
     : null;
 
+  // Resolve the active source file for the current beat / selected node / sub-function (never stuck on codeFiles[0])
+  const activeFileName =
+    representedBeatLesson?.fileName ||
+    selectedNode?.codeReference.file ||
+    currentStep.code?.file ||
+    sourceFile?.file ||
+    activeSubFunction?.fileName ||
+    'answer.py';
+  useEffect(()=>setFunctionSearch(''),[activeFileName]);
+  const activeFileLines=activeGraph.codeFiles?.[activeFileName]??sourceFile?.lines??ANSWER_PY_LINES;
+  const highlightSet = new Set(selectedNode?.codeReference.lines||highlightedLines);
   // Scoped Header Title for the @ represented by this beat or inspected function
   const beatAtTitle = !activeSubFunction
     ? representedBeatLesson
       ? `@${representedBeatLesson.functionName}`
-      : showPreparedEvidence?'@question (Entry Input)':(sourceFile?.file||currentStep.code.file)
+      : showPreparedEvidence?'@question (Entry Input)':'@'+(selectedNode?.label||activeGraph.nodes.find(n=>currentStep.focusNodes.includes(n.id))?.label||currentStep.title)
     : activeSubFunction.functionName.startsWith('@')
     ? activeSubFunction.functionName
     : `@${activeSubFunction.functionName}`;
@@ -98,11 +111,12 @@ export const CodePane: React.FC<CodePaneProps> = ({
     if (representedBeatLesson) {
       scopedStepLines = representedBeatLesson.codeLines;
     } else {
-      scopedStepLines = ANSWER_PY_LINES.filter((l) => highlightSet.has(l.lineNumber));
-      if (scopedStepLines.length === 0) scopedStepLines = [ANSWER_PY_LINES[0]];
+      scopedStepLines = activeFileLines.filter((l) => highlightSet.has(l.lineNumber));
+      if (scopedStepLines.length === 0) scopedStepLines = [activeFileLines[0] ?? ANSWER_PY_LINES[0]];
     }
   } else {
-    scopedStepLines = sourceFile?.lines.filter(line=>highlightSet.has(line.lineNumber))||activeSubFunction.codeLines;
+    scopedStepLines = activeFileLines.filter(line=>highlightSet.has(line.lineNumber));
+    if (scopedStepLines.length === 0) scopedStepLines = activeSubFunction.codeLines;
   }
 
   const totalBeatsCount = activeSubFunction ? activeSubFunction.steps.length : rootStepCount;
@@ -123,6 +137,9 @@ export const CodePane: React.FC<CodePaneProps> = ({
     }
   };
 
+  const sidebarCards:SidebarGoal[]=showPreparedEvidence?scopedStepLines.map((line,index)=>({id:`${line.lineNumber}-${index}`,name:line.atName??line.text.trim(),goal:line.goalText??line.explanation,inputLabel:line.inputLabel??'@input',inputValue:line.inputValue??'',outputLabel:line.outputLabel??`${line.atName??line.text.trim()} output`,outputValue:line.resultText??'',highlighted:!activeSubFunction||highlightSet.has(line.lineNumber)})):generatedSidebarGoals(activeGraph,currentStep,selectedNodeId,activeSubFunction);
+  const activateCard=(card:SidebarGoal,index:number)=>{if(showPreparedEvidence)handleStepClick(scopedStepLines[index],index);else if(card.functionId)onDrillIntoFunction(card.functionId);else if(card.nodeId)onSelectNode(card.nodeId);};
+
   return (
     <section
       aria-label="Current beat @function goals and outputs"
@@ -134,6 +151,9 @@ export const CodePane: React.FC<CodePaneProps> = ({
           <FileCode2 className="w-4 h-4 text-[#7BD3B0] shrink-0" />
           <span className="font-mono text-xs sm:text-sm font-semibold text-[#EEF3E9] truncate">
             {beatAtTitle}
+          </span>
+          <span title={activeFileName} className="font-mono text-[10.5px] px-1.5 py-0.5 rounded bg-[#142B25] border border-[#486356]/70 text-[#91B9CC] shrink-0 hidden sm:inline">
+            {activeFileName.split('/').pop()}
           </span>
           <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-[#142B25] border border-[#486356] text-[#E0BE72] shrink-0">
             Beat {currentStep.beatNumber}/{totalBeatsCount}
@@ -156,7 +176,7 @@ export const CodePane: React.FC<CodePaneProps> = ({
                 type="button"
                 onClick={onReturnToMacroPipeline}
                 className="px-1.5 py-1 rounded border border-[#486356] bg-[#142B25] text-[#B5C5BD] hover:text-[#EEF3E9] text-[10.5px] font-mono transition-colors cursor-pointer"
-                title="Jump all the way back to answer.py"
+                title="Return to the system overview"
               >
                 L0
               </button>
@@ -167,13 +187,14 @@ export const CodePane: React.FC<CodePaneProps> = ({
 
       {/* Focused Non-Summary Sidebar Body */}
       <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 select-text">
+        <GoalOutputCards title={beatAtTitle} cards={sidebarCards} onActivate={activateCard}/>
         {/* CLICKED NODE INPUT / OUTPUT PANEL (No Inspect Function button) */}
         {selectedNode && (
-          <div className="rounded border-2 border-[#E0BE72] bg-[#0B1717] p-3 space-y-2.5 shadow-md">
+          <details className="rounded border border-[#486356] bg-[#0B1717] p-3 space-y-2.5"><summary className="cursor-pointer text-xs text-[#7BD3B0]">Connections for {selectedNode.label}</summary>
             <div className="flex items-center justify-between gap-2 border-b border-[#486356]/70 pb-2">
               <div className="min-w-0">
                 <div className="font-mono text-[10px] uppercase tracking-wider text-[#E0BE72] font-bold">
-                  Selected Block Input / Output
+                  {selectedNode.structure==='source'?'Selected source & references':'Selected Block Input / Output'}
                 </div>
                 <div className="font-mono text-xs sm:text-sm font-bold text-[#EEF3E9] truncate">
                   {selectedNode.label}
@@ -192,16 +213,16 @@ export const CodePane: React.FC<CodePaneProps> = ({
             {/* Incoming Input Sources */}
             <div className="space-y-1">
               <div className="font-mono text-[10.5px] text-[#38BDF8] font-bold">
-                ⬅ Input Coming In ({incomingEdges.length}):
+                ⬅ {selectedNode.structure==='source'?(selectedNode.sourceKind==='operation'?'Possible preceding paths':'Referenced by'):'Input Coming In'} ({incomingEdges.length}):
               </div>
               {incomingEdges.length === 0 ? (
                 <div className="text-xs text-[#8AA399] font-mono pl-2">
-                  Entry source node (no upstream wire)
+                  {selectedNode?.structure==='source'?'No incoming references in this source view':'Entry source node (no upstream wire)'}
                 </div>
               ) : (
                 <div className="space-y-1">
                   {incomingEdges.map((edge) => {
-                    const srcNode = activeGraph.nodes.find((n) => n.id === edge.source);
+                    const srcNode = inspectorNodes.find((n) => n.id === edge.source);
                     return (
                       <div
                         key={edge.id}
@@ -221,16 +242,16 @@ export const CodePane: React.FC<CodePaneProps> = ({
             {/* Outgoing Output Targets */}
             <div className="space-y-1">
               <div className="font-mono text-[10.5px] text-[#34D399] font-bold">
-                ➔ Output Going Out ({outgoingEdges.length}):
+                ➔ {selectedNode.structure==='source'?(selectedNode.sourceKind==='operation'?'Possible following paths':'References'):'Output Going Out'} ({outgoingEdges.length}):
               </div>
               {outgoingEdges.length === 0 ? (
                 <div className="text-xs text-[#8AA399] font-mono pl-2">
-                  Terminal output node (final destination)
+                  {selectedNode?.structure==='source'?'No outgoing references in this source view':'Terminal output node (final destination)'}
                 </div>
               ) : (
                 <div className="space-y-1">
                   {outgoingEdges.map((edge) => {
-                    const tgtNode = activeGraph.nodes.find((n) => n.id === edge.target);
+                    const tgtNode = inspectorNodes.find((n) => n.id === edge.target);
                     return (
                       <div
                         key={edge.id}
@@ -246,11 +267,11 @@ export const CodePane: React.FC<CodePaneProps> = ({
                 </div>
               )}
             </div>
-          </div>
+          </details>
         )}
 
         {selectedNode && (selectedNode.evidence?.length || selectedNode.confidence) && (
-          <div className="rounded border border-[#486356] bg-[#0B1717] p-3 space-y-2">
+          <details className="rounded border border-[#486356] bg-[#0B1717] p-3 space-y-2"><summary className="cursor-pointer text-xs text-[#7BD3B0]">Source evidence</summary>
             <div className="flex items-center justify-between gap-2">
               <span className="text-[10px] font-mono uppercase tracking-wider text-[#7BD3B0]">Evidence</span>
               {selectedNode.confidence && <span className="font-mono text-[9px] uppercase tracking-wider text-[#E0BE72]">{selectedNode.confidence}</span>}
@@ -262,99 +283,10 @@ export const CodePane: React.FC<CodePaneProps> = ({
                 {ref.quote && <div className="text-[#EEF3E9]/80 whitespace-pre-wrap">{ref.quote}</div>}
               </div>
             ))}
-          </div>
+          </details>
         )}
 
-        {sourceFile&&!showPreparedEvidence&&<div className="rounded border border-[#486356] bg-[#0B1717] overflow-hidden" aria-label="Displayed source code">
-          <div className="px-3 py-2 text-xs font-mono text-[#7BD3B0] border-b border-[#486356]">{sourceFile.file} · {sourceFile.language}</div>
-          <pre className="overflow-x-auto p-3 text-[12px] leading-relaxed font-mono select-text">{sourceFile.lines.filter(line=>Math.abs(line.lineNumber-Math.min(...(selectedNode?.codeReference.lines||currentStep.code.lines)))<=5).map(line=><span key={line.lineNumber} className={`block whitespace-pre ${highlightSet.has(line.lineNumber)?'text-[#E0BE72] bg-[#1A362E]':'text-[#B5C5BD]'}`}>{String(line.lineNumber).padStart(3)}  {line.text||' '}</span>)}</pre>
-        </div>}
         {selectedNode?.valueRef&&<div className="rounded border border-[#486356] bg-[#0B1717] p-3 text-xs text-[#7BD3B0]">Calculated example: <code>{selectedNode.valueRef}</code><p className="mt-1 text-[#B5C5BD] whitespace-pre-wrap break-words">{selectedNode.defaultPreview}</p></div>}
-        {/* Step Goals & Outputs for the @ represented by the current beat */}
-        <div className="rounded border border-[#486356] bg-[#0B1717] overflow-hidden shadow-sm">
-          <div className="px-3 py-2 border-b border-[#486356]/70 bg-[#142B25]/70 flex items-center justify-between gap-2">
-            <span className="text-xs font-semibold text-[#EEF3E9] truncate">
-              Step Goals &amp; Outputs ({beatAtTitle.split('(')[0]})
-            </span>
-            <span className="font-mono text-[10.5px] text-[#8AA399] shrink-0">
-              Click any @step to inspect
-            </span>
-          </div>
-
-          <div className="divide-y divide-[#486356]/40 font-mono text-xs sm:text-[13px]">
-            {scopedStepLines.map((line, idx) => {
-              const isHighlighted =
-                !activeSubFunction || highlightSet.has(line.lineNumber);
-              const atLabel = line.atName ?? line.text.trim();
-              const goalStr = line.goalText ?? line.explanation;
-              const inLabel = line.inputLabel ?? '@input';
-              const inValue = line.inputValue ?? '';
-              const outLabel = line.outputLabel ?? `${atLabel} output`;
-              const outValue = line.resultText ?? '';
-
-              return (
-                <div
-                  key={`${line.lineNumber}-${idx}`}
-                  onClick={() => handleStepClick(line, idx)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleStepClick(line, idx);
-                    }
-                  }}
-                  className={`w-full text-left p-3 transition-colors cursor-pointer ${
-                    isHighlighted
-                      ? 'bg-[#17332B] text-[#EEF3E9] border-l-4 border-l-[#E0BE72]'
-                      : 'text-[#B5C5BD]/90 hover:bg-[#142B25]/70'
-                  }`}
-                >
-                  <div className="space-y-2">
-                    {/* Line 1: @tokenize goal "Split the question into clean, lowercase word pieces" */}
-                    <div className="leading-relaxed break-words">
-                      <span
-                        className={`font-bold ${
-                          isHighlighted ? 'text-[#7BD3B0]' : 'text-[#91B9CC]'
-                        }`}
-                      >
-                        {atLabel}
-                      </span>{' '}
-                      <span className="text-[#E0BE72] font-semibold">goal</span>{' '}
-                      <span className="font-sans text-[#EEF3E9]">
-                        &ldquo;{goalStr}&rdquo;
-                      </span>
-                    </div>
-
-                    {/* Code Block:
-                        @Question Input: "How long do I have to request a refund?"
-                        @Tokenize output: ["how", "long", "request", "refund"]
-                    */}
-                    <div className="p-2.5 rounded bg-[#0B1717] border border-[#486356]/80 space-y-1.5 text-[11.5px] leading-snug break-words">
-                      {inValue && (
-                        <div>
-                          <span className="text-[#38BDF8] font-bold">
-                            {inLabel}:
-                          </span>{' '}
-                          <span className="text-[#EEF3E9]">{inValue}</span>
-                        </div>
-                      )}
-                      {outValue && (
-                        <div>
-                          <span className="text-[#34D399] font-bold">
-                            {outLabel}:
-                          </span>{' '}
-                          <span className="text-[#EEF3E9]">{outValue}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* If Mini-Explanation is active, highlight its step note */}
         {miniModeActive && miniStepCaption && (
           <div className="p-3 rounded border border-[#E0BE72] bg-[#0B1717] space-y-1">
@@ -368,6 +300,27 @@ export const CodePane: React.FC<CodePaneProps> = ({
           </div>
         )}
 
+        {!showPreparedEvidence && <details className="rounded border border-[#486356] bg-[#0B1717] p-3 text-xs">
+          <summary className="cursor-pointer text-[#7BD3B0]">Beat transcript</summary>
+          <p className="mt-2 leading-relaxed text-[#EEF3E9]">{currentStep.narration}</p>
+        </details>}
+        {!showPreparedEvidence&&activeSubFunction?.interface&&<details className="rounded border border-[#486356] bg-[#0B1717] p-3 text-xs">
+          <summary className="cursor-pointer text-[#7BD3B0]">Full function contract</summary>
+          {(['inputs','outputs'] as const).map(direction=><div key={direction} className="mt-3 space-y-1.5">
+            <div className="font-semibold text-[#E0BE72]">{direction==='inputs'?'Inputs':'Results and effects'}</div>
+            {activeSubFunction.interface![direction].map((item,i)=><p key={i} className="leading-relaxed text-[#B5C5BD] break-words"><span className="font-mono text-[#EEF3E9]">{item.label||item.name.replace(/_/g,' ')}</span>: {item.description}</p>)}
+          </div>)}
+        </details>}
+        {functionStatus&&<p role="status" className="rounded border border-[#486356] p-2 text-xs text-[#E0BE72]">{functionStatus}</p>}
+        {functionCatalog.some(fn=>fn.file===activeFileName)&&<details className="rounded border border-[#486356] bg-[#0B1717] p-3 text-xs">
+          <summary className="cursor-pointer font-semibold text-[#7BD3B0]">Functions in this file ({functionCatalog.filter(fn=>fn.file===activeFileName).length})</summary>
+          <input aria-label="Search functions in this file" type="search" value={functionSearch} onChange={event=>setFunctionSearch(event.target.value)} placeholder="Find a function or method…" className="mt-2 mb-2 w-full rounded border border-[#486356] bg-[#142B25] px-2 py-2 text-[#EEF3E9]"/>
+          <div className="max-h-52 overflow-y-auto space-y-1">
+            {functionCatalog.filter(fn=>fn.file===activeFileName&&fn.name.toLowerCase().includes(functionSearch.toLowerCase())).map(fn=><button key={fn.id} type="button" onClick={()=>onDrillIntoFunction(fn.id)} aria-label={`Inspect Function ${fn.name}`} title={fn.signature} className="flex w-full items-start justify-between gap-2 rounded border border-[#486356] px-2 py-2 text-left text-[#EEF3E9] hover:border-[#E0BE72]">
+              <span className="min-w-0 break-words font-mono">{fn.name}</span><span className="shrink-0 text-[#E0BE72]">↘</span>
+            </button>)}
+          </div>
+        </details>}
         {/* Concise Beat Reasoning Takeaway */}
         <div className="rounded border border-[#486356] bg-[#0B1717]/90 p-3 space-y-1.5">
           <div className="text-[11px] font-semibold text-[#E0BE72]">

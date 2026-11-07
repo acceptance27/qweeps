@@ -1,0 +1,23 @@
+{
+  "question": "Explain the QWEEPS visual lesson architecture in 5 beats using the repository as the source of truth. Trace a lesson request from the browser UI through the Python visual server, lesson planning and generation, architecture and flow validation, the SVG/GSAP or native renderer, browser-frame review, narration synthesis and final playback. Group related files into function containers with internal operations, boundary ports and connections. Keep every structural claim tied to the scanned files and do not invent runtime values, cloud services or databases.",
+  "targetBeats": 5,
+  "presentation": "architecture_flow",
+  "repoPath": "/home/anonymous/Work/qweeps",
+  "jobId": "4381e25a49174334934b3ca92255b206",
+  "lessonId": "8ec5e2faa925b82baa879e6c0a39a68b",
+  "status": "failed",
+  "stage": "Preparation stopped",
+  "error": "Could not measure the final word of the reasoning bridge in frontend-architecture; previous lesson preserved.",
+  "startedAt": "2026-11-06T23:43:16+08:00",
+  "finishedAt": "2026-11-06T23:53:32+08:00",
+  "wallSeconds": 616.114,
+  "jobTimings": {
+    "storyboard": 51.515,
+    "architecture": 0.012,
+    "artwork": 217.325,
+    "factual_review": 79.135,
+    "narrative_review": 40.996,
+    "speech": 225.408
+  },
+  "lesson": null
+}

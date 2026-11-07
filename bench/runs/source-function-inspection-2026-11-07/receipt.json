@@ -1,0 +1,41 @@
+{
+  "lessonId": "91909fb28e229f76ca5ef8e5c10f3cbd",
+  "url": "http://127.0.0.1:4174/?lesson=91909fb28e229f76ca5ef8e5c10f3cbd&muted=1",
+  "grounding": "source-backed",
+  "selectedFiles": 12,
+  "preparedModules": 46,
+  "cataloguedFunctions": 204,
+  "crossFolderReferences": 1,
+  "internalFileReferences": 7,
+  "layoutPreflight": {
+    "preparedModules": 46,
+    "issues": 0
+  },
+  "tests": {
+    "python": 130,
+    "frontend": 110,
+    "typescript": "pass",
+    "productionBuild": "pass"
+  },
+  "manualChecks": {
+    "fileInspect": "pass",
+    "lazyFunction": "BrowserLessonStore._prepare",
+    "backRestoresFile": 1.2,
+    "backRestoresRoot": 46.1,
+    "cameraRestored": true,
+    "lazyFunctionReadingSteps": 6,
+    "sourceOperationFocusZoom": 0.74,
+    "declaredParametersNotRuntimeValues": true
+  },
+  "limits": [
+    "12 selected files, not the complete repository",
+    "Selected syntactic operations, not exhaustive control-flow or runtime execution",
+    "The separate queue example failed visual review after three revisions and was not published."
+  ],
+  "sourceParserBenchmark": {
+    "browserLessonsSymbols": 94,
+    "coldSeconds": 0.309,
+    "cachedSeconds": 0.0002,
+    "uncachedHttpInspectionSeconds": 0.417
+  }
+}

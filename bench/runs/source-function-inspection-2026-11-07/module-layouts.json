@@ -1,0 +1,324 @@
+[
+  {
+    "id": "function-aed4f0f2d21196be",
+    "title": "Handler.do_POST()",
+    "nodes": 6,
+    "edges": 5,
+    "engine": "elk"
+  },
+  {
+    "id": "function-0774530211850b63",
+    "title": "manim_python()",
+    "nodes": 8,
+    "edges": 7,
+    "engine": "elk"
+  },
+  {
+    "id": "function-a0ae752792b7bab8",
+    "title": "VisualService._render_trusted_source()",
+    "nodes": 9,
+    "edges": 8,
+    "engine": "elk"
+  },
+  {
+    "id": "file-d06266d8ffdb14b8",
+    "title": "src/assistant/visual/server.py",
+    "nodes": 3,
+    "edges": 0,
+    "engine": "elk"
+  },
+  {
+    "id": "function-c8c4472d069dd060",
+    "title": "BrowserLessonStore.review()",
+    "nodes": 4,
+    "edges": 3,
+    "engine": "elk"
+  },
+  {
+    "id": "function-6461ebd8cf2096f9",
+    "title": "methods_storyboard()",
+    "nodes": 9,
+    "edges": 10,
+    "engine": "elk"
+  },
+  {
+    "id": "function-7e0e5bb05daade29",
+    "title": "browser_guidance()",
+    "nodes": 7,
+    "edges": 7,
+    "engine": "elk"
+  },
+  {
+    "id": "file-86b117bb2829843a",
+    "title": "src/assistant/visual/browser_lessons.py",
+    "nodes": 3,
+    "edges": 0,
+    "engine": "elk"
+  },
+  {
+    "id": "function-957611cdd2267b60",
+    "title": "NarrationStore._request()",
+    "nodes": 16,
+    "edges": 19,
+    "engine": "elk"
+  },
+  {
+    "id": "function-8e0d22c85ecc5002",
+    "title": "NarrationStore.prepare_lesson()",
+    "nodes": 2,
+    "edges": 1,
+    "engine": "elk"
+  },
+  {
+    "id": "function-59eb7193adecda6b",
+    "title": "NarrationStore.prepare()",
+    "nodes": 8,
+    "edges": 7,
+    "engine": "elk"
+  },
+  {
+    "id": "file-52c073d2c4e9389a",
+    "title": "src/assistant/visual/narration.py",
+    "nodes": 3,
+    "edges": 2,
+    "engine": "elk"
+  },
+  {
+    "id": "function-0da9111344e00ba5",
+    "title": "EnhancedLiveLessonPlayer()",
+    "nodes": 7,
+    "edges": 6,
+    "engine": "elk"
+  },
+  {
+    "id": "function-82887421e9750d0f",
+    "title": "EnhancedLiveLessonPlayer.nativeTime()",
+    "nodes": 2,
+    "edges": 1,
+    "engine": "elk"
+  },
+  {
+    "id": "function-9d06b6443f8c29a3",
+    "title": "EnhancedLiveLessonPlayer.pause()",
+    "nodes": 6,
+    "edges": 6,
+    "engine": "elk"
+  },
+  {
+    "id": "file-a69daad8c37511c3",
+    "title": "visual-studio/src/live/LiveLessonPlayer.tsx",
+    "nodes": 3,
+    "edges": 0,
+    "engine": "elk"
+  },
+  {
+    "id": "function-6d963590ac7e44d6",
+    "title": "NativeLessonCanvas()",
+    "nodes": 7,
+    "edges": 6,
+    "engine": "elk"
+  },
+  {
+    "id": "function-8f7fd953a987e916",
+    "title": "NativeLessonCanvas.tick()",
+    "nodes": 9,
+    "edges": 8,
+    "engine": "elk"
+  },
+  {
+    "id": "function-1cfa76a210c9f75c",
+    "title": "NativeLessonCanvas.point()",
+    "nodes": 3,
+    "edges": 2,
+    "engine": "elk"
+  },
+  {
+    "id": "file-e9d312327ab13106",
+    "title": "visual-studio/src/learning/NativeLessonCanvas.tsx",
+    "nodes": 3,
+    "edges": 0,
+    "engine": "elk"
+  },
+  {
+    "id": "function-37aa767508e9e398",
+    "title": "review_rendered()",
+    "nodes": 8,
+    "edges": 7,
+    "engine": "elk"
+  },
+  {
+    "id": "file-782c28cd427713de",
+    "title": "src/assistant/visual/frame_review.py",
+    "nodes": 1,
+    "edges": 0,
+    "engine": "elk"
+  },
+  {
+    "id": "function-6174c01773b0d67a",
+    "title": "studio_request()",
+    "nodes": 9,
+    "edges": 9,
+    "engine": "elk"
+  },
+  {
+    "id": "function-e898834009736615",
+    "title": "ensure_studio_server()",
+    "nodes": 11,
+    "edges": 11,
+    "engine": "elk"
+  },
+  {
+    "id": "function-94d3866ecda8e59f",
+    "title": "VisualRunner._speak_narration()",
+    "nodes": 5,
+    "edges": 4,
+    "engine": "elk"
+  },
+  {
+    "id": "file-5760f00984d27b80",
+    "title": "src/assistant/visual/runner.py",
+    "nodes": 3,
+    "edges": 1,
+    "engine": "elk"
+  },
+  {
+    "id": "function-8f956150f0c4ffad",
+    "title": "usePrototypeNarration()",
+    "nodes": 7,
+    "edges": 6,
+    "engine": "elk"
+  },
+  {
+    "id": "file-9ae4d0ede8c7de3a",
+    "title": "visual-studio/src/live/architecture/prototype/usePrototypeNarration.ts",
+    "nodes": 1,
+    "edges": 0,
+    "engine": "elk"
+  },
+  {
+    "id": "function-b83c4063e37db8a5",
+    "title": "backend_from_env()",
+    "nodes": 9,
+    "edges": 9,
+    "engine": "elk"
+  },
+  {
+    "id": "function-6e47bda1fc26d339",
+    "title": "RenderBackend.render()",
+    "nodes": 2,
+    "edges": 1,
+    "engine": "elk"
+  },
+  {
+    "id": "function-a131e9dfe270897e",
+    "title": "LocalCEBackend.render()",
+    "nodes": 7,
+    "edges": 6,
+    "engine": "elk"
+  },
+  {
+    "id": "file-a39b8cbfe8fd944f",
+    "title": "src/assistant/visual/render_backends.py",
+    "nodes": 3,
+    "edges": 0,
+    "engine": "elk"
+  },
+  {
+    "id": "function-78fa886a06da0d58",
+    "title": "capture_native_frames()",
+    "nodes": 12,
+    "edges": 12,
+    "engine": "elk"
+  },
+  {
+    "id": "file-66dec29d6b8ce828",
+    "title": "src/assistant/visual/native_review.py",
+    "nodes": 1,
+    "edges": 0,
+    "engine": "elk"
+  },
+  {
+    "id": "function-651a947eca8a684a",
+    "title": "node()",
+    "nodes": 2,
+    "edges": 1,
+    "engine": "elk"
+  },
+  {
+    "id": "function-2aff6b897a8c0c91",
+    "title": "chapter()",
+    "nodes": 2,
+    "edges": 1,
+    "engine": "elk"
+  },
+  {
+    "id": "function-d4790296423bd57c",
+    "title": "presentation()",
+    "nodes": 2,
+    "edges": 1,
+    "engine": "elk"
+  },
+  {
+    "id": "file-167fe8616ae7ea78",
+    "title": "visual-studio/src/live/methodsVisualLesson.ts",
+    "nodes": 3,
+    "edges": 0,
+    "engine": "elk"
+  },
+  {
+    "id": "function-590f4c703910da01",
+    "title": "data_visual()",
+    "nodes": 12,
+    "edges": 14,
+    "engine": "elk"
+  },
+  {
+    "id": "function-d90cd19ac6bfd52c",
+    "title": "internal_connections()",
+    "nodes": 10,
+    "edges": 10,
+    "engine": "elk"
+  },
+  {
+    "id": "function-97d396c996555255",
+    "title": "internal_children()",
+    "nodes": 10,
+    "edges": 10,
+    "engine": "elk"
+  },
+  {
+    "id": "file-97e2bf1a336d4334",
+    "title": "src/assistant/visual/architecture_flow.py",
+    "nodes": 3,
+    "edges": 1,
+    "engine": "elk"
+  },
+  {
+    "id": "folder-81e32a94a9f63ee5",
+    "title": "src/assistant/visual",
+    "nodes": 8,
+    "edges": 7,
+    "engine": "elk"
+  },
+  {
+    "id": "folder-056f6590ac6a1f5f",
+    "title": "visual-studio/src/live",
+    "nodes": 2,
+    "edges": 0,
+    "engine": "elk"
+  },
+  {
+    "id": "folder-382105f58bc155de",
+    "title": "visual-studio/src",
+    "nodes": 1,
+    "edges": 0,
+    "engine": "elk"
+  },
+  {
+    "id": "folder-5ac8c020abdc3c65",
+    "title": "visual-studio/src/live/architecture",
+    "nodes": 1,
+    "edges": 0,
+    "engine": "elk"
+  }
+]

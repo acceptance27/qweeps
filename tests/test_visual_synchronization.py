@@ -303,3 +303,17 @@ def test_native_anchor_repair_reuses_the_recording_and_word_alignment(tmp_path,m
  narration.prepare_lesson.assert_called_once()
  aligner.assert_called_once()
  assert list(folder.glob('native-anchor-rejected-*.json'))
+
+
+def test_root_voice_cache_survives_nested_inspector_and_enclosure_layout_changes():
+ from assistant.visual.synchronization import fingerprint
+ class Voice:
+  def signature(self):return {'voice':'test'}
+ base=lesson();base['architecture']={'version':1,'graph':{'id':'root','nodes':[],'edges':[]},'functions':{'fn':{'graph':{'id':'inner','nodes':[],'edges':[]}}},'functionCatalog':[]}
+ before=fingerprint(base,Voice());updated=copy.deepcopy(base)
+ updated['architecture']['graph']['systemNodeId']='system'
+ updated['architecture']['functions']['fn']['graph']['nodes'].append({'id':'result'})
+ updated['sourceReview']={'approved':True,'observations':['Reviewed the unchanged source']}
+ assert fingerprint(updated,Voice())==before
+ updated['chapters'][0]['narration']='Different spoken explanation.'
+ assert fingerprint(updated,Voice())!=before

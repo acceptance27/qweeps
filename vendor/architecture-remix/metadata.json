@@ -1,0 +1,8 @@
+{
+  "name": "Remix QWEEPS Architecture \u0026 Code-Tracing Prototype",
+  "description": "Interactive 2D architecture walkthrough synchronized with Python code and visible data transformations demonstrating how a RAG answer is assembled.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

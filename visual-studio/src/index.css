@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../../vendor/architecture-remix/src";
 
 @layer base {
   :root {

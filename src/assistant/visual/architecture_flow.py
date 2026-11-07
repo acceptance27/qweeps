@@ -104,6 +104,21 @@ def confidence(value, label):
     return result
 
 
+def function_interface(value):
+    if not isinstance(value,dict):raise PlanError('Function interface needs declared inputs and outputs')
+    result={'basis':text(value.get('basis'),'Interface basis',600)}
+    for key in ('inputs','outputs'):
+        result[key]=[]
+        for item in entries(value.get(key,[]),'Interface '+key,0,16):
+            row={'name':text(item.get('name'),'Interface name',160),'description':text(item.get('description'),'Interface description',350),'kind':text(item.get('kind'),'Interface kind',40)}
+            if item.get('label'):row['label']=text(item['label'],'Interface label',160)
+            if item.get('line') is not None:
+                if type(item['line']) is not int or item['line']<1:raise PlanError('Interface evidence needs a positive source line')
+                row['line']=item['line']
+            result[key].append(row)
+    return result
+
+
 def data_visual(value):
     bounded_data(value, 'Node visual', 12000)
     if value.get('variant') not in VARIANTS:
@@ -147,6 +162,82 @@ def data_visual(value):
     return visual
 
 
+def port_list(value, label):
+    result = {'inputs': [], 'outputs': []}
+    if value is None:
+        return result
+    if not isinstance(value, dict):
+        raise PlanError(f'{label} must contain inputs and outputs')
+    for direction in ('inputs', 'outputs'):
+        ids = set()
+        for raw in entries(value.get(direction, []), f'{label} {direction}', 0, 8):
+            if not isinstance(raw, dict):
+                raise PlanError(f'{label} ports must be structured objects')
+            pid = ident(raw.get('id'))
+            if pid in ids:
+                raise PlanError(f'{label} port IDs must be unique')
+            ids.add(pid)
+            port = {'id': pid, 'label': text(raw.get('label'), f'{label} port label', 80)}
+            if raw.get('data'):
+                port['data'] = text(raw['data'], f'{label} port data', 160)
+            result[direction].append(port)
+    return result
+
+
+def internal_connections(value, child_ids):
+    result = []
+    ids = set()
+    for raw in entries(value or [], 'Internal connections', 0, 12):
+        if not isinstance(raw, dict):
+            raise PlanError('Internal connections must be structured objects')
+        cid = ident(raw.get('id'))
+        if cid in ids:
+            raise PlanError('Internal connection IDs must be unique')
+        ids.add(cid)
+        ends = {}
+        for key in ('from', 'to'):
+            end = raw.get(key)
+            if not isinstance(end, dict) or end.get('child') not in child_ids:
+                raise PlanError('Internal connections must name existing child operations')
+            ends[key] = {'child': end['child']}
+            if end.get('port'):
+                ends[key]['port'] = ident(end['port'])
+        result.append({'id': cid, **ends,
+                       'label': text(raw.get('label'), 'Internal connection label', 90, optional=True),
+                       'relationship': raw.get('relationship', 'data'), 'evidence': evidence_list(raw.get('evidence'), 'Internal connection evidence')})
+    return result
+
+
+def internal_children(value, files=None):
+    result = []
+    ids = set()
+    for raw in entries(value or [], 'Function internal operations', 0, 8):
+        if not isinstance(raw, dict):
+            raise PlanError('Internal operations must be structured objects')
+        cid = ident(raw.get('id'))
+        if cid in ids:
+            raise PlanError('Internal operation IDs must be unique within a function')
+        ids.add(cid)
+        row = {
+            'id': cid,
+            'ports': port_list(raw.get('ports'), f'Internal operation {cid}'),
+            'label': text(raw.get('label'), 'Internal operation label', 80),
+            'description': text(raw.get('description'), 'Internal operation description', 300, optional=True),
+            'icon': text(raw.get('icon', 'Layers'), 'Internal operation icon', 40, optional=True),
+            'color': raw.get('color', 'blue'),
+            'value': text(raw.get('value'), 'Internal operation value', 160, optional=True),
+        }
+        if row['color'] not in COLORS:
+            raise PlanError('Use QWEEPS colors for internal operations')
+        if raw.get('drillDownFunctionId'):row['drillDownFunctionId']=ident(raw['drillDownFunctionId'])
+        if raw.get('visual'):row['visual']=data_visual(raw['visual'])
+        if raw.get('valueRef'):row['valueRef']=text(raw['valueRef'],'Internal value reference',120)
+        if raw.get('codeReference') and files:
+            row['codeReference'] = code_ref(raw['codeReference'], files)
+        result.append(row)
+    return result
+
+
 def code_files(value):
     result = []
     ids = set()
@@ -187,7 +278,7 @@ def code_ref(value, files):
     return {'file': file['file'], 'lines': list(dict.fromkeys(lines))}
 
 
-def graph(value, files, values=None):
+def graph(value, files, values=None, reference_render=False):
     if not isinstance(value, dict):
         raise PlanError('Architecture needs a graph')
     nodes, ids = [], set()
@@ -204,7 +295,25 @@ def graph(value, files, values=None):
                 'color': raw.get('color', 'blue'), 'description': text(raw.get('description'), 'Node description', 1500),
                 'defaultPreview': text(raw.get('defaultPreview'), 'Node data preview', 2000, optional=True),
                 'confidence': confidence(raw.get('confidence'), 'Node confidence')}
+        if raw.get('external') is True:node['external']=True
+        if raw.get('structure') == 'source':
+            node['structure'] = 'source'
+        if raw.get('sourceKind') in {'file','function','operation','signature','result'}:node['sourceKind']=raw['sourceKind']
+        if raw.get('interface'):node['interface']=function_interface(raw['interface'])
+        for field in ('teachingLabel','teachingDescription'):
+            if raw.get(field):node[field]=text(raw[field],field,600)
+        if raw.get('signature'):node['signature']=text(raw['signature'],'Function signature',300)
+        if raw.get('parameters') is not None:node['parameters']=string_list(raw['parameters'],'Declared parameters')
         node['evidence'] = evidence_list(raw.get('evidence'), 'Node evidence')
+        node['children'] = internal_children(raw.get('children'), files)
+        node['ports'] = port_list(raw.get('ports'), f'Node {nid}')
+        node['connections'] = internal_connections(raw.get('connections'), {c['id'] for c in node['children']})
+        if reference_render:
+            if isinstance(raw.get('compoundContainer'), dict):
+                node['compoundContainer'] = copy.deepcopy(raw['compoundContainer'])
+            for key in ('width', 'height'):
+                if type(raw.get(key)) in (int, float):
+                    node[key] = raw[key]
         if raw.get('codeReference'):
             node['codeReference'] = code_ref(raw['codeReference'], files)
         if raw.get('drillDownFunctionId'):
@@ -218,6 +327,9 @@ def graph(value, files, values=None):
         if visual:
             node['visual'] = data_visual(visual)
         nodes.append(node)
+    internal_ids = [conn['id'] for node in nodes for conn in node.get('connections') or []]
+    if len(internal_ids) != len(set(internal_ids)):
+        raise PlanError('Internal connection IDs must be unique across the architecture graph')
     edges, edge_ids = [], set()
     for raw in entries(value.get('edges', []), 'Architecture edges', 0, 64):
         eid = ident(raw.get('id'))
@@ -231,10 +343,23 @@ def graph(value, files, values=None):
                 'label': text(raw.get('label'), 'Edge label', 90), 'relationship': relationship,
                 'description': text(raw.get('description'), 'Edge meaning', 1000, optional=True),
                 'confidence': confidence(raw.get('confidence'), 'Edge confidence')}
+        if reference_render:
+            for key in ('sourcePortIndex', 'targetPortIndex'):
+                if type(raw.get(key)) is int and raw[key] >= 0:
+                    edge[key] = raw[key]
+        for key, endpoint in (('sourceChild', 'source'), ('targetChild', 'target')):
+            if raw.get(key):
+                parent = next(n for n in nodes if n['id'] == raw[endpoint])
+                if raw[key] not in {child['id'] for child in parent.get('children', [])}:
+                    raise PlanError('Edge child bindings must exist inside their endpoint container')
+                edge[key] = raw[key]
         edge['evidence'] = evidence_list(raw.get('evidence'), 'Edge evidence')
         edges.append(edge)
-    return {'id': ident(value.get('id')), 'title': text(value.get('title'), 'Graph title', 160),
-            'nodes': nodes, 'edges': edges}
+    if value.get('systemNodeId') and value['systemNodeId'] not in ids:raise PlanError('The enclosing system must name an existing graph node')
+    return {**({'systemNodeId':value['systemNodeId']} if value.get('systemNodeId') else {}),**({'systemContract':True} if value.get('systemContract') is True else {}),'id': ident(value.get('id')), 'title': text(value.get('title'), 'Graph title', 160),
+            'nodes': nodes, 'edges': edges,
+            **({'compactRowAssignment': copy.deepcopy(value['compactRowAssignment'])}
+               if reference_render and isinstance(value.get('compactRowAssignment'), dict) else {})}
 
 
 def step(value, g, files, duration=80, values=None):
@@ -242,17 +367,25 @@ def step(value, g, files, duration=80, values=None):
         raise PlanError('Architecture beats need a flow step')
     node_ids = {n['id'] for n in g['nodes']}
     edges = {e['id']: e for e in g['edges']}
+    child_ids = {c['id']: n['id'] for n in g['nodes'] for c in n.get('children') or []}
+    internal_edges = {conn['id']: n['id'] for n in g['nodes'] for conn in n.get('connections') or []}
+    all_edges = {**edges, **internal_edges}
     focus = entries(value.get('focusNodes'), 'Focused architecture nodes', 1, 8)
+    child_focus=[n for n in focus if n in child_ids]
+    focus=list(dict.fromkeys(child_ids.get(n,n) for n in focus))
     if any(n not in node_ids for n in focus):
         raise PlanError('Focus must reference existing architecture nodes')
+    focus_operations = list(dict.fromkeys(entries(value.get('focusOperations', []), 'Focused internal operations', 0, 16)+child_focus))
+    if any(n not in child_ids for n in focus_operations):
+        raise PlanError('Focused internal operations must reference existing child operations')
     active = entries(value.get('activeEdges', []), 'Active architecture edges', 0, 12)
-    if any(e not in edges for e in active):
-        raise PlanError('Active edges must exist in the architecture graph')
+    if any(e not in all_edges for e in active):
+        raise PlanError('Active edges must exist in the architecture graph or its containers')
     packets, cue_ids = [], set()
     for p in entries(value.get('packets', []), 'Data transfers', 0, 8):
         eid = p.get('edgeId')
         pid = ident(p.get('id'))
-        if eid not in edges or eid not in active or pid in cue_ids or pid in node_ids:
+        if eid not in all_edges or eid not in active or pid in cue_ids or pid in node_ids or pid in child_ids:
             raise PlanError('Packets need distinct cue IDs and an active existing edge')
         cue_ids.add(pid)
         start = number(p.get('start'), 'Packet start', 0, duration)
@@ -265,7 +398,7 @@ def step(value, g, files, duration=80, values=None):
             payload=transfer_preview(resolve(p['valueRef'],values or {}))
         packets.append({'id': pid, 'edgeId': eid, 'start': start, 'end': end,
                         'payload': payload,**({'valueRef':p['valueRef']} if p.get('valueRef') else {})})
-    result = {'focusNodes': list(dict.fromkeys(focus)), 'activeEdges': list(dict.fromkeys(active)),
+    result = {'focusNodes': list(dict.fromkeys(focus)), 'focusOperations': list(dict.fromkeys(focus_operations)), 'activeEdges': list(dict.fromkeys(active)),
               'packets': packets, 'code': code_ref(value.get('code'), files)}
     for key in ('stateBefore', 'stateAfter'):
         result[key] = bounded_data(value.get(key, {}), key)
@@ -337,8 +470,21 @@ def validate_architecture(value):
     tradeoffs = string_list(value.get('tradeoffs'), 'Architecture tradeoffs')
     result = {'version': 1, 'illustrative': grounding == 'illustrative', 'grounding': grounding,
               'assumptions': assumptions, 'limitations': limitations, 'tradeoffs':tradeoffs,
-              'codeFiles': files, 'graph': graph(value.get('graph'), files, values), 'functions': {}}
+              'codeFiles': files, 'graph': graph(value.get('graph'), files, values, value.get('renderContract')=='reference'), 'functions': {}}
+    if value.get('view') in {'system','source-map'}:result['view']=value['view']
+    if value.get('renderContract') == 'reference':
+        result['renderContract'] = 'reference'
     if example:result['workedExample']=example
+    if value.get('functionCatalog') is not None:
+        catalog=[];catalog_ids=set();file_names={f['file'] for f in files}
+        for item in entries(value['functionCatalog'],'Function catalog',0,2048):
+            fid=ident(item.get('id'))
+            if fid in catalog_ids or item.get('file') not in file_names:raise PlanError('Catalog functions need unique IDs and an indexed source file')
+            catalog_ids.add(fid)
+            line=item.get('line');end=item.get('end')
+            if type(line) is not int or type(end) is not int or not 1<=line<=end:raise PlanError('Catalog functions need real positive source ranges')
+            catalog.append({'id':fid,'name':text(item.get('name'),'Function name',200),'file':item['file'],'line':line,'end':end,'signature':text(item.get('signature'),'Function signature',300),**({'parentFunctionId':ident(item['parentFunctionId'])} if item.get('parentFunctionId') else {})})
+        result['functionCatalog']=catalog
     functions = value.get('functions', {})
     if not isinstance(functions, dict) or len(functions) > 48:
         raise PlanError('Architecture functions need a bounded ID-to-module map')
@@ -349,7 +495,7 @@ def validate_architecture(value):
             missing=[key for key in required if not isinstance(raw,dict) or key not in raw]
             raise PlanError(f'Function {fid} is incomplete: missing '+', '.join(missing)+'. Every functions[id] needs title, summary, codeFiles, graph {id,title,nodes,edges}, and steps [{id,title,question,narration,insight,safeguard,duration,flow}]. Return the complete architecture, preserving its other modules.')
         code = code_files(raw.get('codeFiles'))
-        g = graph(raw.get('graph'), code, values)
+        g = graph(raw.get('graph'), code, values, value.get('renderContract')=='reference')
         steps, ids = [], set()
         for raw_step in entries(raw.get('steps'), 'Function reasoning steps', 1, 20):
             sid = ident(raw_step.get('id'))
@@ -363,9 +509,12 @@ def validate_architecture(value):
             steps.append(row)
         result['functions'][fid] = {'id': fid, 'title': text(raw.get('title'), 'Function title', 160),
                                     'summary': text(raw.get('summary'), 'Function summary', 1500),
-                                    'graph': g, 'codeFiles': code, 'steps': steps}
+                                    'graph': g, 'codeFiles': code, 'steps': steps, **({'view':raw['view']} if raw.get('view') in {'source','function','visual'} else {})}
+    for fid,raw in functions.items():
+        if raw.get('interface'):result['functions'][fid]['interface']=function_interface(raw['interface'])
     for module in [result, *result['functions'].values()]:
         references = [n.get('drillDownFunctionId') for n in module['graph']['nodes']]
+        references += [c.get('drillDownFunctionId') for n in module['graph']['nodes'] for c in n.get('children',[])]
         references += [line.get('drillDownFunctionId') for f in module['codeFiles'] for line in f['lines']]
         references += [s['flow'].get('drillDownFunctionId') for s in module.get('steps', [])]
         missing=sorted({fid for fid in references if fid and fid not in result['functions']})
@@ -377,6 +526,7 @@ def validate_architecture(value):
             raise PlanError('Architecture function drill-downs must be acyclic and at most six levels deep')
         module = result['functions'][fid]
         refs = {n.get('drillDownFunctionId') for n in module['graph']['nodes']}
+        refs |= {c.get('drillDownFunctionId') for n in module['graph']['nodes'] for c in n.get('children',[])}
         refs |= {l.get('drillDownFunctionId') for f in module['codeFiles'] for l in f['lines']}
         refs |= {s['flow'].get('drillDownFunctionId') for s in module.get('steps',[])}
         for child in refs - {None}:
@@ -441,6 +591,20 @@ GUIDANCE = '''ARCHITECTURE / CODE TRACE SUPPORT:
 Use teaching="architecture" and layout="architecture_flow" when the learner needs to follow
 real components, function calls, code/data transformations, branching or fan-in. This is a
 supported live SVG renderer, not a static flowchart and not arbitrary code execution.
+Use children only for functions that genuinely contain internal operations. A container
+node's children are the canonical internal operations; do not repeat them as separate
+graph nodes. If the system has more than five top-level components, group related
+components into containers with children instead of returning one flat card chain.
+A stage with multiple internal operations must be ONE container, not several top-level
+nodes (for example one retrieve() with score/sort/select children, not retrieve_score(),
+retrieve_sort(), retrieve_select()). Keep overview compact and put detailed values in
+child values or inspection. Every visible function container must provide a complete Inspect Function module. Include child codeReference fields and declared connections; QWEEPS can expand those same operations into a function module. Use specialized child visual variants where they reveal tokens, numeric comparisons, selected/rejected records, prompts or citations. New subjects use their own source/example, not the RAG fixture.
+For a RAG mechanism, use this hierarchical pattern: external question and document index
+into an embed() container (tokenize, encode/pool, normalize), retrieve() container
+(score, sort, select top-k, rejected output), context() container (tag source IDs, join
+passages), prompt() container (system rules, assemble prompt), and generate() container
+(attend context, cite) producing an external answer. Preserve branching from retrieve
+to selected and rejected passages. Do not flatten those containers into separate cards.
 The graph is defined once per lesson in the separate architecture stage. Each directed chapter
 uses flow:{focusNodes:[existing IDs],activeEdges:[existing edge IDs],packets:[{id:"semantic-transfer-cue",
 edgeId:"existing-edge",start:2,end:5,payload:"actual short input"}],code:{file:"source.py",lines:[2]},
@@ -469,6 +633,7 @@ Schema: {version:1,illustrative:true,grounding:"illustrative|proposed|source-bac
 graph:{id:"system",title:"...",nodes:[{id:"query",label:"Question",kind:"input",color:"blue",
 description:"Useful explanation",defaultPreview:"example value",codeReference:{file:"answer.py",lines:[1]},
 confidence:"exact|inferred|illustrative",evidence:[{kind:"file|symbol|doc|page|trace|requirement",path:"answer.py",symbol:"answer",lines:[1],quote:"optional quoted evidence"}],
+children:[{id:"internal-op",label:"operation()",description:"what it does",icon:"Layers",color:"blue",value:"optional compact value"}],
 drillDownFunctionId:"optional-existing-id",visual:{variant:"paper-card",title:"Input",lines:["value"]}}],
 edges:[{id:"query-to-embed",source:"query",target:"embed",label:"question text",relationship:"data",confidence:"exact|inferred|illustrative",evidence:[{kind:"file",path:"answer.py",lines:[2]}]}]},
 functions:{fnId:{title:"Function name",summary:"What this computes",codeFiles:[same file schema],graph:{same graph schema},
@@ -486,7 +651,10 @@ storyboard. Omit functions when no function drill-down helps the lesson.
 Set grounding honestly. illustrative means the example is authored and not measured;
 proposed means a design with assumptions and tradeoffs; source-backed means every node and
 edge has file/symbol/doc evidence. Source-backed graphs must include evidence on every node
-and edge. Never present invented runtime values as measurement.'''
+and edge. Never present invented runtime values as measurement.
+Return exactly one complete root object with version, grounding, assumptions, tradeoffs,
+limitations, workedExample, codeFiles, graph and functions. Never return only nodes/edges
+or a bare graph fragment.'''
 
 EXAMPLE_GUIDANCE = '''
 Architecture goals are distinct:
@@ -531,3 +699,22 @@ Return only the requested chapter/architecture data, not duplicate shared contra
 '''
 GUIDANCE += '\n'+EXAMPLE_GUIDANCE
 AUTHOR += '\n'+EXAMPLE_GUIDANCE
+
+AUTHOR += """
+The learner needs system boundaries and function contracts, not a folder map.
+Include explicit input and output boundary nodes and a meaningful directed data/control
+path between them. Processing containers must name their incoming data and produced
+results/effects in ports.inputs/ports.outputs ({id,label,data}). A function can
+produce an outward write or state change without returning a value: distinguish
+those effects from a returned result. Function inspection must retain these inputs
+and outcomes. Code is evidence retained internally; the learner interface shows
+readable operation descriptions and input/output contracts rather than Python lines.
+Use graph.systemContract:true. Match the reference composition: external Question
+or Request card on the left, square wall socket into a named system ENCLOSURE,
+internal function containers such as embed(), and an external Answer or Result
+card on the right. The enclosure represents the system call; it is not another
+processing box. If an explicit enclosing-call node is used, identify it with
+graph.systemNodeId and exactly one internal entry connection. Supporting sources
+and opaque services stay outside. Child connections follow actual declared calls
+and data dependencies, never a guessed sequence based on function names.
+"""

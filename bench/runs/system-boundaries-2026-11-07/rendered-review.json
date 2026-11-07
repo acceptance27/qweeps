@@ -1,0 +1,149 @@
+{
+  "approved": true,
+  "findings": [],
+  "observations": [
+    "intake-boundary early/middle/finished keep Learner Question 'question text' and Source Material 'documentIds' outside left wall with square port into BrowserLessonStore.start Live Pipeline, with Request Intake Route POST do_POST, Validate JSON _do_POST, Start lesson job start chain readable, no overlap or clipping, caption progresses to ack-is-not-lesson.",
+    "plan-construct early shows Lesson Planning Generate storyboard _generate to Ensure architecture _ensure_architecture, middle/finished expands Visual Construction Direct visuals _direct, Prepare candidate _prepare, Assemble candidate _candidate with plan-to-construct edge active, distinct icons and readable labels, overview at 29% keeps all containers inside system enclosure with Job Status separate from Published lesson.",
+    "narrate-review: Focused 88% frames show Visual Construction (_direct/_prepare/_candidate) wired to Narration Compilation (prepare_lesson/prepare) with dotted 'findings request re-preparation' loop visible; finished 49% frame shows Review and Revision Gate and Saved Artifacts inside enclosure and providers kept outside boundary.",
+    "artifacts-playback: Early 95% frame shows Request Intake Route POST/Validate JSON/Start lesson job chain, middle frame shows Saved Artifacts Fetch lesson/List lessons/Inspect function wired to Interactive Playback Play lesson/Play beat, finished 33% overview shows separate Job Status job-handle versus Published Lesson lesson-card outside right wall."
+  ],
+  "presentationChecks": [
+    {
+      "beat": "intake-boundary",
+      "methodFits": true,
+      "evidenceVisible": true,
+      "textSupports": true,
+      "observation": "Boundary tracing method fits entry-vs-ack question; focused frames show externals outside wall, square port, gold intake container lighting, outgoing wire to the right distinct from lesson path, overview confirms separate Job Status job-handle wire, left panel and caption support watching while listening."
+    },
+    {
+      "beat": "plan-construct",
+      "methodFits": true,
+      "evidenceVisible": true,
+      "textSupports": true,
+      "observation": "Container expansion method fits background planning-to-candidate question; frames show intake dimming then Lesson Planning then Visual Construction expanding with Generate to Ensure and Direct to Prepare to Assemble wires, establishing storyboard guides artwork, caption states candidate still needs narration and review."
+    },
+    {
+      "beat": "narrate-review",
+      "methodFits": true,
+      "evidenceVisible": true,
+      "textSupports": true,
+      "observation": "Feedback-loop inspection method shows narrate then review then revision loop: Visual Construction to Narration Compilation progression plus bottom findings loop back, with review gate lighting in finished view and provider remaining closed, matching narration about caching speech then gating on frames."
+    },
+    {
+      "beat": "artifacts-playback",
+      "methodFits": true,
+      "evidenceVisible": true,
+      "textSupports": true,
+      "observation": "Output separation method contrasts two distinct outputs: intake to job-handle polling wire versus artifacts to lesson-card outside wall onward to player, with Inspect Function fetch/catalog/inspect and LiveLessonPlayer/VisualBeatStage blocks visible, matching captions distinguishing status ack from playable saved artifact."
+    }
+  ],
+  "frames": [
+    {
+      "chapter": 0,
+      "position": "early",
+      "time": 3
+    },
+    {
+      "chapter": 0,
+      "position": "middle",
+      "time": 15.945
+    },
+    {
+      "chapter": 0,
+      "position": "finished",
+      "time": 31.89
+    },
+    {
+      "chapter": 1,
+      "position": "early",
+      "time": 41.98
+    },
+    {
+      "chapter": 1,
+      "position": "middle",
+      "time": 51.075
+    },
+    {
+      "chapter": 1,
+      "position": "finished",
+      "time": 63.17
+    },
+    {
+      "chapter": 2,
+      "position": "early",
+      "time": 76.25999999999999
+    },
+    {
+      "chapter": 2,
+      "position": "middle",
+      "time": 86.95499999999998
+    },
+    {
+      "chapter": 2,
+      "position": "finished",
+      "time": 100.64999999999999
+    },
+    {
+      "chapter": 3,
+      "position": "early",
+      "time": 106.42
+    },
+    {
+      "chapter": 3,
+      "position": "middle",
+      "time": 117.10000000000002
+    },
+    {
+      "chapter": 3,
+      "position": "finished",
+      "time": 130.78000000000003
+    },
+    {
+      "chapter": 0,
+      "position": "overview",
+      "time": 0
+    },
+    {
+      "chapter": 0,
+      "position": "inspect-function-7c818cc28cd755ca-early",
+      "scope": "function-7c818cc28cd755ca",
+      "time": 2
+    },
+    {
+      "chapter": 0,
+      "position": "inspect-function-7c818cc28cd755ca-finished",
+      "scope": "function-7c818cc28cd755ca",
+      "time": 263.10869565217394
+    },
+    {
+      "chapter": 0,
+      "position": "inspect-function-093d28fe84be6f76-early",
+      "scope": "function-093d28fe84be6f76",
+      "time": 2
+    },
+    {
+      "chapter": 0,
+      "position": "inspect-function-093d28fe84be6f76-finished",
+      "scope": "function-093d28fe84be6f76",
+      "time": 95.28260869565217
+    },
+    {
+      "chapter": 0,
+      "position": "inspect-function-aece9fc374977a5f-early",
+      "scope": "function-aece9fc374977a5f",
+      "time": 2
+    },
+    {
+      "chapter": 0,
+      "position": "inspect-function-aece9fc374977a5f-finished",
+      "scope": "function-aece9fc374977a5f",
+      "time": 62.58695652173914
+    }
+  ],
+  "chapterFingerprints": {
+    "intake-boundary": "648d32f53e8514d87dc43dfb3ac71b49195a0ee1642e293e52eadf22c7121d29",
+    "plan-construct": "abf93458ec6ffd7ed300d812c48628dbf6a762d0a0c621dd46f8a8c4a542a860",
+    "narrate-review": "0ad15c1c04fb6a4a708531e269e8851bf99b03eee036574ca820bd486feeb37f",
+    "artifacts-playback": "35141d3da86586f3e44c208630e25134efb7158c7a851a377fe1dd17dff2c541"
+  }
+}

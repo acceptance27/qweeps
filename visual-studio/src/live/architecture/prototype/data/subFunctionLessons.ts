@@ -1,5 +1,10 @@
+import {
+  computeDynamicCardDimensions,
+  normalizeGraphId,
+} from '../layout/elkLayout';
 import { FunctionLessonId, StaticDataSpec, SubFunctionLesson } from '../types/lesson';
 import { getInnerFunctionLesson, getNonSummarySpec } from './innerFunctionLessons';
+import { WORKED_EXAMPLE_LEDGER } from './ragGraph';
 
 export const SUB_FUNCTION_LESSONS: Record<FunctionLessonId, SubFunctionLesson> = {
   'fn-embed': {
@@ -1782,8 +1787,9 @@ const LEVEL_1_STEP_IO_SPECS: Record<
   },
 };
 
-// Automatically attach NonSummarySpec (@Inputs, Goal, @Output), StaticDataSpec, and Visual Flowchart drill-down to all Level-1 blocks
+// Automatically attach NonSummarySpec (@Inputs, Goal, @Output), StaticDataSpec, procedural dynamic widths/heights, and Visual Flowchart drill-down to all Level-1 blocks
 for (const lesson of SUB_FUNCTION_LIST) {
+  lesson.graph.workedExampleLedger = WORKED_EXAMPLE_LEDGER;
   for (const node of lesson.graph.nodes) {
     const ns = getNonSummarySpec(node.id);
     if (ns) {
@@ -1801,8 +1807,12 @@ for (const lesson of SUB_FUNCTION_LIST) {
     if (sd) {
       node.staticData = sd;
     }
+    const dims = computeDynamicCardDimensions(node);
+    node.width = dims.width;
+    node.height = dims.height;
   }
   for (const line of lesson.codeLines) {
+    line.file = lesson.fileName;
     const innerId = LEVEL_1_LINE_TO_INNER_FN[line.lineNumber];
     if (innerId) {
       line.drillDownFunctionId = innerId;
@@ -1831,7 +1841,91 @@ for (const lesson of SUB_FUNCTION_LIST) {
   }
 }
 
+const SUB_GRAPH_TO_FUNCTION_ID: Record<string, string> = {
+  'sub-graph-fn-embed': 'fn-embed',
+  'sub-graph-fn-retrieve': 'fn-retrieve',
+  'sub-graph-fn-context': 'fn-context',
+  'sub-graph-fn-prompt': 'fn-prompt',
+  'sub-graph-fn-generate': 'fn-generate',
+  'sub-graph-l2-tokenize': 'emb-tokenize',
+  'sub-graph-l2-pool': 'emb-pool',
+  'sub-graph-l2-norm': 'emb-norm',
+  'sub-graph-l2-scorer': 'ret-scorer',
+  'sub-graph-l2-sorter': 'ret-sorter',
+  'sub-graph-l2-slicer': 'ret-slicer',
+  'sub-graph-l2-tag': 'ctx-tag',
+  'sub-graph-l2-join': 'ctx-join',
+  'sub-graph-l2-rules': 'prm-rules',
+  'sub-graph-l2-merge': 'prm-merge',
+  'sub-graph-l2-attend': 'gen-attend',
+  'sub-graph-l2-decode': 'gen-decode',
+};
+
+export function normalizeFunctionLessonId(rawId: string | null | undefined): string {
+  if (!rawId) return '';
+  const stripped = rawId.replace(/^(generated-)+/, '');
+  return SUB_GRAPH_TO_FUNCTION_ID[stripped] ?? stripped;
+}
+
 export function resolveSubFunctionLesson(id: string | null): SubFunctionLesson | null {
   if (!id) return null;
-  return SUB_FUNCTION_LESSONS[id] ?? getInnerFunctionLesson(id);
+  const canonicalId = normalizeFunctionLessonId(id);
+  return SUB_FUNCTION_LESSONS[canonicalId] ?? getInnerFunctionLesson(canonicalId);
+}
+
+/**
+ * Normalizes a generated or seed function module (`lesson.architecture.functions[*]`) so it:
+ * 1. Strips 'generated-' prefixes from both `fn.id` and `fn.graph.id` (preserving `sub-graph-*` keys).
+ * 2. Reuses the curated reference `SubFunctionLesson` (18s beats, nonSummary, staticData, dynamic sizes,
+ *    and Level-2 visual flowcharts) whenever the ID matches one of the 17 reference functions.
+ * 3. For brand-new generated functions, strips Level-1 paper-card `customVisual` overrides, synthesizes
+ *    dark `nonSummary` and `staticData` specs, and applies `computeDynamicCardDimensions`.
+ */
+export function adaptGeneratedSubFunctionLesson(rawFn: SubFunctionLesson): SubFunctionLesson {
+  const canonicalId = normalizeFunctionLessonId(rawFn.id || rawFn.graph?.id);
+  const curated = resolveSubFunctionLesson(canonicalId);
+  if (curated) {
+    return curated;
+  }
+
+  const normalizedGraphId = normalizeGraphId(rawFn.graph.id);
+  const isLevel2 =
+    normalizedGraphId.startsWith('sub-graph-l2-') || Boolean(rawFn.parentFunctionId);
+
+  const adaptedNodes = rawFn.graph.nodes.map((node) => {
+    const cleanNode = { ...node };
+    if (!isLevel2 && cleanNode.customVisual?.variant === 'paper-card') {
+      delete cleanNode.customVisual;
+    }
+    const ns = getNonSummarySpec(cleanNode.id);
+    if (ns && !cleanNode.nonSummary) {
+      cleanNode.nonSummary = {
+        blockTitle: ns.blockName,
+        inputs: ns.inputs,
+        goalTitle: ns.goalTitle,
+        goalText: ns.goalText,
+        outputLabel: ns.outputLabel,
+        outputValue: ns.outputValue,
+      };
+    }
+    const sd = STATIC_DATA_SPECS[cleanNode.id];
+    if (sd && !cleanNode.staticData) {
+      cleanNode.staticData = sd;
+    }
+    const dims = computeDynamicCardDimensions(cleanNode);
+    cleanNode.width = dims.width;
+    cleanNode.height = dims.height;
+    return cleanNode;
+  });
+
+  return {
+    ...rawFn,
+    id: canonicalId || rawFn.id,
+    graph: {
+      ...rawFn.graph,
+      id: normalizedGraphId,
+      workedExampleLedger: rawFn.graph.workedExampleLedger ?? WORKED_EXAMPLE_LEDGER,
+      nodes: adaptedNodes,
+    },
+  };
 }

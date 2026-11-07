@@ -712,7 +712,11 @@ class Handler(SimpleHTTPRequestHandler):
             return
         parsed = urlsplit(self.path)
         try:
-            if parsed.path == "/api/visual/health":
+            from . import architecture_remix
+            if architecture_remix.handles(parsed.path):
+                status,body=architecture_remix.request('GET',parsed.path)
+                self.send_json(status,body)
+            elif parsed.path == "/api/visual/health":
                 self.send_json(200, self.service.health())
             elif parsed.path == "/api/visual/settings":
                 self.send_json(200, self.service.get_settings())
@@ -877,13 +881,18 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             route = urlsplit(self.path).path
             length = int(self.headers.get("Content-Length", "0"))
-            limit=150_000_000 if route=='/api/visual/documents' else 48_000_000 if route=='/api/visual/live/review' else 2_000_000 if route=='/api/visual/live/check' else 250_000
+            limit=150_000_000 if route=='/api/visual/documents' else 48_000_000 if route=='/api/visual/live/review' else 8_000_000 if route.startswith('/api/architecture/') else 2_000_000 if route=='/api/visual/live/check' or route.startswith(('/api/ai/','/api/repo/')) else 250_000
             if not 0 < length <= limit:
                 raise PlanError(f"Request must be 1–{limit} bytes")
             payload = json.loads(self.rfile.read(length))
             if not isinstance(payload, dict):
                 raise PlanError("Request must be an object")
             route = urlsplit(self.path).path
+            from . import architecture_remix
+            if architecture_remix.handles(route):
+                status,body=architecture_remix.request('POST',route,payload)
+                self.send_json(status,body)
+                return
             if route == "/api/visual/session":
                 sid, _ = self.service.session()
                 result = {"sessionId": sid}
@@ -894,6 +903,9 @@ class Handler(SimpleHTTPRequestHandler):
             elif route == '/api/visual/beats/start':
                 result=self.service.beats.start(payload)
             elif route == '/api/visual/live/jobs':
+                if payload.get('presentation')=='architecture_flow':
+                    self.send_json(200,{'status':'workspace_ready','engine':'architecture-remix','workspaceUrl':'/?architecture=1&compile=1'})
+                    return
                 result=self.service.live.start(payload)
             elif route == '/api/visual/live/architecture/scan':
                 from .repo_architecture import scan_repository
@@ -933,6 +945,8 @@ class Handler(SimpleHTTPRequestHandler):
                 result=check_svg(payload.get('svg'),timeout=timeout)
             elif route == '/api/visual/live/synchronize':
                 result=self.service.live.start_synchronization(payload)
+            elif route == '/api/visual/live/inspect-function':
+                result=self.service.live.inspect_function(payload)
             elif route == '/api/visual/live/review':
                 result=self.service.live.review(payload.get('jobId'),payload)
             elif route == "/api/visual/state":

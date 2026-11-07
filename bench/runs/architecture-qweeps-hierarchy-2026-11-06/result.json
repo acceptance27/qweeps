@@ -1,0 +1,33 @@
+{
+  "question": "Explain the QWEEPS visual lesson pipeline architecture in 3 beats. Trace a request from the browser UI through the Python visual server and lesson store, model/architecture preparation, the SVG/GSAP or native renderer, browser-frame review, narration and playback. Use the repository scan as the source of truth. Group related files into function containers with internal operations and keep every structural claim tied to the scanned files. Do not invent runtime values, cloud services or databases.",
+  "targetBeats": 3,
+  "presentation": "architecture_flow",
+  "repoPath": "/home/anonymous/Work/qweeps",
+  "jobId": "455fd6ee156d44e28b3eace4379c0cbf",
+  "lessonId": "656c9c8ac55646a22b17b47c99f48092",
+  "status": "ready",
+  "stage": "Reviewed live lesson ready",
+  "error": null,
+  "startedAt": "2026-11-06T20:28:54+08:00",
+  "finishedAt": "2026-11-06T20:35:40+08:00",
+  "wallSeconds": 405.547,
+  "jobTimings": {
+    "storyboard": 35.887,
+    "architecture": 0.01,
+    "artwork": 74.629,
+    "factual_review": 43.188,
+    "narrative_review": 59.431,
+    "speech": 159.011
+  },
+  "lesson": {
+    "title": "QWEEPS Visual Lesson Pipeline \u2014 Source-Backed Inspection",
+    "duration": 117.38816666666666,
+    "chapters": 3,
+    "architecture": true,
+    "grounding": "source-backed",
+    "audioTrack": true,
+    "nodes": 3,
+    "containers": 3,
+    "edges": 2
+  }
+}

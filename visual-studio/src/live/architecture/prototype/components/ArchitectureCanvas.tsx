@@ -1,6 +1,9 @@
 import {normalizeVisual} from '../visualData';
+import {normalizeGraphId,interpolatePointOnPolyline} from '../layout/elkLayout';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Network, AudioLines, Play, Terminal, Workflow,
+  Palette, Hammer, Package, Eye, Cog, Mic, Activity, Globe, List, Search, MonitorPlay,
   Compass,
   Maximize2,
   ZoomIn,
@@ -39,6 +42,7 @@ import {
   CameraState,
   ComputedGraphLayout,
   FunctionLessonId,
+  GraphNode,
   MiniExplanationStep,
   NodeAccentColor,
   NodeId,
@@ -51,6 +55,8 @@ interface ArchitectureCanvasProps {
   layout: ComputedGraphLayout;
   steps: Step[];
   currentStep: Step;
+  flowTime?:number;
+  captionText?: string;
   totalStepsCount: number;
   nodeFrames: Record<NodeId, EvaluatedNodeFrame>;
   activeEdgeIds: Set<string>;
@@ -95,6 +101,23 @@ const ACCENT_HEX: Record<NodeAccentColor, string> = {
 function renderLucideIcon(iconName: string, colorHex: string, size = 22) {
   const props = { width: size, height: size, color: colorHex, strokeWidth: 2 };
   switch (iconName) {
+    case 'Palette': return <Palette {...props} />;
+    case 'Hammer': return <Hammer {...props} />;
+    case 'Package': return <Package {...props} />;
+    case 'Eye': return <Eye {...props} />;
+    case 'Cog': return <Cog {...props} />;
+    case 'Mic': return <Mic {...props} />;
+    case 'Activity': return <Activity {...props} />;
+    case 'Globe': return <Globe {...props} />;
+    case 'List': return <List {...props} />;
+    case 'Search': return <Search {...props} />;
+    case 'MonitorPlay': return <MonitorPlay {...props} />;
+    case 'CornerDownRight': return <CornerDownRight {...props} />;
+    case 'Network': return <Network {...props} />;
+    case 'AudioLines': return <AudioLines {...props} />;
+    case 'Play': return <Play {...props} />;
+    case 'Terminal': return <Terminal {...props} />;
+    case 'Workflow': return <Workflow {...props} />;
     case 'MessageSquareQuote':
       return <MessageSquareQuote {...props} />;
     case 'Binary':
@@ -150,18 +173,89 @@ interface InternalChildBlock {
   color: NodeAccentColor;
   hasLeftCombinerBar?: boolean;
   combinerPortsY?: number[];
+  drillDownFunctionId?: FunctionLessonId;
+  isDropBranch?: boolean;
+  showInputPort?: boolean;
+  showOutputPort?: boolean;
+  highlight?: boolean;
 }
 
 interface CompoundContainerSpec {
   leftPortsY: number[];
   rightPortsY: number[];
   children: InternalChildBlock[];
-  internalWires: { points: { x: number; y: number }[] }[];
+  internalWires: { points: { x: number; y: number }[]; id?: string; active?: boolean }[];
 }
 
 /**
  * Strict 100% Port-Aligned Compound Container Definitions for BOTH Level-0 and Level-1.
  */
+function genericCompoundSpec(
+  node: GraphNode,
+  width: number,
+  height: number,
+  childLayout?: Record<string, { x: number; y: number; width: number; height: number }>,
+  focusOperations?: Set<string>,
+  activeEdges?: Set<string>
+): CompoundContainerSpec {
+  const operations = node.children || [];
+  const cols = Math.min(3, Math.max(1, operations.length));
+  const rows = Math.max(1, Math.ceil(operations.length / cols));
+  const pad = 14;
+  const gap = 10;
+  const childW = Math.max(60, (width - pad * 2 - gap * (cols - 1)) / cols);
+  const childH = Math.max(44, (height - pad * 2 - gap * (rows - 1)) / rows);
+  const useChildLayout = childLayout;
+  const children: InternalChildBlock[] = operations.map((operation, index) => {
+    const col = index % cols;
+    const row = Math.floor(index / cols);
+    const box = useChildLayout ? childLayout?.[operation.id] : undefined;
+    return {
+      id: operation.id,
+      label: operation.label,
+      sublabel: operation.value || operation.description || '',
+      x: box?.x ?? pad + col * (childW + gap),
+      y: box?.y ?? pad + row * (childH + gap),
+      w: box?.width ?? childW,
+      h: box?.height ?? childH,
+      iconName: operation.icon || 'Layers',
+      color: operation.color,
+      highlight: focusOperations?.has(operation.id) || false,
+    };
+  });
+  const childById = Object.fromEntries(children.map(child => [child.id, child]));
+  const wire = (child: InternalChildBlock, next: InternalChildBlock) => {
+    const start = { x: child.x + child.w, y: child.y + child.h / 2 };
+    const end = { x: next.x, y: next.y + next.h / 2 };
+    if (Math.abs(start.y - end.y) < 1) return { points: [start, end] };
+    return {
+      points: [
+        start,
+        { x: start.x + gap / 2, y: start.y },
+        { x: start.x + gap / 2, y: end.y },
+        end,
+      ],
+    };
+  };
+  const declaredWires = (node.connections || []).flatMap(connection => {
+    const from = childById[connection.from.child];
+    const to = childById[connection.to.child];
+    return from && to ? [{ ...wire(from, to), id: connection.id, active: activeEdges?.has(connection.id) || false }] : [];
+  });
+  const internalWires = declaredWires;
+  const portYs = (ports?: { id: string }[]) => {
+    const count = ports?.length || 0;
+    if (!count) return [height / 2];
+    return Array.from({ length: count }, (_, index) => pad + ((height - pad * 2) * (index + 1)) / (count + 1));
+  };
+  return {
+    leftPortsY: portYs(node.ports?.inputs),
+    rightPortsY: portYs(node.ports?.outputs),
+    children,
+    internalWires,
+  };
+}
+
 const COMPOUND_CHILDREN: Record<string, CompoundContainerSpec> = {
   embed: {
     leftPortsY: [86],
@@ -434,6 +528,8 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
   layout,
   steps: _steps,
   currentStep,
+  flowTime=0,
+  captionText,
   totalStepsCount,
   nodeFrames,
   activeEdgeIds,
@@ -467,6 +563,9 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
   const [viewportSize, setViewportSize] = useState({ width: 920, height: 560 });
   const [isDragging, setIsDragging] = useState(false);
   const didMoveDuringDragRef = useRef(false);
+  const bannerRef=useRef<HTMLDivElement>(null);
+  const [bannerHeight,setBannerHeight]=useState(0);
+  useEffect(()=>{const el=bannerRef.current;if(!el){setBannerHeight(0);return;}const measure=()=>setBannerHeight(el.getBoundingClientRect().height);measure();const observer=new ResizeObserver(measure);observer.observe(el);return()=>observer.disconnect();},[activeSubFunction?.id,miniModeActive]);
   const dragStartRef = useRef<{
     clientX: number;
     clientY: number;
@@ -592,10 +691,16 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
   const viewRectWorldW = viewportSize.width / camera.zoom;
   const viewRectWorldH = viewportSize.height / camera.zoom;
 
-  const isMacroBlueprint = graph.id==='qweeps-rag-4col-architecture';
+  const isMacroBlueprint = normalizeGraphId(graph.id)==='qweeps-rag-4col-architecture';
   const isGenerated=graph.id.startsWith('generated-');
-  const isLevel2Flowchart = graph.id.startsWith('sub-graph-l2-');
+  const isCompoundMacro = isMacroBlueprint || (isGenerated && graph.nodes.some((node)=>Boolean(node.compoundContainer||node.children?.length)));
+  const normalizedGraphId = (graph.id || '').replace(/^(generated-)+/, '');
+  const isLevel2Flowchart =
+    activeSubFunction?.view ? activeSubFunction.view==='visual' :
+    normalizedGraphId.startsWith('sub-graph-l2-') || Boolean(activeSubFunction?.parentFunctionId);
 
+  const enclosure=layout.systemBounds;
+  const compactOverview=isGenerated&&graph.systemContract&&camera.zoom<.55;
   return (
     <div
       ref={containerRef}
@@ -603,7 +708,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
     >
       {/* Hierarchy Level 1 / Level 2 Call-Stack Breadcrumb Banner */}
       {activeSubFunction && !miniModeActive && (
-        <div className="relative z-20 mx-3 mt-2 px-3 py-2 rounded border border-[#7BD3B0] bg-[#142B25]/95 flex flex-wrap items-center justify-between gap-2 shadow-lg">
+        <div ref={bannerRef} className="relative z-20 mx-3 mt-2 px-3 py-2 rounded border border-[#7BD3B0] bg-[#142B25]/95 flex flex-wrap items-center justify-between gap-2 shadow-lg">
           <div className="flex items-center gap-2 min-w-0">
             <button
               type="button"
@@ -613,7 +718,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>
                 {activeSubFunction.parentFunctionId
-                  ? `Back to ${activeSubFunction.parentFunctionId.replace('fn-', '')}()`
+                  ? `Back to ${activeSubFunction.parentFunctionName||activeSubFunction.parentFunctionId.replace('fn-', '')}`
                   : `Back to Full System Blueprint (${
                       savedMacroPlayhead !== null ? `${savedMacroPlayhead.toFixed(1)}s` : 'L0'
                     })`}
@@ -626,13 +731,13 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                 onClick={onReturnToMacroPipeline}
                 className="px-2 py-1 rounded border border-[#486356] bg-[#0B1717] text-[#B5C5BD] hover:text-[#EEF3E9] text-xs font-mono transition-colors cursor-pointer shrink-0"
               >
-                L0: answer.py
+                {isGenerated?'Full system':'L0: answer.py'}
               </button>
             )}
 
             <span className="text-xs text-[#B5C5BD] hidden sm:inline">›</span>
             <span className="text-xs font-mono text-[#7BD3B0] font-semibold truncate">
-              {activeSubFunction.parentFunctionId ? 'Inner Function: ' : 'Function: '}
+              {activeSubFunction.view==='source'?'Source: ':activeSubFunction.parentFunctionId ? 'Inner Function: ' : 'Function: '}
               {activeSubFunction.functionName}
             </span>
             <span className="text-[11px] font-mono text-[#B5C5BD] hidden lg:inline">
@@ -641,7 +746,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           </div>
 
           <div className="text-[11px] font-mono text-[#E0BE72] shrink-0">
-            {activeSubFunction.parentFunctionId
+            {activeSubFunction.view==='source'?`Source inspection · ${activeSubFunction.steps.length} steps · declarations and possible paths`:activeSubFunction.parentFunctionId
               ? `Level 2 Inner Logic (${activeSubFunction.steps.length} beats · ←/→ Arrow keys)`
               : `Level 1 Logic-per-Beat (${activeSubFunction.steps.length} beats · click node for I/O or Inspect Function ↘)`}
           </div>
@@ -650,7 +755,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
 
       {/* If Mini-Explanation is active, render top Breadcrumb Banner */}
       {miniModeActive && miniStep && (
-        <div className="relative z-20 mx-3 mt-2 px-3 py-2 rounded border border-[#E0BE72] bg-[#142B25]/95 flex flex-wrap items-center justify-between gap-2 shadow-lg">
+        <div ref={bannerRef} className="relative z-20 mx-3 mt-2 px-3 py-2 rounded border border-[#E0BE72] bg-[#142B25]/95 flex flex-wrap items-center justify-between gap-2 shadow-lg">
           <div className="flex items-center gap-2 min-w-0">
             <button
               type="button"
@@ -694,9 +799,8 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
 
       {/* Top Canvas Controls & Minimap Overlay */}
       <div
-        className={`absolute ${
-          activeSubFunction || miniModeActive ? 'top-14' : 'top-2.5'
-        } left-3 right-3 z-10 flex items-start justify-between gap-2 pointer-events-none`}
+        className="absolute left-3 right-3 z-10 flex items-start justify-between gap-2 pointer-events-none"
+        style={{top:bannerHeight?bannerHeight+16:10}}
       >
         <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 bg-[#142B25]/95 border border-[#486356] rounded p-1 shadow-md">
           <button
@@ -902,38 +1006,44 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           {/* Outer System Enclosure Frame */}
           <g>
             <text
-              x={isGenerated?0:isLevel2Flowchart ? 40 : isMacroBlueprint ? 236 : 240}
-              y={28}
-              fill={isMacroBlueprint ? '#B5C5BD' : '#7BD3B0'}
+              x={enclosure?.x ?? (isCompoundMacro ? 236 : isLevel2Flowchart ? 40 : 240)}
+              y={enclosure ? enclosure.y - 10 : 28}
+              fill={isCompoundMacro ? '#B5C5BD' : '#7BD3B0'}
               fontSize={13.5}
               fontWeight="700"
               className="font-sans"
             >
               {isMacroBlueprint
                 ? 'answer(question) — RAG Pipeline System (Click any block to trace its Input/Output & Beats, or click Inspect Function ↘)'
+                : isCompoundMacro
+                ? `${graph.nodes.find(n=>n.id===graph.systemNodeId)?.label||graph.title} — System`
                 : isLevel2Flowchart
                 ? `${activeSubFunction?.functionName} — Dynamic Visual Architecture (${activeSubFunction?.summary})`
                 : isGenerated?graph.title:`${activeSubFunction?.functionName} — Function Logic System (${activeSubFunction?.fileName})`}
             </text>
             <rect
-              x={isGenerated?0:isLevel2Flowchart ? 40 : isMacroBlueprint ? 236 : 240}
-              y={isMacroBlueprint ? 38 : 44}
-              width={isGenerated?layout.width:isLevel2Flowchart ? 1800 : isMacroBlueprint ? 1228 : 1600}
-              height={isGenerated?layout.height:isMacroBlueprint ? 568 : 620}
+              x={enclosure?.x ?? (isCompoundMacro ? 236 : isLevel2Flowchart ? 40 : 240)}
+              y={enclosure?.y ?? (isCompoundMacro ? 38 : 44)}
+              width={enclosure?.width ?? (isCompoundMacro ? 1228 : isLevel2Flowchart ? 1800 : 1600)}
+              height={enclosure?.height ?? (isCompoundMacro ? 568 : 620)}
               fill="rgba(16, 33, 29, 0.38)"
-              stroke={isMacroBlueprint ? '#5E7A6D' : '#7BD3B0'}
+              stroke={graph.systemNodeId&&nodeFrames[graph.systemNodeId]?.isActive?'#E0BE72':isCompoundMacro ? '#5E7A6D' : '#7BD3B0'}
               strokeWidth={1.6}
             />
           </g>
 
           {/* 1. Render Nodes FIRST so Edge Ports & Arrowheads Sit Cleanly On Top of Walls */}
           {graph.nodes.map((node) => {
+            if(node.id===graph.systemNodeId)return null;
             const pos = layout.nodes[node.id];
             if (!pos) return null;
+            const overviewTitleChars=Math.max(5,Math.floor((pos.width*camera.zoom-(node.drillDownFunctionId?20:0))/5.5));
 
-            const visual=node.customVisual?(isGenerated?normalizeVisual(node.customVisual,node.defaultPreview,node.accentColor):node.customVisual):undefined;
+            const visual=isLevel2Flowchart && node.customVisual
+              ? (isGenerated?normalizeVisual(node.customVisual,node.defaultPreview,node.accentColor):node.customVisual)
+              : undefined;
             const frame = nodeFrames[node.id];
-            const isSelected = selectedNodeId === node.id;
+            const isSelected = selectedNodeId === node.id || Boolean(node.children?.some(child=>child.id===selectedNodeId));
             const isInputSourceForSelected = selectedInputNodeIds.has(node.id);
             const isOutputTargetForSelected = selectedOutputNodeIds.has(node.id);
             const isRelatedToSelected =
@@ -944,7 +1054,97 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
             const isDimmed = frame?.isDimmed ?? false;
             const hex = ACCENT_HEX[node.accentColor] ?? '#7BD3B0';
 
-            const compoundSpec = graph.id==='qweeps-rag-4col-architecture'?COMPOUND_CHILDREN[node.id]:undefined;
+            const focusOperations = new Set(currentStep.focusOperations || []);
+            const computedCompound = layout.compounds?.[node.id] ?? node.compoundContainer;
+            const compoundSpec = computedCompound
+              ? {
+                  leftPortsY: computedCompound.leftPortsY,
+                  rightPortsY: computedCompound.rightPortsY,
+                  children: computedCompound.children.map((child) => ({
+                    ...child,
+                    highlight: focusOperations.has(child.id),
+                  })),
+                  internalWires: computedCompound.internalWires.map((wire) => ({
+                    ...wire,
+                    active: Boolean(wire.id && activeEdgeIds.has(wire.id)),
+                  })),
+                }
+              : node.children?.length
+              ? genericCompoundSpec(node, pos.width, pos.height, layout.children?.[node.id], focusOperations, activeEdgeIds)
+              : graph.id==='qweeps-rag-4col-architecture'?COMPOUND_CHILDREN[node.id]:undefined;
+            const liveBeatState =
+              currentStep.nodeDataAfter?.[node.id] ??
+              currentStep.nodeDataBefore?.[node.id];
+            const ledgerValue = node.valueRef
+              ? graph.workedExampleLedger?.[node.valueRef]
+              : undefined;
+            const resolvedOutputPreview =
+              node.nonSummary?.outputValue ||
+              liveBeatState?.previewLines?.[0] ||
+              ledgerValue ||
+              node.defaultPreview;
+            const resolvedCardPreview =
+              node.defaultPreview ||
+              liveBeatState?.previewLines?.[0] ||
+              ledgerValue ||
+              '';
+            const isLevel1FunctionView = Boolean(activeSubFunction) && !isLevel2Flowchart;
+            const isBoundaryOrStaticKind =
+              node.kind === 'input' || node.kind === 'output' || node.kind === 'store';
+            const effectiveNonSummary =
+              node.nonSummary ??
+              (isLevel1FunctionView && !isBoundaryOrStaticKind && !node.staticData
+                ? {
+                    blockTitle: node.label.startsWith('@')
+                      ? node.label.replace(/\(\)$/, '')
+                      : `@${node.label.replace(/\(\)$/, '')}`,
+                    inputs: graph.edges
+                      .filter((e) => e.target === node.id)
+                      .map((e) => {
+                        const srcN = graph.nodes.find((n) => n.id === e.source);
+                        return {
+                          name: srcN?.label?.startsWith('@')
+                            ? srcN.label
+                            : `@${srcN?.label ?? e.source}`,
+                          value: e.label || srcN?.defaultPreview || 'input',
+                          color: srcN?.accentColor ?? node.accentColor,
+                        };
+                      }),
+                    goalTitle: `${node.label.replace(/\(\)$/, '')}'s goal:`,
+                    goalText: node.roleSummary || node.description || node.subtitle,
+                    outputLabel: `@${node.label.replace(/\(\)$/, '')} output`,
+                    outputValue:
+                      resolvedOutputPreview ||
+                      node.customVisual?.highlightText ||
+                      node.customVisual?.lines?.join(' ') ||
+                      node.subtitle,
+                  }
+                : undefined);
+            const effectiveStaticData =
+              node.staticData ??
+              (isLevel1FunctionView && isBoundaryOrStaticKind && !effectiveNonSummary
+                ? {
+                    header: `${
+                      node.label.startsWith('@') ? node.label : `@${node.label}`
+                    } [`,
+                    entries:
+                      node.customVisual?.lines && node.customVisual.lines.length > 0
+                        ? node.customVisual.lines.map((ln, idx) => ({
+                            key: `item_${idx + 1}`,
+                            value: ln,
+                            color: node.accentColor,
+                          }))
+                        : [
+                            {
+                              key: node.kind === 'output' ? 'return' : 'value',
+                              value: resolvedCardPreview || node.subtitle,
+                              color: node.accentColor,
+                            },
+                          ],
+                  }
+                : undefined);
+            const liveValue = (node.defaultPreview || visual?.lines?.join(' · ') || '').replace(/\s+/g, ' ').trim();
+            const valueText = liveValue.length > 58 ? `${liveValue.slice(0, 56)}…` : liveValue;
             const nodeOpacity = selectedNodeId
               ? isRelatedToSelected
                 ? 1
@@ -994,7 +1194,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                 {/* LABEL OUTSIDE & ABOVE THE BLOCK (No subtitle suffix when Inspect Function button is present, avoiding any overlap) */}
                 <text
                   x={0}
-                  y={-10}
+                  y={compactOverview?-7/camera.zoom:-10}
                   fill={
                     isSelected
                       ? '#E0BE72'
@@ -1006,13 +1206,13 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                       ? hex
                       : '#B5C5BD'
                   }
-                  fontSize={13}
+                  fontSize={compactOverview?10/camera.zoom:13}
                   fontWeight="700"
                   className="font-sans"
                 >
                   {node.stepBadge ? `${node.stepBadge} ` : ''}
-                  {node.label}
-                  {!node.drillDownFunctionId && node.subtitle && (
+                  {compactOverview&&node.label.length>overviewTitleChars?node.label.slice(0,overviewTitleChars-1)+'…':node.label}
+                  {!compactOverview&&!node.drillDownFunctionId && node.subtitle && (
                     <tspan
                       fill="#8AA399"
                       fontSize={11}
@@ -1060,7 +1260,10 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                 {/* Show "Inspect Function ↘" pill on ANY node with drillDownFunctionId */}
                 {node.drillDownFunctionId && (
                   <g
-                    transform={`translate(${pos.width - 122}, -25)`}
+                    transform={`translate(${pos.width - (compactOverview?16/camera.zoom:122)}, ${compactOverview?-21/camera.zoom:-25})`}
+                    role="button" tabIndex={0}
+                    aria-label={`${node.sourceKind==='function'||node.structure!=='source'?'Inspect Function':'Inspect Source'} ${node.label}`}
+                    onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();onDrillIntoFunction(node.drillDownFunctionId!);}}}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (node.drillDownFunctionId) {
@@ -1069,23 +1272,23 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                     }}
                   >
                     <rect
-                      width={122}
-                      height={19}
+                      width={compactOverview?14/camera.zoom:122}
+                      height={compactOverview?14/camera.zoom:19}
                       rx={3}
                       fill="#142B25"
                       stroke={hex}
                       strokeWidth={1.2}
                     />
                     <text
-                      x={61}
-                      y={13}
+                      x={compactOverview?7/camera.zoom:61}
+                      y={compactOverview?10/camera.zoom:13}
                       textAnchor="middle"
                       fill={hex}
-                      fontSize={10}
+                      fontSize={compactOverview?10/camera.zoom:10}
                       fontWeight="700"
                       className="font-mono"
                     >
-                      Inspect Function ↘
+                      {compactOverview?'↘':node.structure==='source'&&node.sourceKind!=='function'?'Inspect Source ↘':'Inspect Function ↘'}
                     </text>
                   </g>
                 )}
@@ -1107,6 +1310,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                     {compoundSpec.leftPortsY.map((py, idx) => (
                       <rect
                         key={`lp-${idx}`}
+                        aria-label={node.structure==='source'?'Referenced by':'Input port'}
                         x={-5}
                         y={py - 5}
                         width={10}
@@ -1121,6 +1325,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                     {compoundSpec.rightPortsY.map((py, idx) => (
                       <rect
                         key={`rp-${idx}`}
+                        aria-label={node.structure==='source'?'References':'Output port'}
                         x={pos.width - 5}
                         y={py - 5}
                         width={10}
@@ -1137,10 +1342,10 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                         key={wi}
                         d={buildOrthogonalPath(w.points)}
                         fill="none"
-                        stroke={isActive ? hex : '#6C877A'}
-                        strokeWidth={1.7}
+                        stroke={w.active || isActive ? '#38BDF8' : '#6C877A'}
+                        strokeWidth={w.active ? 2.3 : 1.7}
                         markerEnd={
-                          isActive
+                          w.active || isActive
                             ? 'url(#port-arrow-completed)'
                             : 'url(#port-arrow-inactive)'
                         }
@@ -1151,21 +1356,20 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                     {compoundSpec.children.map((child) => {
                       const cHex = ACCENT_HEX[child.color] ?? hex;
                       const inPorts = child.combinerPortsY ?? [child.y + child.h / 2];
-                      const outPortY =
-                        child.id === 'c-score' ||
-                        child.id === 'c-merge' ||
-                        child.id === 'rs-1' ||
-                        child.id === 'pm-2' ||
-                        child.id === 'pf-2'
-                          ? 86 - child.y
-                          : child.h / 2;
+                      const outPortY = child.hasLeftCombinerBar ? 86 - child.y : child.h / 2;
 
                       return (
                         <g
                           key={child.id}
                           transform={`translate(${child.x}, ${child.y})`}
+                          role={isGenerated ? "button" : undefined}
+                          tabIndex={isGenerated ? 0 : undefined}
+                          aria-label={isGenerated ? `Inspect ${child.label}` : undefined}
+                          onClick={isGenerated ? e=>{e.stopPropagation();if(child.drillDownFunctionId)onDrillIntoFunction(child.drillDownFunctionId);else onSelectNode(child.id);} : undefined}
+                          onKeyDown={isGenerated ? e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();if(child.drillDownFunctionId)onDrillIntoFunction(child.drillDownFunctionId);else onSelectNode(child.id);}} : undefined}
                         >
-                          <text
+                          <title>{child.label}</title>
+                          <text visibility={compactOverview?'hidden':undefined}
                             x={0}
                             y={-7}
                             fill="#EEF3E9"
@@ -1173,7 +1377,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                             fontWeight="600"
                             className="font-sans"
                           >
-                            {child.label}
+                            {child.label}{child.drillDownFunctionId?' ↘':''}
                           </text>
 
                           {child.hasLeftCombinerBar && (
@@ -1202,7 +1406,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                             </g>
                           )}
 
-                          {!child.hasLeftCombinerBar && (
+                          {!child.hasLeftCombinerBar && child.showInputPort!==false && (
                             <rect
                               x={-4}
                               y={child.h / 2 - 4}
@@ -1214,7 +1418,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                             />
                           )}
 
-                          {child.id !== 'c-drop' && child.id !== 'rsl-3' && (
+                          {!child.isDropBranch && child.showOutputPort!==false && (
                             <rect
                               x={child.w - 4}
                               y={outPortY - 4}
@@ -1231,8 +1435,8 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                             height={child.h}
                             rx={2}
                             fill="#142B25"
-                            stroke={isActive || isFocused ? cHex : '#8AA399'}
-                            strokeWidth={1.3}
+                            stroke={child.highlight ? '#E0BE72' : isActive || isFocused ? cHex : '#8AA399'}
+                            strokeWidth={child.highlight ? 2.6 : 1.3}
                           />
 
                           <g
@@ -1242,7 +1446,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                           >
                             {renderLucideIcon(child.iconName, cHex, 22)}
                           </g>
-                          <text
+                          <text visibility={compactOverview?'hidden':undefined}
                             x={child.w / 2}
                             y={child.h - 10}
                             textAnchor="middle"
@@ -1250,11 +1454,19 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                             fontSize={10}
                             className="font-mono"
                           >
-                            {child.sublabel}
+                            {isGenerated && child.sublabel.length > Math.floor(child.w/6) ? child.sublabel.slice(0,Math.floor(child.w/6)-1)+'…' : child.sublabel}
                           </text>
                         </g>
                       );
                     })}
+                    {isGenerated && node.structure!=='source' && cameraMode !== 'overview' && (isActive || isFocused) && valueText && (
+                      <g transform={`translate(8, ${pos.height + 6})`}>
+                        <rect width={Math.min(pos.width - 16, 300)} height={18} rx={9} fill="#0B1717" stroke="#38BDF8" strokeOpacity={0.75} strokeWidth={1} />
+                        <text x={8} y={12.5} fill="#38BDF8" fontSize={9.5} className="font-mono">
+                          {valueText}
+                        </text>
+                      </g>
+                    )}
                   </g>
                 ) : visual ? (
                   /* DYNAMIC FUNCTION-SPECIFIC VISUAL FLOWCHART CARDS */
@@ -1848,11 +2060,20 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                       )}
                     </div>
                   </foreignObject>
-                ) : node.nonSummary ? (
+                ) : node.interface ? (
+                  <foreignObject x={12} y={10} width={pos.width-24} height={pos.height-20}>
+                    <div className="h-full w-full flex flex-col items-center justify-center text-center gap-2 overflow-hidden">
+                      {renderLucideIcon(node.interface.outputs.length?'CheckCircle2':'MessageSquareQuote',hex,23)}
+                      <div className="font-semibold text-[14px]" style={{color:hex}}>{node.interface.outputs.length?'Output':'Input'}</div>
+                      <div className="text-[13px] leading-snug text-[#EEF3E9] break-words">{[...node.interface.inputs,...node.interface.outputs].slice(0,3).map(item=>item.label||item.name).join(' · ')||'No explicit arguments'}</div>
+                      {[...node.interface.inputs,...node.interface.outputs].length>3&&<div className="text-[11px] text-[#B5C5BD]">+{[...node.interface.inputs,...node.interface.outputs].length-3} in Details</div>}
+                    </div>
+                  </foreignObject>
+                ) : effectiveNonSummary ? (
                   /* NON-SUMMARY VIEW (@BlockName [ @Inputs, Goal, @Output ]) — Sized Dynamically to Content */
                   <g>
                     {/* Left Vertical Combiner Bar for multi-input blocks so all connected @input wires land cleanly */}
-                    {node.nonSummary.inputs.length > 1 && (
+                    {effectiveNonSummary.inputs.length > 1 && (
                       <rect
                         x={-9}
                         y={24}
@@ -1880,22 +2101,22 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                                 className="font-mono font-bold text-[12.5px]"
                                 style={{ color: hex }}
                               >
-                                {node.nonSummary.blockTitle} [
+                                {effectiveNonSummary.blockTitle} [
                               </span>
                             </div>
                             <span className="font-mono text-[9.5px] text-[#8AA399]">
-                              {node.nonSummary.inputs.length}{' '}
-                              {node.nonSummary.inputs.length === 1 ? 'input' : 'inputs'}
+                              {effectiveNonSummary.inputs.length}{' '}
+                              {node.structure==='source'?(node.sourceKind==='signature'?(effectiveNonSummary.inputs.length===1?'parameter':'parameters'):(effectiveNonSummary.inputs.length===1?'path':'paths')):(effectiveNonSummary.inputs.length === 1 ? 'input' : 'inputs')}
                             </span>
                           </div>
 
                           <div className="space-y-1 pl-1.5">
-                            {node.nonSummary.inputs.map((inp, idx) => {
+                            {effectiveNonSummary.inputs.map((inp, idx) => {
                               const inpHex = inp.color ? ACCENT_HEX[inp.color] : hex;
                               return (
                                 <div
                                   key={idx}
-                                  className="text-[11px] leading-snug bg-[#142B25]/85 border border-[#486356]/60 rounded px-2 py-0.5"
+                                  className={`${node.structure==='source'?'text-[13px]':'text-[11px]'} leading-snug bg-[#142B25]/85 border border-[#486356]/60 rounded px-2 py-0.5`}
                                 >
                                   <span
                                     className="font-mono font-bold"
@@ -1917,10 +2138,10 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                           style={{ borderColor: '#E0BE72' }}
                         >
                           <div className="text-[11px] font-bold text-[#E0BE72]">
-                            {node.nonSummary.goalTitle}
+                            {effectiveNonSummary.goalTitle}
                           </div>
-                          <div className="text-[11.5px] text-[#EEF3E9] leading-snug mt-0.5">
-                            {node.nonSummary.goalText}
+                          <div className={`${node.structure==='source'?'text-[14px]':'text-[11.5px]'} text-[#EEF3E9] leading-snug mt-0.5`}>
+                            {effectiveNonSummary.goalText}
                           </div>
                         </div>
 
@@ -1928,10 +2149,10 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                         <div className="space-y-0.5 mt-auto">
                           <div className="pl-2 pr-2 py-1 rounded bg-[#0B1717] border border-[#7BD3B0]/70">
                             <span className="font-mono font-bold text-[11px] text-[#7BD3B0]">
-                              {node.nonSummary.outputLabel} ={' '}
+                              {effectiveNonSummary.outputLabel} ={' '}
                             </span>
                             <span className="text-[11px] text-[#EEF3E9] leading-snug">
-                              {node.nonSummary.outputValue}
+                              {effectiveNonSummary.outputValue}
                             </span>
                           </div>
                           <div
@@ -1944,7 +2165,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                       </div>
                     </foreignObject>
                   </g>
-                ) : node.staticData ? (
+                ) : effectiveStaticData ? (
                   /* UNPACKED STATIC @DATA BLOCK (@cleanup_rules, @vocab_table, @unit_scale, etc. — Never Summarized!) */
                   <g>
                     <foreignObject
@@ -1962,17 +2183,17 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                               className="font-bold text-[12px] truncate"
                               style={{ color: hex }}
                             >
-                              {node.staticData.header}
+                              {effectiveStaticData.header}
                             </span>
                           </div>
                           <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-[#142B25] border border-[#486356]/70 text-[#8AA399] shrink-0">
-                            static ({node.staticData.entries.length})
+                            static ({effectiveStaticData.entries.length})
                           </span>
                         </div>
 
                         {/* Unpacked Static Entries */}
                         <div className="space-y-1 pl-1.5 my-1">
-                          {node.staticData.entries.map((entry, eidx) => {
+                          {effectiveStaticData.entries.map((entry, eidx) => {
                             const entryHex = entry.color ? ACCENT_HEX[entry.color] : hex;
                             return (
                               <div
@@ -2034,6 +2255,12 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                       </g>
                     )}
                   </g>
+                ) : isGenerated&&graph.systemContract&&(node.kind==='input'||node.kind==='output'||node.external) ? (
+                  <foreignObject x={10} y={10} width={pos.width-20} height={pos.height-20}>
+                    <div className="h-full w-full flex flex-col items-center justify-center text-center gap-3">
+                      {renderLucideIcon(node.iconName,hex,compactOverview?14/camera.zoom:25)}<div style={compactOverview?{fontSize:12/camera.zoom}:undefined} className="text-[13px] leading-snug text-[#EEF3E9] break-words">{node.defaultPreview}</div>
+                    </div>
+                  </foreignObject>
                 ) : (
                   /* COMPACT LEVEL-0 INPUT / OUTPUT BLOCK */
                   <g>
@@ -2154,11 +2381,12 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
               opacity = selectedNodeId ? 0.35 : 0.92;
             }
 
+            const showControlLabel=graph.systemContract&&isActive&&edge.relationship==='control'&&edge.source!==graph.systemNodeId&&!graph.nodes.find(n=>n.id===edge.source)?.external;
             const ioBadgeText = isSelectedIncoming
               ? `⬅ INPUT: ${edge.label}`
               : isSelectedOutgoing
               ? `OUTPUT: ${edge.label} ➔`
-              : '';
+              : showControlLabel ? edge.label : '';
             const ioBadgeWidth = Math.max(108, ioBadgeText.length * 6.5 + 18);
 
             return (
@@ -2169,7 +2397,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                   fill="none"
                   stroke={strokeColor}
                   strokeWidth={strokeWidth}
-                  strokeDasharray={edge.relationship === 'reference' ? '6 4' : undefined}
+                  strokeDasharray={edge.relationship === 'reference' ? '6 4' : graph.systemContract&&edge.relationship==='control'?'3 3':undefined}
                   markerEnd={markerEnd}
                 />
 
@@ -2180,7 +2408,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                     fill="none"
                     stroke={strokeColor}
                     strokeWidth={strokeWidth}
-                    strokeDasharray={edge.relationship === 'reference' ? '6 4' : undefined}
+                    strokeDasharray={edge.relationship === 'reference' ? '6 4' : graph.systemContract&&edge.relationship==='control'?'3 3':undefined}
                     markerEnd={markerEnd}
                   />
                 )}
@@ -2233,7 +2461,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                 )}
 
                 {/* Highlighted Input / Output Callout Label on Wire when Node is Selected */}
-                {isSelectedEdge && (
+                {(isSelectedEdge || showControlLabel) && (
                   <g
                     transform={`translate(${
                       route.labelPosition.x - ioBadgeWidth / 2
@@ -2265,10 +2493,26 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
             );
           })}
 
+          {/* Direction guides follow the declared routes and the lesson clock.
+              They carry no invented runtime payloads or execution claims. */}
+          {isGenerated&&graph.systemContract&&!reducedMotion&&[...activeEdgeIds].map(id=>{
+            const edge=graph.edges.find(e=>e.id===id)||graph.nodes.flatMap(n=>n.connections||[]).find(e=>e.id===id);
+            const route=layout.edges[id]||layout.internalEdges?.[id];
+            if(!edge||edge.relationship==='reference'||!route||activePackets.some(p=>p.edgeId===id))return null;
+            return <g key={'guide-'+id} aria-label={`Connection guide: ${'label' in edge?edge.label||id:id}`} pointerEvents="none">
+              <title>Direction of the declared connection; not a recorded execution</title>
+              {[0,1/3,2/3].map(offset=>{const point=interpolatePointOnPolyline(route.points,(flowTime/5+offset)%1);return <rect key={offset} x={point.x-3} y={point.y-3} width={6} height={6} fill={edge.relationship==='control'?'#E0BE72':'#38BDF8'} stroke="#0B1717" strokeWidth={.8}/>;})}
+            </g>;
+          })}
           {/* 3. Render Moving Data Packets Along Active Wires */}
           {activePackets.map((pkt) => {
-            const boxW = Math.max(116, pkt.payload.length * 6.8 + 20);
+            const labelScale=isGenerated?1/camera.zoom:1;
+            const maxWidth=isGenerated?Math.max(80,viewportSize.width-32):Infinity;
+            const maxChars=Math.max(8,Math.floor((maxWidth-20)/6.8));
+            const payload=pkt.payload.length>maxChars?pkt.payload.slice(0,maxChars-1)+'…':pkt.payload;
+            const boxW = Math.min(maxWidth,Math.max(116, payload.length * 6.8 + 20));
             const boxH = 24;
+            const labelX=isGenerated?Math.max((16-camera.x)/camera.zoom-pkt.x,Math.min(-boxW*labelScale/2,(viewportSize.width-16-camera.x)/camera.zoom-pkt.x-boxW*labelScale)):-boxW/2;
             return (
               <g
                 key={pkt.id}
@@ -2276,7 +2520,8 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                 className="pointer-events-none"
               >
                 <circle r={6} fill="#38BDF8" stroke="#0B1717" strokeWidth={2} />
-                <g transform={`translate(${-boxW / 2}, -30)`}>
+                <g transform={`translate(${labelX}, ${-30*labelScale}) scale(${labelScale})`}>
+                  <title>{pkt.detail||pkt.payload}</title>
                   <rect
                     width={boxW}
                     height={boxH}
@@ -2294,7 +2539,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
                     fontWeight="600"
                     className="font-mono"
                   >
-                    {pkt.payload}
+                    {payload}
                   </text>
                 </g>
               </g>
@@ -2308,7 +2553,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
         <div className="pointer-events-auto max-w-4xl w-full bg-[#0B1717]/92 border border-[#486356] rounded px-3.5 py-2 shadow-lg">
           <div className="flex items-center justify-between gap-2 text-xs mb-0.5">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="font-mono font-semibold text-[#E0BE72] shrink-0">
+              <span className="font-mono font-semibold text-[#E0BE72] truncate">
                 {miniModeActive && miniStep
                   ? miniStep.title
                   : activeSubFunction
@@ -2350,7 +2595,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           </div>
 
           <p className="text-xs sm:text-[14px] text-[#EEF3E9] leading-snug whitespace-pre-wrap">
-            {miniModeActive && miniStep ? miniStep.caption : currentStep.narration}
+            {miniModeActive && miniStep ? miniStep.caption : captionText ?? currentStep.narration}
           </p>
         </div>
       </div>

@@ -438,7 +438,7 @@ def _targeted_revision(llm: Any, result: dict, storyboard: dict, review: dict, r
 
 
 def _model_json(llm: Any, system: str, request: dict, validator, tokens: int = 6500,
-                max_attempts: int = 3, repair=None, response_receipt=None):
+                max_attempts: int = 3, repair=None, response_receipt=None, raw_transform=None):
     feedback = ""
     last_cleaned = ""
     system = system + ("\n\nReturn ONLY one JSON object matching the requested shape. "
@@ -458,6 +458,7 @@ def _model_json(llm: Any, system: str, request: dict, validator, tokens: int = 6
         if not isinstance(raw, str) or not raw.strip():
             raise PlanError("The teaching model returned no result. Check QWEEPS model access.")
         if response_receipt is not None:response_receipt(raw,attempt)
+        if raw_transform is not None:raw=raw_transform(raw)
         parsed = _extract_json(raw)
         if parsed is None:
             parsed = _repair_json_punctuation(raw.strip())

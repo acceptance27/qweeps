@@ -1,0 +1,108 @@
+{
+  "approved": true,
+  "findings": [],
+  "observations": [
+    "Beat request-entry: LiveLessonPlayer.tsx play-icon box shows dashed reference wire to NativeLessonCanvas bounds box while left code pane shows server.py do_POST L862-L866 gate, establishing browser entry to loopback server.",
+    "Beat lesson-preparation: src/assistant/visual blue container expands to runner.py, server.py, render_backends.py, narration.py, browser_lessons.py, architecture_flow.py, frame_review.py and native_review.py with BrowserLessonStore and backend_from_env operations visible, establishing static validation and backend selection.",
+    "Beat render-review-playback across early (85.88), middle (98.53) and finished (114.18) retains the same architecture workspace: src/assistant/visual enclosure with runner/server/render_backends/narration/browser_lessons/architecture_flow/frame_review/native_review blocks, top-row LiveLessonPlayer/methodsVisualLesson/NativeLessonCanvas/usePrototypeNarration blocks, left detail of narration.py lines 44-49 with prepare goal card, and bottom captions progressing from capture_native_frames to review_rendered to NarrationStore.prepare with no overlap, clipping, or overflow."
+  ],
+  "presentationChecks": [
+    {
+      "beat": "request-entry",
+      "methodFits": true,
+      "evidenceVisible": true,
+      "textSupports": true,
+      "observation": "Static dependency inspection shows folder containers expanding to do_POST, EnhancedLiveLessonPlayer and NativeLessonCanvas.tick with LiveLessonPlayer to NativeLessonCanvas import edge highlighted and server.py L862-876 JSON-gate code readable, answering where request enters and what gates it."
+    },
+    {
+      "beat": "lesson-preparation",
+      "methodFits": true,
+      "evidenceVisible": true,
+      "textSupports": true,
+      "observation": "Container-to-function drilldown shows src/assistant/visual expanding to browser_lessons.py, architecture_flow.py and render_backends.py then to BrowserLessonStore.review, validate_static_source_flow and backend_from_env with static import wires, demonstrating reviewable preparation without runtime execution."
+    },
+    {
+      "beat": "render-review-playback",
+      "methodFits": true,
+      "evidenceVisible": true,
+      "textSupports": true,
+      "observation": "Evidence-bound artifact tracing is visible as compact nested file blocks with distinct role icons, readable blue/green/coral boundaries, runner-to-server and server branching wires plus LiveLessonPlayer-to-NativeLessonCanvas dashed import edge matching graph.connections, and left Inspect showing narration.py prepare source with matching goal; this establishes static import/reference structure for frame capture, review_images gating, and hash-cached narration alignment while captions narrate each artifact."
+    }
+  ],
+  "frames": [
+    {
+      "chapter": 0,
+      "position": "early",
+      "time": 3
+    },
+    {
+      "chapter": 0,
+      "position": "middle",
+      "time": 18.525
+    },
+    {
+      "chapter": 0,
+      "position": "finished",
+      "time": 37.05
+    },
+    {
+      "chapter": 1,
+      "position": "early",
+      "time": 47.68
+    },
+    {
+      "chapter": 1,
+      "position": "middle",
+      "time": 59.625
+    },
+    {
+      "chapter": 1,
+      "position": "finished",
+      "time": 74.57
+    },
+    {
+      "chapter": 2,
+      "position": "early",
+      "time": 85.88
+    },
+    {
+      "chapter": 2,
+      "position": "middle",
+      "time": 98.53
+    },
+    {
+      "chapter": 2,
+      "position": "finished",
+      "time": 114.17999999999999
+    },
+    {
+      "chapter": 0,
+      "position": "overview",
+      "time": 0
+    },
+    {
+      "chapter": 0,
+      "position": "inspect-file-d06266d8ffdb14b8-early",
+      "scope": "file-d06266d8ffdb14b8",
+      "time": 2
+    },
+    {
+      "chapter": 0,
+      "position": "inspect-file-d06266d8ffdb14b8-finished",
+      "scope": "file-d06266d8ffdb14b8",
+      "time": 82.7608695652174
+    },
+    {
+      "chapter": 0,
+      "position": "inspect-function-957611cdd2267b60-early",
+      "scope": "function-957611cdd2267b60",
+      "time": 2
+    },
+    {
+      "chapter": 0,
+      "position": "inspect-function-957611cdd2267b60-finished",
+      "scope": "function-957611cdd2267b60",
+      "time": 85.80434782608697
+    }
+  ]
+}

@@ -2337,9 +2337,13 @@ const BUILT_INNER_LESSONS: Record<string, SubFunctionLesson> = Object.fromEntrie
 );
 
 export function getInnerFunctionLesson(id: string): SubFunctionLesson | null {
-  return BUILT_INNER_LESSONS[id] ?? null;
+  const cleanId = (id || '').replace(/^(generated-)+/, '');
+  return BUILT_INNER_LESSONS[cleanId] ?? null;
 }
 
 export function getNonSummarySpec(id: string): NonSummaryBlockSpec | null {
-  return NON_SUMMARY_SPECS[id] ?? null;
+  const cleanId = (id || '').replace(/^(generated-)+/, '');
+  return NON_SUMMARY_SPECS[cleanId] ?? null;
 }
+
+export const ALL_INNER_FUNCTION_LESSONS: Record<string, SubFunctionLesson> = BUILT_INNER_LESSONS;

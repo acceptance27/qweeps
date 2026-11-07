@@ -1269,8 +1269,10 @@ const ReferenceScene = React.lazy(() => import('./live/ReferenceScene'));
 const ModelScenePreview = React.lazy(() => import('./live/ModelScenePreview'));
 const ReferencePosters = React.lazy(() => import('./live/ReferencePosters'));
 const MethodsPrograms = React.lazy(() => import('./live/MethodsPrograms'));
+const RemixWorkspace = React.lazy(() => import('./live/architecture/remix/RemixWorkspace'));
 export default function App() {
   const params = new URLSearchParams(location.search);
+  if(params.get('architecture')==='1'||location.pathname==='/architecture')return <React.Suspense fallback={<div>Opening architecture…</div>}><RemixWorkspace/></React.Suspense>;
   if (params.get('factory') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Starting the beat factory…</div>}><BeatFactory/></React.Suspense>;
   if (params.get('handartModel') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the handcrafted art test…</div>}><HandArtModel/></React.Suspense>;
   if (params.get('motifModel') === '1') return <React.Suspense fallback={<div style={{background:'#071117',color:'#a5b8bf',height:'100dvh',display:'grid',placeItems:'center'}}>Opening the motif model test…</div>}><MotifModel/></React.Suspense>;

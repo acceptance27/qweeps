@@ -1,0 +1,31 @@
+{
+  "question": "Create a 5-beat architecture lesson explaining retrieval-augmented generation (RAG). Follow one customer refund question from the raw question input through embed() with tokenize, encode/pool and normalize; retrieval against a document index with score, sort, select top-k and a visibly rejected document; context assembly with source tags and joined passages; prompt assembly with system rules, context and question; and generation with a citation-backed answer. Use nested function containers with internal operations, boundary ports and connections. Keep the overview compact and put detailed values inside inspection. This is an illustrative mechanism, not executed code.",
+  "targetBeats": 5,
+  "presentation": "architecture_flow",
+  "jobId": "ef54194a15544076a0521fedcadf731e",
+  "lessonId": "a26b57563a80f7c004570a8735a30c1a",
+  "status": "ready",
+  "stage": "Reviewed live lesson ready",
+  "error": null,
+  "startedAt": "2026-11-06T22:43:08+08:00",
+  "finishedAt": "2026-11-06T22:56:36+08:00",
+  "wallSeconds": 807.481,
+  "jobTimings": {
+    "storyboard": 137.383,
+    "architecture": 0.062,
+    "artwork": 140.607,
+    "factual_review": 67.819,
+    "narrative_review": 25.812,
+    "speech": 377.525
+  },
+  "lesson": {
+    "title": "RAG: One Refund Question to Cited Answer",
+    "duration": 184.2355,
+    "chapters": 5,
+    "grounding": "illustrative",
+    "audioTrack": true,
+    "nodes": 8,
+    "containers": 5,
+    "edges": 9
+  }
+}

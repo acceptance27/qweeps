@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --jb-bg-editor: #1E1F22;
+    --jb-bg-toolwindow: #2B2D30;
+    --jb-bg-panel: #25272B;
+    --jb-bg-control: #35373B;
+    --jb-border: #393B40;
+    --jb-border-strong: #4E5157;
+    --jb-text: #DFE1E5;
+    --jb-text-body: #BCBEC4;
+    --jb-text-muted: #868A91;
+    --jb-blue: #3574F0;
+    --jb-blue-bg: #2E436E;
+    --jb-method-blue: #56A8F5;
+    --jb-keyword-orange: #CF8E6D;
+    --jb-sage-green: #6AAB73;
+    --jb-constant-purple: #9876AA;
+    --jb-amber: #D9A354;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  body {
+    background-color: #1E1F22;
+    color: #BCBEC4;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    letter-spacing: -0.005em;
+    overflow: hidden;
+    height: 100dvh;
+    width: 100vw;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .font-pixel {
+    font-family: 'Silkscreen', monospace;
+  }
+}
+
+/* JetBrains New UI flat subtle scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1E1F22;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3E4045;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5A5D63;
+}

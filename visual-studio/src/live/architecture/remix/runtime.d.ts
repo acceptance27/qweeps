@@ -1,0 +1,13 @@
+import type {ComponentType} from 'react';
+import type {ArchitectureGraph,Step,SubFunctionLesson,ContextualQuestion,ComputedGraphLayout} from '../../../../../vendor/architecture-remix/src/types/lesson';
+export type RemixBundle={engineRevision?:string;id:string;title:string;sourceCode:string;sampleInput:string;compileTimeMs:number;macroGraph:ArchitectureGraph;macroSteps:Step[];subFunctions:Record<string,SubFunctionLesson>;contextualQuestions:ContextualQuestion[];aiFillStatus:'procedural-only'|'filling'|'filled'|'error';aiFillTimeMs?:number};
+export const RemixApp:ComponentType<{initialBundle?:RemixBundle;initialCompilerOpen?:boolean;onBundleChange?:(bundle:RemixBundle)=>void;onExit?:()=>void}>;
+export function getInitialQweepsRepoWalkthrough():RemixBundle;
+export function compileSourceCodeToWalkthrough(options:{id?:string;title:string;fileName:string;sourceCode:string;sampleInput?:string;sampleStoreLabel?:string;sampleStorePreview?:string}):RemixBundle;
+export function compileRepoScanToWalkthrough(raw:unknown,repoName?:string):RemixBundle;
+export function applyAiExplanatoryGaps(bundle:RemixBundle,payload:unknown,elapsed:number):RemixBundle;
+export const PROCEDURAL_PIPELINE_PRESETS:{id:string;title:string;fileName:string;sourceCode:string;sampleInput:string;sampleStoreLabel:string;sampleStorePreview:string}[];
+export function validateLessonData(graph:ArchitectureGraph,steps:Step[],totalCodeLines?:number):{valid:boolean;issues:unknown[]};
+export function computeElkGraphLayout(graph:ArchitectureGraph):Promise<ComputedGraphLayout>;
+export function evaluateTimeline(time:number,steps:Step[],graph:ArchitectureGraph,layout:ComputedGraphLayout,width:number,height:number,reduced:boolean):unknown;
+export const REMIX_ENGINE_REVISION:string;

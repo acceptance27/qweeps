@@ -1373,3 +1373,44 @@ def test_native_rejection_preserves_published_lesson(tmp_path, library, monkeypa
     assert job['status'] == 'failed'
     assert 'actual-frame teaching review' in job['error']
     assert (folder / 'lesson.json').read_text() == previous
+
+
+def test_architecture_review_requires_whole_system_overview(tmp_path,library):
+ store=BrowserLessonStore(Model(),STUDIO,tmp_path/'lessons',library[0])
+ store.jobs['review-job']={'status':'awaiting_review','revision':0,'candidate':{'architecture':{'version':1},'chapters':[]}}
+ with pytest.raises(PlanError,match='whole-system architecture overview'):
+  store.review('review-job',{'revision':0,'frames':[{},{}]})
+
+
+def test_changed_narration_cannot_reuse_an_old_visual_approval(tmp_path,library):
+ model=Model();store=BrowserLessonStore(model,STUDIO,tmp_path/'lessons',library[0])
+ result=store.start({'question':'Teach me Module 12'})
+ job=await_state(store,result['id'],{'awaiting_review','failed'});assert job['status']=='awaiting_review'
+ store.review(job['id'],{'revision':0,'frames':frames(job['candidate'])})
+ await_state(store,job['id'],{'ready','failed'})
+ published=store.lesson(job['lessonId']);candidate=copy.deepcopy(published)
+ for chapter in candidate['chapters']:chapter['narration']+=' The revised explanation changes the evidence to assess.'
+ live=store.jobs[job['id']];live.update(candidate=candidate,status='awaiting_review',revision=1,revisedBeats=None)
+ store.review(job['id'],{'revision':1,'frames':frames(candidate)})
+ assert await_state(store,job['id'],{'ready','failed'})['status']=='ready'
+ assert len(model.image_calls)==2
+ assert len(model.image_calls[-1])==4
+
+
+def test_lazy_function_api_uses_only_catalogued_pinned_source(tmp_path,library):
+ from assistant.visual.repo_architecture import scan_repository
+ from assistant.visual.architecture_flow import validate_architecture
+ source=tmp_path/'repo';source.mkdir()
+ (source/'functions.py').write_text('\n'.join(f'def fn_{i}(x):\n    return x + {i}\n' for i in range(8)))
+ raw=scan_repository(source,include_snapshots=True);snapshots=raw.pop('sourceSnapshots');architecture=validate_architecture(raw)
+ lid='c'*32;folder=tmp_path/'lessons'/lid;folder.mkdir(parents=True)
+ (folder/'source-snapshots.json').write_text(json.dumps(snapshots))
+ (folder/'lesson.json').write_text(json.dumps({'id':lid,'architecture':architecture,'chapters':[]}))
+ store=BrowserLessonStore(Model(),STUDIO,tmp_path/'lessons',library[0])
+ entry=next(row for row in architecture['functionCatalog'] if row['id'] not in architecture['functions'])
+ (source/'functions.py').write_text('raise RuntimeError("live file has changed")')
+ result=store.inspect_function({'lessonId':lid,'functionId':entry['id']})
+ assert result['module']['title']==entry['name']+'()'
+ assert result['module']['view']=='source'
+ assert (folder/'inspected-functions'/f"{entry['id']}.json").is_file()
+ with pytest.raises(PlanError,match='indexed function'):store.inspect_function({'lessonId':lid,'functionId':'../../unindexed'})

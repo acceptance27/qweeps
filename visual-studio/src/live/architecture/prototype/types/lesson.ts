@@ -1,3 +1,4 @@
+import type {FunctionInterface} from '../../types';
 export type NodeId = string;
 export type EvidenceKind = 'file' | 'symbol' | 'doc' | 'page' | 'trace' | 'requirement';
 export type Confidence = 'exact' | 'inferred' | 'illustrative';
@@ -47,6 +48,37 @@ export interface StaticDataSpec {
   entries: StaticDataEntry[];
 }
 
+export interface CompoundChildBlockSpec {
+  id: string;
+  label: string;
+  sublabel: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  iconName: string;
+  color: NodeAccentColor;
+  hasLeftCombinerBar?: boolean;
+  combinerPortsY?: number[];
+  drillDownFunctionId?: FunctionLessonId;
+  isDropBranch?: boolean;
+  showInputPort?: boolean;
+  showOutputPort?: boolean;
+}
+
+export interface CompoundContainerSpec {
+  leftPortsY: number[];
+  rightPortsY: number[];
+  children: CompoundChildBlockSpec[];
+  internalWires: { id?: string; points: { x: number; y: number }[] }[];
+}
+
+/**
+ * Immutable ledger of worked-example values keyed by reference ID (e.g. "$question_raw").
+ * Protects deterministic calculations from downstream narration/repair drift.
+ */
+export type WorkedExampleLedger = Record<string, string>;
+
 export interface VisualTileItem {
   text: string;
   subtext?: string;
@@ -91,9 +123,33 @@ export interface CustomVisualCardSpec {
   normLabel?: string;
 }
 
+export interface PortSpec { id: string; label: string; data?: string; }
+export interface PortSet { inputs: PortSpec[]; outputs: PortSpec[]; }
+export interface InternalConnection { id: string; from: { child: string; port?: string }; to: { child: string; port?: string }; label?: string; relationship: 'data'|'lookup'|'reference'|'control'; }
+export interface InternalOperation {
+  id: string;
+  label: string;
+  description?: string;
+  icon?: string;
+  color: NodeAccentColor;
+  value?: string;
+  ports?: PortSet;
+  codeReference?: {file: string; lines: number[]};
+  drillDownFunctionId?: string;
+}
+
 export interface GraphNode {
+  interface?:FunctionInterface;
+  teachingLabel?:string;
+  teachingDescription?:string;
+  external?:boolean;
+  sourceKind?: 'file'|'function'|'operation'|'signature'|'result';
+  parameters?: string[];
+  signature?: string;
+  structure?: 'source';
   runtimeRows?:boolean;
   valueRef?:string;
+  layoutLocked?:boolean;
   id: NodeId;
   stepBadge?: string;
   label: string;
@@ -115,25 +171,34 @@ export interface GraphNode {
   drillDownFunctionId?: FunctionLessonId;
   /** Optional metadata for macro codebase scale */
   moduleBadge?: string;
+  /** Data-driven compound container specification (ports, child boxes, internal wires) */
+  compoundContainer?: CompoundContainerSpec;
   /** Non-summary human-readable breakdown (@Inputs, Goal, @Output) for Level-1 logic blocks */
   nonSummary?: NonSummarySpec;
   /** Unpacked static data contents for @helper / @input / @output nodes so static data is never summarized */
   staticData?: StaticDataSpec;
   /** Dynamic function-specific visual flowchart node specification for Level-2 inspection */
+  children?: InternalOperation[];
+  ports?: PortSet;
+  connections?: InternalConnection[];
   customVisual?: CustomVisualCardSpec;
   evidence?: EvidenceRef[];
   confidence?: Confidence;
 }
 
 export interface GraphEdge {
+  sourceChild?: string;
+  targetChild?: string;
   id: string;
   source: NodeId;
   target: NodeId;
   label: string;
-  relationship: 'data' | 'lookup' | 'reference';
+  relationship: 'data' | 'lookup' | 'reference' | 'control';
   description: string;
   evidence?: EvidenceRef[];
   confidence?: Confidence;
+  sourcePortIndex?: number;
+  targetPortIndex?: number;
 }
 
 export interface SubsystemGroup {
@@ -145,6 +210,9 @@ export interface SubsystemGroup {
 }
 
 export interface ArchitectureGraph {
+  systemContract?:boolean;
+  systemNodeId?:string;
+  layoutStyle?: 'reference';
   id: string;
   title: string;
   nodes: GraphNode[];
@@ -152,6 +220,10 @@ export interface ArchitectureGraph {
   subsystemGroups?: SubsystemGroup[];
   /** Grid slot (col 0..3, row 0..1) for clean Left-to-Right 4-column architecture layout */
   compactRowAssignment?: Record<string, { col: number; row: number }>;
+  /** Optional multi-file code map keyed by filename so CodePane resolves step.code.file accurately */
+  codeFiles?: Record<string, CodeLineItem[]>;
+  /** Optional immutable worked-example ledger for deterministic value binding */
+  workedExampleLedger?: WorkedExampleLedger;
 }
 
 export interface PacketSpec {
@@ -176,6 +248,7 @@ export interface NodeBeatState {
 }
 
 export type Step = {
+  attentionCues?:{target:string;start:number;end:number}[];
   id: string;
   beatNumber: number;
   title: string;
@@ -183,6 +256,7 @@ export type Step = {
   question: string;
   narration: string;
   focusNodes: NodeId[];
+  focusOperations?: string[];
   activeNodes: NodeId[];
   activeEdges: string[];
   packets: PacketSpec[];
@@ -202,6 +276,7 @@ export type FunctionLessonId = string;
 
 export interface CodeLineItem {
   lineNumber: number;
+  file?: string;
   text: string;
   explanation: string;
   drillDownFunctionId?: FunctionLessonId;
@@ -222,6 +297,9 @@ export interface CodeLineItem {
 }
 
 export interface SubFunctionLesson {
+  interface?:FunctionInterface;
+  view?: 'source'|'function'|'visual';
+  parentFunctionName?: string;
   id: FunctionLessonId;
   functionName: string;
   signature: string;
@@ -280,6 +358,12 @@ export interface ComputedGraphLayout {
   height: number;
   nodes: Record<NodeId, LayoutNodePosition>;
   edges: Record<string, LayoutEdgeRoute>;
+  internalEdges?: Record<string, LayoutEdgeRoute>;
+  children?: Record<NodeId, Record<string, LayoutNodePosition>>;
+  compounds?: Record<NodeId, CompoundContainerSpec>;
+  systemFrame?: {x: number; y: number; width: number; height: number};
+  systemBounds?: {x: number; y: number; width: number; height: number};
+  issues?: string[];
   engineUsed: 'elk' | 'deterministic-fallback';
 }
 

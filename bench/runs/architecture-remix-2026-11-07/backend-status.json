@@ -1,0 +1,5 @@
+{
+  "ready": false,
+  "model": "gemini-3.8-flash",
+  "architecture": "procedural-skeleton-plus-ai-gap-filler"
+}

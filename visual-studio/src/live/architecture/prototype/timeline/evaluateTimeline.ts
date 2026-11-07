@@ -85,7 +85,7 @@ export function computeFocusCameraForNodes(
   let maxY = -Infinity;
 
   for (const id of targetIds) {
-    const pos = layout.nodes[id];
+    const pos = layout.nodes[id] ?? Object.entries(layout.children||{}).flatMap(([parent,children])=>{const child=children[id],box=layout.nodes[parent];return child&&box?[{...child,x:box.x+child.x,y:box.y+child.y}]:[];})[0];
     if (!pos) continue;
     minX = Math.min(minX, pos.x);
     minY = Math.min(minY, pos.y);
@@ -140,7 +140,7 @@ export function computeOverviewCamera(
   let maxY = -Infinity;
 
   for (const id of allIds) {
-    const pos = layout.nodes[id];
+    const pos = layout.nodes[id] ?? Object.entries(layout.children||{}).flatMap(([parent,children])=>{const child=children[id],box=layout.nodes[parent];return child&&box?[{...child,x:box.x+child.x,y:box.y+child.y}]:[];})[0];
     if (!pos) continue;
     minX = Math.min(minX, pos.x);
     minY = Math.min(minY, pos.y);
@@ -165,28 +165,82 @@ export function computeOverviewCamera(
   };
 }
 
-function cameraForStep(step:Step,time:number,graph:ArchitectureGraph,layout:ComputedGraphLayout,width:number,height:number,reduced:boolean):CameraState {
+function cameraForStep(step:Step,time:number,graph:ArchitectureGraph,layout:ComputedGraphLayout,width:number,height:number):CameraState {
   const generated=graph.id.startsWith('generated-');
-  const all=computeFocusCameraForNodes(step.focusNodes,layout,width,height,generated?.04:.54);
+  if(generated&&graph.systemContract&&!step.attentionCues?.length){
+    const boundary=graph.nodes.find(n=>step.focusNodes.includes(n.id)&&(n.sourceKind==='signature'||n.sourceKind==='result'));
+    if(boundary){const link=graph.edges.find(e=>boundary.sourceKind==='signature'?e.source===boundary.id:e.target===boundary.id);
+      if(link)return computeFocusCameraForNodes([link.source,link.target],layout,width,height,.04);
+    }
+  }
+  if(generated&&graph.systemContract&&time>=step.duration*.68){
+    // Finish on the relationship being taught, not an isolated terminal card.
+    // Cycles are discovered from declared control/data wires, never node order.
+    const active=graph.edges.filter(e=>step.activeEdges.includes(e.id));
+    const reaches=(from:string,to:string,seen=new Set<string>()):boolean=>{
+      if(from===to)return true;if(seen.has(from))return false;seen.add(from);
+      return graph.edges.some(e=>e.source===from&&e.relationship!=='reference'&&reaches(e.target,to,seen));
+    };
+    const feedback=active.find(e=>e.relationship==='control'&&reaches(e.target,e.source));
+    if(feedback){
+      const route=layout.edges[feedback.id];
+      const points=route?.points||[];
+      const bounds={...layout.nodes};
+      if(points.length){const xs=points.map(p=>p.x),ys=points.map(p=>p.y);bounds['feedback-route']={id:'feedback-route',x:Math.min(...xs),y:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys)};}
+      return computeFocusCameraForNodes([feedback.source,feedback.target,...(points.length?['feedback-route']:[])],{...layout,nodes:bounds},width,height,.04);
+    }
+    const outputs=graph.nodes.filter(n=>n.kind==='output'&&step.focusNodes.includes(n.id));
+    if(outputs.length>1){
+      const producers=active.filter(e=>outputs.some(n=>n.id===e.target)).map(e=>e.source);
+      const playback=active.filter(e=>producers.includes(e.source)).map(e=>e.target).filter(id=>id!==graph.systemNodeId);
+      return computeFocusCameraForNodes([...new Set([...outputs.map(n=>n.id),...producers,...playback])],layout,width,height,.04);
+    }
+  }
+  if(generated&&graph.systemContract&&step.attentionCues?.length){
+    const entry=graph.edges.find(e=>e.source===graph.systemNodeId)?.target;
+    const meaningful=step.attentionCues.filter(c=>layout.nodes[c.target]);
+    const cue=[...meaningful].reverse().find(c=>c.start<=time)||meaningful[0];
+    const target=cue?.target===graph.systemNodeId?entry:cue?.target;
+    if(target){
+      const node=graph.nodes.find(n=>n.id===target);
+      const incoming=graph.edges.find(e=>e.target===target&&(step.activeEdges.includes(e.id)||node?.kind==='output'));
+      const outgoing=graph.edges.find(e=>e.source===target&&step.activeEdges.includes(e.id));
+      let neighbor=incoming?.source||outgoing?.target;
+      if(neighbor===graph.systemNodeId)neighbor=incoming?.source===graph.systemNodeId?graph.edges.find(e=>e.target===graph.systemNodeId)?.source||entry:entry;
+      const pair=neighbor?computeFocusCameraForNodes([target,neighbor],layout,width,height,.04):null;
+      return pair&&(pair.zoom>=.75||node?.kind==='input')?pair:computeFocusCameraForNodes([target],layout,width,height,.04);
+    }
+  }
+  const focus=step.focusNodes.filter(id=>id!==graph.systemNodeId);
+  const all=computeFocusCameraForNodes(focus.length?focus:step.focusNodes,layout,width,height,generated?.04:.54);
+  if(generated&&all.zoom<.7){
+    const sourceParent=graph.nodes.find(n=>n.structure==='source'&&n.children?.some(child=>child.codeReference?.file===step.code.file));
+    const child=sourceParent?.children?.find(c=>c.codeReference?.file===step.code.file);
+    const anchors=step.focusOperations?.length?step.focusOperations:child?[child.id]:[];
+    if(anchors.length&&anchors.some(id=>Object.values(layout.children||{}).some(children=>children[id]))){
+      return computeFocusCameraForNodes(anchors,layout,width,height,.04);
+    }
+  }
+  if(generated&&!graph.systemContract&&graph.nodes.every(n=>n.structure==='source'&&!n.children?.length)){
+    const focused=step.focusNodes.map(id=>graph.nodes.find(n=>n.id===id)).filter(Boolean);
+    const input=focused.find(n=>n!.sourceKind==='signature');
+    if(input){const next=graph.edges.find(e=>e.source===input.id)?.target;return computeFocusCameraForNodes(next?[input.id,next]:[input.id],layout,width,height,.04);}
+    if(all.zoom<.65&&focused.length){
+      const output=focused.find(n=>n!.sourceKind==='result');
+      const at=output||focused[Math.min(focused.length-1,Math.floor(time/Math.max(1,step.duration)*focused.length))]!;
+      return computeFocusCameraForNodes([at.id],layout,width,height,.04);
+    }
+  }
   if(!generated||all.zoom>=.7||step.focusNodes.length===1)return all;
-  // Keep follow mode readable; overview remains the explicit whole-graph view.
-  const transfer=[...step.packets].sort((a,b)=>b.start-a.start).find(packet=>packet.start<=time);
+  // Keep the relationship visible: following a dot down a long wire can hide
+  // both components. Fit the current transfer's endpoints together, including
+  // the destination after it settles, and reconstruct the same view on rewind.
+  const ordered=[...step.packets].sort((a,b)=>a.start-b.start);
+  const transfer=[...ordered].reverse().find(packet=>packet.start<=time)||ordered[0];
   const edge=graph.edges.find(edge=>edge.id===(transfer?.edgeId||step.activeEdges[0]));
-  const source=edge?.source||step.focusNodes[0],target=edge?.target||source;
-  const before=computeFocusCameraForNodes([source],layout,width,height,.04);
-  const after=computeFocusCameraForNodes([target],layout,width,height,.04);
-  if(!transfer)return before;
-  if(reduced)return time>=transfer.end?after:before;
-  const route=layout.edges[transfer.edgeId],from=layout.nodes[source],to=layout.nodes[target];
-  if(!route||!from||!to)return after;
-  const progress=Math.max(0,Math.min(1,(time-transfer.start)/Math.max(.001,transfer.end-transfer.start)));
-  const point=interpolatePointOnPolyline(route.points,easeInOutCubic(progress));
-  const enter=easeInOutCubic((time-transfer.start)/.6),settle=easeInOutCubic((time-transfer.end)/.6);
-  const x=(from.x+from.width/2)*(1-enter)+point.x*enter;
-  const y=(from.y+from.height/2)*(1-enter)+point.y*enter;
-  const zoom=Math.min(before.zoom,after.zoom);
-  const top=Math.min(52,height*.1),bottom=Math.min(98,height*.25);
-  return{zoom,x:width/2-(x+(to.x+to.width/2-x)*settle)*zoom,y:top+(height-top-bottom)/2-(y+(to.y+to.height/2-y)*settle)*zoom};
+  if(!edge)return all;
+  const entry=graph.edges.find(e=>e.source===graph.systemNodeId)?.target;
+  return computeFocusCameraForNodes([edge.source,edge.target].map(id=>id===graph.systemNodeId?entry||id:id),layout,width,height,.04);
 }
 
 /**
@@ -238,7 +292,7 @@ export function evaluateTimeline(
       const span = Math.max(0.001, pkt.end - pkt.start);
       const rawP = (stepLocalTime - pkt.start) / span;
       const easedP = reducedMotion ? rawP : easeInOutCubic(rawP);
-      const route = layout.edges[pkt.edgeId];
+      const route = layout.edges[pkt.edgeId] ?? layout.internalEdges?.[pkt.edgeId];
       const pt = route
         ? interpolatePointOnPolyline(route.points, easedP)
         : { x: 0, y: 0, angleDeg: 0 };
@@ -318,13 +372,13 @@ export function evaluateTimeline(
   }
 
   // Compute deterministic camera interpolation across step transitions
-  const currentStepCamera = cameraForStep(step,stepLocalTime,graph,layout,viewportWidth,viewportHeight,reducedMotion);
+  const currentStepCamera = cameraForStep(step,stepLocalTime,graph,layout,viewportWidth,viewportHeight);
 
   let targetCamera = currentStepCamera;
   const cameraTransitionDuration = 1.15;
   if (!reducedMotion && stepIndex > 0 && stepLocalTime < cameraTransitionDuration) {
     const prevStep = steps[stepIndex - 1];
-    const prevCamera = cameraForStep(prevStep,prevStep.duration,graph,layout,viewportWidth,viewportHeight,reducedMotion);
+    const prevCamera = cameraForStep(prevStep,prevStep.duration,graph,layout,viewportWidth,viewportHeight);
     const tCam = easeInOutCubic(stepLocalTime / cameraTransitionDuration);
     targetCamera = {
       x: prevCamera.x + (currentStepCamera.x - prevCamera.x) * tCam,

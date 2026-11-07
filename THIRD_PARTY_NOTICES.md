@@ -214,3 +214,11 @@ full license texts or a review of provider terms.
 - **pypdf**, by the pypdf contributors: BSD-3-Clause. Its license is retained in
   the APK's Python requirements archive under `pypdf-6.0.0.dist-info/licenses/`.
 - **Gradle Wrapper**: Apache-2.0; see <https://github.com/gradle/gradle>.
+
+## Imported architecture compiler backend
+
+- `@google/genai` (Google): Apache-2.0; license retained in `LICENSES/google-genai.txt`.
+- `express` (Express contributors): MIT; see `LICENSES/express.txt`.
+- `dotenv` (dotenv contributors): BSD-2-Clause; full notice retained in `LICENSES/dotenv.txt`.
+- `motion` (Motion contributors): MIT; see `LICENSES/motion.txt`.
+- The complete architecture prototype source, example data and supplied images were provided by the QWEEPS author in `remix-qweeps-architecture-&-code-tracing-prototype.zip`. The archive and unchanged-core checksums are recorded in `vendor/architecture-remix/UPSTREAM.json`.

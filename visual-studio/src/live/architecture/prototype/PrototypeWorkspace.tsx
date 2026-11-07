@@ -1,5 +1,7 @@
+import {api} from '../../../learning/types';
+import type {FlowModule} from '../types';
 import {usePrototypeNarration} from './usePrototypeNarration';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { Code2, Network } from 'lucide-react';
 import { MINI_EXPLANATION_STEPS } from './data/askQweepsData';
 import { graphForFrame,workspaceForLesson,sourceForStep } from './workspace';
@@ -18,6 +20,7 @@ import {
   evaluateTimeline,
 } from './timeline/evaluateTimeline';
 import {
+  Step,
   CameraState,
   ComputedGraphLayout,
   FunctionLessonId,
@@ -31,9 +34,14 @@ import { EvidenceModal } from './components/EvidenceModal';
 import { Header } from './components/Header';
 import { PlaybackBar } from './components/PlaybackBar';
 
-export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,voice=false,onToggleVoice,reviewTime,onRenderReady}:{lesson:LiveLesson;initialTime?:number;onQuiz:()=>void;onClose:()=>void;voice?:boolean;onToggleVoice:()=>void;reviewTime?:number;onRenderReady?:(ready:boolean)=>void}) {
+export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,voice=false,onToggleVoice,reviewTime,reviewScope,reviewOverview=false,onRenderReady}:{lesson:LiveLesson;initialTime?:number;onQuiz:()=>void;onClose:()=>void;voice?:boolean;onToggleVoice:()=>void;reviewTime?:number;reviewScope?:string|null;reviewOverview?:boolean;onRenderReady?:(ready:boolean)=>void}) {
   const renderReady=useRef(onRenderReady);renderReady.current=onRenderReady;
-  const workspace=useMemo(()=>workspaceForLesson(lesson),[lesson]);
+  const [loadedFunctions,setLoadedFunctions]=useState<Record<string,FlowModule>>({});
+  const [pendingFunction,setPendingFunction]=useState<string|null>(null);
+  const [functionStatus,setFunctionStatus]=useState('');
+  const loadingRequest=useRef(0);
+  const resolvedLesson=useMemo(()=>Object.keys(loadedFunctions).length?{...lesson,architecture:{...lesson.architecture!,functions:{...lesson.architecture!.functions,...loadedFunctions}}}:lesson,[lesson,loadedFunctions]);
+  const workspace=useMemo(()=>workspaceForLesson(resolvedLesson),[resolvedLesson]);
   const {graph:RAG_GRAPH,steps:RAG_STEPS,title:LESSON_TITLE,resolveFunction:resolveSubFunctionLesson}=workspace;
   // Validate graph & step references once on startup
   const validation = useMemo(() => validateLessonData(RAG_GRAPH, RAG_STEPS), [RAG_GRAPH,RAG_STEPS]);
@@ -62,14 +70,17 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
     buildDeterministicInitialLayout(RAG_GRAPH, 'elk')
   );
 
+  const [laidOutGraph,setLaidOutGraph]=useState<typeof activeGraph|null>(null);
+  const layoutIsReady=laidOutGraph===activeGraph && (reviewTime===undefined || (activeSubFunctionId||null)===(reviewScope||null));
+  useLayoutEffect(()=>{renderReady.current?.(layoutIsReady);},[layoutIsReady,layout]);
   useEffect(() => {
     let cancelled = false;
-    renderReady.current?.(false);
+    setLaidOutGraph(null);
     setLayout(buildDeterministicInitialLayout(activeGraph, 'elk'));
     computeElkGraphLayout(activeGraph).then((elkResult) => {
       if (!cancelled) {
         setLayout(elkResult);
-        renderReady.current?.(true);
+        setLaidOutGraph(activeGraph);
       }
     });
     return () => {
@@ -88,7 +99,8 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
   // Single authoritative playhead (in seconds, 0..activeTotalDuration)
   const [playhead, setPlayhead] = useState<number>(initialTime);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  useEffect(()=>{if(reviewTime!==undefined)setPlayhead(reviewTime);},[reviewTime]);
+  useEffect(()=>{if(reviewTime!==undefined)setPlayhead(reviewTime);},[reviewTime,reviewScope]);
+  useEffect(()=>{if(reviewTime!==undefined)setActiveSubFunctionId(reviewScope||null);},[reviewScope,reviewTime!==undefined]);
 
   // Canvas viewport dimensions for deterministic camera calculation
   const [canvasViewport, setCanvasViewport] = useState<{ width: number; height: number }>({
@@ -167,7 +179,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
         canvasViewport.height
       );
     }
-    if (cameraMode === 'overview') {
+    if (reviewOverview || cameraMode === 'overview') {
       return computeOverviewCamera(layout, canvasViewport.width, canvasViewport.height,workspace.isReference?.32:.04);
     }
     if (cameraMode === 'manual') {
@@ -179,6 +191,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
     activeSubFunction,
     miniStepIndex,
     cameraMode,
+    reviewOverview,
     manualCamera,
     frame.targetCamera,
     layout,
@@ -294,10 +307,23 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
       setSelectedNodeId(null);
       setActiveSubFunctionId(fnId);
       setPlayhead(1.2); // Start slightly into Beat 1 of the inspected function so packet & state are visible
-      setCameraMode('overview'); // Show the entire sub-illustration immediately
+      setCameraMode(workspace.isReference?'overview':'follow'); // Generated source opens at a readable focus; overview remains explicit.
     },
-    [activeSubFunctionId, playhead, selectedNodeId, activeCamera, cameraMode]
+    [activeSubFunctionId, playhead, selectedNodeId, activeCamera, cameraMode,workspace.isReference]
   );
+
+  const scopeRef=useRef(activeSubFunctionId);scopeRef.current=activeSubFunctionId;
+  useEffect(()=>{loadingRequest.current++;setFunctionStatus('');},[activeSubFunctionId]);
+  const requestFunction=useCallback((id:string)=>{
+    if(resolveSubFunctionLesson(id)&&(resolveSubFunctionLesson(id)!.interface||!lesson.architecture?.functionCatalog?.some(entry=>entry.id===id))){loadingRequest.current++;setFunctionStatus('');handleDrillIntoFunction(id);return;}
+    const ticket=++loadingRequest.current,origin=activeSubFunctionId;
+    setIsPlaying(false);setFunctionStatus('Reading saved function source…');
+    void api<{module:FlowModule}>('live/inspect-function',{lessonId:lesson.rootLessonId||lesson.id,functionId:id}).then(result=>{
+      if(ticket!==loadingRequest.current||scopeRef.current!==origin)return;
+      setLoadedFunctions(previous=>({...previous,[id]:result.module}));setPendingFunction(id);setFunctionStatus('');
+    }).catch(error=>{if(ticket===loadingRequest.current)setFunctionStatus((error as Error).message);});
+  },[resolveSubFunctionLesson,handleDrillIntoFunction,activeSubFunctionId,lesson.id]);
+  useEffect(()=>{if(pendingFunction&&resolveSubFunctionLesson(pendingFunction)){handleDrillIntoFunction(pendingFunction);setPendingFunction(null);}},[pendingFunction,resolveSubFunctionLesson,handleDrillIntoFunction]);
 
   // Return to the exact location & state where the learner was right before they clicked to inspect
   const handleReturnToParentFunction = useCallback(() => {
@@ -441,6 +467,8 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
     setCameraMode('overview');
   }, []);
 
+  const wideBlueprint=Boolean(activeGraph.systemContract)&&(cameraMode==='overview'||reviewOverview);
+
   const handleResumeFollow = useCallback(() => {
     setCameraMode('follow');
   }, []);
@@ -520,7 +548,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
   }, [miniModeActive, activeSubFunction, miniStepIndex, frame.highlightedCodeLines]);
 
   return (
-    <div data-prototype-playhead={playhead.toFixed(3)} style={reviewTime!==undefined?{height:'100%',width:'100%'}:undefined} className={`qweeps-architecture-prototype ${reviewTime!==undefined?'prototype-review':''} h-[100dvh] w-screen bg-[#0B1717] text-[#EEF3E9] flex flex-col overflow-hidden select-none`}>
+    <div data-workspace-scope={activeSubFunctionId||'root'} data-layout-ready={layoutIsReady?'true':'false'} data-chapter={frame.step.id} data-layout-issue={layout.issues?.length?layout.issues.join('; '):undefined} data-prototype-playhead={playhead.toFixed(3)} style={reviewTime!==undefined?{height:'100%',width:'100%'}:undefined} className={`qweeps-architecture-prototype ${reviewTime!==undefined?'prototype-review':''} h-[100dvh] w-screen bg-[#0B1717] text-[#EEF3E9] flex flex-col overflow-hidden select-none`}>
       {/* 1. Compact Top Header */}
       <Header
         lessonTitle={LESSON_TITLE}
@@ -579,7 +607,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
             }`}
           >
             <Code2 className="w-3.5 h-3.5" />
-            <span>Code (L{effectiveHighlightedCodeLines.join(',')})</span>
+            <span>Details</span>
           </button>
         </div>
 
@@ -598,6 +626,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
             mobileTab === 'code' ? 'flex w-full' : 'hidden'
           } md:flex h-full shrink-0 border-r border-[#486356] overflow-hidden`}
           style={{
+            display:wideBlueprint?'none':undefined,
             width:
               typeof window !== 'undefined' && window.innerWidth >= 768
                 ? `${codePaneWidthPct}%`
@@ -608,10 +637,13 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
             rootCodeLines={codeSource?.lines||workspace.codeLines}
             sourceFile={codeSource}
             resolveFunction={resolveSubFunctionLesson}
+            functionCatalog={lesson.architecture?.functionCatalog}
+            functionStatus={functionStatus}
             rootStepCount={RAG_STEPS.length}
-            showPreparedEvidence={workspace.isReference}
+            showPreparedEvidence={workspace.isReference||lesson.architecture?.renderContract==='reference'}
             currentStep={frame.step}
             highlightedLines={effectiveHighlightedCodeLines}
+            showResult={frame.isTransformComplete}
             onSelectBeatByLine={handleJumpToStep}
             highlightedEvidenceId={highlightedEvidenceId}
             onHighlightEvidence={(docId) => {setHighlightedEvidenceId(docId);setIsPlaying(false);setEvidenceModalOpen(!!docId);}}
@@ -620,7 +652,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
               miniModeActive ? MINI_EXPLANATION_STEPS[miniStepIndex].caption : undefined
             }
             activeSubFunction={activeSubFunction}
-            onDrillIntoFunction={handleDrillIntoFunction}
+            onDrillIntoFunction={requestFunction}
             onReturnToParentFunction={handleReturnToParentFunction}
             onReturnToMacroPipeline={handleReturnToMacroPipeline}
             backTargetLabel={backTargetLabel}
@@ -633,6 +665,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
 
         {/* Desktop Resizable Splitter Handle */}
         <div
+          style={wideBlueprint?{display:'none'}:undefined}
           onMouseDown={() => {
             isResizingPaneRef.current = true;
           }}
@@ -651,15 +684,17 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
           <ArchitectureCanvas
             graph={visibleGraph}
             layout={layout}
-            currentStep={frame.step}
+            currentStep={frame.step.focusOperations?.length?frame.step:{...frame.step,focusOperations:activeGraph.nodes.filter(n=>n.structure==='source').flatMap(n=>n.children||[]).filter(c=>c.codeReference?.file===frame.step.code.file).map(c=>c.id)}}
+            captionText={!workspace.isReference?(activeSubFunction?.view?functionCaption(frame.step,frame.stepLocalTime):!activeSubFunction?spokenCaption(lesson,playhead,frame.step):undefined):undefined}
             steps={activeSteps}
             totalStepsCount={activeSteps.length}
             nodeFrames={effectiveNodeFrames}
             activeEdgeIds={effectiveActiveEdgeIds}
             completedEdgeIds={frame.completedEdgeIds}
             activePackets={miniModeActive ? [] : frame.activePackets}
+            flowTime={frame.stepLocalTime}
             camera={activeCamera}
-            cameraMode={cameraMode}
+            cameraMode={reviewOverview?'overview':cameraMode}
             onManualCameraChange={handleManualCameraChange}
             onFitOverview={handleFitOverview}
             onResumeFollow={handleResumeFollow}
@@ -671,7 +706,7 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
             reducedMotion={reducedMotion}
             activeSubFunction={activeSubFunction}
             savedMacroPlayhead={savedMacroState?.playhead ?? null}
-            onDrillIntoFunction={handleDrillIntoFunction}
+            onDrillIntoFunction={requestFunction}
             onReturnToParentFunction={handleReturnToParentFunction}
             onReturnToMacroPipeline={handleReturnToMacroPipeline}
             miniModeActive={miniModeActive}
@@ -730,4 +765,16 @@ export default function PrototypeWorkspace({lesson,initialTime=0,onQuiz,onClose,
       />
     </div>
   );
+}
+
+function spokenCaption(lesson:LiveLesson,time:number,step:Step):string{
+ const chapter=[...lesson.chapters].reverse().find(c=>time>=c.start)||lesson.chapters[0];
+ return [...(chapter.cues||[])].reverse().find(c=>time-chapter.start>=c.at)?.text||chapter.cues?.[0]?.text||step.narration.split(/(?<=[.!?])\s+/)[0];
+}
+
+function functionCaption(step:Step,time:number):string{
+ const words=step.narration.split(/\s+/),chunks:string[]=[];let line='';
+ for(const word of words){if(line.length+word.length>150){chunks.push(line);line=word;}else line+=(line?' ':'')+word;}
+ if(line)chunks.push(line);
+ return chunks[Math.min(chunks.length-1,Math.floor(Math.max(0,time)/Math.max(1,step.duration)*chunks.length))]||step.narration;
 }

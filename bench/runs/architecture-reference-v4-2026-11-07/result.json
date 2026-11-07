@@ -1,0 +1,41 @@
+{
+  "lessonId": "5f92e1fea207af86188f128808eedd8f",
+  "url": "http://127.0.0.1:4174/?lesson=5f92e1fea207af86188f128808eedd8f",
+  "referenceArchive": "qweeps-architecture-&-code-tracing-prototype (4).zip",
+  "referenceSha256": "bb8da552bbf9a1f8d9490eef4c6cd6a1096b0bb38fd4f2dcfd2db9952e11c976",
+  "approved": true,
+  "actualReviewFrames": 10,
+  "sourceFiles": [
+    "src/assistant/visual/server.py",
+    "src/assistant/visual/browser_lessons.py",
+    "src/assistant/visual/narration.py",
+    "visual-studio/src/live/LiveLessonPlayer.tsx",
+    "visual-studio/src/learning/NativeLessonCanvas.tsx",
+    "src/assistant/visual/frame_review.py",
+    "src/assistant/visual/runner.py",
+    "visual-studio/src/live/architecture/prototype/usePrototypeNarration.ts",
+    "src/assistant/visual/render_backends.py",
+    "src/assistant/visual/native_review.py",
+    "visual-studio/src/live/methodsVisualLesson.ts",
+    "src/assistant/visual/architecture_flow.py"
+  ],
+  "containers": 4,
+  "referenceFunctionContainmentChecks": 17,
+  "validation": {
+    "python": 145,
+    "frontend": 109,
+    "typescript": "passed",
+    "productionBuild": "passed"
+  },
+  "manualChecks": [
+    "Version-4 macro overview, function inspection and inner flowchart",
+    "Inner-to-parent return restored 1.2-second checkpoint",
+    "Whole-system overview and focused source diagram",
+    "Additional sentence captions and source-code file selection"
+  ],
+  "limitations": [
+    "Source inspection is a selected static import graph, not runtime execution or a complete call graph.",
+    "Final UI refinements were manually checked after the approved generated-candidate image review.",
+    "Android excluded at user request."
+  ]
+}

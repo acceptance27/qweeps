@@ -41,6 +41,14 @@ type CatalogLesson = {
 
 type SortMode = 'newest' | 'oldest' | 'duration' | 'title';
 
+async function loadLessonCatalog(sort:SortMode):Promise<{lessons:CatalogLesson[]}>{
+ const ordinary=await api<{lessons:CatalogLesson[]}>(`live/lessons?sort=${sort}`);
+ try{const response=await fetch('/api/architecture/walkthroughs');if(!response.ok)return ordinary;
+  const saved=await response.json();
+  return {lessons:[...(saved.walkthroughs||[]).map((item:{id:string;title:string;updatedAt:string;beatCount:number;duration:number})=>({...item,question:'',hasNative:false,quizCount:0,bundled:false,kind:'architecture_remix',mtime:Date.parse(item.updatedAt)/1000})),...ordinary.lessons]};
+ }catch{return ordinary;}
+}
+
 function formatRelativeTime(mtime?: number): string {
   if (!mtime) return '';
   const now = Date.now() / 1000;
@@ -134,8 +142,6 @@ export default function LiveLessonLoader() {
   const [question, setQuestion] = useState(params.get('topic') || '');
   const [native, setNative] = useState(params.get('native') === '1');
   const [presentation,setPresentation]=useState<'auto'|'architecture_flow'>('auto');
-  const [repoPath,setRepoPath]=useState(params.get('repoPath')||'');
-  const [architectureMode,setArchitectureMode]=useState<'learn'|'design'|'inspect'>(params.get('repoPath')?'inspect':params.get('architectureMode')==='design'?'design':'learn');
   const [nativeReady, setNativeReady] = useState(false);
   const [generateQuiz, setGenerateQuiz] = useState(params.get('quiz') === '1');
   const [openQuizOnLoad, setOpenQuizOnLoad] = useState(params.get('quiz') === '1');
@@ -179,7 +185,7 @@ export default function LiveLessonLoader() {
       }
       const res = await api<{ ok: boolean; lessonId: string }>('live/import-lesson', data);
       if (res.ok && res.lessonId) {
-        const cat = await api<{ lessons: CatalogLesson[] }>(`live/lessons?sort=${sortBy}`);
+        const cat = await loadLessonCatalog(sortBy);
         setCatalogLessons(cat.lessons || []);
         if (data.quiz && (!data.chapters || data.chapters.length === 0)) {
           window.location.search = `?lesson=${res.lessonId}&quiz_only=1`;
@@ -359,6 +365,7 @@ export default function LiveLessonLoader() {
     mode = nativeMode,
     withQuiz = generateQuiz
   ) {
+    if(presentation==='architecture_flow'){location.href='/?architecture=1&compile=1';return;}
     if (!q.trim() || busy) return;
     if (apiConfigured === false) {
       setError('⚠️ AI API Key Required: No AI API connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate visual lessons.');
@@ -387,8 +394,6 @@ export default function LiveLessonLoader() {
         resumeLessonId,
         native,
         presentation,
-        repoPath: presentation==='architecture_flow'&&architectureMode==='inspect'?repoPath.trim()||undefined:undefined,
-        architectureMode: presentation==='architecture_flow'?architectureMode:undefined,
         nativeMode: mode,
         generateQuiz: withQuiz,
       });
@@ -417,7 +422,7 @@ export default function LiveLessonLoader() {
       .then(r => setDocuments(r.documents))
       .catch(e => setError(e.message));
 
-    void api<{ lessons: CatalogLesson[] }>(`live/lessons?sort=${sortBy}`)
+    void loadLessonCatalog(sortBy)
       .then(r => setCatalogLessons(r.lessons || []))
       .catch(() => {});
 
@@ -544,6 +549,7 @@ export default function LiveLessonLoader() {
   };
 
   const lessonHref = (item: CatalogLesson) => {
+    if(item.kind==='architecture_remix')return '/?architecture=1&walkthrough='+item.id;
     if (item.isQuizOnly || item.beatCount === 0 || item.kind === 'standalone_quiz') {
       return `/?lesson=${item.id}&quiz_only=1`;
     }
@@ -680,7 +686,7 @@ export default function LiveLessonLoader() {
                               <small>
                                 {isQuizOnly
                                   ? `${item.quizCount} quiz cards · Standalone Quiz`
-                                  : `${item.beatCount} chapters · ${item.hasNative ? 'Hybrid lesson' : 'Visual lesson'}`}
+                                  : `${item.beatCount} chapters · ${item.kind==='architecture_remix'?'Architecture walkthrough':item.hasNative ? 'Hybrid lesson' : 'Visual lesson'}`}
                               </small>
                             </span>
                           </span>
@@ -701,7 +707,7 @@ export default function LiveLessonLoader() {
                             <span className="live-generated-lesson-arrow">→</span>
                           </div>
                         </a>
-                        {item.quizCount > 0 ? (
+                        {item.kind==='architecture_remix'?null:item.quizCount > 0 ? (
                           <button
                             type="button"
                             className="live-generated-lesson-quiz-btn"
@@ -850,26 +856,10 @@ export default function LiveLessonLoader() {
                   <option value="architecture_flow">Architecture &amp; code trace</option>
                 </select>
               </label>
-              {presentation==='architecture_flow'&&<label className="live-presentation-choice" htmlFor="architecture-goal">Goal
-                <select id="architecture-goal" aria-label="Architecture goal" value={architectureMode} onChange={e=>setArchitectureMode(e.target.value as 'learn'|'design'|'inspect')}>
-                  <option value="learn">Learn how a system works</option><option value="design">Design a new system</option><option value="inspect">Inspect supplied source</option>
-                </select>
-                <small style={{color:'#9db5a5'}}>{architectureMode==='learn'?'Follow a worked example with calculated values. No repository needed.':architectureMode==='design'?'Describe your requirements. The proposal includes assumptions and tradeoffs.':'Select a source document above, or enter a local repository below.'}</small>
-              </label>}
-              {presentation === 'architecture_flow' && architectureMode==='inspect' && (
-                <label className="live-repo-choice" htmlFor="live-repo-path" style={{display:'grid',gap:6,marginTop:10}}>
-                  <span>Repository path <small style={{color:'#8ba3ac'}}>(optional; scans real files, imports and line evidence)</small></span>
-                  <input
-                    id="live-repo-path"
-                    aria-label="Repository path"
-                    value={repoPath}
-                    onChange={e=>setRepoPath(e.target.value)}
-                    placeholder="Path to your local source folder"
-                    style={{background:'#10242e',color:'#dbe6e6',border:'1px solid #365360',borderRadius:5,padding:'8px 10px',fontFamily:'ui-monospace,monospace',fontSize:'0.8rem'}}
-                  />
-                  <small style={{color:'#8ba3ac'}}>The scan shows source relationships; it does not execute your code.</small>
-                </label>
-              )}
+              {presentation==='architecture_flow'&&<div className="live-presentation-choice">
+                <small>Use the new procedural compiler to paste code, choose a pipeline preset, or scan a GitHub repository. Gemini fills explanations after compilation.</small>
+                <button type="button" onClick={()=>{location.href='/?architecture=1&compile=1';}}>Open architecture compiler</button>
+              </div>}
               <div className="live-generator-options">
                 <label className="live-native-option"
                   style={{display:'flex',gap:6,alignItems:'center',color:'#9fb6bf',cursor:'pointer'}}

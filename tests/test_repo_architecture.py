@@ -17,12 +17,14 @@ def test_scan_repository_builds_source_backed_evidence(tmp_path: Path):
     assert architecture['grounding'] == 'source-backed'
     assert architecture['illustrative'] is False
     assert architecture['graph']['nodes']
-    assert architecture['graph']['edges']
+    assert architecture['graph']['edges'] or any(node.get('connections') for node in architecture['graph']['nodes'])
     assert all(node['evidence'] for node in architecture['graph']['nodes'])
     assert all(edge['evidence'] for edge in architecture['graph']['edges'])
-    assert any('store.py' in node['label'] for node in architecture['graph']['nodes'])
-    assert any('server.py' in node['label'] for node in architecture['graph']['nodes'])
-    assert any(edge['relationship'] == 'reference' for edge in architecture['graph']['edges'])
+    labels = [child['label'] for node in architecture['graph']['nodes'] for child in node.get('children', [])]
+    assert any('store.py' in label for label in labels)
+    assert any('server.py' in label for label in labels)
+    assert any(edge['relationship'] == 'reference' for edge in architecture['graph']['edges']) or any(
+        conn['relationship'] == 'reference' for node in architecture['graph']['nodes'] for conn in node.get('connections', []))
     assert architecture['limitations']
 
 
@@ -96,8 +98,10 @@ def test_relative_python_and_explicit_typescript_imports_resolve(tmp_path):
     (tmp_path/'page.ts').write_text("import { answer } from './store.ts';\n")
     architecture=validate_architecture(scan_repository(tmp_path))
     edges=architecture['graph']['edges']
-    assert {edge['label'] for edge in edges}=={'..store','./store.ts'}
-    assert {edge['confidence'] for edge in edges}=={'exact','inferred'}
+    labels={edge['label'] for edge in edges}
+    labels |= {conn['label'] for node in architecture['graph']['nodes'] for conn in node.get('connections', [])}
+    assert labels=={'..store','./store.ts'}
+    assert {edge['confidence'] for edge in edges}=={'exact'}
 
 
 def test_scan_excludes_source_symlink_outside_root(tmp_path):
@@ -127,3 +131,124 @@ def test_long_shared_paths_keep_import_edge_ids_unique(tmp_path):
     edges=result['graph']['edges']
     assert len(edges)==2
     assert len({edge['id'] for edge in edges})==2
+
+
+def test_architecture_preserves_nested_children():
+    from assistant.visual.architecture_flow import validate_architecture
+
+    raw = {
+        'version': 1,
+        'grounding': 'illustrative',
+        'codeFiles': [{'file': 'demo.py', 'language': 'python', 'lines': [
+            {'lineNumber': 1, 'text': 'def pipeline(request):'},
+        ]}],
+        'graph': {
+            'id': 'nested',
+            'title': 'Nested',
+            'nodes': [
+                {'id': 'input', 'label': 'Input', 'kind': 'input', 'color': 'blue', 'description': 'input'},
+                {
+                    'id': 'pipeline', 'label': 'pipeline()', 'kind': 'transform', 'color': 'green',
+                    'description': 'container',
+                    'children': [
+                        {'id': 'plan', 'label': 'plan()', 'description': 'plan', 'icon': 'Layers', 'color': 'blue', 'value': '3 beats'},
+                        {'id': 'render', 'label': 'render()', 'description': 'render', 'icon': 'Sparkles', 'color': 'gold', 'value': 'SVG'},
+                    ],
+                },
+                {'id': 'output', 'label': 'Output', 'kind': 'output', 'color': 'purple', 'description': 'output'},
+            ],
+            'edges': [
+                {'id': 'e1', 'source': 'input', 'target': 'pipeline', 'label': 'request', 'relationship': 'data'},
+                {'id': 'e2', 'source': 'pipeline', 'target': 'output', 'label': 'lesson', 'relationship': 'data'},
+            ],
+        },
+    }
+    architecture = validate_architecture(raw)
+    pipeline = next(n for n in architecture['graph']['nodes'] if n['id'] == 'pipeline')
+    assert [child['label'] for child in pipeline['children']] == ['plan()', 'render()']
+    assert pipeline['children'][1]['color'] == 'gold'
+
+
+def test_flow_can_focus_internal_operations_and_packet_internal_connections():
+    from assistant.visual.architecture_flow import validate_architecture, step
+
+    raw = {
+        'version': 1,
+        'grounding': 'illustrative',
+        'codeFiles': [{'file': 'demo.py', 'language': 'python', 'lines': [
+            {'lineNumber': 1, 'text': 'def pipeline(request):'},
+        ]}],
+        'graph': {
+            'id': 'nested', 'title': 'Nested',
+            'nodes': [
+                {'id': 'input', 'label': 'Input', 'kind': 'input', 'color': 'blue', 'description': 'input'},
+                {
+                    'id': 'pipeline', 'label': 'pipeline()', 'kind': 'transform', 'color': 'green',
+                    'description': 'container',
+                    'children': [
+                        {'id': 'plan', 'label': 'plan()', 'color': 'blue'},
+                        {'id': 'render', 'label': 'render()', 'color': 'gold'},
+                    ],
+                    'ports': {'inputs': [{'id': 'in', 'label': 'request'}], 'outputs': [{'id': 'out', 'label': 'lesson'}]},
+                    'connections': [
+                        {'id': 'plan-render', 'from': {'child': 'plan', 'port': 'out'}, 'to': {'child': 'render', 'port': 'in'}, 'label': 'plan', 'relationship': 'data'},
+                    ],
+                },
+                {'id': 'output', 'label': 'Output', 'kind': 'output', 'color': 'purple', 'description': 'output'},
+            ],
+            'edges': [
+                {'id': 'e1', 'source': 'input', 'target': 'pipeline', 'label': 'request', 'relationship': 'data'},
+                {'id': 'e2', 'source': 'pipeline', 'target': 'output', 'label': 'lesson', 'relationship': 'data'},
+            ],
+        },
+    }
+    architecture = validate_architecture(raw)
+    flow = step({
+        'focusNodes': ['pipeline'],
+        'focusOperations': ['plan'],
+        'activeEdges': ['plan-render'],
+        'packets': [{'id': 'plan-packet', 'edgeId': 'plan-render', 'start': 0, 'end': 1, 'payload': '3 beats'}],
+        'code': {'file': 'demo.py', 'lines': [1]},
+    }, architecture['graph'], architecture['codeFiles'], 10)
+    assert flow['focusOperations'] == ['plan']
+    assert flow['activeEdges'] == ['plan-render']
+    assert flow['packets'][0]['edgeId'] == 'plan-render'
+
+
+def test_disconnected_grouped_files_never_acquire_sequential_links(tmp_path):
+    for group in ('api', 'web'):
+        (tmp_path/group).mkdir()
+        for name in ('one.py', 'two.py'):
+            (tmp_path/group/name).write_text('def unrelated():\n    return 1\n')
+    architecture=validate_architecture(scan_repository(tmp_path))
+    assert architecture['graph']['edges']==[]
+    assert all(node['connections']==[] for node in architecture['graph']['nodes'])
+    assert all(child.get('codeReference') for node in architecture['graph']['nodes'] for child in node['children'])
+
+
+def test_requested_pipeline_files_survive_alphabetical_distractors_and_large_modules(tmp_path):
+    (tmp_path/'src').mkdir()
+    for i in range(30):
+        (tmp_path/'src'/f'aaa_helper_{i:02}.py').write_text('def unrelated():\n    return 0\n')
+    (tmp_path/'src'/'server.py').write_text('from .generator import prepare\n\ndef handle_request():\n    return prepare()\n')
+    (tmp_path/'src'/'generator.py').write_text('# large module\n'*20_000+'\ndef prepare():\n    return "lesson"\n')
+    (tmp_path/'src'/'player.ts').write_text('export function playback() { return 1; }\n')
+    architecture=validate_architecture(scan_repository(tmp_path,question='Trace a request through server, generation and playback.'))
+    files={f['file']:f for f in architecture['codeFiles']}
+    assert {'src/server.py','src/generator.py','src/player.ts'}<=files.keys()
+    assert any('def prepare' in line['text'] for line in files['src/generator.py']['lines'])
+    assert any('Showing 12 of 33' in line for line in architecture['limitations'])
+
+
+def test_icons_and_cross_group_child_bindings_follow_actual_source(tmp_path):
+    (tmp_path/'api').mkdir();(tmp_path/'web').mkdir()
+    (tmp_path/'api'/'server.py').write_text('from web.player import play\n')
+    (tmp_path/'web'/'player.py').write_text('def play():\n    return 1\n')
+    architecture=validate_architecture(scan_repository(tmp_path))
+    nodes=architecture['graph']['nodes'];edge=architecture['graph']['edges'][0]
+    source=next(n for n in nodes if n['id']==edge['source'])
+    target=next(n for n in nodes if n['id']==edge['target'])
+    assert edge['sourceChild']==source['children'][0]['id']
+    assert edge['targetChild']==target['children'][0]['id']
+    assert {c['icon'] for n in nodes for c in n['children']}=={'Network','Play'}
+    assert all(n['structure']=='source' for n in nodes)
