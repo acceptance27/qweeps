@@ -48,6 +48,7 @@ import { CodePane } from './components/CodePane';
 import { EvidenceModal } from './components/EvidenceModal';
 import { Header } from './components/Header';
 import { PlaybackBar } from './components/PlaybackBar';
+import { useArchitectureNarration } from './narration/useArchitectureNarration';
 import { ProceduralCompilerModal } from './components/ProceduralCompilerModal';
 
 export interface RemixAppProps {
@@ -79,7 +80,7 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
     initialRepoBundle.sampleInput
   );
 
-  // Track procedural compile speed (<3ms) & Gemini 3.8 Flash explanatory gap-fill status
+  // Track procedural compile speed (<3ms) & OpenCode Go explanatory gap-fill status
   const [lastCompileTimeMs, setLastCompileTimeMs] = useState<number | null>(
     initialRepoBundle.compileTimeMs
   );
@@ -149,6 +150,15 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
   // Single authoritative playhead (in seconds, 0..activeTotalDuration)
   const [playhead, setPlayhead] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const narrationScope = useMemo(() => ({
+    title: activeSubFunction ? `${lessonTitle} / ${activeSubFunction.functionName}` : lessonTitle,
+    scope: activeSubFunctionId || 'system',
+    sourceCode: activeSubFunction ? activeSubFunction.codeLines.map(line => line.text).join('\n') : activeSourceCode,
+    sampleInput: activeSampleInput, graph: activeGraph, steps: activeSteps,
+  }), [lessonTitle, activeSubFunction, activeSubFunctionId, activeSourceCode, activeSampleInput, activeGraph, activeSteps]);
+  const narration = useArchitectureNarration(narrationScope, playhead, isPlaying, () => setIsPlaying(false));
+  const narrationRef = useRef(narration); narrationRef.current = narration;
+
 
   // Canvas viewport dimensions for deterministic camera calculation
   const [canvasViewport, setCanvasViewport] = useState<{ width: number; height: number }>({
@@ -229,7 +239,7 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
     if(!initialBundle)void handleLoadQweepsRepoWalkthrough();
   }, [handleLoadQweepsRepoWalkthrough]);
 
-  // Trigger Gemini 3.8 Flash explanatory gap-filling on a compiled bundle without mutating geometry
+  // Trigger OpenCode Go explanatory gap-filling on a compiled bundle without mutating geometry
   const runAiGapFillOnBundle = useCallback(
     async (
       bundle: CompiledWalkthroughBundle,
@@ -288,7 +298,7 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
 
         const data = await res.json();
         if (!res.ok) {
-          throw new Error(data.error || 'Gemini explanatory gap-fill failed');
+          throw new Error(data.error || 'OpenCode Go explanatory gap-fill failed');
         }
 
         const elapsed = Math.round(performance.now() - t0);
@@ -314,7 +324,7 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
     []
   );
 
-  // Live GitHub Repository Scan + Procedural Compilation + Optional Gemini 3.8 Flash Gap-Fill
+  // Live GitHub Repository Scan + Procedural Compilation + Optional OpenCode Go Gap-Fill
   const handleScanGitHubRepo = useCallback(
     async (repoUrl: string, runAiGapFill: boolean) => {
       setAiError(null);
@@ -348,7 +358,7 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
     [applyCompiledBundleToView, runAiGapFillOnBundle]
   );
 
-  // Stage 1: Instant (<3ms) procedural compilation + optional Stage 2 Gemini 3.8 Flash explanatory gap-fill
+  // Stage 1: Instant (<3ms) procedural compilation + optional Stage 2 OpenCode Go explanatory gap-fill
   const handleCompileWalkthrough = useCallback(
     (options: {
       title: string;
@@ -380,7 +390,7 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
     [applyCompiledBundleToView, runAiGapFillOnBundle]
   );
 
-  // Trigger Gemini 3.8 Flash explanatory gap-fill on the currently active walkthrough at any time
+  // Trigger OpenCode Go explanatory gap-fill on the currently active walkthrough at any time
   const handleFillCurrentWalkthroughGaps = useCallback(() => {
     let bundle = activeBundleRef.current;
     if (!bundle) {
@@ -463,8 +473,9 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
       const dt = Math.min(0.1, (now - lastTime) / 1000);
       lastTime = now;
 
+      const spokenTime = narrationRef.current.clock(dt);
       setPlayhead((prev) => {
-        const next = prev + dt;
+        const next = spokenTime ?? prev + dt;
         const stopAt = singleBeatStopTimeRef.current;
         if (stopAt !== null && next >= stopAt) {
           singleBeatStopTimeRef.current = null;
@@ -544,8 +555,9 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
         startSec += activeSteps[i].duration;
       }
       const stepDur = activeSteps[clampedIdx]?.duration ?? 6;
-      setPlayhead(startSec + 0.05);
-      singleBeatStopTimeRef.current = startSec + stepDur - 0.05;
+      narrationRef.current.seekScene(startSec);
+      setPlayhead(startSec);
+      singleBeatStopTimeRef.current = startSec + stepDur;
       setIsPlaying(true);
     },
     [activeSteps]
@@ -571,8 +583,8 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
       setActiveSubFunctionId(fnId);
       const targetLesson = resolveSubFunctionLesson(fnId);
       const firstBeatDur = targetLesson?.steps?.[0]?.duration ?? 6;
-      setPlayhead(0.05);
-      singleBeatStopTimeRef.current = firstBeatDur - 0.05;
+      setPlayhead(0);
+      singleBeatStopTimeRef.current = firstBeatDur;
       setIsPlaying(true);
       setCameraMode('overview'); // Show the entire sub-illustration immediately
     },
@@ -809,7 +821,7 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
         currentBeatTitle={frame.step.title}
         learnerQuestion={frame.step.question}
         isAskOpen={isAskOpen}
-        onToggleAsk={() => setIsAskOpen((prev) => !prev)}
+        onToggleAsk={() => { setIsPlaying(false); setIsAskOpen((prev) => !prev); }}
         reducedMotion={reducedMotion}
         onToggleReducedMotion={() => setReducedMotion((prev) => !prev)}
         onResetLesson={handleRestart}
@@ -922,6 +934,7 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
         >
           <ArchitectureCanvas
             graph={activeGraph}
+            narrationText={narration.caption}
             layout={layout}
             currentStep={frame.step}
             steps={activeSteps}
@@ -980,13 +993,19 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
       {/* 5. Compact Bottom Playback Area */}
       <PlaybackBar
         isPlaying={isPlaying}
-        playhead={playhead}
-        totalDuration={activeTotalDuration}
-        steps={activeSteps}
+        playhead={narration.displayTime}
+        totalDuration={narration.duration}
+        steps={narration.steps}
+        voiceEnabled={narration.enabled}
+        voiceBusy={narration.busy}
+        voiceStatus={narration.status}
+        voiceError={narration.error}
+        onToggleVoice={narration.toggle}
+        onCancelVoice={narration.cancel}
         currentStepIndex={frame.stepIndex}
         onTogglePlay={handleTogglePlay}
         onRestart={handleRestart}
-        onSeek={handleSeek}
+        onSeek={(time) => handleSeek(narration.toScene(time))}
         onJumpToStep={handleJumpToStep}
         involvedStepIndices={involvedStepIndices}
         selectedNodeLabel={selectedNodeLabel}
@@ -1000,7 +1019,7 @@ export default function App({initialBundle,initialCompilerOpen=false,onBundleCha
         onSelectDoc={(docId) => setHighlightedEvidenceId(docId)}
       />
 
-      {/* Procedural Compiler (<3ms) + Gemini 3.8 Flash Explanatory Gap-Filler Modal */}
+      {/* Procedural Compiler (<3ms) + OpenCode Go Explanatory Gap-Filler Modal */}
       <ProceduralCompilerModal
         isOpen={proceduralModalOpen}
         onClose={() => setProceduralModalOpen(false)}

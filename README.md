@@ -11,6 +11,14 @@ QWEEPS is an experimental local teaching system that turns a question or supplie
 
 Learners can pause, move through the explanation, inspect objects or a selected region, ask questions, and request a focused visual branch. The browser scenes use SVG, GSAP and a Hyperframes adapter. **Live playback does not require baking an MP4.** Native Manim export and rendering are separate, optional paths.
 
+## Appearance
+
+Open **Settings → Appearance** to choose Pixel Forest, Architecture, Midnight, or
+Amethyst. Architecture brings the editor's graphite panels, blue controls, and
+clean typography to the rest of QWEEPS. Themes apply immediately and are remembered
+in the current browser across navigation and reloads. Lesson artwork and quiz
+correctness colors retain their meaning.
+
 ## Android
 
 The mobile interface supports portrait and landscape layouts with on-demand lesson
@@ -18,6 +26,53 @@ controls, captions over the lesson stage, and all answer choices visible togethe
 A standalone Android wrapper bundles the React studio, Python 3.11 and the Python
 backend using Chaquopy. See [Android setup and build instructions](docs/android.md)
 for supported features, background-service limits and APK generation.
+
+## Reinforcement quizzes
+
+**Generate quiz** creates a fresh, separately saved quiz from all selected PDFs,
+Word documents (`.docx`), or PowerPoint sources. **New quiz** beside a visual
+lesson uses its original source documents. These actions do not reopen a previous
+quiz or replace the visual lesson. Opening a saved quiz from the library reuses
+that saved quiz without another model request.
+
+Single-fact cards use one recall blank and four short choices. Related lists and
+multi-part facts can use 2–5 numbered blanks with a shared bank of 8–10 choices.
+Fill blanks from left to right; each blank is graded separately. Correct answers
+advance to the next blank automatically, and placed answers darken and stay disabled.
+Each blank has its own explanation and supporting source evidence.
+Reviewer questions and factual notes determine the total coverage; small model
+batches limit response size, not the number of cards in the completed quiz. The
+preparation screen shows the planned count for each selected source.
+Document-backed cards retain a supporting source quote and show their source
+location. Word locations are extracted text sections, not guessed page numbers.
+Generation errors are shown rather than replaced by an old or partial quiz.
+
+**All Questions · Challenge** adds difficulty-based points, streak combos, five
+hearts, and adaptive recall. A wrong answer costs one heart; every five correct
+answers restore half a heart, up to five. Repeated misses shorten the return
+interval, while clean recalls stretch it toward ten other answers. After a
+recurring question is answered correctly, later returns require typed recall.
+Each numbered blank counts as one graded answer for rewards and recall. Challenge
+progress saves on the current device; practice sets remain separately available.
+
+## Architecture and code tracing (incomplete preview)
+
+The architecture workspace compiles supported source/presets into interactive
+system blueprints, function inspections and nested flowcharts, with animated
+packets, a seekable timeline and saved walkthroughs in the lesson library.
+Open `http://127.0.0.1:4174/?architecture=1`; the Pixel Q/QWEEPS logo returns to
+the main menu. Its optional gap-filler and tutor use the shared OpenCode Go
+settings with the supplied prototype's original prompts and response schemas.
+
+**This feature is incomplete.** Repository scans are sampled and the repository
+compiler remains template-based; displayed example values are not recorded program
+execution. Architecture now has **experimental recorded narration**: one connected
+performance per view, measured packet cues, pause/seek and parent-audio restoration.
+Voice is prepared on Run and nested function views are recorded on demand. It uses
+the existing Fish/OpenRouter and local word-alignment setup. The report 2.1 PDF/ZIP
+remain snapshots from before this implementation. This desktop workspace requires Node.js and `npm ci`
+for its backend, even when the prebuilt UI is supplied. It is not integrated into
+the current Android APK. See [implementation and limits](docs/architecture-remix.md).
 
 ## Demos
 
@@ -172,7 +227,7 @@ The maintained teaching skill draws on PDF Explainer, Math 01, A* Pathfinding & 
 - **Proposed, not implemented as a general system:** perimeter-port routing for diagrams, relative annotation constraints, failed-frame images supplied directly to the reviser, and selective bounding-box collision telemetry. Existing text-fit checks are more limited.
 - No controlled model ranking, learning-outcome study or fixed recall improvement is claimed.
 
-Read the [technical report, version 2.0 (6 November 2026)](docs/QWEEPS_Live_Visual_Teaching_Technical_Report.pdf) for the current hybrid architecture, native quality gates, measured narration synchronization, mobile interface, Android delivery, generation measurements and remaining evaluation work. Its [editable source](docs/technical-report.md) is maintained alongside the code; rebuild it with `python scripts/build_technical_report.py` in an environment with ReportLab, Pillow and Liberation fonts.
+Read the [technical report, version 2.1 (8 November 2026)](docs/QWEEPS_Live_Visual_Teaching_Technical_Report.pdf) for the incomplete architecture/code-tracing preview, planned architecture voice work, existing visual-lesson narration, native quality gates, deployment boundaries and evidence limits. Its [editable source](docs/technical-report.md) is maintained alongside the code; rebuild it with `python scripts/build_technical_report.py` in an environment with ReportLab, Pillow and Liberation fonts.
 
 ## Models, narration and configuration
 
@@ -181,7 +236,7 @@ Configuration is stored at `~/.config/qweeps/config.toml` (or via environment va
 | Role | Default route |
 |---|---|
 | General conversation and orchestration text | OpenRouter: `nvidia/nemotron-3.5-super-vl:free` |
-| Lesson planning, direction, review, narration writing and lesson Q&A | OpenCode Go: `opencode-go/muse-spark-1.3-contributor` (OpenRouter and other configured routes remain available) |
+| Lesson planning, direction, review, narration writing and lesson Q&A | OpenCode Go: `opencode-go/crouton-alpha-free` (OpenRouter and other configured routes remain available) |
 | Speech synthesis | Configurable independently; default is Fish via OpenRouter, with Piper and eSpeak as options |
 | Speech recognition | OpenRouter Cloud STT (`fish-audio/transcribe-1`) by default; Voxtype local as an option |
 
@@ -197,8 +252,8 @@ model = "nvidia/nemotron-3.5-super-vl:free"
 fallback_models = []
 fallback_provider = "offline"
 visual_provider = "opencode-go"
-visual_model = "opencode-go/muse-spark-1.3-contributor"
-visual_vision_model = "opencode-go/muse-spark-1.3-contributor"
+visual_model = "opencode-go/crouton-alpha-free"
+visual_vision_model = "opencode-go/crouton-alpha-free"
 reasoning_effort = "none"
 
 # Fish synthesis

@@ -15,6 +15,13 @@ for this wrapper.
 - Mobile multiple-choice questions show all four options at once: one column in
   portrait and two columns alongside the prompt in landscape. Tapping an answer
   submits it directly. Feedback replaces the choices until advancing.
+- Ordered recall uses 2–5 numbered blanks and a shared bank of 8–10 short choices.
+  Each blank counts as one graded answer. Correct answers advance within the
+  sentence automatically; already placed choices darken and display “Placed”.
+- All Questions challenges include difficulty-based points, combos, five hearts,
+  half-heart recovery after every five correct answers, adaptive retries, and
+  automatic typed recall for later returns of successfully recalled questions.
+- Settings → Appearance offers Pixel Forest, Architecture, Midnight and Amethyst.
 - Scorecards use Summary and Concept review tabs, with paged concept results.
 - Portrait and short landscape layouts use the available viewport, including safe
   insets. Settings and source input remain usable with the on-screen keyboard.
@@ -83,8 +90,11 @@ appear in the standalone app. Editing in-app settings or generating lessons does
 not require a new APK. Install an updated APK over the existing app, with the same
 package and signing key, to retain its app-private data.
 
-The output is `android/app/build/outputs/apk/debug/app-debug.apk`. This is a
-self-signed debug APK for device testing, not a Play Store release. Do not commit
+The default output is `android/app/build/outputs/apk/release/app-release.apk`;
+`bash scripts/build_android.sh --debug` builds the debug variant instead. Both
+currently use the local Android debug signing key for testing and direct installation.
+Version 0.2.0 uses version code 2 and the existing `org.qweeps.app` package.
+This is not a Play Store release. Do not commit
 SDK paths, provider credentials, signing keys, or generated build output. To
 produce a release for distribution, configure a private release signing key and
 run `:app:assembleRelease` with the matching signing configuration.
@@ -102,10 +112,11 @@ real-device behaviors.
 
 ## Verified in this implementation
 
-The debug APK was built with the pinned Gradle/Chaquopy setup and its APK signature
-was checked. Android 15 x86_64 emulator instrumentation verified the bundled Python
+Earlier verification built the debug APK with the pinned Gradle/Chaquopy setup and
+checked its signature. Android 15 x86_64 emulator instrumentation verified the bundled Python
 server, same-origin studio assets, settings endpoint, `pypdf` import, and native
 foreground-service startup. The related Python suite passed 88 tests; the frontend
-suite passed 76 tests. Browser review covered 390×844 portrait and 844×390 landscape.
+suite passed 76 tests at that earlier checkpoint. The current ordered-quiz interface
+was also checked at 390×844 portrait and 844×390 landscape in the browser.
 These checks do not replace testing a physical ARM64 phone or a real provider job
 through screen lock, network loss and operating-system cancellation.

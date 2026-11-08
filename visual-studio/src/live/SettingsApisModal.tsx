@@ -20,6 +20,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { api } from '../learning/types';
+import ThemeSettings from '../theme/ThemeSettings';
 
 export type ModelOption = {
   value: string;
@@ -378,10 +379,10 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
             </div>
             <div>
               <h2 id="settings-modal-title" className="settings-modal-title">
-                Settings / APIs & Models
+                Settings
               </h2>
               <p className="settings-modal-subtitle">
-                Configure OpenCode-compatible APIs, models & thinking effort per process with highlighted recommendations.
+                Personalize your workspace and configure APIs, models, and narration.
               </p>
             </div>
           </div>
@@ -396,6 +397,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
         </div>
 
         <div className="settings-modal-body">
+        <ThemeSettings />
         {/* Presets scroll with the settings, leaving the controls usable on short screens. */}
         <div className="settings-preset-banner">
           <div className="settings-preset-info">

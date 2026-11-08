@@ -1496,7 +1496,126 @@ Return JSON only; no markdown fences:
 
         return all_questions
 
+    def _quiz_context(self, payload):
+        if isinstance(payload, str):
+            payload = {'lessonId': payload}
+        if not isinstance(payload, dict):
+            raise PlanError('Provide source documents, a lesson, or a topic for the new quiz.')
+        origin_id = payload.get('lessonId')
+        lesson = self._base_lesson(origin_id) if origin_id else payload.get('lesson') or {}
+        if not isinstance(lesson, dict):
+            raise PlanError('The lesson context must be an object.')
+        question = str(payload.get('question') or payload.get('topic') or lesson.get('question') or '').strip()
+        doc_ids = payload.get('documentIds') or payload.get('documentId')
+        if not doc_ids and origin_id:
+            # Recover the original PDFs from a saved lesson's request, never its old cards.
+            roots = [self.folder, getattr(self, 'bundled_folder', None)]
+            for root in roots:
+                if root is None:
+                    continue
+                request_path = root / origin_id / 'request.json'
+                if request_path.is_file():
+                    request = json.loads(request_path.read_text())
+                    doc_ids = request.get('documentIds') or request.get('documentId')
+                    if doc_ids:
+                        break
+        if not doc_ids:
+            doc_ids = lesson.get('documentIds') or lesson.get('documentId')
+        if isinstance(doc_ids, str):
+            doc_ids = [part.strip() for part in doc_ids.split(',') if part.strip()]
+        if doc_ids and (not isinstance(doc_ids, list) or any(not isinstance(i, str) or not ID.fullmatch(i) for i in doc_ids)):
+            raise PlanError('Every selected source must have a valid document ID.')
+        document = self.documents.resolve(question, doc_ids) if doc_ids or not lesson else None
+        if document:
+            doc_ids = [d['id'] for d in document.get('documents', [])] or [document['id']]
+        doc_ids = list(dict.fromkeys(doc_ids or []))
+        return origin_id, lesson, question, document, doc_ids
+
+    def quiz_plan(self, payload):
+        from .reinforcement_generation import plan_quiz_units, QUIZ_FORMAT
+        _, lesson, question, document, _ = self._quiz_context(payload)
+        units = plan_quiz_units(document) if document else [{'title': lesson.get('title') or question, 'count': min(20, max(6, len(lesson.get('chapters') or [])))}]
+        sources = {}
+        for unit in units:
+            key = unit.get('documentId') or 'lesson'
+            source = sources.setdefault(key, {'id': key, 'title': unit['title'], 'count': 0})
+            source['count'] += unit['count']
+        build_id, work_dir = self._quiz_build(payload)
+        plan = {'format': QUIZ_FORMAT, 'buildId': build_id, 'count': sum(u['count'] for u in units), 'batches': len(units), 'sources': list(sources.values())}
+        (work_dir / 'plan.json').write_text(json.dumps(plan, ensure_ascii=False))
+        return plan
+
+    def _quiz_build(self, payload):
+        from .reinforcement_generation import QUIZ_FORMAT
+        _, lesson, question, document, doc_ids = self._quiz_context(payload)
+        source = {'documentIds': doc_ids, 'pages': (document or {}).get('pages'), 'question': question,
+                  'lesson': None if document else {k: lesson.get(k) for k in ('title', 'chapters')},
+                  'format': QUIZ_FORMAT, 'coverageVersion': 3}
+        fingerprint = hashlib.sha256(json.dumps(source, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+        request = payload if isinstance(payload, dict) else {}
+        build_id = request.get('quizBuildId') or request.get('resumeQuizBuild')
+        if build_id:
+            if not isinstance(build_id, str) or not ID.fullmatch(build_id):
+                raise PlanError('Invalid quiz preparation ID.')
+            work_dir = self.folder / '.quiz-builds' / build_id
+            key_file = work_dir / 'source-key.txt'
+            if not key_file.is_file() or key_file.read_text() != fingerprint:
+                raise PlanError('The selected sources changed. Start a new quiz instead of resuming this preparation.')
+        else:
+            build_id = uuid.uuid4().hex
+            work_dir = self.folder / '.quiz-builds' / build_id
+            work_dir.mkdir(parents=True)
+            (work_dir / 'source-key.txt').write_text(fingerprint)
+            (work_dir / 'progress.json').write_text(json.dumps({'status': 'preparing', 'completedCards': 0, 'completedBatches': 0}))
+        return build_id, work_dir
+
+    def quiz_progress(self, build_id):
+        if not isinstance(build_id, str) or not ID.fullmatch(build_id):
+            raise PlanError('Invalid quiz preparation ID.')
+        path = self.folder / '.quiz-builds' / build_id / 'progress.json'
+        if not path.is_file():
+            raise PlanError('This quiz preparation is not available.')
+        return json.loads(path.read_text())
+
+    def create_quiz(self, payload, *, persist=True):
+        """Create an independent quiz; explicit source selection always wins over a lesson."""
+        from .reinforcement_generation import generate_current_quiz, QUIZ_FORMAT
+        origin_id, lesson, question, document, doc_ids = self._quiz_context(payload)
+        quiz_id, work_dir = self._quiz_build(payload) if persist else (uuid.uuid4().hex, None)
+        if persist and (self.folder / quiz_id / 'lesson.json').is_file():
+            return self._base_lesson(quiz_id)
+        try:
+            questions = generate_current_quiz(self.llm, document=document, lesson=lesson, question=question, work_dir=work_dir)
+        except Exception as exc:
+            if work_dir is not None:
+                progress = self.quiz_progress(quiz_id)
+                (work_dir / 'progress.json').write_text(json.dumps({**progress, 'status': 'failed', 'error': str(exc)[:1500]}))
+            raise
+        title = (document or {}).get('title') or lesson.get('title') or question or 'Reinforcement Quiz'
+        saved = {'id': quiz_id, 'kind': 'standalone_quiz', 'quizOnly': True, 'quizFormat': QUIZ_FORMAT,
+                 'title': title, 'question': question or f'Reinforcement quiz: {title}', 'chapters': [], 'duration': 0,
+                 'quiz': questions, 'documentIds': doc_ids,
+                 'createdAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                 'sources': [{'id': d['id'], 'title': d.get('title') or d.get('filename') or 'Source material', 'url': ''}
+                             for d in ((document or {}).get('documents') or ([document] if document else []))],
+                 **({'sourceLessonId': origin_id} if origin_id else {})}
+        if persist:
+            folder = self.folder / quiz_id
+            folder.mkdir(parents=True, exist_ok=False)
+            (folder / 'request.json').write_text(json.dumps({'question': question, 'documentIds': doc_ids,
+                'sourceLessonId': origin_id, 'quizOnly': True, 'quizFormat': QUIZ_FORMAT}, ensure_ascii=False, indent=2))
+            temporary = folder / '.lesson.json.tmp'
+            temporary.write_text(json.dumps(saved, ensure_ascii=False, indent=2))
+            temporary.replace(folder / 'lesson.json')
+            progress = self.quiz_progress(quiz_id)
+            (work_dir / 'progress.json').write_text(json.dumps({**progress, 'status': 'ready', 'completedCards': len(questions), 'lessonId': quiz_id}))
+        return saved
+
     def generate_quiz(self,lesson_or_id,*,persist=True,force_llm=False):
+        if force_llm:
+            fresh = self.create_quiz(lesson_or_id, persist=persist)
+            self._last_quiz_lesson_id = fresh['id']
+            return fresh['quiz']
         lesson_id = None
         base = {}
         lesson = {}
@@ -1676,6 +1795,30 @@ Return JSON only; no markdown fences:
             "quizOnly": bool(lesson.get("quizOnly")),
         }, ensure_ascii=False))
         return lesson
+    def _prepare_cached_quiz(self, job_id, cached_lesson):
+        """Reuse reviewed visuals while creating a new quiz and lesson copy."""
+        from .reinforcement_generation import generate_current_quiz, QUIZ_FORMAT
+        job = self.jobs[job_id]
+        try:
+            new_id = uuid.uuid4().hex
+            work_dir = self.folder / '.quiz-builds' / new_id
+            work_dir.mkdir(parents=True)
+            job.update(stage='Generating a fresh source-grounded reinforcement quiz')
+            questions = generate_current_quiz(self.llm, document=job.get('document'), lesson=cached_lesson,
+                                              question=job['question'], work_dir=work_dir)
+            updated = {**copy.deepcopy(cached_lesson), 'id': new_id, 'quiz': questions, 'quizFormat': QUIZ_FORMAT,
+                       'sourceLessonId': cached_lesson['id']}
+            target = self.folder / new_id
+            target.mkdir()
+            request_path = self.folder / cached_lesson['id'] / 'request.json'
+            if request_path.is_file():
+                (target / 'request.json').write_text(request_path.read_text())
+            temporary = target / '.lesson.json.tmp'
+            temporary.write_text(json.dumps(updated, ensure_ascii=False, indent=2)); temporary.replace(target / 'lesson.json')
+            job.update(lessonId=new_id, status='ready', stage='Lesson ready with a new reinforcement quiz')
+        except Exception as exc:
+            job.update(status='failed', stage='Fresh reinforcement quiz could not be prepared', error=str(exc))
+
     def start(self,payload,context=None):
         native=bool(payload.get('native'))
         presentation=payload.get('presentation','auto')
@@ -1756,7 +1899,7 @@ Return JSON only; no markdown fences:
             key=resume
         with self.lock:
             existing=next((j for j in self.jobs.values() if j['lessonId']==key and j['status']!='failed'),None)
-            if existing and not payload.get('regenerate'):
+            if existing and not payload.get('regenerate') and not (generate_quiz and existing['status'] == 'ready'):
                 if generate_quiz:existing['generateQuiz']=True
                 return self.status(existing['id'])
             if len(self.jobs)>=24:
@@ -1774,12 +1917,9 @@ Return JSON only; no markdown fences:
                 except ValueError: cached_lesson={}
                 hybrid=any(c.get('renderer')=='manimgl' for c in cached_lesson.get('chapters') or [])
                 if hybrid or not native:
-                    if generate_quiz and cached_lesson and not cached_lesson.get('quiz'):
-                        try:
-                            cached_lesson['quiz']=_build_reinforcement_quiz(cached_lesson)
-                            cached.write_text(json.dumps(cached_lesson,ensure_ascii=False,indent=2))
-                        except Exception:
-                            pass
+                    if generate_quiz and cached_lesson:
+                        threading.Thread(target=self._prepare_cached_quiz, args=(job_id, cached_lesson), daemon=True).start()
+                        return self.status(job_id)
                     job.update(status='ready',stage='Reviewed live lesson ready');return self.status(job_id)
         is_fast_branch=bool(context and context.get('parentScene') and getattr(self.llm,'provider','') in {'opencode-go','opencode','opencode-free'})
         target=self._generate_branch_mini_lesson if is_fast_branch else (self._generate_hybrid if native else self._generate)
@@ -3104,8 +3244,13 @@ replacements, only those needed.'''
                 if result['findings'] or len(result['observations'])<len(j['candidate']['chapters']):raise PlanError('Visual approval needs evidence for every beat and no unresolved findings')
                 lesson=copy.deepcopy(j['candidate']);lesson['review']={**result,'method':('actual-native-and-browser-frames-and-vision-model' if j.get('native') else 'actual-browser-svg-frames-and-vision-model'),'frames':labels}
                 if j.get('generateQuiz'):
+                    from .reinforcement_generation import generate_current_quiz, QUIZ_FORMAT
                     j.update(stage='Generating reinforcement quiz with QWEEPS')
-                    lesson['quiz']=self._llm_reinforcement_quiz(lesson)
+                    quiz_work = self.folder / '.quiz-builds' / uuid.uuid4().hex
+                    quiz_work.mkdir(parents=True)
+                    lesson['quiz']=generate_current_quiz(self.llm, document=j.get('document'), lesson=lesson,
+                                                         question=j['question'], work_dir=quiz_work)
+                    lesson['quizFormat'] = QUIZ_FORMAT
                 else:
                     lesson['quiz']=_build_reinforcement_quiz(lesson)
                 folder=self.folder/j['lessonId'];folder.mkdir(exist_ok=True)

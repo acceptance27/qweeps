@@ -14,6 +14,36 @@ import xml.etree.ElementTree as ET
 from .plan import PlanError
 
 ID=re.compile(r'^[0-9a-f]{32}$')
+
+def extract_docx_sections(data: bytes) -> list[str]:
+    """Read Word paragraphs/tables without running Word or guessing physical pages."""
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            info = archive.getinfo('word/document.xml')
+            if info.file_size > 10_000_000:
+                raise PlanError('This Word document contains too much text. Use a smaller reviewer.')
+            root = ET.fromstring(archive.read(info))
+        ns = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+        paragraphs = []
+        for paragraph in root.iter(ns + 'p'):
+            parts = []
+            for node in paragraph.iter():
+                if node.tag == ns + 't': parts.append(node.text or '')
+                elif node.tag in {ns + 'br', ns + 'cr'}: parts.append('\n')
+                elif node.tag == ns + 'tab': parts.append('\t')
+            text = ''.join(parts).strip()
+            if text: paragraphs.append(text)
+        sections, block, size = [], [], 0
+        for paragraph in paragraphs:
+            if block and size + len(paragraph) > 6000:
+                sections.append('\n'.join(block)); block, size = [], 0
+            block.append(paragraph); size += len(paragraph)
+        if block: sections.append('\n'.join(block))
+        if not sections:
+            raise PlanError('This Word document has no readable text. Images need OCR first.')
+        return sections
+    except (zipfile.BadZipFile, KeyError, ET.ParseError) as exc:
+        raise PlanError('Upload a valid Word .docx document.') from exc
 def words(text):
     text=re.sub(r'\b(module|chapter)[_ -]*(\d+)\b',r'\1 \2',text.casefold())
     return set(re.findall(r'[a-z0-9]+',text))
@@ -52,7 +82,7 @@ class DocumentLibrary:
         try:return json.loads((self.folder/doc_id/'document.json').read_text())
         except FileNotFoundError as exc:raise PlanError('This document is not in the local lesson library.') from exc
     def catalog(self):
-        return [{k:d[k] for k in ('id','title','filename','pageCount','aliases')} for p in sorted(self.folder.glob('*/document.json')) for d in [json.loads(p.read_text())] if not d.get('isComposite')]
+        return [{**{k:d[k] for k in ('id','title','filename','pageCount','aliases')}, 'pageLabel': d.get('pageLabel', 'pages')} for p in sorted(self.folder.glob('*/document.json')) for d in [json.loads(p.read_text())] if not d.get('isComposite')]
     def combine(self, doc_ids: list[str]) -> dict:
         """Combine multiple documents into a unified, source-attributed composite document."""
         if not doc_ids:
@@ -66,12 +96,15 @@ class DocumentLibrary:
             return self.get(unique_ids[0])
 
         docs = [self.get(did) for did in unique_ids]
+        source_fingerprints = {d['id']: hashlib.sha256(json.dumps(d.get('pages', []), sort_keys=True, ensure_ascii=False).encode()).hexdigest() for d in docs}
         combined_key = hashlib.sha256(",".join(sorted(unique_ids)).encode()).hexdigest()[:32]
         folder = self.folder / combined_key
         target = folder / 'document.json'
         if target.is_file():
             try:
-                return json.loads(target.read_text())
+                cached = json.loads(target.read_text())
+                if cached.get('sourceFingerprints') == source_fingerprints:
+                    return cached
             except Exception:
                 pass
 
@@ -93,6 +126,7 @@ class DocumentLibrary:
                     'sourceDoc': d_title,
                     'sourceDocId': d_id,
                     'sourcePage': orig_page,
+                    **({'sourceLocator': p['label']} if p.get('label') else {}),
                 })
                 seq_page += 1
 
@@ -110,6 +144,7 @@ class DocumentLibrary:
             'documents': [{'id': d['id'], 'title': d.get('title'), 'filename': d.get('filename'), 'pageCount': d.get('pageCount', 0)} for d in docs],
             'pages': all_pages,
             'isComposite': True,
+            'sourceFingerprints': source_fingerprints,
         }
         folder.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(composite, ensure_ascii=False))
@@ -142,19 +177,23 @@ class DocumentLibrary:
             raise PlanError('Upload a file smaller than 100 MB.')
 
         is_pdf = data.startswith(b'%PDF-')
-        is_pptx = data.startswith(b'PK\x03\x04') or name.casefold().endswith(('.pptx', '.ppt'))
+        is_docx = name.casefold().endswith('.docx')
+        is_pptx = not is_docx and (data.startswith(b'PK\x03\x04') or name.casefold().endswith(('.pptx', '.ppt')))
 
-        if not is_pdf and not is_pptx:
-            raise PlanError('Upload a valid PDF or PowerPoint presentation (.pptx).')
+        if not is_pdf and not is_pptx and not is_docx:
+            raise PlanError('Upload a valid PDF, Word document (.docx), or PowerPoint presentation (.pptx).')
 
         key = hashlib.sha256(data).hexdigest()[:32]
         folder = self.folder / key
         folder.mkdir(exist_ok=True)
 
         pages: list[str] = []
-        title = name.removesuffix('.pdf').removesuffix('.pptx').removesuffix('.ppt').replace('_', ' ')
+        title = Path(name).stem.replace('_', ' ')
 
-        if is_pptx:
+        if is_docx:
+            pages = extract_docx_sections(data)
+            (folder / 'source.docx').write_bytes(data)
+        elif is_pptx:
             pptx_target = folder / 'source.pptx'
             pptx_target.write_bytes(data)
             pdf_target = folder / 'source.pdf'
@@ -250,10 +289,11 @@ class DocumentLibrary:
             'filename': name,
             'pageCount': len(pages),
             'aliases': list(dict.fromkeys(aliases)),
-            'pages': [{'page': i + 1, 'text': page.strip()} for i, page in enumerate(pages)]
+            'pageLabel': 'sections' if is_docx else 'pages',
+            'pages': [{'page': i + 1, 'text': page.strip(), **({'label': f'Section {i + 1}'} if is_docx else {})} for i, page in enumerate(pages)]
         }
         (folder / 'document.json').write_text(json.dumps(out, ensure_ascii=False))
-        return {k: out[k] for k in ('id', 'title', 'filename', 'pageCount', 'aliases')}
+        return {k: out[k] for k in ('id', 'title', 'filename', 'pageCount', 'aliases', 'pageLabel')}
     def resolve(self,question,doc_id=None):
         if doc_id:
             if isinstance(doc_id, list):
@@ -265,7 +305,7 @@ class DocumentLibrary:
                 return self.get(doc_id)
         if not question:return None
         # Match quoted or unquoted absolute or home file paths
-        path_matches = re.findall(r'''(?:^|[\s\'\":])(/[^\n\'\"]*?\.(?:pdf|pptx))''', question, re.I)
+        path_matches = re.findall(r'''(?:^|[\s\'\":])(/[^\n\'\"]*?\.(?:pdf|pptx|docx))''', question, re.I)
         valid_paths = [Path(p.strip()) for p in path_matches if Path(p.strip()).is_file()]
         if len(valid_paths) > 1:
             ids = [self.ingest({'path': str(p)})['id'] for p in valid_paths]

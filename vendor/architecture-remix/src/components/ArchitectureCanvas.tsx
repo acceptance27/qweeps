@@ -55,6 +55,7 @@ import {
 } from '../types/lesson';
 
 interface ArchitectureCanvasProps {
+  narrationText?: string;
   graph: ArchitectureGraph;
   layout: ComputedGraphLayout;
   steps: Step[];
@@ -287,6 +288,7 @@ function splitEdgeAtBoundaryPort(
 
 export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
   graph,
+  narrationText,
   layout,
   steps,
   currentStep,
@@ -2972,7 +2974,7 @@ export const ArchitectureCanvas: React.FC<ArchitectureCanvasProps> = ({
           </div>
 
           <p className="text-xs sm:text-[13px] text-[#BCBEC4] leading-snug line-clamp-3 sm:line-clamp-2 break-words">
-            {miniModeActive && miniStep ? miniStep.caption : currentStep.narration}
+            {miniModeActive && miniStep ? miniStep.caption : narrationText || currentStep.narration}
           </p>
         </div>
       </div>

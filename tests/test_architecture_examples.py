@@ -27,8 +27,10 @@ def architecture():
         'codeFiles':[{'file':'example.py','language':'python','lines':[{'lineNumber':1,'text':'selected = retrieve(query)'}]}],
         'graph':{'id':'worked-rag','title':'One retrieval','nodes':[
             {'id':'query','label':'Query','kind':'input','description':'Toy query vector','color':'blue','valueRef':'unit','visual':{'variant':'vector-bars','floats':[99]}},
-            {'id':'retrieval','label':'Retrieval','kind':'search','description':'Calculated cosine scores','color':'green','valueRef':'ranked','visual':{'variant':'podium-rank','rows':[]}}],
-            'edges':[{'id':'query-search','source':'query','target':'retrieval','label':'compare vectors','relationship':'data'}]}}
+            {'id':'retrieval','label':'Retrieval','kind':'search','description':'Calculated cosine scores','color':'green','valueRef':'ranked','visual':{'variant':'podium-rank','rows':[]}},
+            {'id':'context','label':'Context','kind':'output','description':'Selected document text','color':'gold','valueRef':'context'}],
+            'edges':[{'id':'query-search','source':'query','target':'retrieval','label':'compare vectors','relationship':'data'},
+                     {'id':'retrieval-context','source':'retrieval','target':'context','label':'selected document text','relationship':'data'}]}}
 
 
 def test_actual_vector_math_and_context_are_calculated_from_one_shared_example():

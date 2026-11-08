@@ -48,6 +48,8 @@ android/local.properties
 android/app/release/
 
 /dist/
+/output/
+/tmp/
 
 # Compiled upstream architecture module
 visual-studio/src/live/architecture/remix/runtime.js

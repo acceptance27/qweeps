@@ -1,0 +1,115 @@
+/* Shared application chrome. Diagram colors retain their teaching meaning. */
+:root {
+  color-scheme: dark;
+  --font-sans: var(--q-font);
+}
+:root[data-theme] body { background: var(--q-bg); color: var(--q-text); font-family: var(--q-font); }
+:is(button, input, textarea, select) { accent-color: var(--q-accent); }
+::selection { background: var(--q-soft); color: var(--q-text); }
+::-webkit-scrollbar-track { background: var(--q-input); }
+::-webkit-scrollbar-thumb { background: var(--q-strong); }
+
+.theme-settings { padding: 0 0 22px; border-bottom: 1px solid var(--q-line); }
+.theme-settings-heading { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; color: var(--q-accent); }
+.theme-settings-heading > svg { flex-shrink: 0; margin-top: 3px; }
+.theme-settings-heading h3 { margin: 0; color: var(--q-text); font: 650 16px/1.4 var(--q-font); }
+.theme-settings-heading p { margin: 4px 0 0; color: var(--q-muted); font: 12px/1.6 var(--q-font); }
+.theme-current { margin-left: auto; padding: 4px 8px; flex-shrink: 0; color: var(--q-text); background: var(--q-soft); border: 1px solid var(--q-strong); border-radius: 4px; font-size: 11px; }
+.theme-options { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+.theme-option { position: relative; display: flex; flex-direction: column; gap: 9px; min-width: 0; padding: 9px; border: 1px solid var(--q-strong); border-radius: 7px; cursor: pointer; background: var(--q-input); }
+.theme-option:hover { background: var(--q-raised); }
+.theme-option[data-selected=true] { border-color: var(--q-accent); outline: 1px solid var(--q-accent); background: var(--q-soft); }
+.theme-option:focus-within { outline: 2px solid var(--q-text); outline-offset: 4px; }
+.theme-option input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.theme-preview { height: 88px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--preview-line); border-radius: 4px; background: var(--preview-bg); }
+.theme-preview-top { display: flex; gap: 3px; padding: 7px; background: var(--preview-raised); border-bottom: 1px solid var(--preview-line); }
+.theme-preview-top i { width: 4px; height: 4px; border-radius: 50%; background: var(--preview-muted); }
+.theme-preview-content { display: flex; flex: 1; }
+.theme-preview-sidebar { display: flex; flex-direction: column; gap: 6px; width: 24%; padding: 9px 5px; background: var(--preview-panel); border-right: 1px solid var(--preview-line); }
+.theme-preview-sidebar i { height: 3px; background: var(--preview-strong); }
+.theme-preview-sidebar i:first-child { background: var(--preview-accent); }
+.theme-preview-page { flex: 1; padding: 6px 10px; display: flex; flex-direction: column; gap: 4px; }
+.theme-preview-page b { color: var(--preview-text); font: 600 18px/1.1 Inter,system-ui,sans-serif; }
+.theme-option:first-child .theme-preview-page b { font-family: QweepsDisplay,serif; }
+.theme-preview-page i { width: 80%; height: 3px; background: var(--preview-strong); }
+.theme-preview-page i + i { width: 55%; }
+.theme-preview-page em { width: 28px; height: 9px; background: var(--preview-accent); border-radius: 2px; margin-top: 2px; }
+.theme-option-name { display: flex; justify-content: space-between; align-items: center; gap: 4px; color: var(--q-text); font: 600 12px/1.4 var(--q-font); }
+.theme-option-name svg { visibility: hidden; flex-shrink: 0; color: var(--q-accent); }
+.theme-option[data-selected=true] .theme-option-name svg { visibility: visible; }
+.theme-option-description { color: var(--q-muted); font: 11px/1.5 var(--q-font); }
+
+/* Non-pixel themes share the restrained surfaces and type of the architecture editor. */
+:root:not([data-theme=forest]) .learning-world { display: none; }
+:root:not([data-theme=forest]) .live-generator {
+  background-color: var(--q-bg);
+  background-image: radial-gradient(color-mix(in srgb,var(--q-strong) 22%,transparent) 1px,transparent 1px);
+  background-size: 24px 24px;
+}
+:root:not([data-theme=forest]) .live-generator::before { background: linear-gradient(180deg,transparent,var(--q-bg)); }
+:root:not([data-theme=forest]) .live-generator :is(form,.live-generated-lessons-box) { border-width: 1px; border-radius: 8px; box-shadow: 0 8px 24px #0002; background: var(--q-panel); }
+:root:not([data-theme=forest]) .live-generator .live-home-intro h1 { font-weight: 700; font-size: clamp(38px,5vw,58px); line-height: 1.08; letter-spacing: -.04em; color: var(--q-text); }
+:root:not([data-theme=forest]) .live-home-intro h1 em { color: var(--q-muted); }
+:root:not([data-theme=forest]) .live-generator .live-menu-brand-text { font-size: 23px; font-weight: 700; letter-spacing: -.03em; color: var(--q-text); }
+:root:not([data-theme=forest]) .live-create-heading strong { font-size: 21px; font-weight: 650; color: var(--q-text); }
+:root:not([data-theme=forest]) .live-generator :is(.live-menu-settings-btn,.live-generator-actions button) { box-shadow: none !important; border-radius: 5px !important; }
+:root:not([data-theme=forest]) .live-generator .live-generated-lesson-row { border-radius: 5px; background: var(--q-panel); }
+:root:not([data-theme=forest]) .live-generator .live-generated-lesson-row:hover { background: var(--q-raised); border-color: var(--q-strong); }
+:root:not([data-theme=forest]) .live-generator :is(textarea,select) { border-radius: 5px; }
+:root:not([data-theme=forest]) :is(.mastery-quiz-modal,.quiz-beat-prompt-card) { border-width: 1px; border-radius: 7px; box-shadow: none; }
+:root:not([data-theme=forest]) .live-menu-top-bar { border-color: var(--q-line); }
+:root:not([data-theme=forest]) .settings-modal-dialog { border-radius: 10px; }
+:root[data-theme] .live-generator .live-home-eyebrow { color: var(--q-muted); }
+:root[data-theme] .settings-modal-dialog { background: var(--q-panel); color: var(--q-text); font-family: var(--q-font); }
+:root[data-theme] :is(.settings-modal-header,.settings-modal-footer) { background: var(--q-bg); border-color: var(--q-line); }
+:root[data-theme] :is(.settings-guide-card,.settings-guide-col,.settings-section-card,.settings-preset-banner) { background: var(--q-input); border-color: var(--q-line); box-shadow: none; }
+:root[data-theme] :is(.settings-icon-bubble,.settings-guide-badge) { color: var(--q-text); background: var(--q-soft); border-color: var(--q-strong); box-shadow: none; }
+:root[data-theme] :is(.settings-modal-title,.settings-guide-title) { color: var(--q-text); }
+:root[data-theme] .settings-modal-dialog :is(input:not([type=radio]),select) { background: var(--q-input); color: var(--q-text); border-color: var(--q-strong); }
+:root[data-theme] .settings-modal-dialog :is(.text-amber-300,.text-amber-400) { color: var(--q-text); }
+:root[data-theme] :is(.settings-btn-primary,.settings-preset-apply-btn) { background: var(--q-primary) !important; color: var(--q-on-accent) !important; box-shadow: none; }
+:root[data-theme] .live-generator .live-selected-docs-tray button { background: var(--q-raised) !important; color: var(--q-text) !important; border-color: var(--q-strong) !important; }
+:root[data-theme] .live-generator .live-selected-docs-tray > span { background: var(--q-soft) !important; color: var(--q-text) !important; border-color: var(--q-strong) !important; }
+:root[data-theme] .live-generator .live-presentation-choice select { background: var(--q-input); color: var(--q-text); border-color: var(--q-strong); }
+:root[data-theme] .live-generator .mobile-home-tabs button { background: var(--q-panel); color: var(--q-text); border-color: var(--q-strong); }
+:root[data-theme] .live-generator .mobile-home-tabs button[aria-pressed=true] { background: var(--q-primary); color: var(--q-on-accent); border-color: var(--q-accent); }
+:root[data-theme] .live-preparation { background: color-mix(in srgb,var(--q-bg) 90%,transparent); }
+:root[data-theme] .live-preparation-actions button.live-preparation-retry { color: var(--q-on-accent); }
+:root[data-theme] :is(.live-generated-lessons-scroll,.settings-modal-body,.live-messages,.live-evidence) { scrollbar-color: var(--q-strong) var(--q-input); }
+
+/* Existing cinematic lessons use the same shell palette; their artwork is unchanged. */
+:root[data-theme] :is(.lesson-shell,.lesson-header,.lesson-closed) { background: var(--q-bg); color: var(--q-text); border-color: var(--q-line); }
+:root[data-theme] :is(.conversation-panel,.production-controls,.question-composer,.cinema-question) { background: var(--q-panel); color: var(--q-muted); border-color: var(--q-line); }
+:root[data-theme] .chapter-strip button.active { background: var(--q-soft); color: var(--q-text); }
+
+/* Bridge the supplied editor's existing utility classes into the shared palette.
+   SVG artwork, packets, syntax highlighting, and correctness colors stay semantic. */
+:root[data-theme] .qweeps-remix { background: var(--q-bg); color: var(--q-text); --font-sans: var(--q-font); }
+.qweeps-remix [class~="bg-[#1E1F22]"] { background-color: var(--q-bg); }
+.qweeps-remix :is([class~="bg-[#2B2D30]"],[class~="bg-[#25272B]"]) { background-color: var(--q-panel); }
+.qweeps-remix :is([class~="bg-[#35373B]"],[class~="bg-[#3E4045]"],[class~="bg-[#3E4146]"]) { background-color: var(--q-raised); }
+.qweeps-remix :is([class~="bg-[#2E436E]"],[class~="bg-[#263248]"]) { background-color: var(--q-soft); }
+.qweeps-remix [class~="bg-[#3574F0]"] { background-color: var(--q-primary); color: var(--q-on-accent); }
+.qweeps-remix :is([class~="border-[#393B40]"],[class~="border-[#4E5157]"]) { border-color: var(--q-line); }
+.qweeps-remix [class~="border-[#3574F0]"] { border-color: var(--q-accent); }
+.qweeps-remix :is([class~="text-[#DFE1E5]"],[class~="text-[#BCBEC4]"]) { color: var(--q-text); }
+.qweeps-remix [class~="text-[#868A91]"] { color: var(--q-muted); }
+.qweeps-remix [class~="text-[#56A8F5]"] { color: var(--q-accent); }
+.qweeps-remix [class~="hover:bg-[#3E4045]"]:hover { background-color: var(--q-raised); }
+.qweeps-remix [class~="hover:bg-[#2E436E]"]:hover { background-color: var(--q-soft); }
+.qweeps-remix [class~="hover:bg-[#3574F0]"]:hover { background-color: var(--q-primary); }
+.qweeps-remix [class~="hover:bg-[#4682FA]"]:hover { background-color: var(--q-primary); filter: brightness(1.1); }
+.qweeps-remix ::-webkit-scrollbar-track { background: var(--q-bg); }
+.qweeps-remix ::-webkit-scrollbar-thumb { background: var(--q-strong); }
+
+@media(max-width:600px) {
+  .theme-options { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+  .theme-preview { height: 75px; }
+  .theme-current { display: none; }
+  .theme-settings-heading p { font-size: 12px; }
+}
+@media(max-height:500px) and (orientation:landscape) {
+  .theme-options { grid-template-columns: repeat(4,minmax(0,1fr)); }
+  .theme-preview { height: 65px; }
+}
+@media(prefers-reduced-motion:reduce) { .theme-option { transition: none; } }

@@ -21,6 +21,7 @@ type DocumentMeta = {
   title: string;
   filename: string;
   pageCount: number;
+  pageLabel?: string;
   aliases: string[];
 };
 
@@ -40,6 +41,7 @@ type CatalogLesson = {
 };
 
 type SortMode = 'newest' | 'oldest' | 'duration' | 'title';
+type QuizPlan = { buildId: string; count: number; batches: number; sources: {id: string; title: string; count: number}[] };
 
 async function loadLessonCatalog(sort:SortMode):Promise<{lessons:CatalogLesson[]}>{
  const ordinary=await api<{lessons:CatalogLesson[]}>(`live/lessons?sort=${sort}`);
@@ -133,7 +135,7 @@ export default function LiveLessonLoader() {
   const [standaloneQuiz, setStandaloneQuiz] = useState<LiveLesson | null>(null);
   const [documents, setDocuments] = useState<DocumentMeta[]>([]);
   const [catalogLessons, setCatalogLessons] = useState<CatalogLesson[]>([]);
-  const initialDocs = (params.get('documents') || params.get('document') || '')
+  const initialDocs = (params.get('documents') || params.get('document') || params.get('doc') || '')
     .split(',')
     .map(s => s.trim())
     .filter(Boolean);
@@ -156,6 +158,8 @@ export default function LiveLessonLoader() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [busyQuiz, setBusyQuiz] = useState(false);
+  const [quizPlan, setQuizPlan] = useState<QuizPlan | null>(null);
+  const [verifiedCards, setVerifiedCards] = useState(0);
   const [busyLessonQuizId, setBusyLessonQuizId] = useState<string | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(params.get('settings') === '1');
   const [apiConfigured, setApiConfigured] = useState<boolean | null>(null);
@@ -164,6 +168,21 @@ export default function LiveLessonLoader() {
   const input = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const syncAvailable = useRef(false);
+  const quizRequest = useRef<AbortController | null>(null);
+  const quizRetry = useRef<{key: string; buildId: string} | null>(null);
+  useEffect(() => () => quizRequest.current?.abort(), []);
+  useEffect(() => {
+    if (!quizPlan || !(busyQuiz || busyLessonQuizId)) return;
+    let active = true;
+    const poll = async () => {
+      try {
+        const progress = await api<{completedCards: number}>(`live/quiz-progress/${quizPlan.buildId}`);
+        if (active) setVerifiedCards(progress.completedCards || 0);
+      } catch { /* The generation response reports failures; keep progress polling quiet. */ }
+    };
+    void poll(); const timer = window.setInterval(poll, 1000);
+    return () => { active = false; clearInterval(timer); };
+  }, [quizPlan?.buildId, busyQuiz, busyLessonQuizId]);
 
   const handleImportLesson = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -216,7 +235,7 @@ export default function LiveLessonLoader() {
   };
 
   async function generateQuizOnly(doc = selected, q = question) {
-    if (busy || busyQuiz) return;
+    if (busy || busyQuiz || quizRequest.current) return;
     if (apiConfigured === false) {
       setError('⚠️ AI API Key Required: No AI API connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate quizzes.');
       setShowSettingsModal(true);
@@ -227,7 +246,11 @@ export default function LiveLessonLoader() {
       return;
     }
     setBusyQuiz(true);
+    setQuizPlan(null);
+    setVerifiedCards(0);
     setError('');
+    const controller = new AbortController(); quizRequest.current = controller;
+    let retryKey = '', buildId = '';
     try {
       let docId = doc;
       if (!docId && q) {
@@ -239,28 +262,28 @@ export default function LiveLessonLoader() {
         );
         if (matchedDocs.length > 0) docId = matchedDocs.map(d => d.id).join(',');
       }
-      const existing = catalogLessons.find(
-        l => (docId && l.id === docId) || (q && l.question?.toLowerCase().includes(q.trim().toLowerCase()))
-      );
       const docIdsArray = docId ? docId.split(',').map(s => s.trim()).filter(Boolean) : [];
+      const payload = { documentId: docId || undefined, documentIds: docIdsArray.length ? docIdsArray : undefined,
+        question: q || undefined, topic: q || undefined, regenerate: true };
+      retryKey = JSON.stringify(payload);
+      const plan = await api<QuizPlan>('live/quiz-plan', {...payload,
+        ...(quizRetry.current?.key === retryKey ? {resumeQuizBuild: quizRetry.current.buildId} : {})}, controller.signal);
+      if (controller.signal.aborted) return;
+      setQuizPlan(plan);
+      buildId = plan.buildId;
       const res = await api<{
         quiz: any[];
         count: number;
         lessonId?: string;
         lesson?: LiveLesson;
-      }>('live/quiz', {
-        lessonId: existing?.id,
-        documentId: docId || undefined,
-        documentIds: docIdsArray.length > 0 ? docIdsArray : undefined,
-        question: q || undefined,
-        topic: q || undefined,
-      });
+      }>('live/quiz', {...payload, quizBuildId: plan.buildId}, controller.signal);
+      if (controller.signal.aborted) return;
 
       if (!res?.quiz || res.quiz.length === 0) {
         throw new Error('No quiz questions were returned.');
       }
 
-      const titleText = (res.lesson?.title) || (existing?.title) || q.trim() || 'Reinforcement Quiz';
+      const titleText = res.lesson?.title || q.trim() || 'Reinforcement Quiz';
       const chapters = (res.lesson?.chapters?.length)
         ? res.lesson.chapters
         : res.quiz.map((item: any, i: number) => ({
@@ -276,21 +299,25 @@ export default function LiveLessonLoader() {
           }));
 
       const quizLesson: LiveLesson = {
-        id: res.lessonId || existing?.id || 'standalone_quiz',
+        ...res.lesson,
+        id: res.lessonId || 'standalone_quiz',
         title: titleText,
         question: q.trim() || `Mastery Quiz: ${titleText}`,
         duration: 30,
         kind: 'standalone_quiz',
-        chapters: chapters as any,
-        sources: [],
+        chapters: (res.lesson?.chapters || chapters) as any,
+        sources: res.lesson?.sources || [],
         quiz: res.quiz,
       };
 
       setStandaloneQuiz(quizLesson);
+      quizRetry.current = null;
       setLesson(null);
       setJob(null);
-      history.replaceState(null, '', `/?quiz_only=1&doc=${docId || ''}`);
+      history.replaceState(null, '', `/?quiz_only=1&lesson=${quizLesson.id}`);
     } catch (e) {
+      if (controller.signal.aborted) return;
+      if (buildId) quizRetry.current = {key: retryKey, buildId};
       const msg = (e as Error).message || '';
       setError(msg);
       if (
@@ -303,26 +330,36 @@ export default function LiveLessonLoader() {
         setShowSettingsModal(true);
       }
     } finally {
-      setBusyQuiz(false);
+      if (quizRequest.current === controller) { quizRequest.current = null; setBusyQuiz(false); }
     }
   }
 
   async function generateQuizForLesson(lessonId: string) {
-    if (busy || busyQuiz || busyLessonQuizId) return;
+    if (busy || busyQuiz || busyLessonQuizId || quizRequest.current) return;
     if (apiConfigured === false) {
       setError('⚠️ AI API Key Required: No AI API connection detected. Connect a 100% free OpenRouter key or OpenCode Go in Settings/APIs to generate quizzes.');
       setShowSettingsModal(true);
       return;
     }
     setBusyLessonQuizId(lessonId);
+    setQuizPlan(null);
+    setVerifiedCards(0);
     setError('');
+    const controller = new AbortController(); quizRequest.current = controller;
+    const retryKey = JSON.stringify({lessonId}); let buildId = '';
     try {
+      const plan = await api<QuizPlan>('live/quiz-plan', {lessonId,
+        ...(quizRetry.current?.key === retryKey ? {resumeQuizBuild: quizRetry.current.buildId} : {})}, controller.signal);
+      if (controller.signal.aborted) return;
+      setQuizPlan(plan);
+      buildId = plan.buildId;
       const res = await api<{
         quiz: any[];
         count: number;
         lessonId?: string;
         lesson?: LiveLesson;
-      }>('live/quiz', { lessonId });
+      }>('live/quiz', { lessonId, regenerate: true, quizBuildId: plan.buildId }, controller.signal);
+      if (controller.signal.aborted) return;
 
       if (!res?.quiz || res.quiz.length === 0) {
         throw new Error('Could not generate quiz for this lesson.');
@@ -338,10 +375,13 @@ export default function LiveLessonLoader() {
       };
 
       setStandaloneQuiz(quizLesson);
+      quizRetry.current = null;
       setLesson(null);
       setJob(null);
-      history.replaceState(null, '', `/?quiz_only=1&lesson=${lessonId}`);
+      history.replaceState(null, '', `/?quiz_only=1&lesson=${res.lessonId || quizLesson.id}`);
     } catch (e) {
+      if (controller.signal.aborted) return;
+      if (buildId) quizRetry.current = {key: retryKey, buildId};
       const msg = (e as Error).message || '';
       setError(msg);
       if (
@@ -354,7 +394,7 @@ export default function LiveLessonLoader() {
         setShowSettingsModal(true);
       }
     } finally {
-      setBusyLessonQuizId(null);
+      if (quizRequest.current === controller) { quizRequest.current = null; setBusyLessonQuizId(null); }
     }
   }
 
@@ -436,38 +476,19 @@ export default function LiveLessonLoader() {
         if (params.get('quiz_only') === '1') {
           const qLessonId = params.get('lesson');
           const qDocId = params.get('doc');
-          if (qLessonId || qDocId) {
-            void api<{ quiz: any[]; lesson?: LiveLesson }>('live/quiz', { lessonId: qLessonId, documentId: qDocId })
-              .then(res => {
-                if (res?.quiz?.length) {
-                  const title = res.lesson?.title || 'Reinforcement Quiz';
-                  const chapters = (res.lesson?.chapters?.length) ? res.lesson.chapters : res.quiz.map((item: any, i: number) => ({
-                    id: item.chapterId || `beat-${i + 1}`,
-                    title: item.chapterTitle || `Card ${i + 1}`,
-                    question: item.prompt,
-                    insight: item.explanation,
-                    start: 0,
-                    end: 30,
-                    narration: '',
-                    cues: [],
-                    visual: { takeaway: item.chapterTitle || `Card ${i + 1}`, nodes: [] },
-                  }));
-                  setStandaloneQuiz({
-                    id: qLessonId || 'standalone_quiz',
-                    title,
-                    question: `Mastery Quiz: ${title}`,
-                    duration: 30,
-                    kind: 'standalone_quiz',
-                    chapters: chapters as any,
-                    sources: [],
-                    quiz: res.quiz,
-                  });
-                }
-              })
-              .catch(() => {});
+          if (qLessonId) {
+            // Opening a saved quiz is playback, never a generation request.
+            return api<LiveLesson>(`live/lessons/${qLessonId}`).then(saved => {
+              if (saved.quiz?.length && (saved.kind === 'standalone_quiz' || !saved.chapters?.length)) ready(saved, true);
+              else void generateQuizForLesson(qLessonId);
+            });
+          }
+          if (qDocId) {
+            void generateQuizOnly(qDocId, params.get('topic') || '');
             return;
           }
         }
+
         const id = params.get('lesson') || (defaultPvpLesson ? 'b1b20bea700000000000000000000001' : null);
         if (id) return api<LiveLesson>(`live/lessons/${id}`).then(ready);
         else if (params.get('job')) setJob(params.get('job')!);
@@ -581,6 +602,7 @@ export default function LiveLessonLoader() {
     <>
       {standaloneQuiz ? (
         <StandaloneQuizPlayer
+          key={standaloneQuiz.id}
           lesson={standaloneQuiz}
           onExit={() => {
             setStandaloneQuiz(null);
@@ -603,11 +625,11 @@ export default function LiveLessonLoader() {
                 type="button"
                 className="live-menu-settings-btn"
                 onClick={() => setShowSettingsModal(true)}
-                title="Configure APIs, AI Models & Thinking Effort for each process"
+                title="Appearance, APIs, models, and narration"
                 aria-label="Settings and APIs configuration"
               >
                 <Sliders size={15} />
-                <span>Settings/APIs</span>
+                <span>Settings</span>
               </button>
             </div>
             <nav className="mobile-home-tabs" aria-label="Learning workspace"><button type="button" aria-pressed={homePanel==='create'} onClick={()=>setHomePanel('create')}>Create a lesson</button><button type="button" aria-pressed={homePanel==='library'} onClick={()=>setHomePanel('library')}>Your library ({catalogLessons.length})</button></nav>
@@ -719,9 +741,9 @@ export default function LiveLessonLoader() {
                                 void generateQuizForLesson(item.id);
                               }
                             }}
-                            title={isQuizOnly ? `Start ${item.quizCount}-card reinforcement quiz` : `Take ${item.quizCount}-Question Reinforcement Quiz`}
+                            title={isQuizOnly ? `Open saved ${item.quizCount}-card quiz` : "Generate a fresh quiz from this lesson’s source documents"}
                           >
-                            <Brain size={15} aria-hidden="true" /> {isQuizOnly ? `Play (${item.quizCount})` : `Quiz (${item.quizCount})`}
+                            <Brain size={15} aria-hidden="true" /> {isQuizOnly ? `Play (${item.quizCount})` : 'New quiz'}
                           </button>
                         ) : (
                           <button
@@ -778,7 +800,7 @@ export default function LiveLessonLoader() {
                 rows={3}
               />
               <div className="live-source-heading" style={{display:'flex',justifyContent:'space-between',alignItems:'baseline'}}>
-                <label htmlFor="live-source">Source material (Multiple PDFs/PPTX supported)</label>
+                <label htmlFor="live-source">Source material (PDF, Word, or PowerPoint)</label>
                 {selectedDocs.length > 0 && (
                   <button
                     type="button"
@@ -791,7 +813,7 @@ export default function LiveLessonLoader() {
               </div>
               <select
                 id="live-source"
-                aria-label="Lesson PDF or PPTX"
+                aria-label="Lesson source documents"
                 value=""
                 onChange={e => {
                   const val = e.target.value;
@@ -801,10 +823,10 @@ export default function LiveLessonLoader() {
                   }
                 }}
               >
-                <option value="">{selectedDocs.length > 0 ? '+ Add another source document...' : 'Match a saved source (PDF/PPTX), or use general knowledge'}</option>
+                <option value="">{selectedDocs.length > 0 ? '+ Add another source document...' : 'Choose source documents, or use general knowledge'}</option>
                 {documents.map(d => (
                   <option key={d.id} value={d.id} disabled={selectedDocs.includes(d.id)}>
-                    {selectedDocs.includes(d.id) ? '✓ ' : ''}{d.title} · {d.pageCount} pages
+                    {selectedDocs.includes(d.id) ? '✓ ' : ''}{d.title} · {d.pageCount} {d.pageLabel || 'pages'}
                   </option>
                 ))}
               </select>
@@ -821,7 +843,7 @@ export default function LiveLessonLoader() {
                           borderRadius:'14px',fontSize:'11px',color:'#ebd8a7'
                         }}
                       >
-                        📄 {doc?.title || id} <small style={{opacity:0.75}}>({doc?.pageCount || 1}p)</small>
+                        📄 {doc?.title || id} <small style={{opacity:0.75}}>({doc?.pageCount || 1} {doc?.pageLabel || 'pages'})</small>
                         <button
                           type="button"
                           onClick={() => setSelectedDocs(prev => prev.filter(x => x !== id))}
@@ -834,8 +856,7 @@ export default function LiveLessonLoader() {
                     );
                   })}
                   <span style={{fontSize:'10px',color:'#849da8',alignSelf:'center'}}>
-                    ({selectedDocs.length} PDF/PPTX ·{' '}
-                    {selectedDocs.reduce((acc, id) => acc + (documents.find(d => d.id === id)?.pageCount || 0), 0)} total pages)
+                    {selectedDocs.length} source documents selected
                   </span>
                 </div>
               )}
@@ -843,8 +864,8 @@ export default function LiveLessonLoader() {
                 ref={input}
                 type="file"
                 multiple
-                accept=".pdf,.pptx,.ppt,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint,*/*"
-                aria-label="Attach source PDF or PPTX files"
+                accept=".pdf,.pptx,.docx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                aria-label="Attach PDF, Word, or PowerPoint source files"
                 style={{display:'none'}}
                 onChange={e => {
                   if (e.target.files) void uploadMultiple(e.target.files);
@@ -922,8 +943,8 @@ export default function LiveLessonLoader() {
                 </label>
               )}
               <div className="live-generator-actions">
-                <button type="button" disabled={busy || busyQuiz} onClick={() => input.current?.click()} title="Upload one or multiple PDF or PPTX files">
-                  <FileUp size={16} aria-hidden="true" /> {selectedDocs.length > 0 ? 'Attach more PDF/PPTX' : 'Attach PDF/PPTX'}
+                <button type="button" disabled={busy || busyQuiz} onClick={() => input.current?.click()} title="Upload PDF, Word (.docx), or PowerPoint files">
+                  <FileUp size={16} aria-hidden="true" /> {selectedDocs.length > 0 ? 'Attach more sources' : 'Attach PDF / Word / PPTX'}
                 </button>
                 <div className="live-generator-action-group">
                   <button
@@ -931,7 +952,7 @@ export default function LiveLessonLoader() {
                     className="live-menu-generate-quiz-btn"
                     disabled={busy || busyQuiz || (!question.trim() && selectedDocs.length === 0)}
                     onClick={() => void generateQuizOnly()}
-                    title="Generate reinforcement quiz only (instant, without building animations)"
+                    title="Create a fresh reinforcement quiz from every selected source"
                   >
                     <Brain size={16} aria-hidden="true" /> {busyQuiz ? 'Generating quiz…' : 'Generate quiz'}
                   </button>
@@ -964,6 +985,22 @@ export default function LiveLessonLoader() {
           }}
         />
       )}
+      {(busyQuiz || busyLessonQuizId) && <div className="live-preparation quiz-preparation" role="status" aria-live="polite" aria-busy="true">
+        <div className="live-preparation-card">
+          <div className="live-preparation-brand"><PixelQ /><div><strong>Preparing your new quiz</strong><span>REINFORCEMENT RECALL</span></div></div>
+          <div className="quiz-preparation-body"><h2>{quizPlan ? `Building ${quizPlan.count} recall cards` : 'Reading your sources'}</h2>
+            <p>Creating fresh fill-in-the-blank cards, short answer choices, and source references.</p>
+            {quizPlan ? <ul>{quizPlan.sources.map(source => <li key={source.id}>{source.title} · {source.count} cards</li>)}</ul>
+              : !busyLessonQuizId && <ul>{selectedDocs.map(id => <li key={id}>{documents.find(d => d.id === id)?.title || id}</li>)}</ul>}
+            <p className="quiz-preparation-note">Every selected document is included. Larger reviewers can take a few minutes.</p>
+            {quizPlan && <p className="quiz-preparation-note">{verifiedCards} / {quizPlan.count} cards verified</p>}
+          </div>
+          <div className="live-preparation-actions"><button type="button" onClick={() => {
+            quizRequest.current?.abort(); quizRequest.current = null; setBusyQuiz(false); setBusyLessonQuizId(null);
+            history.replaceState(null, '', '/?home=1');
+          }}>Cancel</button></div>
+        </div>
+      </div>}
       <SettingsApisModal
         isOpen={showSettingsModal}
         onClose={() => {

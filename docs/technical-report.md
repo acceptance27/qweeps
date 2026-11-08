@@ -1,10 +1,10 @@
 # Live Interactive Visual Teaching
 
-#### QWEEPS / TECHNICAL REPORT 2.0
+#### QWEEPS / TECHNICAL REPORT 2.1
 
 **Rayven Pahignalo** | ORCID: [0009-0003-2325-7968](https://orcid.org/0009-0003-2325-7968)
 
-6 November 2026 | Implementation and evidence update
+8 November 2026 | Architecture walkthrough preview and release snapshot
 
 Software DOI: [10.5281/zenodo.23791785](https://doi.org/10.5281/zenodo.23791785)
 
@@ -14,13 +14,13 @@ QWEEPS turns a question or supplied document into a connected visual lesson. A P
 
 The default route uses live SVG/GSAP browser scenes through a Hyperframes adapter. An optional desktop hybrid route interleaves those scenes with generated ManimCE-style source compiled into a live ManimGL runtime. Neither live route requires an MP4. A separate Android wrapper bundles the browser studio and Python backend in one APK.
 
-This revision replaces the earlier browser-focused report with the current architecture, mobile interaction design, native quality gates, measured narration synchronization, generation diagnostics, and deployment boundaries. It retains the earlier layout-revision proposals as explicitly unfinished work.
+This revision adds the experimental architecture and code-tracing workspace to the visual-lesson report. Its procedural compilers, nested inspection, packet timeline, saved walkthroughs and OpenCode Go explanations are implemented, but the architecture feature remains incomplete. Voice explanation comparable to the visual lessons is planned and is not integrated into this workspace.
 
 > Evidence boundary. This is an implementation report. Automated tests, selected rendered examples, and small provider probes establish specific engineering behavior; they do not establish learning gains, uniform generation quality, or a universal model ranking.
 
-**Revision scope.** Version 2.0 supersedes report 1.3 dated 4 November 2026. It covers the repository revision containing this PDF, including its accompanying harness and UI changes. The report cannot contain its own final Git hash; use the containing commit for an exact source reference. Local test artifacts are identified separately from bundled lessons.
+**Revision scope.** Version 2.1 supersedes report 2.0 dated 6 November 2026. It describes the accompanying source snapshot, including the OpenCode Go switch and main-menu logo link. The release archive records its base commit, working-tree changes and per-file hashes; its manifest identifies the exact deposited bytes even when changes are not yet committed. Report versions are independent of the application package version. Historical measurements retain their original scope.
 
-**Reading guide.** Pages 2-4 describe the product and pipeline; 5-8 cover synchronization, quality and measurements; 9-10 cover Android and verification; 11-12 describe limitations, reproduction and references.
+**Reading guide.** Pages 2-4 cover visual lessons; 5-6 describe the incomplete architecture workspace and planned voice work; 7-10 retain narration, quality and model evidence; 11-14 cover platforms, verification, limitations and reproduction.
 
 ---
 
@@ -36,7 +36,7 @@ The current interface uses a restrained pixel-art identity: a Pixel Q logo, dark
 | Area | Current behavior |
 | --- | --- |
 | Create | Enter a learning request; select saved source material or attach a document; choose quiz and optional native-animation generation where available. |
-| Library | Reopen saved lessons or their quizzes. The experimental Fast chapter stream button and page have been removed from the learner interface. |
+| Library | Reopen saved lessons, their quizzes, or saved architecture walkthroughs. The experimental Fast chapter stream button and page have been removed from the learner interface. |
 | Lesson | Watch a connected explanation, pause or seek, change chapters, inspect a visible object or region, and ask a question in context. |
 | Practice | Answer reinforcement cards, inspect feedback, revisit the corresponding beat, and review set-level or whole-quiz results. |
 
@@ -47,6 +47,8 @@ Inside a lesson, the main navigation is tucked into a top-left menu. Redundant p
 Mobile layouts use the available viewport in portrait and landscape. Chapter selection uses a native select, and secondary quiz controls expand on demand. Settings and source entry allow scrolling where their forms need it. These are responsive layout choices, not a promise that arbitrary generated content will fit every screen without clipping.
 
 ### Preparation is part of the experience
+
+Architecture walkthroughs have a separate compact debugger-style workspace with the Pixel Q identity, code context and nested inspection. Its logo returns to the main menu. This workspace is distinct from the visual-lesson player described above.
 
 The preparation screen now uses the same visual identity as the studio. It reports the active generation stage and supports cancellation. A long-running model request, speech synthesis, or visual review remains real work; the interface should communicate that state without implying that the lesson is already approved.
 
@@ -112,11 +114,61 @@ The active desktop native renderer is ManimGL. ManimCE-style authoring, CE metri
 
 ---
 
-#### 04 / NARRATION SYNCHRONIZATION
+#### 04 / ARCHITECTURE WORKSPACE PREVIEW
+
+## Follow data through a system
+
+The complete supplied architecture prototype, update 3, now runs inside QWEEPS. Its compilers, ELK layout, SVG/React canvas, timeline, sidebar and nested lessons replace the earlier architecture UI. This is an experimental workspace, not a completed extension of the visual-lesson harness. [1,8]
+
+:::architecture-pipeline
+
+*Figure 2. Architecture preview pipeline. Compilation, inspection and saving work without AI credentials. Optional AI fills explanation slots after compilation. The separate planned voice layer is not connected to the current playback clock.*
+
+:::widths 26,74
+| Implemented layer | Current behavior |
+| --- | --- |
+| Compile | Accept source code and sample input, choose a supplied preset, or request a sampled public GitHub scan. Construct graph and beat data procedurally. |
+| Inspect | Move from the full-system blueprint into function logic and a deeper flowchart. Show input/output cards, worked-example values and reactive previews. |
+| Play and return | Animate packets and preview state with a seekable clock. Support pause, rewind, focused single-beat playback and return to saved parent context. |
+| Save and reopen | Store complete bundles locally and list them in the QWEEPS library. Engine revisions trigger recompilation of older saved source/input. |
+| Explain | Use OpenCode Go for explanatory gap filling and contextual tutor replies. Preserve the prototype's system instructions, user prompts and response schemas. |
+
+### Shared provider, separate teaching route
+
+The inspected architecture route uses the shared Go key and configured visual model, currently Muse Spark 1.3 Contributor. Credentials stay in the local backends. AI changes text slots, not graph identities, geometry or example values. The route does not run the visual-lesson storyboard, frame-review or narration publication gates; those results must not be assumed for an architecture bundle.
+
+---
+
+#### 05 / ARCHITECTURE STATUS AND NEXT WORK
+
+## Useful preview, incomplete system
+
+A convincing blueprint is not proof that arbitrary source code has been understood or executed. The supplied default repository walkthrough contains an authored teaching pipeline and illustrative values. The repository compiler is template-based; it does not yet establish an exhaustive, source-verified call graph for any repository. [8]
+
+:::widths 27,73
+| Boundary | What this snapshot establishes |
+| --- | --- |
+| Source inspection | The GitHub scanner samples up to fourteen supported files and up to 1,200 lines per file, using pattern-based import/definition extraction. It is not whole-program analysis. |
+| Worked examples | Values, packets and node states support explanation. Displayed source is not executed in a sandbox, and fixture values are not runtime traces. |
+| General design | Presets and supported code patterns compile. Arbitrary natural-language system design and unfamiliar repositories still require broader compiler and authoring work. |
+| Quality evidence | Schema checks, upstream fidelity and selected browser interactions are tested. There is no architecture learning-outcome study or equivalent visual-lesson approval gate. |
+| Platform | This workspace requires the local Node/Express backend. The current Android APK does not bundle Node; architecture API parity is not established. |
+
+### Planned: voice explanation like the visual lessons
+
+The intended next step is spoken explanation of the current architecture beat while the learner watches inputs, packets, function transformations and outputs. Existing visual lessons provide a design reference, not an already-integrated architecture voice service.
+
+That work needs narration tied to each bundle revision and beat, speech synthesis, measured word/cue alignment, and an audio-driven map to the packet/preview clock. Pause, forward seek and rewind must retain their meaning. Inspecting a function should pause and checkpoint the parent recording; returning should restore its position without late or overlapping audio. Cancellation, missing credentials and unavailable speech must have clear states.
+
+> Release status. Architecture voice synthesis, measured speech synchronization, voice-aware drill-down and restoration are planned, not implemented in this snapshot. Visual-lesson narration capabilities described next do not apply automatically to architecture walkthroughs.
+
+---
+
+#### 06 / NARRATION SYNCHRONIZATION
 
 ## Align meaning to the recorded words
 
-Writing narration and synthesizing a voice are separate stages. When enabled, the continuous recording is decoded and aligned to measured word timestamps. Exact spoken phrases anchor object or action cues. The lesson timeline follows the recording, rather than estimating all reveal times from text length. [1,2]
+This is the visual-lesson/native-hybrid path, not architecture narration. Writing narration and synthesizing speech are separate stages. The recording is aligned to measured word timestamps; exact spoken phrases anchor visual actions. The timeline follows that recording instead of estimating reveals from text length. [1,2]
 
 ### Native actions now use the same principle
 
@@ -126,7 +178,7 @@ The player uses a piecewise audio-to-scene map. It holds the previous completed 
 
 :::timing
 
-*Figure 2. Actual integration fixture, second beat. Narration enters the chapter at 15.23 seconds, but the previous diagram remains until the bridge ends at 18.86 seconds. These are measured times from one recording, not timing targets for other lessons.*
+*Figure 3. Actual integration fixture, second beat. Narration enters the chapter at 15.23 seconds, but the previous diagram remains until the bridge ends at 18.86 seconds. These are measured times from one recording, not timing targets for other lessons.*
 
 :::widths 57,43
 | Observed event | Audio time, seconds |
@@ -142,11 +194,11 @@ The player uses a piecewise audio-to-scene map. It holds the previous completed 
 
 One bounded anchor correction can reuse the original recording and measured words. Cue-policy changes invalidate stale mapping checkpoints. Existing saved lessons remain loadable through the legacy path, but a cue-less native lesson needs regeneration to acquire the new semantic checks.
 
-The two-beat integration check used real generated source, Fish synthesis and local Whisper alignment. Browser playback verified pause, forward seek and rewind. This unpublished fixture is not approval of the original 20-beat lesson.
+The unpublished two-beat check used generated source, Fish audio and Whisper alignment, with browser pause/seek/rewind verification. It does not approve the original 20-beat lesson.
 
 ---
 
-#### 05 / NATIVE QUALITY CONTROLS
+#### 07 / NATIVE QUALITY CONTROLS
 
 ## Compilation is no longer approval
 
@@ -165,7 +217,7 @@ The inspected Transformer failure case generated 20 native beats in 47.8 seconds
 
 :::pair docs/report-assets/attention-normalized.jpg|docs/report-assets/attention-context.jpg
 
-*Figure 3. Model-generated native frames, without hand-edited Python: normalization gives 0.5, 0.25, 0.25; weighted value vectors sum to (1.5, 1). These selected settled frames illustrate the integration check. They do not prove that every intermediate state or future lesson is pedagogically sound.*
+*Figure 4. Model-generated native frames, without hand-edited Python: normalization gives 0.5, 0.25, 0.25; weighted value vectors sum to (1.5, 1). These selected settled frames illustrate the integration check. They do not prove that every intermediate state or future lesson is pedagogically sound.*
 
 Frame capture uses the playback native host and the final measured timeline. Receipts identify source and frame hashes and the expected renderer revision, preventing a stale image from serving as evidence for changed code. Semantic review remains separate from compilation and mechanical auditing.
 
@@ -173,7 +225,7 @@ Valid CE arrow and axis tip options previously rejected by the compatibility lay
 
 ---
 
-#### 06 / GENERATION PERFORMANCE
+#### 08 / GENERATION PERFORMANCE
 
 ## Most time was spent before playback
 
@@ -205,7 +257,7 @@ SVG animation and native playback do not require a model call for every displaye
 
 ---
 
-#### 07 / MODEL SELECTION
+#### 09 / MODEL SELECTION
 
 ## Compare usable results, not response speed alone
 
@@ -234,9 +286,11 @@ The evidence supports retaining Muse as a reasonable default while validating ev
 
 ---
 
-#### 08 / ANDROID DELIVERY
+#### 10 / ANDROID DELIVERY
 
 ## Browser studio and Python in one APK
+
+This describes the earlier visual-lesson Android wrapper. The architecture preview added in this revision uses Node on desktop and has not been integrated or verified in that APK.
 
 The implemented Android architecture uses a native WebView with a Chaquopy-hosted Python server at 127.0.0.1:4174. Relative API, narration and media requests remain on the same origin. This wrapper does not use Capacitor. Python 3.11 and the existing assistant package are bundled, with pypdf for PDF extraction. [1,3]
 
@@ -267,16 +321,17 @@ The documented output is a debug APK. The current release build type also refere
 
 ---
 
-#### 09 / VERIFICATION AND REPRODUCTION
+#### 11 / VERIFICATION AND REPRODUCTION
 
 ## Keep tests and teaching evidence separate
 
 :::widths 31,69
 | Evidence class | What was established for this update |
 | --- | --- |
-| Python checks | Full repository suite: 518 passed, 2 skipped. The earlier 194-test related subset covers contracts, native review, synchronization, transport and provider receipts. Tests include fixtures and mocked services. |
-| Frontend checks | 78 tests passed; TypeScript checks and the production build passed. Tests include deterministic native clock mapping, rewind and audio transport behavior. |
-| Real host integration | Two native beats generated through the harness; actual Fish audio and Whisper word timing; actual native frames; browser pause and seek/rewind verification. |
+| Python checks | Architecture/proxy and OpenCode subset: 18 passed for this update. The report 2.0 full suite (518 passed, 2 skipped) and earlier 194-test native subset are historical results, not a new full-suite run. |
+| Frontend checks | 130 tests passed, plus host and complete architecture TypeScript checks and the production build. Coverage includes unchanged prompts/schemas, provider transport, compiler fidelity, enrichment, reactive timing and rewind. |
+| Live architecture checks | Tutor and gap-filler requests returned HTTP 200 through Go/Muse. One identity-function fixture took about 5.5 and 9.8 seconds respectively; not a latency benchmark. Browser checks verified logo navigation and the provider label. |
+| Earlier native evidence | The report 2.0 fixture used two native beats, actual Fish audio, Whisper word timing and rendered frames. It does not validate architecture narration. |
 | Provider probe | Ten bounded generation requests across five models. Failures and timeouts retained; no universal model ranking or fresh 20-beat speedup claimed. |
 | Android evidence | Earlier debug APK/signature and Android 15 x86_64 emulator checks cover the bundled server, assets, settings, pypdf import and foreground-service startup. They do not cover this native desktop renderer. |
 
@@ -301,7 +356,7 @@ The integration preview is a local development artifact, outside the published l
 
 ---
 
-#### 10 / LIMITATIONS AND NEXT WORK
+#### 12 / LIMITATIONS AND NEXT WORK
 
 ## Stronger gates still need stronger evaluation
 
@@ -321,7 +376,7 @@ Native overlap and subtitle checks are useful local controls, not implementation
 
 ### Platform and operational limits
 
-Linux is the primary development host. The Python/browser architecture is portable, but this report does not establish a clean-machine Windows installation or parity of native dependencies across platforms. Android packaging is implemented with the explicit runtime exclusions on page 9. Provider availability, latency and token budgets vary; checkpoint reuse changes the work performed by a retry.
+Linux is the primary development host. The Python/browser architecture is portable, but this report does not establish a clean-machine Windows installation or parity of native dependencies across platforms. Android packaging is implemented with the explicit runtime exclusions on page 11; the new Node-backed architecture API is outside that verified package. Provider availability, latency and token budgets vary; checkpoint reuse changes the work performed by a retry.
 
 ### Evaluation that would justify stronger claims
 
@@ -331,17 +386,15 @@ Use blinded human judgments for factual correctness, method fit, continuity and 
 
 ---
 
-#### 11 / REFERENCES AND MAINTENANCE
+#### 13 / REFERENCES AND MAINTENANCE
 
 ## A report that can stay current
 
-The editable source is docs/technical-report.md. The build script reads that source, draws the diagrams, embeds the selected generated frames and writes the stable PDF path used by the README. This keeps future changes reviewable alongside the application instead of leaving an opaque, manually edited PDF behind.
+The editable source is docs/technical-report.md. The build script draws diagrams, embeds selected frames and updates the PDF linked from the README. The matching ZIP is an incomplete architecture-preview snapshot; its manifest records the exact included files.
 
 ```text
 # In a Python environment with ReportLab and Pillow:
 python scripts/build_technical_report.py
-# Optional reproducible PDF metadata timestamp:
-SOURCE_DATE_EPOCH=1793923200 python scripts/build_technical_report.py
 ```
 
 ### References
@@ -359,6 +412,8 @@ SOURCE_DATE_EPOCH=1793923200 python scripts/build_technical_report.py
 [6] Meta. Model guide and Contributor reasoning availability. [Official documentation](https://dev.meta.ai/docs/models). Checked during the 5 November investigation.
 
 [7] Vaswani et al. Attention Is All You Need, section 3.2. [Paper](https://arxiv.org/abs/1706.03762). Reference for the weighted-value operation illustrated in the integration fixture; not a QWEEPS performance evaluation.
+
+[8] QWEEPS. Architecture preview: docs/architecture-remix.md; vendor/architecture-remix/UPSTREAM.json; architecture proxy/provider tests; bench/runs/architecture-remix3-2026-11-07/. Archive file hashes identify the release snapshot.
 
 ### Attribution and distribution
 

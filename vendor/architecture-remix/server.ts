@@ -3,7 +3,8 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
+import { createOpenCodeClient, openCodeSettings, ThinkingLevel, Type } from './opencode';
+import { installNarrationRoute } from './narration-route';
 import {mkdir,readFile,readdir,writeFile,rename} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import os from 'node:os';
@@ -13,23 +14,12 @@ dotenv.config({path:path.join(path.dirname(fileURLToPath(import.meta.url)),'.env
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function getGenAIClient(): GoogleGenAI {
-  if(!process.env.GEMINI_API_KEY||process.env.GEMINI_API_KEY==='MY_GEMINI_API_KEY')throw new Error('Set GEMINI_API_KEY in vendor/architecture-remix/.env, then restart QWEEPS to use Gemini.');
-  return new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-    httpOptions: {
-      headers: {
-        'User-Agent': 'aistudio-build',
-      },
-    },
-  });
-}
-
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.QWEEPS_ARCHITECTURE_PORT||3000);
 
   app.use(express.json({ limit: '8mb' }));
+  installNarrationRoute(app);
   const savedRoot=process.env.QWEEPS_WALKTHROUGH_DIR||path.join(os.homedir(),'.cache/qweeps/architecture-walkthroughs');
   app.get('/api/architecture/walkthroughs',async(_req,res)=>{
     await mkdir(savedRoot,{recursive:true});
@@ -50,13 +40,11 @@ async function startServer() {
 
   // 1. Health & Model Status Endpoint
   app.get('/api/ai/status', (_req, res) => {
-    const hasKey = Boolean(
-      process.env.GEMINI_API_KEY &&
-        process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY'
-    );
+    const settings = openCodeSettings(_req);
     res.json({
-      ready: hasKey,
-      model: 'gemini-3.8-flash',
+      ready: Boolean(settings.key),
+      provider: 'opencode-go',
+      model: settings.model,
       architecture: 'procedural-skeleton-plus-ai-gap-filler',
     });
   });
@@ -77,7 +65,7 @@ async function startServer() {
         subSteps = [],
       } = req.body ?? {};
 
-      const ai = getGenAIClient();
+      const ai = createOpenCodeClient(openCodeSettings(req));
 
       const prompt = `You are the explanatory gap-filler for QWEEPS, an interactive 2D code-and-architecture walkthrough engine.
 The deterministic procedural compiler has ALREADY built the exact graph geometry, node IDs, ports, edges, and worked-example values in <3ms.
@@ -105,7 +93,7 @@ Level-1 Sub-Steps to explain:
 ${JSON.stringify(subSteps, null, 2)}`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: ai.model,
         contents: prompt,
         config: {
           thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -210,7 +198,7 @@ ${JSON.stringify(subSteps, null, 2)}`;
       res.json({
         gaps: parsed,
         elapsedMs,
-        model: 'gemini-3.8-flash',
+        model: ai.model,
       });
     } catch (error: unknown) {
       const message =
@@ -239,7 +227,7 @@ ${JSON.stringify(subSteps, null, 2)}`;
         return;
       }
 
-      const ai = getGenAIClient();
+      const ai = createOpenCodeClient(openCodeSettings(req));
 
       const prompt = `Learner Question: "${question}"
 
@@ -257,7 +245,7 @@ ${sourceCode ?? ''}
 Answer the learner's question directly and concisely (2-4 sentences) using the exact variable names, code lines, and worked-example values from this trace.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
+        model: ai.model,
         contents: prompt,
         config: {
           thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
@@ -287,7 +275,7 @@ Answer the learner's question directly and concisely (2-4 sentences) using the e
       res.json({
         ...parsed,
         elapsedMs: Date.now() - startTime,
-        model: 'gemini-3.8-flash',
+        model: ai.model,
       });
     } catch (error: unknown) {
       const message =

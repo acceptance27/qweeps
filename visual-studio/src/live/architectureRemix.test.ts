@@ -5,10 +5,14 @@ import {createHash} from 'node:crypto';
 import {getInitialQweepsRepoWalkthrough,compileSourceCodeToWalkthrough,PROCEDURAL_PIPELINE_PRESETS,validateLessonData,computeElkGraphLayout,evaluateTimeline,applyAiExplanatoryGaps,REMIX_ENGINE_REVISION} from './architecture/remix/runtime.js';
 import {currentBundle} from './architecture/remix/bundleRevision';
 
-test('replacement preserves the supplied compilers, renderer, layout and drill-down data byte for byte',()=>{
+test('replacement preserves upstream core files and only renames the AI provider in teaching/UI text',()=>{
  const root=new URL('../../../vendor/architecture-remix/',import.meta.url);
  const manifest=JSON.parse(fs.readFileSync(new URL('UPSTREAM.json',root),'utf8'));
  for(const [file,hash] of Object.entries(manifest.unchangedCoreFiles))assert.equal(createHash('sha256').update(fs.readFileSync(new URL(file,root))).digest('hex'),hash,file);
+ for(const [file,hash] of Object.entries(manifest.providerLabelChanges||{})){
+  const original=fs.readFileSync(new URL(file,root),'utf8').replaceAll('OpenCode Go',file.endsWith('AskQweepsDrawer.tsx')?'Gemini 3.8 Flash':'Gemini');
+  assert.equal(createHash('sha256').update(original).digest('hex'),hash,file);
+ }
 });
 
 test('the supplied repository walkthrough and all pipeline presets compile using the complete replacement engine',()=>{

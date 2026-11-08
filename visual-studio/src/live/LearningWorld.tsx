@@ -1,4 +1,5 @@
 import {useEffect, useRef} from 'react';
+import {activeTheme, THEME_CHANGED_EVENT} from '../theme/themes';
 
 /** A quiet pixel landscape for the learning workspace, painted at a low resolution. */
 export default function LearningWorld() {
@@ -8,6 +9,7 @@ export default function LearningWorld() {
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let scenery = activeTheme().scenery;
     let frame = 0, last = 0, width = 0, height = 0;
     const random = (n: number) => { const x = Math.sin(n * 127.1 + 43.7) * 43758.5453; return x - Math.floor(x); };
     const paint = (time: number) => {
@@ -46,9 +48,11 @@ export default function LearningWorld() {
       }
     };
     const resize = () => { width = Math.ceil(window.innerWidth / 3); height = Math.ceil(window.innerHeight / 3); canvas.width = width; canvas.height = height; paint(0); };
-    const tick = (now: number) => { if (!document.hidden && !motion.matches && now - last > 100) {paint(now); last = now;} frame = requestAnimationFrame(tick); };
+    const tick = (now: number) => { if (scenery && !document.hidden && !motion.matches && now - last > 100) {paint(now); last = now;} frame = requestAnimationFrame(tick); };
+    const themeChanged = () => { scenery = activeTheme().scenery; if (scenery) paint(0); };
     resize(); window.addEventListener('resize', resize); frame = requestAnimationFrame(tick);
-    return () => {window.removeEventListener('resize', resize); cancelAnimationFrame(frame);};
+    window.addEventListener(THEME_CHANGED_EVENT, themeChanged);
+    return () => {window.removeEventListener('resize', resize); window.removeEventListener(THEME_CHANGED_EVENT, themeChanged); cancelAnimationFrame(frame);};
   }, []);
   return <canvas ref={ref} className="learning-world" aria-hidden="true" />;
 }

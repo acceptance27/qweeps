@@ -1,8 +1,14 @@
 import React from 'react';
-import { Play, Pause, RotateCcw, SkipBack, SkipForward } from 'lucide-react';
+import { Play, Pause, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { Step } from '../types/lesson';
 
 interface PlaybackBarProps {
+  voiceEnabled?: boolean;
+  voiceBusy?: boolean;
+  voiceStatus?: string;
+  voiceError?: boolean;
+  onToggleVoice?: () => void;
+  onCancelVoice?: () => void;
   isPlaying: boolean;
   playhead: number;
   totalDuration: number;
@@ -26,6 +32,7 @@ function formatSeconds(sec: number): string {
 
 export const PlaybackBar: React.FC<PlaybackBarProps> = ({
   isPlaying,
+  voiceEnabled, voiceBusy, voiceStatus, voiceError, onToggleVoice, onCancelVoice,
   playhead,
   totalDuration,
   steps,
@@ -64,14 +71,21 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
             {isPlaying ? (
               <>
                 <Pause className="w-3.5 h-3.5 fill-current" />
-                <span>Pause</span>
+                <span className="hidden min-[360px]:inline">Pause</span>
               </>
             ) : (
               <>
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span>{playhead >= totalDuration - 0.05 ? 'Rerun' : 'Run'}</span>
+                <span className="hidden min-[360px]:inline">{playhead >= totalDuration - 0.05 ? 'Rerun' : 'Run'}</span>
               </>
             )}
+          </button>
+
+          <button type="button" onClick={onToggleVoice} aria-label={voiceEnabled ? 'Mute narration' : 'Enable narration'} aria-pressed={voiceEnabled}
+            title={voiceEnabled ? 'Recorded narration follows the measured speech clock' : 'Play with recorded voice explanation'}
+            className={`min-h-[32px] px-2.5 py-1 rounded border text-xs flex items-center gap-1.5 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-[#3574F0] ${voiceEnabled ? 'border-[#3574F0] bg-[#263248] text-[#DFE1E5]' : 'border-[#4E5157] bg-[#35373B] text-[#BCBEC4]'}`}>
+            {voiceBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : voiceEnabled ? <Volume2 className="w-3.5 h-3.5"/> : <VolumeX className="w-3.5 h-3.5"/>}
+            <span className="hidden sm:inline">Voice</span>
           </button>
 
           {/* Restart */}
@@ -115,7 +129,7 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
           </div>
 
           {/* Interactive Timeline Scrubber */}
-          <div className="relative flex-1 flex items-center min-w-[100px]">
+          <div className="relative flex-1 flex items-center min-w-[56px] sm:min-w-[100px]">
             <input
               type="range"
               min={0}
@@ -129,13 +143,18 @@ export const PlaybackBar: React.FC<PlaybackBarProps> = ({
           </div>
 
           {/* Elapsed / Total Time */}
-          <div className="font-mono text-xs text-[#BCBEC4] shrink-0 tabular-nums">
+          <div className="font-mono text-[10px] sm:text-xs text-[#BCBEC4] shrink-0 tabular-nums">
             <span className="text-[#DFE1E5] font-medium">
               {formatSeconds(playhead)}
             </span>
             <span className="text-[#868A91]"> / {formatSeconds(totalDuration)}</span>
           </div>
         </div>
+
+        {voiceStatus && <div className="flex items-center gap-2 text-xs min-w-0" role="status">
+          <span className={`truncate ${voiceError ? 'text-[#F2C55C]' : 'text-[#BCBEC4]'}`} title={voiceStatus}>{voiceStatus}</span>
+          {voiceBusy && <button type="button" onClick={onCancelVoice} className="shrink-0 underline text-[#56A8F5] cursor-pointer">Cancel preparation</button>}
+        </div>}
 
         {/* Bottom Row: JetBrains Debug Frame Tabs */}
         <div

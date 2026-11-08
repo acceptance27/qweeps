@@ -9,16 +9,22 @@
   "hostingChanges": [
     "src/App.tsx",
     "src/components/Header.tsx",
-    "server.ts"
+    "server.ts",
+    "src/components/AskQweepsDrawer.tsx",
+    "opencode.ts",
+    "src/procedural/proceduralCompiler.ts",
+    "narration-route.ts",
+    "src/narration/speechClock.ts",
+    "src/narration/ArchitectureVoice.ts",
+    "src/narration/useArchitectureNarration.ts",
+    "src/components/ArchitectureCanvas.tsx",
+    "src/components/PlaybackBar.tsx"
   ],
   "unchangedCoreFiles": {
-    "src/components/ArchitectureCanvas.tsx": "c41cabd87f66797e9c1372e938ae273b58fc00e73a56144888c83b2e9462c31b",
-    "src/components/AskQweepsDrawer.tsx": "98178c6becc6507d42644a61ff2fb0ddca51c11a9b4591b03c2e6582d282abdb",
     "src/components/CodePane.tsx": "cdad3dcc053551cd9afeb8bbaab95ab6408953cedafbaf7ce9a571cdc9422912",
     "src/components/EvidenceModal.tsx": "5bfe5416eb1905fc0d05d0fe74774166d2d078bc9afcd5ade278135f3fa7f44a",
     "src/components/NodeInspector.tsx": "e3693f217646a613ebc21a334d6e2bafa3acf3ba6cce2f167c36d99fd34cb32e",
     "src/components/PixelQMark.tsx": "dd775422b51ce1927d6c6c2c68b7d055becff0d5b10dd58b8f3b651bddc71ef5",
-    "src/components/PlaybackBar.tsx": "0f6c44a4b414e537ab4115839d2694c6a8e631daa143436eaa8a62d1a3192c0e",
     "src/components/ProceduralCompilerModal.tsx": "8a7ddf9acb09e35b7a949d5ff629f5b3cc16b229221584172340de437c6b9661",
     "src/data/askQweepsData.ts": "6f77efbe6a2903189aefd3c475b6c8114edfeeac87c8d86e6c42e60d75d27f7d",
     "src/data/innerFunctionLessons.ts": "a87bd95e3b13af050706bc18762831736524787bf6dea8dd67172d97e267adb7",
@@ -30,9 +36,22 @@
     "src/layout/elkLayout.ts": "e1daa709903de46dabfefa845df3c181e099fb829b1466e94d734e88abbb03b3",
     "src/data/subFunctionLessons.ts": "6fe95df946efca1482aab4f9611b2f41c400cd020e96fa48f660c7fb500dba70",
     "src/timeline/evaluateTimeline.ts": "d5320a955343ccba49718f77acf0f62d3d5ee3da8a7ca4fe2745ec32ea0f450c",
-    "src/procedural/proceduralCompiler.ts": "3ae955fd435948e20951e6d02f0be430f026043f08fa4aac427311f3648a0731",
     "src/types/lesson.ts": "ac0c74e3f6b68c24679cc844299a2e513d0f6302ff42cd7967d195db896a3d9c",
     "src/docs/INSPECT_PREVIEW_ARCHETYPES.md": "a93e8d89b8668a629b92b82578c2d97abcd6613c8b9d2979b46834fbf3b16d83",
     "src/components/InspectPreviewArchetypes.tsx": "2acfb681979445504bb96a633910732e3b262d54c2e98c6ea121453456d9f9a7"
+  },
+  "providerLabelChanges": {
+    "src/procedural/proceduralCompiler.ts": "3ae955fd435948e20951e6d02f0be430f026043f08fa4aac427311f3648a0731",
+    "src/components/AskQweepsDrawer.tsx": "98178c6becc6507d42644a61ff2fb0ddca51c11a9b4591b03c2e6582d282abdb"
+  },
+  "voiceIntegrationChanges": {
+    "src/components/ArchitectureCanvas.tsx": {
+      "upstreamSha256": "c41cabd87f66797e9c1372e938ae273b58fc00e73a56144888c83b2e9462c31b",
+      "change": "Optional synchronized narration caption/controls; original graph rendering and layout retained."
+    },
+    "src/components/PlaybackBar.tsx": {
+      "upstreamSha256": "0f6c44a4b414e537ab4115839d2694c6a8e631daa143436eaa8a62d1a3192c0e",
+      "change": "Optional synchronized narration caption/controls; original graph rendering and layout retained."
+    }
   }
 }

@@ -70,6 +70,8 @@ class VisualService:
         from .narration import NarrationStore
         from .native_host import NativeHost
         self.narration = NarrationStore(self.cfg)
+        from .architecture_narration import ArchitectureNarrationStore
+        self.architecture_narration = ArchitectureNarrationStore()
         self.native = NativeHost(STUDIO_DIR)
         from .browser_lessons import BrowserLessonStore
         self.live = BrowserLessonStore(self.llm,STUDIO_DIR,folder=(render_dir.parent/'browser-lessons') if render_dir else None,
@@ -114,6 +116,7 @@ class VisualService:
         # OpenCode-compatible Provider -> Model mappings
         general_provider_models = {
             "opencode-go": [
+                {"value": "opencode-go/crouton-alpha-free", "label": "crouton-alpha-free", "badge": "🧪 Crouton Alpha (Free, New)"},
                 {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⭐ Recommended Free Tier & High Structure"},
                 {"value": "opencode-go/beam-free", "label": "beam-free", "badge": "Free Tier"},
                 {"value": "opencode-go/deepseek-v4.1-flash", "label": "deepseek-v4.1-flash", "badge": "⚡ Fast Flash"},
@@ -151,6 +154,7 @@ class VisualService:
                 {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ Recommended Vision Free"}
             ],
             "opencode-go": [
+                {"value": "opencode-go/crouton-alpha-free", "label": "crouton-alpha-free", "badge": "🧪 Crouton Alpha Vision (New)"},
                 {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⭐ Vision & SVG Review"},
                 {"value": "opencode-go/deepseek-v4.1-flash", "label": "deepseek-v4.1-flash", "badge": "⚡ Fast Vision Flash"},
                 {"value": "opencode-go/mimo-v2.6-flash", "label": "mimo-v2.6-flash", "badge": "Fast Vision"}
@@ -172,6 +176,7 @@ class VisualService:
             ],
             "opencode-go": [
                 {"value": "opencode-go/deepseek-v4.1-flash", "label": "deepseek-v4.1-flash", "badge": "⚡ Fast Flash Evaluation"},
+                {"value": "opencode-go/crouton-alpha-free", "label": "crouton-alpha-free", "badge": "🧪 Crouton Alpha (New)"},
                 {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⚡ Fast Go Fallback"},
                 {"value": "opencode-go/beam-free", "label": "beam-free", "badge": "Free"}
             ],
@@ -216,7 +221,7 @@ class VisualService:
         }
 
         default_fallback_prov = "opencode-go" if (oc_key or agy_path) else "openrouter-free"
-        default_fallback_model = "opencode-go/muse-spark-1.3-contributor" if (oc_key or agy_path) else "nvidia/nemotron-3.5-super-vl:free"
+        default_fallback_model = "opencode-go/crouton-alpha-free" if (oc_key or agy_path) else "nvidia/nemotron-3.5-super-vl:free"
 
         lp_prov = getattr(cfg.llm, "visual_provider", "") or getattr(cfg.llm, "auth_provider", default_fallback_prov)
         if lp_prov not in general_provider_models: lp_prov = default_fallback_prov
@@ -244,13 +249,13 @@ class VisualService:
                     "subtitle": "Planning, Storyboard & Scene Synthesis",
                     "description": "Synthesizes pedagogical outline, scene architecture, and visual animation instructions from PDF/topics.",
                     "provider": lp_prov,
-                    "model": getattr(cfg.llm, "visual_model", "") or getattr(cfg.llm, "model", "opencode-go/muse-spark-1.3-contributor"),
+                    "model": getattr(cfg.llm, "visual_model", "") or getattr(cfg.llm, "model", "opencode-go/crouton-alpha-free"),
                     "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "high"),
                     "recommended": {
                         "provider": "opencode-go",
-                        "model": "opencode-go/muse-spark-1.3-contributor",
+                        "model": "opencode-go/crouton-alpha-free",
                         "reasoning_effort": "high",
-                        "badge": "⭐ Recommended (Free Tier & High Rigor)"
+                        "badge": "🧪 Crouton Alpha (Free Tier, Under Evaluation)"
                     },
                     "options": {
                         "providers": list(general_provider_models.keys()),
@@ -296,13 +301,13 @@ class VisualService:
                     "subtitle": "Mastery Question & Distractor Synthesis",
                     "description": "Extracts key concepts, creates fill-in-the-blank prompt stems, and synthesizes 3-5 word lead distractors grounded in reviewer notes.",
                     "provider": qg_prov,
-                    "model": getattr(cfg.llm, "visual_model", "") or "opencode-go/muse-spark-1.3-contributor",
+                    "model": getattr(cfg.llm, "visual_model", "") or "opencode-go/crouton-alpha-free",
                     "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "high"),
                     "recommended": {
                         "provider": "opencode-go",
-                        "model": "opencode-go/muse-spark-1.3-contributor",
+                        "model": "opencode-go/crouton-alpha-free",
                         "reasoning_effort": "high",
-                        "badge": "⭐ Recommended (Strict Grounding & Quality Distractors)"
+                        "badge": "🧪 Crouton Alpha (Free Tier, Under Evaluation)"
                     },
                     "options": {
                         "providers": list(general_provider_models.keys()),
@@ -713,8 +718,10 @@ class Handler(SimpleHTTPRequestHandler):
         parsed = urlsplit(self.path)
         try:
             from . import architecture_remix
-            if architecture_remix.handles(parsed.path):
-                status,body=architecture_remix.request('GET',parsed.path)
+            if re.fullmatch(r'/api/architecture/narration/jobs/[a-f0-9]{32}', parsed.path):
+                self.send_json(200, self.service.architecture_narration.status(parsed.path.rsplit('/', 1)[-1]))
+            elif architecture_remix.handles(parsed.path):
+                status,body=architecture_remix.request('GET',parsed.path,cfg=self.service.cfg)
                 self.send_json(status,body)
             elif parsed.path == "/api/visual/health":
                 self.send_json(200, self.service.health())
@@ -722,9 +729,14 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(200, self.service.get_settings())
             elif parsed.path == '/api/visual/documents':
                 self.send_json(200,{'documents':self.service.live.documents.catalog()})
+            elif re.fullmatch(r'/api/visual/live/quiz-progress/[a-f0-9]{32}', parsed.path):
+                self.send_json(200, self.service.live.quiz_progress(parsed.path.rsplit('/', 1)[-1]))
             elif re.fullmatch(r'/api/visual/documents/[0-9a-f]{32}/file',parsed.path):
                 doc_id=parsed.path.split('/')[-2];doc=self.service.live.documents.get(doc_id)
                 pdf_path=self.service.live.documents.folder/doc_id/'source.pdf'
+                if not pdf_path.is_file() and (self.service.live.documents.folder/doc_id/'source.docx').is_file():
+                    self.send_video(self.service.live.documents.folder/doc_id/'source.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+                    return
                 if not pdf_path.is_file() and doc.get('documents'):
                     first_id=doc['documents'][0]['id']
                     pdf_path=self.service.live.documents.folder/first_id/'source.pdf'
@@ -889,8 +901,15 @@ class Handler(SimpleHTTPRequestHandler):
                 raise PlanError("Request must be an object")
             route = urlsplit(self.path).path
             from . import architecture_remix
+            if route == '/api/architecture/narration':
+                result = self.service.architecture_narration.start(payload, self.service.cfg, self.service.narration)
+                self.send_json(200, result)
+                return
+            if re.fullmatch(r'/api/architecture/narration/jobs/[a-f0-9]{32}/cancel', route):
+                self.send_json(200, self.service.architecture_narration.cancel(route.split('/')[-2]))
+                return
             if architecture_remix.handles(route):
-                status,body=architecture_remix.request('POST',route,payload)
+                status,body=architecture_remix.request('POST',route,payload,cfg=self.service.cfg)
                 self.send_json(status,body)
                 return
             if route == "/api/visual/session":
@@ -912,23 +931,13 @@ class Handler(SimpleHTTPRequestHandler):
                 path=payload.get('path') or payload.get('repoPath')
                 if not path:raise PlanError('Repository path is required')
                 result=scan_repository(path, max_files=int(payload.get('maxFiles') or 12))
+            elif route == '/api/visual/live/quiz-plan':
+                result = self.service.live.quiz_plan(payload)
             elif route == '/api/visual/live/quiz':
-                target=payload.get('lessonId') or payload.get('lesson') or payload
-                force=bool(payload.get('force') or payload.get('regenerate'))
-                questions=self.service.live.generate_quiz(target, force_llm=force)
-                lesson_id=getattr(self.service.live, '_last_quiz_lesson_id', None)
-                if not lesson_id:
-                    if isinstance(target, dict):
-                        lesson_id = target.get('lessonId') or target.get('id')
-                    elif isinstance(target, str) and len(target) == 32:
-                        lesson_id = target
-                result={'quiz':questions,'count':len(questions)}
-                if lesson_id:
-                    result['lessonId'] = lesson_id
-                    try:
-                        result['lesson'] = self.service.live.lesson(lesson_id)
-                    except Exception:
-                        pass
+                # POST is generation. Saved quiz playback uses GET live/lessons/:id.
+                # Keep the full payload so selected PDFs cannot be lost to lessonId.
+                fresh = self.service.live.create_quiz(payload)
+                result = {'quiz': fresh['quiz'], 'count': len(fresh['quiz']), 'lessonId': fresh['id'], 'lesson': fresh}
             elif route == '/api/visual/live/verify-answer':
                 result = self.service.verify_quiz_answer(payload)
             elif route == '/api/visual/live/import-lesson':

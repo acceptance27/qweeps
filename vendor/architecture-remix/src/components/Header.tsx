@@ -74,12 +74,12 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="h-11 shrink-0 bg-[#2B2D30] border-b border-[#393B40] px-3 sm:px-4 flex items-center justify-between gap-3 z-30 select-none">
       {/* Left: JetBrains Project Widget & Active Target */}
       <div className="flex items-center gap-2.5 min-w-0">
-        <div className="flex items-center gap-2 shrink-0">
+        <a href="/?home=1" onClick={onExit ? (event) => { event.preventDefault(); onExit(); } : undefined} aria-label="QWEEPS main menu" title="Main menu" className="flex items-center gap-2 shrink-0 rounded focus-visible:outline-2 focus-visible:outline-[#3574F0]">
           <PixelQMark size={22} />
           <span className="font-mono text-xs font-bold tracking-wide text-[#DFE1E5] whitespace-nowrap">
             QWEEPS
           </span>
-        </div>
+        </a>
 
         <span className="text-[#4E5157] hidden sm:inline" aria-hidden="true">
           /
@@ -169,7 +169,7 @@ export const Header: React.FC<HeaderProps> = ({
                   QWEEPS Architecture &amp; Debugger
                 </div>
                 <p className="text-[11px] text-[#868A91] mt-0.5 leading-relaxed">
-                  Deterministic 3-level ELK graph layout with Gemini explanatory gap-filling.
+                  Deterministic 3-level ELK graph layout with OpenCode Go explanatory gap-filling.
                 </p>
               </div>
 
@@ -201,7 +201,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span>
                   {aiFillStatus === 'filling'
                     ? 'Synthesizing explanatory notes…'
-                    : 'Fill explanatory gaps with Gemini'}
+                    : 'Fill explanatory gaps with OpenCode Go'}
                 </span>
               </button>
 

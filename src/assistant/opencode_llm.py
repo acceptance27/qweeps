@@ -34,6 +34,20 @@ class OpenCodeLimitError(ModelProviderError):
     retryable = False
 
 
+def go_api_key(cfg) -> str | None:
+    """Resolve the shared Go credential without starting a model or CLI process."""
+    key = cfg.secret("OPENCODE_API_KEY") if hasattr(cfg, "secret") else None
+    if not key and hasattr(cfg, "opencode_auth_key"):
+        key = cfg.opencode_auth_key("opencode-go") or cfg.opencode_auth_key("opencode")
+    if not key:
+        key = (os.environ.get("OPENCODE_API_KEY") or "").strip() or None
+    if not key:
+        candidate = (os.environ.get("OPENROUTER_API_KEY") or "").strip()
+        if candidate.startswith("oc_sk_"):
+            key = candidate
+    return key
+
+
 class OpenCodeLLM:
     provider = "opencode"
     free_only = False
@@ -56,19 +70,7 @@ class OpenCodeLLM:
     def _go_api_key(self) -> str | None:
         if self.provider != "opencode-go" or self.free_only:
             return None
-        key = None
-        if hasattr(self, "cfg"):
-            if hasattr(self.cfg, "secret"):
-                key = self.cfg.secret("OPENCODE_API_KEY")
-            if not key and hasattr(self.cfg, "opencode_auth_key"):
-                key = self.cfg.opencode_auth_key("opencode-go") or self.cfg.opencode_auth_key("opencode")
-        if not key:
-            key = (os.environ.get("OPENCODE_API_KEY") or "").strip() or None
-        if not key:
-            cand = (os.environ.get("OPENROUTER_API_KEY") or "").strip()
-            if cand.startswith("oc_sk_"):
-                key = cand
-        return key
+        return go_api_key(getattr(self, "cfg", None))
 
     def _run_direct_go(self, model: str, instruction: str, system: str = "", frames=(), max_tokens: int | None = None, reasoning_effort: str | None = None) -> str:
         import base64

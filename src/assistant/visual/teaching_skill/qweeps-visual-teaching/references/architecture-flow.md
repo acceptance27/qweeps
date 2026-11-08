@@ -129,3 +129,28 @@ Use the same compact enclosure/port/block grammar inside source function inspect
 Do not reuse an earlier image approval after the chapter content, shared architecture, inspector/overview image, or chapter frames change. Scope visual-approval caching to the actual reviewed content and images.
 
 Use the original reference sidebar component for generated systems and inspectors too: @step goal, then a compact dark input/output inset with the same fonts, colors and spacing. Populate it from actual system ports, declared function contracts, child endpoints and the lesson's own computed values; never substitute reference facts. Keep large function catalogs, full contracts, connections and evidence collapsed below the teaching cards. Preserve reference goal text and prepared example values.
+
+## Recorded voice in the complete remix workspace
+
+The active supplied remix engine has its own recorded-voice integration. Keep its
+procedural graph, packet timing and pure renderer intact. Build one connected
+spoken explanation per open scope, using the same configured Fish narration and
+local word alignment as visual lessons. Anchor existing packet send/receive and
+settled-result moments to distinct exact spoken phrases; simultaneous events stay
+grouped. The original gap-filler/tutor instructions are separate and unchanged.
+
+Map the actual recording playhead monotonically onto the existing scene clock,
+retaining the previous settled frame through the incoming reasoning bridge.
+Render short subtitles from measured word times, including long spoken sentences.
+Do not substitute a clip-duration fraction or word-count estimate for missing
+alignment. A new source, graph, scope, model or voice must invalidate stale work;
+caption-only revisions should reuse the original recording and word timing.
+
+Inspect prepares that scope on demand. Cache its track separately, pause the
+parent audio and restore its exact position on Back. Preserve the reference's
+single-beat inspection preview and full Run playback. Test real continuous
+playback across beats, arbitrary seeks, pause/resume, nested restore, preparation
+cancellation, stale response suppression, browser fetch binding and rounded media
+endpoints. A local media file or mocked transport alone is not playback proof.
+Keep the template/source-analysis limitations explicit: voice timing does not
+validate the underlying architecture's factual accuracy or establish execution.

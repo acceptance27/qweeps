@@ -1,3 +1,4 @@
+import {expandOrderedQuestions} from './orderedQuiz';
 import type {Architecture,FlowStep} from './architecture/types';
 import type {LiveSnapshot} from './geometry';
 import type {SceneProgram} from './sceneProgram';
@@ -17,7 +18,8 @@ export interface QuizQuestion {
   chapterId: string;
   chapterIndex: number;
   chapterTitle: string;
-  kind: 'concept' | 'mechanism' | 'safeguard' | 'multi_item';
+  kind: 'concept' | 'mechanism' | 'safeguard' | 'multi_item' | 'ordered_cloze';
+  difficulty?: 'easy' | 'medium' | 'hard';
   prompt: string;
   options: string[];
   correctIndex: number;
@@ -28,6 +30,13 @@ export interface QuizQuestion {
   expectedItems?: string[];
   itemAliases?: Record<string, string[]>;
   itemLabel?: string;
+  formatVersion?: number;
+  orderedAnswers?: string[];
+  orderedAliases?: string[][];
+  orderedExplanations?: string[];
+  orderedEvidence?: string[];
+  orderedSlot?: {groupId: string; prompt: string; answers: string[]; index: number; slotIds: string[]};
+  source?: { documentId: string; title: string; page: number; locator?: string; quote: string };
 }
 
 export type LiveLesson={id:string;rootLessonId?:string;architectureScope?:string;architecture?:Architecture;kind?:string;title:string;question:string;duration:number;audioTrack?:{url:string;key:string;duration:number;clock:'audio'};representation?:string;documentId?:string|null;documentTitle?:string|null;example?:{title:string;description:string;icon:string};chapters:LiveChapter[];nativeMode?:'per_beat'|'continuous';nativeScenes?:Record<string,NativeSceneManifest>;sources:{id?:string;title:string;url:string}[];quiz?:QuizQuestion[];reinforcementQuiz?:QuizQuestion[]};
@@ -107,8 +116,8 @@ function hashSort(items: string[], seed: string): string[] {
 
 export function ensureLessonQuiz(lesson: LiveLesson): QuizQuestion[] {
   const existing = lesson.quiz || lesson.reinforcementQuiz;
-  if (Array.isArray(existing) && existing.length >= 3) {
-    return existing;
+  if (Array.isArray(existing) && existing.length > 0) {
+    return expandOrderedQuestions(existing);
   }
   const chapters = lesson.chapters || [];
   if (!chapters.length) return [];

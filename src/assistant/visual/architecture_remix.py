@@ -11,12 +11,17 @@ import threading
 import time
 import urllib.error
 import urllib.request
+import uuid
+
+from ..config import load_config
+from ..opencode_llm import go_api_key
 
 ROOT=Path(__file__).resolve().parents[3]
 _lock=threading.Lock()
 _process=None
 _port=int(os.environ.get('QWEEPS_ARCHITECTURE_PORT','4175'))
-_routes=re.compile(r'^/api/(?:ai/(?:status|fill-gaps|ask)|repo/scan-github|architecture/walkthroughs(?:/[a-f0-9]{32})?)$')
+_session=uuid.uuid4().hex
+_routes=re.compile(r'^/api/(?:ai/(?:status|fill-gaps|ask|narrate)|repo/scan-github|architecture/walkthroughs(?:/[a-f0-9]{32})?)$')
 
 def handles(path):return bool(_routes.fullmatch(path))
 
@@ -41,11 +46,25 @@ def _ensure_started():
             except (OSError,urllib.error.URLError):time.sleep(.1)
         raise RuntimeError('The architecture backend did not start in time.')
 
-def request(method,path,payload=None):
+def _ai_headers(cfg):
+    # Use the service's current settings on every request, including after a hot reload.
+    model = cfg.llm.visual_model or cfg.llm.model
+    if not model.startswith('opencode-go/'):
+        model = 'opencode-go/muse-spark-1.3-contributor'
+    headers = {'X-Qweeps-AI-Model': model, 'X-Qweeps-AI-Session': _session}
+    key = go_api_key(cfg)
+    if key:
+        headers['Authorization'] = 'Bearer ' + key
+    return headers
+
+def request(method,path,payload=None,*,cfg=None):
     if not handles(path):raise ValueError('Unknown architecture API route')
     _ensure_started()
     data=json.dumps(payload).encode() if payload is not None else None
-    req=urllib.request.Request(f'http://127.0.0.1:{_port}'+path,data=data,headers={'Content-Type':'application/json'},method=method)
+    headers={'Content-Type':'application/json'}
+    if path.startswith('/api/ai/'):
+        headers.update(_ai_headers(cfg or load_config()))
+    req=urllib.request.Request(f'http://127.0.0.1:{_port}'+path,data=data,headers=headers,method=method)
     try:
         with urllib.request.urlopen(req,timeout=300) as response:return response.status,json.load(response)
     except urllib.error.HTTPError as exc:

@@ -163,6 +163,56 @@ class Timing(Flowable):
             anchor(x + dx, y + (19 if side > 0 else -40), f'{t:.2f}s')
 
 
+class ArchitecturePipeline(Flowable):
+    def __init__(self):
+        super().__init__()
+        self.width, self.height = WIDTH, 142
+
+    def draw(self):
+        c = self.canv
+        gap = 16
+        width = (self.width - gap * 3) / 4
+        stages = [
+            ('01 / SOURCE', ['Code + sample input', 'Preset / sampled repo']),
+            ('02 / COMPILE', ['Graph, ports and beats', 'Deterministic skeleton']),
+            ('03 / OPTIONAL AI', ['OpenCode Go text', 'Geometry stays intact']),
+            ('04 / INSPECT', ['ELK + packet timeline', 'Nested function views']),
+        ]
+        for index, (title, lines) in enumerate(stages):
+            x = index * (width + gap)
+            c.setFillColor(PALE)
+            c.setStrokeColor(LINE)
+            c.rect(x, 65, width, 66, fill=1, stroke=1)
+            c.setFillColor(GREEN)
+            c.setFont('Body-Bold', 8)
+            c.drawString(x + 7, 113, title)
+            c.setFillColor(INK)
+            c.setFont('Body', 8.1)
+            for row, text in enumerate(lines):
+                c.drawString(x + 7, 96 - row * 12, text)
+            if index < 3:
+                end = x + width + gap - 3
+                c.setStrokeColor(GOLD)
+                c.setFillColor(GOLD)
+                c.line(x + width + 3, 98, end, 98)
+                arrow = c.beginPath()
+                arrow.moveTo(end, 98)
+                arrow.lineTo(end - 4, 101)
+                arrow.lineTo(end - 4, 95)
+                arrow.close()
+                c.drawPath(arrow, fill=1, stroke=0)
+        c.setStrokeColor(GOLD)
+        c.setDash(3, 3)
+        c.rect(0, 5, self.width, 43, fill=0, stroke=1)
+        c.setDash()
+        c.setFillColor(GREEN)
+        c.setFont('Body-Bold', 8.5)
+        c.drawString(10, 33, 'PLANNED / VOICE EXPLANATION')
+        c.setFillColor(MUTED)
+        c.setFont('Body', 9)
+        c.drawString(10, 17, 'Synthesis, measured cues and drill-down audio restoration are not integrated.')
+
+
 class PhaseChart(Flowable):
     def __init__(self):
         super().__init__()
@@ -189,6 +239,9 @@ class PhaseChart(Flowable):
 def build(source: Path, output: Path):
     st = styles()
     lines = source.read_text().splitlines()
+    version = re.search(r'TECHNICAL REPORT (\d+\.\d+)', '\n'.join(lines)).group(1)
+    report_date = next(line.split(' | ')[0] for line in lines
+                       if re.match(r'^\d{1,2} [A-Z][a-z]+ \d{4} \|', line))
     story = []
     i = 0
     widths = None
@@ -203,6 +256,8 @@ def build(source: Path, output: Path):
             widths = [float(v) for v in line.split(' ', 1)[1].split(',')]
         elif line == ':::pipeline':
             story.append(Pipeline())
+        elif line == ':::architecture-pipeline':
+            story.append(ArchitecturePipeline())
         elif line == ':::timing':
             story.append(Timing())
         elif line == ':::phase-chart':
@@ -294,11 +349,11 @@ def build(source: Path, output: Path):
         canvas.drawString(48, A4[1] - 31, 'QWEEPS / TECHNICAL REPORT')
         canvas.setFillColor(MUTED)
         canvas.setFont('Body', 8)
-        canvas.drawRightString(A4[0] - 48, A4[1] - 31, '6 NOVEMBER 2026')
+        canvas.drawRightString(A4[0] - 48, A4[1] - 31, report_date.upper())
         canvas.setStrokeColor(LINE)
         canvas.setLineWidth(.5)
         canvas.line(48, 43, A4[0] - 48, 43)
-        canvas.drawString(48, 29, 'Rayven Pahignalo | Version 2.0 | CC BY-NC 4.0')
+        canvas.drawString(48, 29, f'Rayven Pahignalo | Version {version} | CC BY-NC 4.0')
         canvas.setFillColor(INK)
         canvas.setFont('Body-Bold', 9)
         canvas.drawRightString(A4[0] - 48, 29, f'{doc.page:02d}')
@@ -306,11 +361,11 @@ def build(source: Path, output: Path):
 
     output.parent.mkdir(parents=True, exist_ok=True)
     doc = BaseDocTemplate(str(output), pagesize=A4, leftMargin=48, rightMargin=48,
-                          topMargin=57, bottomMargin=58, title='QWEEPS: Live Interactive Visual Teaching - Version 2.0',
+                          topMargin=57, bottomMargin=58, title=f'QWEEPS: Live Interactive Visual Teaching - Version {version}',
                           author='Rayven Pahignalo',
-                          subject='Current implementation, native teaching quality, narration synchronization, Android delivery and evidence boundaries',
+                          subject='Architecture preview, planned voice explanation, visual lessons, synchronization and evidence boundaries',
                           creator='QWEEPS maintained technical-report builder',
-                          keywords='QWEEPS, visual teaching, ManimGL, narration synchronization, Android, Chaquopy, teaching harness')
+                          keywords='QWEEPS, visual teaching, architecture walkthrough, code tracing, OpenCode Go, planned narration, ManimGL, Android')
     frame = Frame(48, 58, WIDTH, A4[1] - 115, leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
     doc.addPageTemplates(PageTemplate(id='Report', frames=frame, onPage=decorate))
     doc.build(story)

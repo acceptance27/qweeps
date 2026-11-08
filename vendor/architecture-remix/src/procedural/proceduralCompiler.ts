@@ -2416,7 +2416,7 @@ export function compileSourceCodeToWalkthrough(options: {
       shortContext: `${st.fnName}() · ${fileName} line ${st.lineNumber}`,
       answer: `Procedurally compiled trace: ${st.fnName}(${st.args.join(', ')}) transforms ${
         varToPreview[st.args[0]] ?? sampleInput
-      } into ${st.outVar} = ${varToPreview[st.outVar] ?? ''}. Click "Fill Explanatory Gaps with AI" to enrich this explanation with Gemini.`,
+      } into ${st.outVar} = ${varToPreview[st.outVar] ?? ''}. Click "Fill Explanatory Gaps with AI" to enrich this explanation with OpenCode Go.`,
       codeLines: [st.lineNumber],
       takeaway: `${st.fnName}() produces ${st.outVar} at Beat ${idx + 2}.`,
     };

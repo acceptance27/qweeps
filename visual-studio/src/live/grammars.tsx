@@ -39,7 +39,11 @@ export function grammarBoxes(v:LiveVisual,g:Grammar):NodeBox[]{
  }
  if(g==='chronology'){
   const spots=chronologySpots(n);
-  return v.nodes.map((node,i)=>({node,x:spots[i]-190,y:180,width:380,height:280}));
+  // Four dated stations must not overlap: cap each station to the gap between
+  // adjacent spots, leaving a readable gutter for the description below.
+  const spacing=n>1?(1200-240)/(n-1):1200;
+  const width=Math.min(380,Math.max(180,spacing-24));
+  return v.nodes.map((node,i)=>({node,x:spots[i]-width/2,y:180,width,height:280}));
  }
  if(g==='route'){
   const spots=routeSpots(n), width=n===4?320:360;
@@ -55,7 +59,7 @@ export function grammarBoxes(v:LiveVisual,g:Grammar):NodeBox[]{
 const Copy=memo(function Copy({font,text,x,y,width,height,size,minSize=14,color='#c9d9dd',center=false}:{font:Font|null;text:string;x:number;y:number;width:number;height:number;size:number;minSize?:number;color?:string;center?:boolean}){
  const raw=typeof text==='string'?text:(typeof text==='object'&&text?((text as any).title||(text as any).label||(text as any).text||(text as any).name||JSON.stringify(text)):String(text??''));
  const fit=useMemo(()=>fitCopy(font,raw,width,height,size,minSize),[font,raw,width,height,size,minSize]);
- return <g>{fit.lines.map((line,i)=><text key={i} x={center?x+width/2:x} y={y+i*fit.size*1.36} textAnchor={center?'middle':undefined} fontSize={fit.size} fill={color} style={{fontFamily:'QweepsTeachingSerif,serif'}}>{line}</text>)}</g>;
+ return <g data-layout-issue={fit.overflow?`Text needs more space: ${raw.slice(0,80)}`:undefined}>{fit.lines.map((line,i)=><text key={i} x={center?x+width/2:x} y={y+i*fit.size*1.36} textAnchor={center?'middle':undefined} fontSize={fit.size} fill={color} style={{fontFamily:'QweepsTeachingSerif,serif'}}>{line}</text>)}</g>;
 });
 
 export function GrammarDecor({v,g}:{v:LiveVisual;g:Grammar;font:Font|null}){

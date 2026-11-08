@@ -78,7 +78,7 @@ export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
     effectiveQuestions[0]?.id ?? PREPARED_QUESTIONS[0].id
   );
 
-  // Live Gemini 3.8 Flash context-aware Q&A state
+  // Live OpenCode Go context-aware Q&A state
   const [customQuery, setCustomQuery] = useState<string>('');
   const [isAskingAi, setIsAskingAi] = useState<boolean>(false);
   const [liveAiAnswer, setLiveAiAnswer] = useState<LiveAiAnswer | null>(null);
@@ -154,7 +154,7 @@ export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to get response from Gemini 3.8 Flash');
+        throw new Error(data.error || 'Failed to get response from OpenCode Go');
       }
 
       setLiveAiAnswer({
@@ -189,7 +189,7 @@ export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
             </span>
             <span className="text-xs text-[#6F737A]">·</span>
             <span className="text-[11px] text-[#6AAB73] font-mono">
-              Procedural Context + Gemini 3.8 Flash
+              Procedural Context + OpenCode Go
             </span>
           </div>
           <p className="text-xs text-[#868A91] truncate mt-0.5">
@@ -227,12 +227,12 @@ export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-3.5 bg-[#1E1F22] space-y-4 select-text">
-        {/* Live Gemini 3.8 Flash Context-Aware Question Input */}
+        {/* Live OpenCode Go Context-Aware Question Input */}
         <div className="p-3 rounded border border-[#393B40] bg-[#25272B] space-y-2.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-xs font-semibold text-[#DFE1E5] flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-[#56A8F5] shrink-0" />
-              <span>Ask Gemini 3.8 Flash about this beat</span>
+              <span>Ask OpenCode Go about this beat</span>
             </span>
             <span className="font-mono text-[10.5px] text-[#868A91]">
               Live Explanatory Pass
@@ -272,7 +272,7 @@ export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
             <div className="p-2.5 rounded border border-[#3574F0] bg-[#1E1F22] space-y-2">
               <div className="flex items-center justify-between gap-2 border-b border-[#393B40] pb-1.5">
                 <span className="text-[11px] font-mono text-[#56A8F5] font-semibold">
-                  Gemini 3.8 Flash Explanation
+                  OpenCode Go Explanation
                 </span>
                 <span className="font-mono text-[10.5px] text-[#6AAB73] flex items-center gap-1">
                   <Code2 className="w-3 h-3" />
