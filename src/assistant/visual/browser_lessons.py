@@ -7,6 +7,7 @@ import copy
 import datetime
 import hashlib
 import json
+import os
 import queue
 import random
 from pathlib import Path
@@ -101,6 +102,34 @@ def _require_target_beats(j,beats):
     if target and len(beats)!=target:
         raise PlanError(f'Return exactly {target} storyboard beats because the request requires {target}; this plan has {len(beats)}. Split the reasoning into {target} distinct, non-repeating beats without dropping source coverage.')
     return beats
+STYLE_BANNED_PHRASES=('in order to','so that','which helps')
+def _narration_opener(narration):
+    words=re.findall(r'[^\W_]+',narration.casefold(),re.UNICODE)
+    return ' '.join(words[:2])
+def _check_narration_style(raw,own_ids=None):
+    """Keep beat openings varied and free of stock scaffolding.
+
+    Only beats the model just (re)generated are rejected; preserved beats
+    from an earlier approved revision are grandfathered so a revision cannot
+    loop on text it was told to keep verbatim. A regenerated beat that
+    collides with a preserved one must still reword its own opening.
+    """
+    chapters=raw.get('chapters') or []
+    own={c.get('id') for c in chapters} if own_ids is None else set(own_ids)
+    openers={}
+    for c in chapters:
+        opener=_narration_opener(c.get('narration') or '')
+        openers.setdefault(opener,[]).append(c.get('id'))
+    for opener,ids in openers.items():
+        if len(ids)>1 and any(i in own for i in ids):
+            raise PlanError(f'Vary the beat openings; {len(ids)} beats start with "{opener}". Rewrite the regenerated opening.')
+    lowered={c.get('id'): (c.get('narration') or '').casefold() for c in chapters}
+    for cid in own:
+        text=lowered.get(cid,'')
+        for banned in STYLE_BANNED_PHRASES:
+            if banned in text:
+                raise PlanError(f'Rewrite the scaffolding "{banned}" in beat {cid!r} as direct teaching.')
+    return True
 def _id(value):
     value=_text(value,'object ID',64)
     if not re.fullmatch(r'[a-zA-Z][a-zA-Z0-9_-]*',value):raise PlanError('Use short alphanumeric semantic object IDs starting with a letter')
@@ -304,6 +333,11 @@ def validate_lesson(raw,document,icons,*,require_continuity=False,fallback_icons
                     raise PlanError('Each descriptive diagram object needs at least 300x260 pixels so its artwork band and readable prose do not collide')
                 if len(n['body'])>160:
                     raise PlanError('Keep a descriptive diagram body to 160 characters; move supporting detail into the narration or a separate beat')
+        if layout=='diagram' and presentation and presentation.get('textMode')=='labels':
+            for n in nodes:
+                position=n.get('position') or {}
+                if position.get('height',0)<140:
+                    raise PlanError('Each labels-mode diagram object needs at least 140 pixels of height so its artwork band stays usable; use a taller box, not smaller text')
         if layout in {'comparison','process','timeline','fanin'} and len(nodes)>4:raise PlanError('Use at most four objects for this layout, or choose a matrix/concept layout')
         links=[]
         for link in _list(c.get('connections',[]),'connections',0,10):
@@ -479,12 +513,13 @@ The number one priority of narration is to TEACH the user about the topic so the
    FORBIDDEN: Never say 'card lights up', 'cards light up', 'box lights up', 'cards appear', 'on the left card', 'blue card', 'green card', 'purple shield rises', 'in the center box', 'watch this highlight', 'pulses', or describe what is visually happening.
    Instead, explain the real-world domain concepts directly: 'Responsibility asks who had the causal power and duty to prevent the defect...', 'Accountability requires the system owner to answer for the outcome...', 'Therac-25 warnings were absorbed through compounding cognitive biases...'.
 3. NATURAL INTEGRATION: Use the names of key terms and concepts naturally as part of your teaching sentences so speech-to-visual alignment can synchronize smoothly with on-screen labels without awkward or artificial phrasing.
-4. Keep one continuous conversational teaching thread across beats; don't restart, greet, announce a new topic, recap or close the explanation at every visual checkpoint. Do not turn narration into independent descriptions of each card. Beats divide visual reasoning and navigation, not voice performances.
+4. Keep one continuous conversational teaching thread across beats; don't restart, greet, announce a new topic, recap or close the explanation at every visual checkpoint. Open each beat's narration with its continuity.bridge verbatim, correlating what was just established to what comes next, then teach the beat. Do not turn narration into independent descriptions of each card. Beats divide visual reasoning and navigation, not voice performances.
 Speak continuity.bridge verbatim at the beginning of its narration. The previous
 diagram stays visible through that whole spoken connection; the new visual starts
 after its final word. Do not put the bridge after the new subject's explanation.
 Name objects naturally where relevant. The synchronization compiler finds those
 phrases in the completed speech recording; do not guess their word timestamps.
+5. SOUND LIKE A HUMAN EXPLAINER, NOT A LECTURE: Write narration that sounds like a great science explainer talking to one curious friend. Speak directly to the listener as "you". Start from observable everyday experience before naming the formal mechanism, then give the precise term so it sticks. Favor short, punchy sentences mixed with longer explanatory ones, and vary the rhythm so no two beats cadence alike; an occasional rhetorical question is welcome, but do not end every beat on one. Use at most one concrete everyday analogy per beat and only when it truly clarifies the mechanism, keeping it clearly illustrative rather than the real process. Curiosity first, vocabulary second; never hype, never invented numbers, quotes, or anecdotes. Do not write bracketed delivery tags like [pause] or [laughing]; pauses are inserted automatically. Never open two beats with the same first two words; vary every handoff. Never use the scaffolds 'in order to', 'so that', or 'which helps' — say the mechanism directly. Prefer contractions and short punchy sentences mixed with longer ones.
 Matrix headings should be 1–3 words and cells usually 2–8 words. Non-matrix
 columns must be []. A cell is text, not another nested object.
 Diversify representations when the relationship changes; do not use one layout for every beat.
@@ -511,7 +546,9 @@ renderer reserves measured space below artwork for its title/body. In labels mod
 only a short title is drawn below the artwork; the body is available on inspection.
 Avoid overlapping boxes and keep labels legible.
 A descriptive diagram carries prose: use at most three objects, each at least
-300x260, body <=160 characters. Labels mode hides the body and can carry 2–6 objects
+300x260, body <=160 characters. In labels mode keep every object at least 140
+pixels tall so its artwork band stays usable; shorter boxes fail validation.
+Labels mode hides the body and can carry 2–6 objects
 (such as two colliding inputs on left/right, a central interaction nexus, and a threshold/accounting node below).
 artwork is a list of <=24 primitives in a local 100x100 viewBox: {type:'path',d:'M...'},
 {type:'circle',cx,cy,r}, {type:'ellipse',cx,cy,rx,ry}, {type:'rect',x,y,width,height,rx},
@@ -950,9 +987,9 @@ def _build_reinforcement_quiz(lesson: dict) -> list[dict]:
 
 
 class BrowserLessonStore:
-    def __init__(self,llm,studio,folder=None,documents=None,narration=None):
+    def __init__(self,llm,studio,folder=None,documents=None,narration=None,answer_llm=None):
         self.narration=narration
-        self.llm=llm;self.studio=Path(studio)
+        self.llm=llm;self.answer_llm=answer_llm or llm;self.studio=Path(studio)
         default_folder = (
             Path.home() / '.cache/qweeps/browser-lessons'
             if (Path.home() / '.cache/qweeps/browser-lessons').is_dir() or not (Path.home() / '.cache/omarchy-assistant/browser-lessons').is_dir()
@@ -1002,6 +1039,95 @@ class BrowserLessonStore:
         folder=self.folder/j['lessonId'];target=folder/'working.json';temporary=folder/f'.working-{uuid.uuid4().hex}.tmp'
         temporary.write_text(json.dumps({'revision':j['revision'],'raw':self._raw(candidate),'status':'unapproved model draft'},ensure_ascii=False))
         temporary.replace(target)
+    def _write_public_lesson(self,folder,lesson):
+        pending=folder/f'.lesson-{uuid.uuid4().hex}.tmp'
+        pending.write_text(json.dumps(lesson,ensure_ascii=False,indent=2))
+        pending.replace(folder/'lesson.json')
+    def _approximate_sentence_cues(self,chapter):
+        """Per-sentence captions before measured word times exist.
+
+        While the audio is still streaming, the plan only carries two cues per
+        beat. Split the narration into sentences and distribute them across the
+        beat so subtitles advance on the first listen; finalization replaces
+        them with measured times.
+        """
+        text=(chapter.get('narration') or '').strip()
+        sentences=[s.strip() for s in re.split(r'(?<=[.!?])\s+',text) if s.strip()]
+        span=max(.5,float(chapter.get('end') or 0)-float(chapter.get('start') or 0))
+        total=sum(len(s) for s in sentences) or 1
+        cues=[];at=0.0
+        for sentence in sentences:
+            cues.append({'at':round(at,2),'text':sentence})
+            at+=len(sentence)/total*span
+        return cues
+    def _publish_with_speech(self,j,lesson):
+        """Publish reviewed visuals now; attach narration when it is ready.
+
+        With direct Fish the narration is also served as a growing mp3, so the
+        voice can start before the whole performance finishes rendering.
+        """
+        folder=self.folder/j['lessonId'];folder.mkdir(exist_ok=True)
+        if hasattr(self.narration,'start_lesson_stream'):
+            try:
+                from .synchronization import lesson_script
+                key=self.narration.start_lesson_stream(lesson_script(lesson))
+                early=copy.deepcopy(lesson);early['speechPending']=True;early['streamingSpeech']=True
+                from .alignment import tokens
+                rate=2.9
+                cursor=0.0
+                for c in early.get('chapters') or []:
+                    count=max(1,len(tokens(c.get('narration') or '')))
+                    span=max(1.2,count/rate)
+                    c['start']=round(cursor,2);c['end']=round(cursor+span,2)
+                    c['visualStart']=c['start'];c['visualEnd']=c['end']
+                    c['narrationAt']=0;c['transitionOut']=0.1
+                    c['finishedAt']=max(c['start'],round(c['end']-0.25,2))
+                    cursor+=span
+                early['duration']=round(cursor,2)
+                for c in early.get('chapters') or []:
+                    if len(c.get('cues') or [])<=2:c['cues']=self._approximate_sentence_cues(c)
+                early['audioTrack']={'url':f'/narration-stream/{key}.mp3','key':key,
+                                     'duration':early.get('duration') or 0,'clock':'audio'}
+                self._write_public_lesson(folder,early)
+                j.update(status='ready',stage='Reviewed live lesson ready · narration streaming')
+                threading.Thread(target=self._finalize_streamed_speech,args=(j,copy.deepcopy(lesson),key),daemon=True).start()
+                return
+            except Exception as exc:
+                j['streamError']=str(exc)[:300]
+        early=copy.deepcopy(lesson);early['speechPending']=True
+        self._write_public_lesson(folder,early)
+        j.update(status='ready',stage='Reviewed live lesson ready · narration preparing')
+        threading.Thread(target=self._finish_speech,args=(j,copy.deepcopy(lesson)),daemon=True).start()
+    def _finalize_streamed_speech(self,j,lesson,key):
+        try:
+            state=self.narration.wait_lesson_stream(key,timeout=900)
+            if not state.get('complete'):raise PlanError(state.get('error') or 'Narration stream failed')
+            alignment=self.narration.lesson_stream_alignment(key)
+            from .synchronization import compile_speech
+            clip={'key':key,'url':f'/narration-stream/{key}.mp3','cached':True}
+            final=compile_speech(self,j,copy.deepcopy(lesson),clip=clip,alignment=alignment,
+                                 opening_pause=0.0,beat_pause=0.0,lead=0.0,tail=0.0)
+            final['audioTrack']={'url':f'/narration-stream/{key}.mp3','key':key,
+                                 'duration':final.get('duration') or state.get('duration') or 0,'clock':'audio'}
+            final['speechPending']=False;final['streamingSpeech']=True
+            self._write_public_lesson(self.folder/j['lessonId'],final)
+            j.update(stage='Reviewed live lesson ready')
+        except Exception as exc:
+            lesson['speechPending']=False;lesson['speechError']=str(exc)[:400]
+            self._write_public_lesson(self.folder/j['lessonId'],lesson)
+            j['speechError']=str(exc)[:400]
+    def _finish_speech(self,j,lesson):
+        try:
+            from .synchronization import compile_speech
+            with self._measure(j,'speech'):
+                final=compile_speech(self,j,copy.deepcopy(lesson))
+            final['speechPending']=False;final.pop('speechError',None)
+            self._write_public_lesson(self.folder/j['lessonId'],final)
+            j.update(stage='Reviewed live lesson ready')
+        except Exception as exc:
+            lesson['speechPending']=False;lesson['speechError']=str(exc)[:400]
+            self._write_public_lesson(self.folder/j['lessonId'],lesson)
+            j['speechError']=str(exc)[:400]
     def _resume_working(self,j):
         folder=self.folder/j['lessonId'];target=folder/'working.json'
         if target.is_file():
@@ -2533,6 +2659,8 @@ Return JSON only; no markdown fences:
         with ThreadPoolExecutor(max_workers=min(4, len(groups))) as pool:parts=list(pool.map(section,range(len(groups))))
         raw={k:parts[0][k] for k in ('title','question','representation','example')};raw['chapters']=[c for part in parts for c in part['chapters']]
         if story.get('architecture'):raw['architecture']=story['architecture']
+        own_ids=None if not findings else {f.get('beat') for f in findings}
+        _check_narration_style(raw,own_ids)
         return validate_lesson(raw,document,self.icons,require_continuity=True,fallback_icons=True,
                                require_presentation=any('presentation' in b for b in story['beats']))
     def _source_check(self,j,candidate):
@@ -3254,13 +3382,14 @@ replacements, only those needed.'''
                 else:
                     lesson['quiz']=_build_reinforcement_quiz(lesson)
                 folder=self.folder/j['lessonId'];folder.mkdir(exist_ok=True)
+                if os.environ.get('QWEEPS_EARLY_SPEECH','1')=='1' and self.narration and not j.get('speechPrepared'):
+                    self._publish_with_speech(j,lesson)
+                    return
                 if self.narration and not j.get('speechPrepared'):
                     from .synchronization import compile_speech
                     with self._measure(j, 'speech'):
                         lesson = compile_speech(self,j,lesson)
-                pending = folder / f'.lesson-{uuid.uuid4().hex}.tmp'
-                pending.write_text(json.dumps(lesson,ensure_ascii=False,indent=2))
-                pending.replace(folder/'lesson.json')
+                self._write_public_lesson(folder,lesson)
                 j.update(status='ready',stage='Reviewed live lesson ready');j.pop('candidate',None)
             elif j.get('native'):
                 raise PlanError('Native lesson did not pass actual-frame teaching review: ' + json.dumps(result['findings'],ensure_ascii=False)[:800])
@@ -3512,6 +3641,7 @@ replacements, only those needed.'''
         except Exception as exc:
             self._failed(j,exc)
     def answer(self,payload,context,history):
+        answer_llm=getattr(self,'answer_llm',None) or self.llm
         lesson=self.lesson(context.get('lessonId'))
         if context.get('architectureScope') and lesson.get('architecture'):
             from .architecture_flow import module_lesson
@@ -3529,14 +3659,14 @@ Do not limit yourself to the narration: reason from relevant pages and explain t
 Return JSON only: {"answer":"..."}.'''
         compact_beat=self._compact_beat_for_prompt(beat,context.get('selection'))
         compact_narrating=self._compact_beat_for_prompt(narrating,context.get('selection'))
-        if payload.get('mode')=='branch' and getattr(self.llm,'provider','') in {'opencode-go','opencode','opencode-free'} and ('verifier' in question.lower() or beat.get('id')=='b7-witness-verifier'):
+        if payload.get('mode')=='branch' and getattr(answer_llm,'provider','') in {'opencode-go','opencode','opencode-free'} and ('verifier' in question.lower() or beat.get('id')=='b7-witness-verifier'):
             result={'answer':self._fallback_answer(question,beat,context)}
         else:
             try:
-                result=_model_json(self.llm,system,{'question':question,'passages':evidence,'paused':context,'beat':compact_beat,'narratingBeat':compact_narrating,'history':history[-6:]},
+                result=_model_json(answer_llm,system,{'question':question,'passages':evidence,'paused':context,'beat':compact_beat,'narratingBeat':compact_narrating,'history':history[-6:]},
                                    lambda r:{'answer':_text(r.get('answer'),'answer',5000)},tokens=8000)
             except (ModelProviderError,PlanError):
-                if getattr(self.llm,'provider','') in {'opencode-go','opencode','opencode-free'}:
+                if getattr(answer_llm,'provider','') in {'opencode-go','opencode','opencode-free'}:
                     result={'answer':self._fallback_answer(question,beat,context)}
                 else:
                     raise

@@ -81,7 +81,10 @@ export function fitCopy(font:Font|null,text:string,width:number,height:number,pr
 export function diagramCopy(font:Font|null,node:LiveNode,width:number,height:number,textMode:'labels'|'descriptive'='descriptive'){
  const ascent=font?font.ascender/font.unitsPerEm:1,descent=font?Math.max(0,-font.descender/font.unitsPerEm):.3;
  // Reserve explicit bands. A short card may carry geometry or prose, not both.
- const artMin=textMode==='labels'?100:120,gap=12;
+ // Labels mode draws no body, so its artwork band only needs to stay usable:
+ // accepted reference lessons ship 140px-tall labels objects (artHeight ~99),
+ // while genuinely cramped boxes (e.g. 120px tall, artHeight ~79) must fail.
+ const artMin=textMode==='labels'?90:120,gap=12;
  const title=fitCopy(font,node.title,width-16,45,23),titleHeight=(title.lines.length-1)*title.size*1.36+title.size*(ascent+descent);
  if(textMode==='labels'){
   const artHeight=height-titleHeight-16;

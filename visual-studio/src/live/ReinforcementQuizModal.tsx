@@ -1,6 +1,7 @@
 import {useCompactLayout} from './useCompactLayout';
 import LearningWorld from './LearningWorld';
-import {partitionOrderedQuestions,orderedSafeInsertion} from './orderedQuiz';
+import {partitionOrderedQuestions,orderedSafeInsertion,orderedCardAt,type OrderedAttempt,type OrderedBlankResult} from './orderedQuiz';
+import {answerOrderedBlank,advanceOrderedBlank,orderedHelp} from './orderedQuizProgress';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CheckCircle2,
@@ -37,6 +38,7 @@ export interface ActiveCard extends QuizQuestion {
 }
 
 export interface QuizProgressState {
+  orderedAttempt?: OrderedAttempt | null;
   challenge?: QuizChallenge;
   lessonId: string;
   baseQuestions: QuizQuestion[];
@@ -65,6 +67,7 @@ export interface QuizProgressState {
       recalledItems?: string[];
       multiItemRevealed?: boolean;
       isCorrect: boolean;
+      orderedAnswers?: OrderedBlankResult[];
     }
   >;
   viewingQuestionId: string | null;
@@ -350,6 +353,7 @@ export function createInitialQuizState(
 
   return restoreChallenge({
     lessonId: lesson.id,
+    orderedAttempt:null,
     baseQuestions,
     activeSetIndex: initialSetIndex,
     queue: initialQuestions.map(q => ({
@@ -393,7 +397,7 @@ export function selectQuizSet(previous: QuizProgressState, targetSetIdx: number,
   const targetQuestions = getQuizSets(prev.baseQuestions)[targetSetIdx]?.questions || prev.baseQuestions;
   const mastered = new Set(prev.masteredIds);
   const pending = targetQuestions.filter(q => !mastered.has(q.id));
-  return {...prev, activeSetIndex: targetSetIdx,
+  return {...prev, activeSetIndex: targetSetIdx, orderedAttempt:null,
     queue: (pending.length ? pending : targetQuestions).map((q, idx) => ({...shuffleQuestionOptions(q, seed + idx),
       roundNumber: 1, attemptNumber: (prev.attemptsByQuestion[q.id] || 0) + 1, isReinforcement: false})),
     reinforcementQueue: [], cursor: 0, round: 1, selectedOption: null, showHint: false,
@@ -421,13 +425,16 @@ function ChallengeHearts({hearts}: {hearts: number}) {
   </span>;
 }
 
-function OrderedPrompt({card, history, answered}: {card: QuizQuestion; history: QuizProgressState['historyByQuestion']; answered: boolean}) {
+function OrderedPrompt({card, results, answered}: {card: QuizQuestion; results: OrderedBlankResult[]; answered: boolean}) {
   const group = card.orderedSlot!;
   const parts = group.prompt.split(/_{3,}/);
-  return <>{parts.map((part,i) => <span key={i}>{part}{i < group.answers.length &&
-    <span className={`ordered-blank ${i === group.index ? 'active' : ''} ${i < group.index && history[group.slotIds[i]] || i === group.index && answered ? 'filled' : ''}`} aria-current={i === group.index ? 'step' : undefined}>
-      <small>{i+1}.</small> {i < group.index && history[group.slotIds[i]] || i === group.index && answered ? group.answers[i] : '____'}
-    </span>}</span>)}</>;
+  return <>{parts.map((part,i) => {
+    const filled = i < group.index && Boolean(results[i]) || i === group.index && answered;
+    return <span key={i}>{part}{i < group.answers.length &&
+      <span className={`ordered-blank ${i === group.index ? 'active' : ''} ${filled ? 'filled' : ''}`} aria-current={i === group.index ? 'step' : undefined}>
+        <small>{i+1}.</small> {filled ? group.answers[i] : '____'}
+      </span>}</span>;
+  })}</>;
 }
 
 export function ReinforcementQuizNavbar({
@@ -758,7 +765,7 @@ export function ReinforcementQuizModal({
   const [challengeSaveFailed, setChallengeSaveFailed] = useState(false);
   useEffect(() => {
     if (state.challenge) setChallengeSaveFailed(!saveChallenge(state));
-  }, [state.challenge, state.queue, state.cursor, state.selectedOption, state.completed, state.recalledItems, state.isHardMode, state.rapidScan]);
+  }, [state.challenge, state.queue, state.cursor, state.selectedOption, state.completed, state.recalledItems, state.isHardMode, state.rapidScan, state.orderedAttempt]);
 
   // Reset internal state only if lesson.id changes and we're using internal state
   useEffect(() => {
@@ -819,7 +826,7 @@ export function ReinforcementQuizModal({
     ? baseQuestions.find(q => q.id === viewingQuestionId)
     : undefined;
 
-  const currentCard: ActiveCard | undefined = isReviewing && reviewingQuestion
+  const baseCard: ActiveCard | undefined = isReviewing && reviewingQuestion
     ? {
         ...reviewingQuestion,
         roundNumber: 1,
@@ -828,10 +835,17 @@ export function ReinforcementQuizModal({
       }
     : liveCard;
 
+  const activeOrderedAttempt = state.orderedAttempt && baseCard && state.orderedAttempt.cardId === baseCard.id && state.orderedAttempt.attemptNumber === baseCard.attemptNumber ? state.orderedAttempt : null;
+  const orderedResults = isReviewing ? historyByQuestion[baseCard?.id || '']?.orderedAnswers || [] : activeOrderedAttempt?.answers || [];
+  const orderedIndex = isReviewing ? Math.max(0,orderedResults.length-1) : activeOrderedAttempt?.index || 0;
+  const currentCard = baseCard?.orderedSlot ? orderedCardAt(baseCard,orderedIndex) : baseCard;
+  const orderedComplete = Boolean(currentCard?.orderedSlot && orderedResults.length === currentCard.orderedSlot.answers.length);
+  const orderedFailed = orderedComplete && orderedResults.some(a => !a.correct);
+  const moreOrderedBlanks = Boolean(currentCard?.orderedSlot && orderedIndex < currentCard.orderedSlot.answers.length-1);
   const challengeCard = currentCard ? challenge?.cards[currentCard.id] : undefined;
   const challengeAward = !isReviewing && currentCard && challenge?.lastAward?.questionId === currentCard.id ? challenge.lastAward : undefined;
   const verification = useRef({key: '', epoch: 0});
-  const verificationKey = `${activeSetIndex}:${challenge?.id || ''}:${currentCard?.id}:${currentCard?.attemptNumber}:${isHardMode}:${viewingQuestionId}`;
+  const verificationKey = `${activeSetIndex}:${challenge?.id || ''}:${currentCard?.id}:${currentCard?.attemptNumber}:${orderedIndex}:${isHardMode}:${viewingQuestionId}`;
   if (verification.current.key !== verificationKey) {verification.current = {key: verificationKey, epoch: verification.current.epoch + 1};}
   useEffect(() => {
     // An answer check belongs to one card/mode only. Leaving it also releases
@@ -851,6 +865,13 @@ export function ReinforcementQuizModal({
     return true;
   };
 
+  const commitOrderedAnswer = (correct:boolean, details:{selectedOption:number;typedFeedback?:QuizProgressState['typedFeedback'];trap?:string}) => {
+    if(!currentCard?.orderedSlot || isReviewing) return false;
+    if(correct) playCorrectSound(streak+1,currentCard.isReinforcement,soundEnabled); else playWrongSound(soundEnabled);
+    setState(prev=>answerOrderedBlank(prev,{...details,correct,runId:challenge?.id,questionId:currentCard.id,
+      attemptNumber:currentCard.attemptNumber,index:orderedIndex}));
+    return true;
+  };
   const masteredSet = useMemo(() => new Set(masteredIds), [masteredIds]);
   const everMissedSet = useMemo(() => new Set(everMissedIds), [everMissedIds]);
 
@@ -863,8 +884,9 @@ export function ReinforcementQuizModal({
     : selectedOption;
 
   const isAnswered = isReviewing ? isCardAnswered : selectedOption !== null;
-  const isCorrect = isAnswered && currentCard && effectiveSelectedOption === currentCard.correctIndex;
-  const orderedUsedAnswers = new Set(currentCard?.orderedSlot?.answers.filter((_,i) => i < currentCard.orderedSlot!.index && historyByQuestion[currentCard.orderedSlot!.slotIds[i]]) || []);
+  const isCorrect = isAnswered && currentCard && (isReviewing ? cardHistory?.isCorrect ?? isCardMastered : effectiveSelectedOption === currentCard.correctIndex);
+  const feedbackCorrect = isCorrect && !orderedFailed;
+  const orderedUsedAnswers = new Set(currentCard?.orderedSlot?.answers.filter((_,i) => i < orderedIndex && Boolean(orderedResults[i])) || []);
 
 
   const effectiveTypedFeedback = isReviewing
@@ -896,7 +918,7 @@ export function ReinforcementQuizModal({
       }, 35);
       return () => clearTimeout(timer);
     }
-  }, [isHardMode, isAnswered, isReviewing, cursor, completed, setCompleted, currentCard?.id]);
+  }, [isHardMode, isAnswered, isReviewing, cursor, completed, setCompleted, currentCard?.id, orderedIndex]);
 
   const currentQGlobalIndex = currentCard
     ? baseQuestions.findIndex(q => q.id === currentCard.id) + 1
@@ -958,7 +980,7 @@ export function ReinforcementQuizModal({
     setState(prev => ({
       ...prev,
       activeSetIndex: setIdx,
-      queue: freshQueue,
+      queue: freshQueue, orderedAttempt:null,
       reinforcementQueue: [],
       cursor: 0,
       round: 1,
@@ -1023,6 +1045,7 @@ export function ReinforcementQuizModal({
     if (orderedUsedAnswers.has(currentCard.options[optionIdx])) return;
     const nextAttemptCount = (attemptsByQuestion[currentCard.id] || 0) + 1;
     const isHit = optionIdx === currentCard.correctIndex;
+    if (commitOrderedAnswer(isHit, {selectedOption:optionIdx,trap:currentCard.options[optionIdx]})) return;
     if (commitChallengeAnswer(isHit, {selectedOption: optionIdx, trap: currentCard.options[optionIdx]})) return;
     const historyEntry = {
       selectedOption: optionIdx,
@@ -1106,6 +1129,8 @@ export function ReinforcementQuizModal({
     feedback?: string
   ) => {
     if (!currentCard) return;
+    if (commitOrderedAnswer(isHit, {selectedOption:isHit?currentCard.correctIndex:-1,
+      typedFeedback:{status:isHit?'correct':'wrong',userText:rawInput,matchedText:isHit?(matchedText||expected):expected,semantic:isHit&&semantic,feedback},trap:rawInput})) return;
     if (commitChallengeAnswer(isHit, {selectedOption: isHit ? currentCard.correctIndex : -1,
       typedFeedback: isHit ? {status: 'correct', userText: rawInput, matchedText: matchedText || expected, semantic, feedback}
         : {status: 'wrong', userText: rawInput, matchedText: expected, semantic: false, feedback}, trap: rawInput})) return;
@@ -1384,6 +1409,7 @@ export function ReinforcementQuizModal({
     }
 
     if (!isAnswered) return;
+    if (moreOrderedBlanks) {playStepSound(soundEnabled); setState(advanceOrderedBlank); return;}
     if (challengeActive) {
       if (queue.length <= 1 && !challenge!.outOfHearts) playVictoryFanfare(soundEnabled); else playStepSound(soundEnabled);
       setState(advanceChallenge);
@@ -1401,7 +1427,7 @@ export function ReinforcementQuizModal({
         typedFeedback: null,
         recalledItems: [],
         multiItemRevealed: false,
-        cursor: prev.cursor + 1,
+        cursor: prev.cursor + 1, orderedAttempt:null,
         viewingQuestionId: null,
       }));
       return;
@@ -1419,7 +1445,7 @@ export function ReinforcementQuizModal({
         typedFeedback: null,
         recalledItems: [],
         multiItemRevealed: false,
-        queue: prev.reinforcementQueue,
+        queue: prev.reinforcementQueue, orderedAttempt:null,
         reinforcementQueue: [],
         cursor: 0,
         round: prev.round + 1,
@@ -1482,7 +1508,7 @@ export function ReinforcementQuizModal({
     setState(prev => ({
       ...prev,
       isHardMode: nextHardMode,
-      queue: freshQueue,
+      queue: freshQueue, orderedAttempt:null,
       reinforcementQueue: [],
       cursor: 0,
       round: 1,
@@ -1505,13 +1531,11 @@ export function ReinforcementQuizModal({
   };
 
   useEffect(() => {
-    const next = queue[cursor + 1];
-    if (!isReviewing && isAnswered && isCorrect && !challenge?.outOfHearts && currentCard?.orderedSlot &&
-      next?.orderedSlot?.groupId === currentCard.orderedSlot.groupId && next.orderedSlot.index === currentCard.orderedSlot.index + 1) {
+    if (!isReviewing && isAnswered && isCorrect && moreOrderedBlanks && !challenge?.outOfHearts) {
       const timer = setTimeout(advanceNext, 850);
       return () => clearTimeout(timer);
     }
-  }, [currentCard?.id, selectedOption, isReviewing, isCorrect, challenge?.outOfHearts]);
+  }, [currentCard?.id, orderedIndex, selectedOption, isReviewing, isCorrect, challenge?.outOfHearts]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -1633,7 +1657,7 @@ export function ReinforcementQuizModal({
 
           <div className="mastery-metrics-grid">
             {challenge ? <>
-              <div className="mastery-metric-card"><span>RUN SCORE</span><strong>{challenge.score.toLocaleString()}</strong><small>Personal best: {challenge.personalBest.toLocaleString()}</small></div>
+              <div className="mastery-metric-card"><span>RUN SCORE</span><strong>{challenge.score.toLocaleString()}</strong><small>Personal best: {challenge.personalBest.toLocaleString()}{challenge.legacyPoints ? ` · Includes ${challenge.legacyPoints.toLocaleString()} points earned before this update` : ''}</small></div>
               <div className="mastery-metric-card"><span>BEST COMBO</span><strong>{challenge.bestMultiplier}×</strong><small>{bestStreak} clean answers in a row</small></div>
               <div className="mastery-metric-card"><span>CLEAN FIRST TRIES</span><strong>{Math.round(challengeFirstTries / Math.max(1, totalCount) * 100)}%</strong><small>{challengeFirstTries} of {totalCount} cards</small></div>
               <div className="mastery-metric-card"><span>WEAK SPOTS RECOVERED</span><strong>{challengeRecovered}</strong><small>{totalSubmissions} answers this run</small></div>
@@ -1917,7 +1941,7 @@ export function ReinforcementQuizModal({
             {challengeCard && <div className="challenge-card-line">
               <span className={`challenge-difficulty level-${challengeCard.difficulty}`} title="Point value is fixed for this run using the question type, declared difficulty and your practice history.">{difficultyLabels[challengeCard.difficulty - 1]} · {challengeCard.value} base pts</span>
               <span className="challenge-recall-status">{challengeCard.secured ? 'Card secured' : challengeCard.needsRecovery ? 'Rebuilding recall' : 'Clean answer → card secured'}</span>
-              <details className="challenge-rules"><summary>Scoring & recall</summary><p>Core / Challenging / Advanced cards start at 100 / 150 / 200 points. Clean-answer streaks reach 1.25× at 3, 1.5× at 5 and 2× at 10. A miss breaks the combo and brings the card back after up to 3, then 2, then 1 other cards. Weak spots need three clean recalls: the first returns after 3 other cards, the second after 10, and the third secures it. After a recurring question is answered correctly, its later returns require a typed answer without choices. Short queues finish sooner. Hints give reduced credit and require an unaided retry. Reviewing answers earns no points. Start with five hearts. A wrong answer costs one heart; every five correct answers restore half a heart, up to five. Correct answers need not be consecutive. At zero hearts the run ends; retry or return to practice. Your run saves on this device.</p></details>
+              <details className="challenge-rules"><summary>Scoring & recall</summary><p>Core / Challenging / Advanced cards start at 100 / 150 / 200 points. Clean-answer streaks reach 1.25× at 3, 1.5× at 5 and 2× at 10. A numbered multi-blank sentence is one card. Its score, streak and hearts are graded when all blanks are finished. Any mistake repeats the full card immediately; one unaided mistake-free pass secures it. For single-answer cards, a miss breaks the combo and brings the card back after up to 3, then 2, then 1 other cards. Single-answer weak spots need three clean recalls: the first returns after 3 other cards, the second after 10, and the third secures it. After a recurring question is answered correctly, its later returns require a typed answer without choices. Short queues finish sooner. Hints give reduced credit and require an unaided retry. Reviewing answers earns no points. Start with five hearts. A wrong answer costs one heart; every five correct answers restore half a heart, up to five. Correct answers need not be consecutive. At zero hearts the run ends; retry or return to practice. Your run saves on this device.</p></details>
               {challengeSaveFailed && <span className="challenge-save-error" role="status">Device storage unavailable · keep this tab open to retain this run.</span>}
             </div>}
 
@@ -1958,14 +1982,14 @@ export function ReinforcementQuizModal({
               </div>
 
               <div className="mastery-meta-actions">
-                {currentCard.isSpacedRecall && <div className="mastery-spaced-banner"><div className="mastery-spaced-badge"><RotateCcw size={13} /><span>{challenge ? 'ADAPTIVE RECALL' : '3-CARD SPACED RECALL'}</span></div></div>}
+                {currentCard.isSpacedRecall && <div className="mastery-spaced-banner"><div className="mastery-spaced-badge"><RotateCcw size={13} /><span>{currentCard.orderedSlot ? 'FULL CARD RETRY' : challenge ? 'ADAPTIVE RECALL' : '3-CARD SPACED RECALL'}</span></div></div>}
                 {currentCard.hint && !isAnswered && (
                   <button
                     type="button"
                     className="mastery-hint-btn"
                     onClick={() => {
                       const next = !showHint;
-                      setState(prev => ({ ...(next ? challengeHelp(prev) : prev), showHint: next }));
+                      setState(prev => ({ ...(next ? orderedHelp(challengeHelp(prev)) : prev), showHint: next }));
                       if (next) playHintSound(soundEnabled);
                     }}
                   >
@@ -1989,7 +2013,7 @@ export function ReinforcementQuizModal({
             </div>
 
             {/* Prompt */}
-            <h3 className="mastery-prompt">{currentCard.orderedSlot ? <OrderedPrompt card={currentCard} history={historyByQuestion} answered={isAnswered}/> : currentCard.prompt}</h3>
+            <h3 className="mastery-prompt">{currentCard.orderedSlot ? <OrderedPrompt card={currentCard} results={orderedResults} answered={isAnswered}/> : currentCard.prompt}</h3>
             {currentCard.orderedSlot && !isAnswered && <p className="ordered-recall-instruction">{isHardMode ? `Type the answer for blank ${currentCard.orderedSlot.index + 1}.` : `Choose the answer for blank ${currentCard.orderedSlot.index + 1}. Fill the sentence from left to right.`}</p>}
             {currentCard.source && <p className="mastery-source-ref">Source: {currentCard.source.title} · {currentCard.source.locator || `Page ${currentCard.source.page}`}</p>}
 
@@ -2205,7 +2229,7 @@ export function ReinforcementQuizModal({
 
             {/* Immediate Feedback */}
             {isAnswered && (
-              <div className={`mastery-feedback-panel ${isCorrect ? 'correct' : 'missed'}`} data-mobile-detail={feedbackDetail}>
+              <div className={`mastery-feedback-panel ${feedbackCorrect ? 'correct' : 'missed'}`} data-mobile-detail={feedbackDetail}>
                 <div className="mastery-feedback-main">
                   <div className="mastery-feedback-title">
                     {isReviewing ? (
@@ -2213,6 +2237,8 @@ export function ReinforcementQuizModal({
                         {isCorrect ? <CheckCircle2 size={18} /> : <Repeat size={18} />}
                         <strong>{isCorrect ? 'Mastered Concept' : 'Reinforced Concept'}</strong>
                       </>
+                    ) : currentCard.orderedSlot ? (
+                      <><Repeat size={18}/><strong>{!orderedComplete ? isCorrect ? 'Blank placed' : 'Missed blank — finish the card, then try it again' : orderedFailed ? 'Card needs another pass — repeat all blanks' : challengeAward?.status==='assisted' ? 'Card complete — try it unaided next time' : 'Whole card correct!'}</strong></>
                     ) : isCorrect ? (
                       <>
                         <CheckCircle2 size={18} />
@@ -2234,8 +2260,8 @@ export function ReinforcementQuizModal({
 
                   {challengeAward && <div className={`challenge-answer-reward ${challengeAward.status}`} role="status">
                     <strong>{challengeAward.points > 0 ? `+${challengeAward.points} pts` : challengeAward.status === 'missed' ? 'Combo reset · your score is safe' : 'Recall progress saved'}</strong>
-                    {isCorrect && <span>{challengeAward.multiplier}× combo</span>}
-                    <span>{challenge?.outOfHearts ? 'Out of hearts · run finished' : challengeAward.nextAfter === null ? 'Secured for this run' : challengeAward.nextAfter === 0 ? 'Returns next · no other cards remain' : `Returns after ${challengeAward.nextAfter} other card${challengeAward.nextAfter === 1 ? '' : 's'}`}</span>
+                    {feedbackCorrect && <span>{challengeAward.multiplier}× combo</span>}
+                    <span>{challenge?.outOfHearts ? 'Out of hearts · run finished' : challengeAward.nextAfter === null ? 'Secured for this run' : challengeAward.nextAfter === 0 ? currentCard.orderedSlot ? 'Repeat the full card next' : 'Returns next · no other cards remain' : `Returns after ${challengeAward.nextAfter} other card${challengeAward.nextAfter === 1 ? '' : 's'}`}</span>
                     {challengeAward.heartsRestored > 0 && <span className="challenge-heart-restored">♥ +½ heart restored</span>}
                   </div>}
 
@@ -2292,10 +2318,14 @@ export function ReinforcementQuizModal({
                       </button>
                     )}
                   </div>
+                ) : moreOrderedBlanks ? (
+                  <button type="button" className="mastery-continue-btn" onClick={advanceNext} autoFocus>Next blank <ArrowRight size={16}/></button>
                 ) : challenge?.outOfHearts ? (
                   <button type="button" className="mastery-continue-btn" onClick={advanceNext} autoFocus>
                     View run score <Trophy size={16}/>
                   </button>
+                ) : currentCard.orderedSlot && orderedComplete && !masteredSet.has(currentCard.id) ? (
+                  <button type="button" className="mastery-continue-btn" onClick={advanceNext} autoFocus>Repeat full card <RotateCcw size={16}/></button>
                 ) : cursor + 1 < queue.length ? (
                   <button type="button" className="mastery-continue-btn" onClick={advanceNext} autoFocus>
                     Next Question <ArrowRight size={16} />
@@ -2338,7 +2368,7 @@ export function ReinforcementQuizModal({
 
             {!isAnswered && !isHardMode && !isReviewing && (
               <div className="mastery-keyboard-tip">
-                Press <kbd>A</kbd>–<kbd>{String.fromCharCode(64+currentCard.options.length)}</kbd> or <kbd>1</kbd>–<kbd>{Math.min(9,currentCard.options.length)}</kbd>{currentCard.options.length===10 && <> or <kbd>0</kbd></>} to answer · {challenge ? 'Build a clean-answer combo · weak spots return more often' : currentCard.orderedSlot ? 'Each blank counts as one answer · missed blanks return for recall' : 'Missed questions return 3 cards later for spaced recall'}
+                Press <kbd>A</kbd>–<kbd>{String.fromCharCode(64+currentCard.options.length)}</kbd> or <kbd>1</kbd>–<kbd>{Math.min(9,currentCard.options.length)}</kbd>{currentCard.options.length===10 && <> or <kbd>0</kbd></>} to answer · {challenge ? 'Build a clean-answer combo · weak spots return more often' : currentCard.orderedSlot ? 'One sentence = one card · any mistake repeats the full card' : 'Missed questions return 3 cards later for spaced recall'}
               </div>
             )}
             {isReviewing && (
@@ -2348,7 +2378,7 @@ export function ReinforcementQuizModal({
             )}
             {isAnswered && !isCorrect && !isReviewing && (
               <div className="mastery-keyboard-tip">
-                Press <kbd>L</kbd> to Lock in Memory · Press <kbd>Enter</kbd> or <kbd>Space</kbd> for next card
+                Press <kbd>L</kbd> to Lock in Memory · Press <kbd>Enter</kbd> or <kbd>Space</kbd> for {moreOrderedBlanks ? 'next blank' : 'next card'}
               </div>
             )}
             {!isAnswered && isHardMode && !isReviewing && (

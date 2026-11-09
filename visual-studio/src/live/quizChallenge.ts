@@ -1,5 +1,6 @@
 import type {ActiveCard, QuizProgressState} from './ReinforcementQuizModal';
-import {groupQuizQuestions,orderedSafeInsertion} from './orderedQuiz';
+import {groupQuizQuestions,orderedSafeInsertion,legacyExpandedQuestions} from './orderedQuiz';
+import {migrateOrderedChallenge} from './quizMigration';
 
 type Session = Omit<QuizProgressState, 'lessonId'|'baseQuestions'|'soundEnabled'|'challenge'>;
 export type ChallengeCard = {
@@ -18,6 +19,7 @@ export type QuizChallenge = {
   cards: Record<string, ChallengeCard>; lastAward: ChallengeAward|null;
   helpUsed: boolean; slip: boolean; practice: Session; paused?: Session;
   hearts: number; correctTowardHeart: number; outOfHearts: boolean;
+  legacyPoints?: number;
 };
 
 export const difficultyLabels = ['Core', 'Challenging', 'Advanced'] as const;
@@ -43,6 +45,7 @@ function shuffled<T>(items: T[], seed: number) {
   return result;
 }
 function retry(card: ActiveCard, turn: number, trap: string): ActiveCard {
+  if(card.orderedSlot) return {...card,attemptNumber:card.attemptNumber+1,isReinforcement:true,isSpacedRecall:true,priorTrapOptionText:''};
   const order = shuffled(card.options.map((_, i) => i), turn * 7919 + card.id.length);
   return {...card, options: order.map(i => card.options[i]), correctIndex: order.indexOf(card.correctIndex),
     attemptNumber: card.attemptNumber + 1, isReinforcement: true, isSpacedRecall: true, priorTrapOptionText: trap};
@@ -61,7 +64,7 @@ export function startChallenge(state: QuizProgressState, seed = Date.now()): Qui
     cards[q.id] = {difficulty, value: [100,150,200][difficulty - 1], misses: 0, correctStreak: 0,
       creditedStage: 0, earned: 0, needsRecovery: struggled, secured: false, hintCreditUsed: false, scoreCap: null, firstTryClean: null, typedRecallUnlocked: false};
   }
-  return {...state, activeSetIndex: -1,
+  return {...state, activeSetIndex: -1, orderedAttempt:null,
     queue: shuffled(groupQuizQuestions(state.baseQuestions), seed).flat().map(q => ({...q, roundNumber: 1, attemptNumber: 1, isReinforcement: false})),
     cursor: 0, reinforcementQueue: [], round: 1, selectedOption: null, showHint: false,
     masteredIds: [], everMissedIds: [], attemptsByQuestion: {}, historyByQuestion: {}, viewingQuestionId: null,
@@ -93,6 +96,7 @@ export type ChallengeAnswer = {
   runId: string; questionId: string; attemptNumber: number; correct: boolean;
   selectedOption: number; typedFeedback?: QuizProgressState['typedFeedback'];
   recalledItems?: string[]; revealed?: boolean; trap?: string;
+  orderedAnswers?: import('./orderedQuiz').OrderedBlankResult[];
 };
 /** Grade once, credit each recall milestone once, and keep only one future copy. */
 export function answerChallenge(state: QuizProgressState, answer: ChallengeAnswer): QuizProgressState {
@@ -100,6 +104,8 @@ export function answerChallenge(state: QuizProgressState, answer: ChallengeAnswe
   if (!isChallenge(state) || !run || run.outOfHearts || run.id !== answer.runId || state.completed || state.viewingQuestionId ||
     state.selectedOption !== null || !card || card.id !== answer.questionId || card.attemptNumber !== answer.attemptNumber) return state;
   const old = run.cards[card.id]; if (!old || old.secured) return state;
+  const ordered = Boolean(card.orderedSlot);
+  if(ordered && answer.orderedAnswers?.length!==card.orderedSlot!.answers.length) return state;
   if (challengeRequiresTyping(state) && !answer.typedFeedback && !answer.revealed) return state;
   const stats = {...old}; const assisted = run.helpUsed || Boolean(answer.revealed);
   if (answer.correct) stats.typedRecallUnlocked = true;
@@ -108,16 +114,16 @@ export function answerChallenge(state: QuizProgressState, answer: ChallengeAnswe
   let streak = 0, stage = 0, credit = 0, status: ChallengeAward['status']; let gap: number|null;
   if (!answer.correct) {
     stats.misses++; stats.correctStreak = 0; stats.needsRecovery = true;
-    gap = Math.max(1, 4 - stats.misses); status = 'missed';
+    gap = ordered ? 0 : Math.max(1, 4 - stats.misses); status = 'missed';
   } else if (assisted) {
     stats.needsRecovery = true; stats.correctStreak = 0;
     if (run.slip) stats.misses++;
     credit = stats.hintCreditUsed ? 0 : .25; stats.hintCreditUsed = true;
-    gap = 3; status = 'assisted';
+    gap = ordered ? 0 : 3; status = 'assisted';
   } else {
     streak = state.streak + 1;
     stats.correctStreak++;
-    if (!stats.needsRecovery) {stage = 3; credit = 1; stats.secured = true;}
+    if (ordered || !stats.needsRecovery) {stage = 3; credit = 1; stats.secured = true;}
     else {
       stage = Math.min(3, stats.correctStreak);
       credit = stage > stats.creditedStage ? [.5,.3,.2][stage - 1] : 0;
@@ -152,7 +158,8 @@ export function answerChallenge(state: QuizProgressState, answer: ChallengeAnswe
     totalSubmissions: state.totalSubmissions + 1, streak, bestStreak: Math.max(state.bestStreak, streak),
     attemptsByQuestion: {...state.attemptsByQuestion, [card.id]: (state.attemptsByQuestion[card.id] || 0) + 1},
     historyByQuestion: {...state.historyByQuestion, [card.id]: {selectedOption: answer.selectedOption,
-      typedFeedback: answer.typedFeedback ?? null, recalledItems: answer.recalledItems ?? [], multiItemRevealed: Boolean(answer.revealed), isCorrect: answer.correct}},
+      typedFeedback: answer.typedFeedback ?? null, recalledItems: answer.recalledItems ?? [], multiItemRevealed: Boolean(answer.revealed), isCorrect: answer.correct,
+      ...(answer.orderedAnswers?{orderedAnswers:answer.orderedAnswers}:{})}},
     everMissedIds: stats.misses > 0 && !state.everMissedIds.includes(card.id) ? [...state.everMissedIds, card.id] : state.everMissedIds,
     masteredIds: Object.keys(cards).filter(id => cards[id].secured), reinforcementQueue: [],
     challenge: {...run, cards, score, hearts, correctTowardHeart, outOfHearts: hearts === 0, personalBest: Math.max(run.personalBest, score),
@@ -161,9 +168,11 @@ export function answerChallenge(state: QuizProgressState, answer: ChallengeAnswe
 }
 export function advanceChallenge(state: QuizProgressState): QuizProgressState {
   if (!isChallenge(state) || state.selectedOption === null || state.viewingQuestionId || state.completed) return state;
+  const card=state.queue[state.cursor];
+  if(card?.orderedSlot && state.orderedAttempt?.answers.length!==card.orderedSlot.answers.length) return state;
   const queue = state.challenge!.outOfHearts ? [] : state.queue.slice(state.cursor + 1);
   const completed = state.challenge!.outOfHearts || (queue.length === 0 && Object.values(state.challenge!.cards).every(q => q.secured));
-  return {...state, queue, cursor: 0, selectedOption: null, showHint: false, memoryLocked: false,
+  return {...state, queue, cursor: 0, orderedAttempt:null, selectedOption: null, showHint: false, memoryLocked: false,
     typedInput: '', typedFeedback: null, recalledItems: [], multiItemRevealed: false, viewingQuestionId: null,
     completed, setCompleted: completed, challenge: {...state.challenge!, helpUsed: false, slip: false, lastAward: null}};
 }
@@ -184,9 +193,17 @@ export function saveChallenge(state: QuizProgressState, storage?: Storage): bool
     return true;
   } catch {return false;}
 }
-export function restoreChallenge(state: QuizProgressState, storage?: Storage): QuizProgressState {
+export function restoreChallenge(state: QuizProgressState, storage?: Storage, allowLegacy = true): QuizProgressState {
   try {
-    const raw = (storage ?? window.localStorage).getItem(storageKey(state)); if (!raw) return state;
+    const raw = (storage ?? window.localStorage).getItem(storageKey(state));
+    if (!raw) {
+      if(allowLegacy && state.baseQuestions.some(q=>q.orderedSlot)) {
+        const legacy={...state,baseQuestions:legacyExpandedQuestions(state.baseQuestions)};
+        const old=restoreChallenge(legacy,storage,false);
+        if(old.challenge) return migrateOrderedChallenge(state,old);
+      }
+      return state;
+    }
     const saved = JSON.parse(raw), run = saved.run as QuizChallenge, s = saved.session as Session;
     // Runs saved before hearts were introduced retain their earned score.
     if (run) {
@@ -200,6 +217,7 @@ export function restoreChallenge(state: QuizProgressState, storage?: Storage): Q
     const ids = new Set(state.baseQuestions.map(q => q.id));
     const knownIds = (v: unknown): v is string[] => Array.isArray(v) && v.every(id => typeof id === 'string' && ids.has(id));
     const feedback = (v: Session['typedFeedback']) => v === null || (v && ['correct','wrong','revealed'].includes(v.status) && typeof v.userText === 'string');
+    const blank = (v: import('./orderedQuiz').OrderedBlankResult) => v && typeof v.correct==='boolean' && Number.isInteger(v.selectedOption) && feedback(v.typedFeedback);
     const validSession = (v: Session) => v && Array.isArray(v.queue) && Array.isArray(v.reinforcementQueue) &&
       integer(v.cursor) && (v.queue.length === 0 ? v.cursor === 0 : v.cursor < v.queue.length) &&
       Number.isInteger(v.activeSetIndex) && v.activeSetIndex >= -1 && v.activeSetIndex < state.baseQuestions.length &&
@@ -212,7 +230,13 @@ export function restoreChallenge(state: QuizProgressState, storage?: Storage): Q
       v.attemptsByQuestion && Object.entries(v.attemptsByQuestion).every(([id,n]) => ids.has(id) && integer(n)) &&
       v.historyByQuestion && Object.entries(v.historyByQuestion).every(([id,h]) => ids.has(id) && h &&
         typeof h.isCorrect === 'boolean' && feedback(h.typedFeedback) &&
+        (h.orderedAnswers===undefined || Array.isArray(h.orderedAnswers) && h.orderedAnswers.every(blank)) &&
         (h.selectedOption === null || Number.isInteger(h.selectedOption))) &&
+      (v.orderedAttempt==null || (v.queue[v.cursor]?.id===v.orderedAttempt.cardId &&
+        v.queue[v.cursor]?.attemptNumber===v.orderedAttempt.attemptNumber && integer(v.orderedAttempt.index) &&
+        v.orderedAttempt.index<(v.queue[v.cursor]?.orderedSlot?.answers.length||0) && typeof v.orderedAttempt.assisted==='boolean' &&
+        Array.isArray(v.orderedAttempt.answers) && v.orderedAttempt.answers.every(blank) &&
+        v.orderedAttempt.answers.length===v.orderedAttempt.index+(v.selectedOption===null?0:1))) &&
       [...v.queue,...v.reinforcementQueue].every(q => q && Array.isArray(q.options) && q.options.every(o => typeof o === 'string') &&
         (q.requiresTypedRecall === undefined || typeof q.requiresTypedRecall === 'boolean') &&
         integer(q.attemptNumber) && q.attemptNumber > 0 && integer(q.roundNumber) &&
@@ -233,7 +257,7 @@ export function restoreChallenge(state: QuizProgressState, storage?: Storage): Q
           (c.scoreCap === null && c.earned !== 0) ||
           [c.needsRecovery,c.secured,c.hintCreditUsed,c.typedRecallUnlocked].some(x => typeof x !== 'boolean') ||
           (c.firstTryClean !== null && typeof c.firstTryClean !== 'boolean');
-      }) || Object.values(run.cards).reduce((sum,c) => sum + c.earned,0) !== run.score ||
+      }) || !integer(run.legacyPoints??0) || Object.values(run.cards).reduce((sum,c) => sum + c.earned,run.legacyPoints??0) !== run.score ||
       s.masteredIds.length !== Object.values(run.cards).filter(c => c.secured).length ||
       s.masteredIds.some(id => !run.cards[id].secured) ||
       (s.completed && !run.outOfHearts && Object.values(run.cards).some(c => !c.secured)) ||

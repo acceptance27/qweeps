@@ -5,7 +5,7 @@ import {lazy,Suspense,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ArrowLeft,ArrowUpRight,Brain,ChevronLeft,ChevronRight,MessageCircle,Menu,Pause,Play,Sparkles,Volume2,VolumeX,X,RotateCcw,GitBranch} from 'lucide-react';
 import rizalManifest from '../../public/lessons/rizal_live.json';
 import {api} from '../learning/types';
-import {NarrationTransport,type VoiceState} from '../learning/NarrationTransport';
+import {NarrationTransport,StreamingNarrationTransport,type VoiceState} from '../learning/NarrationTransport';
 import {synchronizedTime,generatedPacing} from './pacing';
 import {checkpoint,clamp,initialLiveSnapshot,type LiveSnapshot} from './geometry';
 import {RizalStage,roleTime} from './RizalStage';
@@ -48,9 +48,9 @@ function EnhancedLiveLessonPlayer({initialLesson,initialTime=0,initialOpenQuiz=f
  const playingRef=useRef(playing);playingRef.current=playing;
  const sourceInput=useRef<HTMLTextAreaElement>(null),transcript=useRef<HTMLDivElement>(null);
  const request=useRef<AbortController|null>(null),parentRef=useRef(parents);parentRef.current=parents;
- const lessonAudio=useRef<NarrationTransport|null>(null),answerAudio=useRef<NarrationTransport|null>(null),resumeOffset=useRef<number|null>(null),clipVideo=useRef<HTMLVideoElement|null>(null);
+ const lessonAudio=useRef<NarrationTransport|null>(null),answerAudio=useRef<StreamingNarrationTransport|null>(null),resumeOffset=useRef<number|null>(null),clipVideo=useRef<HTMLVideoElement|null>(null);
  if(!lessonAudio.current){lessonAudio.current=new NarrationTransport(async text=>(await api<{url:string}>('narration',{text})).url,setAudioState);for(const c of manifest.chapters)if(c.audio)lessonAudio.current.seed(c.narration,c.audio);if(manifest.audioTrack)lessonAudio.current.seed(manifest.audioTrack.key,manifest.audioTrack.url);}
- if(!answerAudio.current)answerAudio.current=new NarrationTransport(async text=>(await api<{url:string}>('narration',{text})).url,()=>{});
+ if(!answerAudio.current)answerAudio.current=new StreamingNarrationTransport((text,signal)=>fetch('/api/visual/narration/stream',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text}),signal}),()=>{});
  useEffect(()=>{setQuizState(prev=>prev.lessonId===manifest.id?prev:createInitialQuizState(manifest,prev.soundEnabled));},[manifest]);
  const foundIndex=manifest.chapters.findIndex(c=>state.time>=c.start&&state.time<c.end);
  const narrationIndex=foundIndex<0?last:foundIndex,narratingChapter=manifest.chapters[narrationIndex];
@@ -60,7 +60,7 @@ function EnhancedLiveLessonPlayer({initialLesson,initialTime=0,initialOpenQuiz=f
  const nativeTime=(c:LiveChapter,t:number)=>nativeSceneTime(c,t,manifest.nativeScenes?.[c.nativeScene||'']?.cues||[]);
  const selectedDetails=state.selected.map(id=>{const flowNode=architectureModule(manifest)?.graph.nodes.find(n=>n.id===id);if(flowNode)return{id,title:flowNode.label,body:flowNode.description};const node=chapter.visual?.nodes.find(n=>n.id===id);if(node)return node;const desc=chapter.roles?.[id];return{id,title:desc?desc.split(':')[0]:id.replaceAll('-',' '),body:desc?(desc.split(':').slice(1).join(':').trim()||desc):`${chapter.title} — ${chapter.insight}`};});
  const choice=chapter.visual?.experiment?.choices[state.experiments?.[chapter.id]??-1];
- const caption=(narrationIndex===index?choice?.explanation:undefined)||((narratingChapter.narrationCues||!generic)?[...narratingChapter.cues].reverse().find(c=>state.time-narratingChapter.start>=c.at)?.text:(state.time-narratingChapter.start>=generatedPacing(narratingChapter).conclusionAt?narratingChapter.visual!.takeaway:narratingChapter.question))||narratingChapter.question;
+ const caption=(narrationIndex===index?choice?.explanation:undefined)||((narratingChapter.cues?.length||!generic)?[...narratingChapter.cues].reverse().find(c=>state.time-narratingChapter.start>=c.at)?.text:(state.time-narratingChapter.start>=generatedPacing(narratingChapter).conclusionAt?narratingChapter.visual!.takeaway:narratingChapter.question))||narratingChapter.question;
  const bridge=narratingChapter.continuity?.bridge;
  const showBridge=!!bridge&&(narrationIndex!==index||state.time<(narratingChapter.continuity?.spokenEnd??(narratingChapter.visualStart??narratingChapter.start+5)));
  const audioKey=manifest.audioTrack?.key||narratingChapter.narration,canStart=!voice||!manifest.audioTrack||audioState.ready;
@@ -151,7 +151,7 @@ function EnhancedLiveLessonPlayer({initialLesson,initialTime=0,initialOpenQuiz=f
  }
  function askArchitectureNode(nodeId:string){pause();setPanel(true);setQuestion('Explain what '+(architectureModule(manifest)?.graph.nodes.find(n=>n.id===nodeId)?.label||nodeId)+' does at this step.');}
  function returnToParent(){const p=parentRef.current.at(-1);if(!p)return;pause();setManifest(p.lesson);setState(checkpoint(p.snapshot));setParents(old=>old.slice(0,-1));resumeOffset.current=p.audioPosition;setSeekVersion(v=>v+1);setBranchReason('');setStatus('Returned to your saved time, camera, selection and narration position');}
- useEffect(()=>{let active=true;Promise.all([api('session',{}),api('health')]).then(([s,h])=>{if(active){setSession(s.sessionId);setStatus(h.modelReady?`QWEEPS connected · ${h.model}`:'No AI model configured');}}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;request.current?.abort();lessonAudio.current?.dispose();answerAudio.current?.dispose();};},[]);
+ useEffect(()=>{let active=true;Promise.all([api('session',{}),api('health')]).then(([s,h])=>{if(active){setSession(s.sessionId);setStatus(h.modelReady?`QWEEPS connected · ${h.askModel||h.model}`:'No AI model configured');}}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;request.current?.abort();lessonAudio.current?.dispose();answerAudio.current?.dispose();};},[]);
  useEffect(()=>{if(!session)return;const close=()=>{void fetch('/api/visual/native/close',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:session}),keepalive:true}).catch(()=>{});};window.addEventListener('pagehide',close);return()=>window.removeEventListener('pagehide',close);},[session]);
  useEffect(()=>{if(!session||chapter.renderer==='manimgl')return;const native=manifest.chapters.find(c=>c.renderer==='manimgl'&&c.nativeScene);if(!native)return;const t=(native.nativeOffset??native.start)+.1;void api('native/state',{sessionId:session,state:{lessonId:native.nativeScene,time:t,experiment:{},selected:[],camera:{x:0,y:0,zoom:1}}}).catch(()=>{});},[session,manifest.id,chapter.renderer]);
  useEffect(()=>{if(!session)return;let pending=false;const poll=async()=>{if(pending)return;pending=true;try{
@@ -162,6 +162,20 @@ function EnhancedLiveLessonPlayer({initialLesson,initialTime=0,initialOpenQuiz=f
  },[session,voice,busy,manifest.id,canStart]);
  useEffect(()=>{for(const c of manifest.chapters)if(c.audio)lessonAudio.current!.seed(c.narration,c.audio);if(manifest.audioTrack)lessonAudio.current!.seed(manifest.audioTrack.key,manifest.audioTrack.url);},[manifest]);
  useEffect(()=>{if(!voice){lessonAudio.current?.pause();answerAudio.current?.pause();return;}let active=true;lessonAudio.current!.prepare(audioKey).catch(()=>{if(active){setStatus('Narration unavailable · captions remain available');setVoice(false);}});return()=>{active=false;};},[voice,manifest.id,audioKey]);
+ useEffect(()=>{
+  if(!manifest.speechPending)return;
+  let active=true;
+  const timer=setInterval(async()=>{
+   try{
+    const fresh=await api<LiveLesson>(`live/lessons/${manifest.id}`);
+    if(!active||!fresh||fresh.speechPending)return;
+    if(fresh.audioTrack)lessonAudio.current?.seed(fresh.audioTrack.key,fresh.audioTrack.url);
+    setManifest(fresh);
+    setSeekVersion(v=>v+1);
+   }catch{}
+  },2000);
+  return()=>{active=false;clearInterval(timer);};
+ },[manifest.id,manifest.speechPending]);
  useEffect(()=>{if(!voice||manifest.audioTrack)return;for(const next of manifest.chapters.slice(narrationIndex+1,narrationIndex+3))void lessonAudio.current!.prefetch(next.narration).catch(()=>{});},[voice,manifest.id,narratingChapter.id]);
  useEffect(()=>{let active=true;if(!playing||!voice||!cueReached){lessonAudio.current?.pause();return;}
   answerAudio.current?.pause();const restoredOffset=resumeOffset.current;resumeOffset.current=null;

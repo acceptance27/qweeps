@@ -15,6 +15,7 @@ export function openCodeSettings(req: Request) {
     model: requested.startsWith('opencode-go/') ? requested : DEFAULT_MODEL,
     key: (req.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim(),
     sessionId: req.get('X-Qweeps-AI-Session') || session,
+    effort: (req.get('X-Qweeps-AI-Effort') || 'low').trim().toLowerCase(),
   };
 }
 
@@ -31,7 +32,7 @@ interface GenerationRequest {
 
 /** Translate the transport only: retain the ZIP's system/user text and JSON contract. */
 export function createOpenCodeClient(
-  settings: { model: string; key: string; sessionId: string },
+  settings: { model: string; key: string; sessionId: string; effort?: string },
   fetcher: typeof fetch = fetch,
 ) {
   if (!settings.key) throw new Error('Set your OpenCode Go API key in QWEEPS Settings / API.');

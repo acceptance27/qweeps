@@ -45,6 +45,7 @@ async function startServer() {
       ready: Boolean(settings.key),
       provider: 'opencode-go',
       model: settings.model,
+      effort: settings.effort,
       architecture: 'procedural-skeleton-plus-ai-gap-filler',
     });
   });
@@ -227,7 +228,8 @@ ${JSON.stringify(subSteps, null, 2)}`;
         return;
       }
 
-      const ai = createOpenCodeClient(openCodeSettings(req));
+      const settings = openCodeSettings(req);
+      const ai = createOpenCodeClient(settings);
 
       const prompt = `Learner Question: "${question}"
 
@@ -246,9 +248,11 @@ Answer the learner's question directly and concisely (2-4 sentences) using the e
 
       const response = await ai.models.generateContent({
         model: ai.model,
-        contents: prompt,
+        contents: `${prompt}
+
+Answer style for this turn: answer only the learner's exact question. Use the captured context only where it directly supports the answer. Do not restate the beat state, or list files, scores, node IDs, ledger values, or code lines unless the question asks for them. A short conversational reply is fine; do not pad it with unrelated context. For a conceptual question such as "what does X do?" or "why does X exist?", teach the idea before the code: (1) what it is in plain language, (2) the purpose it serves in the pipeline, and (3) what it produces and how the next step uses it. Priority override for conceptual questions: ignore any earlier instruction to quote exact code lines or worked-example values. Do not quote assignments, call chains, file names, scores, or ledger values. Explain the mechanism in plain language and name at most one function only after the concept is clear. A conceptual answer should usually be 3-5 sentences so the purpose and effect are both explained; a greeting or simple clarification can be 1-2 sentences.`,
         config: {
-          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          thinkingConfig: { thinkingLevel: settings.effort },
           systemInstruction:
             'You are QWEEPS, a context-aware architecture and code-tracing tutor. Always ground your explanation in the exact code lines, active beat, and worked-example values shown on screen. Never invent external cloud services or unverified claims.',
           responseMimeType: 'application/json',

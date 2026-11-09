@@ -1,6 +1,6 @@
 import copy
 import pytest
-from assistant.visual.synchronization import RATE,VERSION,assemble_lesson,lesson_script
+from assistant.visual.synchronization import RATE,VERSION,assemble_lesson,lesson_script,OPENING_PAUSE,BEAT_PAUSE
 from assistant.visual.alignment import measured_cues,validate_anchors,phrase_range,align_recordings,ENGINE
 from assistant.visual.plan import PlanError
 
@@ -27,11 +27,16 @@ def test_whole_lesson_preserves_one_performance_and_uses_measured_beat_boundarie
  plans=plan()['chapters']*2;piece=bytes(RATE*2*18)
  audio,result=assemble_lesson(base,plans,piece,full_alignment())
  first,second=result['chapters']
- assert first['end']==second['start']==pytest.approx(.3+(8.55+9)/2)
- assert result['duration']==pytest.approx(19.3),'only one lead-in and closing hold, no per-beat pauses'
- assert audio[int(.3*RATE)*2:-int(RATE)*2]==piece,'the recording must remain whole and uncut'
+ assert first['end']==pytest.approx(.3+(8.55+9)/2+OPENING_PAUSE)
+ assert second['start']==pytest.approx(.3+(8.55+9)/2+OPENING_PAUSE+BEAT_PAUSE)
+ assert second['start']-first['end']==pytest.approx(BEAT_PAUSE)
+ assert result['duration']==pytest.approx(19.3+OPENING_PAUSE+BEAT_PAUSE),'one lead-in and closing hold plus an opening pause and one beat pause'
+ n0=int(round(((8.55+9)/2)*RATE))*2
+ expected=(bytes(int(.3*RATE)*2)+bytes(int(round(OPENING_PAUSE*RATE))*2)+piece[:n0]
+           +bytes(int(round(BEAT_PAUSE*RATE))*2)+piece[n0:]+bytes(int(RATE)*2))
+ assert audio==expected,'the recording must stay whole, with silence spliced only at the opening and beat boundary'
  assert first['narrationCues'][1]['start']==pytest.approx(1.3)
- assert second['start']+second['narrationCues'][1]['start']==pytest.approx(10.3)
+ assert second['start']+second['narrationCues'][1]['start']==pytest.approx(10.3+OPENING_PAUSE+BEAT_PAUSE)
  assert result['narrationScript']==lesson_script(base)
  assert first['start']<=first['finishedAt']<first['end']
  assert second['start']<=second['finishedAt']<second['end']
@@ -51,11 +56,23 @@ def test_visual_handoff_waits_for_the_measured_end_of_the_incoming_reasoning_bri
  base['chapters'][1]['continuity']={'from':'fruit','bridge':'Consider fruit. Apple is crisp.'}
  _,result=assemble_lesson(base,plan()['chapters']*2,bytes(RATE*2*18),full_alignment())
  first,second=result['chapters']
- assert second['visualStart']==pytest.approx(.3+10.65)
+ assert second['visualStart']==pytest.approx(.3+10.65+OPENING_PAUSE+BEAT_PAUSE)
  assert first['visualEnd']==second['visualStart']
  assert first['end']<second['visualStart'],'keep the previous completed diagram during the incoming spoken bridge'
  assert first['finishedAt']<first['end']
  assert second['continuity']['spokenEnd']==second['visualStart']
+
+
+def test_long_bridge_still_plays_fully_but_visual_handoff_is_bounded():
+ from assistant.visual.synchronization import BRIDGE_HOLD_LIMIT
+ base=lesson();base['chapters'].append(copy.deepcopy(base['chapters'][0]));base['chapters'][1]['id']='second'
+ base['chapters'][1]['continuity']={'from':'fruit','bridge':'Consider fruit. Apple is crisp. Orange is juicy.'}
+ _,result=assemble_lesson(base,plan()['chapters']*2,bytes(RATE*2*18),full_alignment())
+ first,second=result['chapters']
+ assert second['continuity']['spokenEnd']==pytest.approx(.3+13.65+OPENING_PAUSE+BEAT_PAUSE)
+ assert second['visualStart']==pytest.approx(second['start']+BRIDGE_HOLD_LIMIT)
+ assert first['visualEnd']==second['visualStart']
+ assert second['visualStart']<second['continuity']['spokenEnd'],'the visual must not lag the whole bridge'
 
 
 def test_missing_bridge_final_word_does_not_produce_an_early_guessed_visual_handoff():
@@ -244,7 +261,7 @@ def test_native_handoff_retains_the_previous_diagram_through_the_spoken_bridge()
  base['chapters']=[first,second]
  _,result=assemble_lesson(base,plan()['chapters']*2,bytes(RATE*2*18),full_alignment())
  first,second=result['chapters']
- assert second['visualStart']==pytest.approx(.3+9+1.65)
+ assert second['visualStart']==pytest.approx(.3+9+1.65+OPENING_PAUSE+BEAT_PAUSE)
  assert first['visualEnd']==second['visualStart']>first['end']
  from assistant.visual.native_timing import native_time_at
  assert native_time_at(second,second['visualStart']-.2)==10
@@ -291,10 +308,10 @@ def test_native_anchor_repair_reuses_the_recording_and_word_alignment(tmp_path,m
  mapper=Mock(side_effect=lambda llm,system,payload,validator,**kwargs:validator(plan()))
  aligner=Mock(return_value=[alignment()])
  actual=sync.assemble_lesson;attempts=[]
- def assemble(*args):
+ def assemble(*args,**kwargs):
   attempts.append(1)
   if len(attempts)==1:raise NativeTimingError('fruit','Action cues would compress construction by more than 6x')
-  return actual(*args)
+  return actual(*args,**kwargs)
  monkeypatch.setattr(sync,'_model_json',mapper);monkeypatch.setattr(sync,'align_recordings',aligner);monkeypatch.setattr(sync,'assemble_lesson',assemble)
  result=sync.compile_speech(store,j,base)
  assert result['audioTrack']['clock']=='audio'

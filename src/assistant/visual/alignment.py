@@ -18,6 +18,11 @@ from .plan import PlanError
 
 ENGINE='faster-whisper-small-int8-word-timestamps-v1'
 
+# Delivery-only Fish markers. They shape the synthesized pause but carry no
+# spoken words, so word counts, phrase matching and captions must ignore them.
+# Deliberately narrow: content brackets such as citations are left alone.
+_PAUSE_TAGS=re.compile(r'\[(?:long[ -]?pause|long[ -]?break|short pause|pause|break)\]',re.IGNORECASE)
+
 _NUMBERS={
     'zero':'0','one':'1','two':'2','three':'3','four':'4','five':'5','six':'6',
     'seven':'7','eight':'8','nine':'9','ten':'10','eleven':'11','twelve':'12',
@@ -28,6 +33,7 @@ _NUMBERS={
 }
 
 def tokens(text):
+    text=_PAUSE_TAGS.sub(' ',text)
     text=''.join(c for c in unicodedata.normalize('NFKD',text.casefold()) if not unicodedata.combining(c))
     words=re.findall(r'[^\W_]+',text.replace("'",'').replace('’',''),re.UNICODE)
     words=[{'license':'licence','licenses':'licences','ordinance':'ordnance'}.get(word,word) for word in words]
@@ -156,7 +162,7 @@ def spoken_sentence_cues(script,alignment,duration):
         count=len(tokens(sentence));matched=[t for t in times[cursor:cursor+count] if t is not None];cursor+=count
         if not count:continue
         if not matched:raise PlanError('Could not measure a spoken sentence; no guessed caption timing was published.')
-        captions.append({'at':matched[0][0],'text':sentence})
+        captions.append({'at':matched[0][0],'text':' '.join(_PAUSE_TAGS.sub(' ',sentence).split())})
     return captions
 
 def runtime():

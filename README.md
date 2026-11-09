@@ -38,7 +38,7 @@ that saved quiz without another model request.
 
 Single-fact cards use one recall blank and four short choices. Related lists and
 multi-part facts can use 2–5 numbered blanks with a shared bank of 8–10 choices.
-Fill blanks from left to right; each blank is graded separately. Correct answers
+Fill blanks from left to right; the full sentence counts as one card. Correct answers
 advance to the next blank automatically, and placed answers darken and stay disabled.
 Each blank has its own explanation and supporting source evidence.
 Reviewer questions and factual notes determine the total coverage; small model
@@ -53,7 +53,9 @@ hearts, and adaptive recall. A wrong answer costs one heart; every five correct
 answers restore half a heart, up to five. Repeated misses shorten the return
 interval, while clean recalls stretch it toward ten other answers. After a
 recurring question is answered correctly, later returns require typed recall.
-Each numbered blank counts as one graded answer for rewards and recall. Challenge
+Numbered cards are graded after all blanks are complete, with one score, streak
+and heart update per card. Any mistake repeats the whole sentence immediately;
+one mistake-free pass finishes it. Challenge
 progress saves on the current device; practice sets remain separately available.
 
 ## Architecture and code tracing (incomplete preview)
@@ -237,8 +239,8 @@ Configuration is stored at `~/.config/qweeps/config.toml` (or via environment va
 | Role | Default route |
 |---|---|
 | General conversation and orchestration text | OpenRouter: `nvidia/nemotron-3.5-super-vl:free` |
-| Lesson planning, direction, review, narration writing and lesson Q&A | OpenCode Go: `opencode-go/crouton-alpha-free` (OpenRouter and other configured routes remain available) |
-| Speech synthesis | Configurable independently; default is Fish via OpenRouter, with Piper and eSpeak as options |
+| Lesson planning, direction, review, narration writing and lesson Q&A | OpenCode Go: `opencode-go/muse-spark-1.3-contributor` (OpenRouter and other configured routes remain available) |
+| Speech synthesis | Fish Audio direct (`s2.1-pro-free`) with streaming word timings; Piper and eSpeak remain options |
 | Speech recognition | OpenRouter Cloud STT (`fish-audio/transcribe-1`) by default; Voxtype local as an option |
 
 These are configured route identifiers, not guarantees of current provider availability or price. Lesson narration writing and voice synthesis are different stages: changing the lesson model does not change the selected voice.
@@ -253,16 +255,17 @@ model = "nvidia/nemotron-3.5-super-vl:free"
 fallback_models = []
 fallback_provider = "offline"
 visual_provider = "opencode-go"
-visual_model = "opencode-go/crouton-alpha-free"
-visual_vision_model = "opencode-go/crouton-alpha-free"
+visual_model = "opencode-go/muse-spark-1.3-contributor"
+visual_vision_model = "opencode-go/muse-spark-1.3-contributor"
 reasoning_effort = "none"
 
-# Fish synthesis
+# Fish synthesis (direct Fish Audio; streaming word timings skip local alignment)
 [tts]
-provider = "openrouter"
-base_url = "https://openrouter.ai/api/v1"
-model = "fish-audio/s2.1-pro-free:free"
-voice = "33a2191b8fda440cae962137e9793985"
+provider = "fish"
+base_url = "https://api.fish.audio"
+model = "s2.1-pro-free"
+voice = "278d128593e44753a522dd52a5a63645"
+api_key_env = "FISH_API_KEY"
 ```
 
 Use `qweeps set-key` for the OpenRouter key, or configure a local `.env` file (`OPENROUTER_API_KEY=...`). See the visual documentation for alternative provider adapters and alignment requirements.

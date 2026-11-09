@@ -42,3 +42,10 @@ def test_multilingual_compounded_and_phonetic_alignment():
     assert coverage >= 0.85
     assert all(t is not None for t in times)
 
+
+
+def test_pause_markers_are_ignored_by_word_matching_but_kept_out_of_captions():
+    assert tokens('Go. [pause] Stop.') == tokens('Go. Stop.')
+    assert tokens('Wait. [long pause] Then go.') == tokens('Wait. Then go.')
+    assert tokens('Hold. [break] Now.') == tokens('Hold. Now.')
+    assert tokens('See [source-id] now') == ['see', 'source', 'id', 'now']

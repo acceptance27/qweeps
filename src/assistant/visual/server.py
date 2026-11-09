@@ -55,6 +55,7 @@ class VisualService:
         self.cfg = cfg or load_config()
         model = llm if llm is not None else build_visual_llm(self.cfg)
         self.llm = model
+        self.ask_llm = self._build_ask_llm(self.cfg, model)
         self.sessions: dict[str, dict] = {}
         self.active_requests = 0
         self.active_id: str | None = None
@@ -75,9 +76,48 @@ class VisualService:
         self.native = NativeHost(STUDIO_DIR)
         from .browser_lessons import BrowserLessonStore
         self.live = BrowserLessonStore(self.llm,STUDIO_DIR,folder=(render_dir.parent/'browser-lessons') if render_dir else None,
-                                      narration=self.narration if self.cfg.tts.provider=='openrouter' else None)
+                                      narration=self.narration if self.cfg.tts.provider in {'openrouter','fish'} else None,
+                                      answer_llm=self.ask_llm)
         self.beats = BeatFactory(self.llm, STUDIO_DIR)
         self.visual_beats = VisualBeatFactory(self.llm, STUDIO_DIR)
+        from ..opencode_llm import OpenCodeLLM
+        if isinstance(self.ask_llm, OpenCodeLLM):
+            threading.Thread(target=self._warm_ask_model, daemon=True, name="qweeps-ask-warmup").start()
+
+    def _warm_ask_model(self):
+        """Pay the provider's cold-start cost before the first learner question."""
+        try:
+            self.ask_llm.compose("Reply with the single word OK.", max_tokens=8, reasoning_effort="minimal")
+        except Exception:
+            pass
+
+    def _build_ask_llm(self, cfg, main_llm):
+        """Build the Ask QWEEPS model separately from lesson generation.
+
+        An empty ask_model/ask_reasoning inherits the visual model, so existing
+        configurations keep working. A configured pair is used only for the
+        text answer in /api/visual/ask; storyboard and scene generation stay on
+        the main visual model.
+        """
+        import copy
+        ask_model = (getattr(cfg.llm, "ask_model", "") or "").strip()
+        ask_effort = (getattr(cfg.llm, "ask_reasoning", "") or "").strip()
+        main_model = getattr(cfg.llm, "visual_model", "") or ""
+        main_effort = getattr(cfg.llm, "reasoning_effort", "") or ""
+        if not ask_model and not ask_effort:
+            return main_llm
+        if (not ask_model or ask_model == main_model) and (not ask_effort or ask_effort == main_effort):
+            return main_llm
+        ask_cfg = copy.deepcopy(cfg)
+        if ask_model:
+            ask_cfg.llm.visual_model = ask_model
+            ask_cfg.llm.visual_vision_model = ask_model
+        if ask_effort:
+            ask_cfg.llm.reasoning_effort = ask_effort
+        try:
+            return build_visual_llm(ask_cfg)
+        except Exception:
+            return main_llm
 
     def health(self) -> dict:
         try:
@@ -88,6 +128,9 @@ class VisualService:
         return {"service": "qweeps-visual", "version": 1, "platform": os.environ.get("QWEEPS_PLATFORM", "desktop"),
                 "model": (self.llm.visual_model or os.environ.get('QWEEPS_ANTIGRAVITY_VISUAL_MODEL','gemini-3.8-flash-high')
                           if isinstance(self.llm, AntigravityLLM) else getattr(self.llm,'model',self.cfg.llm.model)),
+                "askModel": getattr(self.ask_llm,'model',None),
+                "askEffort": getattr(self.cfg.llm,'ask_reasoning','') or getattr(self.cfg.llm,'reasoning_effort',''),
+                "askVoice": getattr(self.cfg.tts,'ask_voice','') or getattr(self.cfg.tts,'voice',''),
                 "modelReady": not isinstance(self.llm, OfflineLLM),
                 "provider": getattr(self.llm,'provider',self.cfg.llm.auth_provider),
                 "visionModel": getattr(self.llm,'vision_model',None),
@@ -191,8 +234,12 @@ class VisualService:
             ]
 
         tts_provider_models = {
+            "fish": [
+                {"value": "s2.1-pro-free", "label": "Fish Audio S2.1 Pro (direct, free)", "badge": "⭐ Recommended: streaming word timings"},
+                {"value": "s2.1-pro", "label": "Fish Audio S2.1 Pro (direct, paid)", "badge": "Paid quality"}
+            ],
             "openrouter": [
-                {"value": "fish-audio/s2.1-pro-free:free", "label": "Fish Audio S2.1 Pro Free", "badge": "⭐ Recommended Natural Free Voice (Zero-Config)"}
+                {"value": "fish-audio/s2.1-pro-free:free", "label": "Fish Audio S2.1 Pro Free (OpenRouter)", "badge": "OpenRouter route"}
             ],
             "piper": [
                 {"value": "piper:en_US-lessac-medium", "label": "Piper en_US Lessac Medium", "badge": "🔒 100% Offline Local Neural"},
@@ -221,7 +268,7 @@ class VisualService:
         }
 
         default_fallback_prov = "opencode-go" if (oc_key or agy_path) else "openrouter-free"
-        default_fallback_model = "opencode-go/crouton-alpha-free" if (oc_key or agy_path) else "nvidia/nemotron-3.5-super-vl:free"
+        default_fallback_model = "opencode-go/muse-spark-1.3-contributor" if (oc_key or agy_path) else "nvidia/nemotron-3.5-super-vl:free"
 
         lp_prov = getattr(cfg.llm, "visual_provider", "") or getattr(cfg.llm, "auth_provider", default_fallback_prov)
         if lp_prov not in general_provider_models: lp_prov = default_fallback_prov
@@ -236,7 +283,7 @@ class VisualService:
         if qv_prov not in verify_provider_models: qv_prov = "openrouter-free"
 
         tts_prov = getattr(cfg.tts, "provider", "openrouter")
-        if tts_prov not in tts_provider_models: tts_prov = "openrouter"
+        if tts_prov not in tts_provider_models: tts_prov = "fish"
 
         stt_prov = getattr(cfg.stt, "provider", "openrouter")
         if stt_prov not in stt_provider_engines: stt_prov = "openrouter"
@@ -249,13 +296,13 @@ class VisualService:
                     "subtitle": "Planning, Storyboard & Scene Synthesis",
                     "description": "Synthesizes pedagogical outline, scene architecture, and visual animation instructions from PDF/topics.",
                     "provider": lp_prov,
-                    "model": getattr(cfg.llm, "visual_model", "") or getattr(cfg.llm, "model", "opencode-go/crouton-alpha-free"),
+                    "model": getattr(cfg.llm, "visual_model", "") or getattr(cfg.llm, "model", "opencode-go/muse-spark-1.3-contributor"),
                     "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "high"),
                     "recommended": {
                         "provider": "opencode-go",
-                        "model": "opencode-go/crouton-alpha-free",
+                        "model": "opencode-go/muse-spark-1.3-contributor",
                         "reasoning_effort": "high",
-                        "badge": "🧪 Crouton Alpha (Free Tier, Under Evaluation)"
+                        "badge": "⭐ Recommended Free Tier & High Structure"
                     },
                     "options": {
                         "providers": list(general_provider_models.keys()),
@@ -301,13 +348,13 @@ class VisualService:
                     "subtitle": "Mastery Question & Distractor Synthesis",
                     "description": "Extracts key concepts, creates fill-in-the-blank prompt stems, and synthesizes 3-5 word lead distractors grounded in reviewer notes.",
                     "provider": qg_prov,
-                    "model": getattr(cfg.llm, "visual_model", "") or "opencode-go/crouton-alpha-free",
+                    "model": getattr(cfg.llm, "visual_model", "") or "opencode-go/muse-spark-1.3-contributor",
                     "reasoning_effort": getattr(cfg.llm, "reasoning_effort", "high"),
                     "recommended": {
                         "provider": "opencode-go",
-                        "model": "opencode-go/crouton-alpha-free",
+                        "model": "opencode-go/muse-spark-1.3-contributor",
                         "reasoning_effort": "high",
-                        "badge": "🧪 Crouton Alpha (Free Tier, Under Evaluation)"
+                        "badge": "⭐ Recommended (Strict Grounding & Quality Distractors)"
                     },
                     "options": {
                         "providers": list(general_provider_models.keys()),
@@ -352,11 +399,11 @@ class VisualService:
                     "description": "Synthesizes expressive spoken audio for scene explanations, key concepts, and interactive learner feedback.",
                     "provider": tts_prov,
                     "model": getattr(cfg.tts, "model", "fish-audio/s2.1-pro-free:free"),
-                    "voice": getattr(cfg.tts, "voice", "33a2191b8fda440cae962137e9793985"),
+                    "voice": getattr(cfg.tts, "voice", "278d128593e44753a522dd52a5a63645"),
                     "recommended": {
                         "provider": "openrouter",
                         "model": "fish-audio/s2.1-pro-free:free",
-                        "voice": "33a2191b8fda440cae962137e9793985",
+                        "voice": "278d128593e44753a522dd52a5a63645",
                         "badge": "⭐ Recommended (Fish Audio Natural Free Voice)"
                     },
                     "options": {
@@ -482,8 +529,10 @@ class VisualService:
             self.cfg = load_config(config_dir=config_dir)
             try:
                 self.llm = build_visual_llm(self.cfg)
+                self.ask_llm = self._build_ask_llm(self.cfg, self.llm)
                 if hasattr(self, 'live') and self.live:
                     self.live.llm = self.llm
+                    self.live.answer_llm = self.ask_llm
                 if hasattr(self, 'beats') and self.beats:
                     self.beats.llm = self.llm
                 if hasattr(self, 'visual_beats') and self.visual_beats:
@@ -491,7 +540,7 @@ class VisualService:
                 from .narration import NarrationStore
                 self.narration = NarrationStore(self.cfg)
                 if hasattr(self, 'live') and self.live:
-                    self.live.narration = self.narration if self.cfg.tts.provider == 'openrouter' else None
+                    self.live.narration = self.narration if self.cfg.tts.provider in {'openrouter','fish'} else None
             except Exception:
                 pass
 
@@ -531,6 +580,7 @@ class VisualService:
         return {"ok": True}
 
     def ask(self, payload: dict) -> dict:
+        ask_started = time.monotonic()
         sid, session = self.session(payload.get("sessionId"))
         if isinstance(self.llm, OfflineLLM):
             raise PlanError("No AI model is configured. Configure the QWEEPS LLM before asking visual questions.")
@@ -563,6 +613,7 @@ class VisualService:
             reply = generate_reply(self.llm, payload.get("question"), context,
                                    list(session["history"]), payload.get("mode", "question"),
                                    rendered_review=lambda scene, storyboard: review_rendered(self.native,self.llm,scene,storyboard))
+        print(f"[ask] {round((time.monotonic()-ask_started)*1000)} ms · {scene_id} · {len(reply.get('answer') or '')} chars", flush=True)
         with self.lock:
             session["history"] = (session["history"] + [
                 {"role": "user", "content": payload["question"]},
@@ -711,6 +762,80 @@ class Handler(SimpleHTTPRequestHandler):
     def do_HEAD(self):
         self.do_GET()
 
+    def _stream_narration(self, key: str) -> None:
+        """Serve the growing lesson mp3 so playback can start before render ends."""
+        narration = self.service.narration
+        if narration is None:
+            self.send_json(404, {"error": "Narration is not configured"})
+            return
+        path = narration.folder / f"{key}.mp3"
+        deadline = time.time() + 30
+        while not path.exists() and time.time() < deadline:
+            state = narration.lesson_stream_status(key)
+            if state.get("error"):
+                break
+            time.sleep(0.05)
+        if not path.exists():
+            self.send_json(404, {"error": "Narration stream is not ready"})
+            return
+        self.send_response(200)
+        self.send_header("Content-Type", "audio/mpeg")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        self.close_connection = True
+        offset = 0
+        try:
+            while True:
+                with path.open("rb") as fh:
+                    fh.seek(offset)
+                    data = fh.read(65536)
+                if data:
+                    self.wfile.write(data)
+                    self.wfile.flush()
+                    offset += len(data)
+                    continue
+                state = narration.lesson_stream_status(key)
+                if state.get("complete") or state.get("error"):
+                    break
+                time.sleep(0.05)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def _stream_answer_narration(self, text, payload: dict | None = None) -> None:
+        """Stream one Ask answer as chunked mp3 through MediaSource."""
+        narration = self.service.narration
+        if narration is None:
+            raise PlanError("Narration is not configured")
+        text = str(text or "").strip()
+        if not text:
+            raise PlanError("Invalid narration text")
+        started = time.time()
+        iterator = narration.answer_stream(text)
+        try:
+            first = next(iterator)
+        except StopIteration as exc:
+            raise PlanError("Speech provider returned no audio") from exc
+        first_ms = round((time.time() - started) * 1000)
+        self.send_response(200)
+        self.send_header("Content-Type", "audio/mpeg")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Connection", "close")
+        self.send_header("X-Qweeps-First-Chunk-Ms", str(first_ms))
+        self.end_headers()
+        self.close_connection = True
+        try:
+            self.wfile.write(first)
+            self.wfile.flush()
+            for chunk in iterator:
+                self.wfile.write(chunk)
+                self.wfile.flush()
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+        finally:
+            iterator.close()
+        print(f"[ask-tts] first={first_ms} ms total={round((time.time()-started)*1000)} ms", flush=True)
+
     def do_GET(self):
         if not self.allowed():
             self.send_json(403, {"error": "Only local studio requests are accepted."})
@@ -725,6 +850,8 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(status,body)
             elif parsed.path == "/api/visual/health":
                 self.send_json(200, self.service.health())
+            elif re.fullmatch(r'/narration-stream/[0-9a-f]{64}\.mp3', parsed.path):
+                self._stream_narration(parsed.path.rsplit('/', 1)[-1][:-4])
             elif parsed.path == "/api/visual/settings":
                 self.send_json(200, self.service.get_settings())
             elif parsed.path == '/api/visual/documents':
@@ -962,6 +1089,9 @@ class Handler(SimpleHTTPRequestHandler):
                 result = self.service.update(payload["sessionId"], payload["context"])
             elif route == "/api/visual/narration":
                 result = self.service.narration.prepare(payload.get('text'))
+            elif route == "/api/visual/narration/stream":
+                self._stream_answer_narration(payload.get('text'))
+                return
             elif route == "/api/visual/native/close":
                 self.service.native.close(payload["sessionId"])
                 result = {"ok": True}
@@ -1093,6 +1223,6 @@ if __name__ == "__main__":
             build_visual_llm(cfg)
         except ModelProviderError:
             cfg.llm.enabled = False
-            if cfg.tts.provider == "openrouter" and not cfg.secret(cfg.tts.api_key_env):
+            if cfg.tts.provider in {"openrouter", "fish"} and not cfg.secret(cfg.tts.api_key_env):
                 cfg.tts.provider = "none"
     serve(args.port, args.studio_dir,cfg=cfg)

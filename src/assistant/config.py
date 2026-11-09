@@ -89,19 +89,22 @@ max_tokens = 2048
 timeout = 60
 fallback_provider = "offline"
 visual_provider = "opencode-go"  # empty inherits the main provider
-visual_model = "opencode-go/crouton-alpha-free"
-visual_vision_model = "opencode-go/crouton-alpha-free"
+visual_model = "opencode-go/muse-spark-1.3-contributor"
+visual_vision_model = "opencode-go/muse-spark-1.3-contributor"
+ask_model = "opencode-go/crouton-alpha-free"   # Ask QWEEPS text replies
+ask_reasoning = "minimal"
 quiz_verification_provider = "openrouter-free"
 quiz_verification_model = "nvidia/nemotron-3.5-super-vl:free"
 quiz_verification_reasoning = "none"
 
 [tts]
-provider = "openrouter"          # openrouter | piper | espeak | none
-base_url = "https://openrouter.ai/api/v1"
-model = "fish-audio/s2.1-pro-free:free"
-voice = "33a2191b8fda440cae962137e9793985"
+provider = "fish"               # fish | openrouter | piper | espeak | none
+base_url = "https://api.fish.audio"
+model = "s2.1-pro-free"
+voice = "278d128593e44753a522dd52a5a63645"
+ask_voice = ""                   # Ask QWEEPS voice; empty inherits voice
 response_format = "mp3"
-api_key_env = "OPENROUTER_API_KEY"
+api_key_env = "FISH_API_KEY"
 piper_model = ""
 latency = "low"
 temperature = 1.2
@@ -204,8 +207,10 @@ class LLMConfig:
     timeout: int = 60
     fallback_provider: str = "offline"
     visual_provider: str = "opencode-go"
-    visual_model: str = "opencode-go/crouton-alpha-free"
-    visual_vision_model: str = "opencode-go/crouton-alpha-free"
+    visual_model: str = "opencode-go/muse-spark-1.3-contributor"
+    visual_vision_model: str = "opencode-go/muse-spark-1.3-contributor"
+    ask_model: str = "opencode-go/crouton-alpha-free"
+    ask_reasoning: str = "minimal"
     quiz_verification_provider: str = "openrouter-free"
     quiz_verification_model: str = "nvidia/nemotron-3.5-super-vl:free"
     quiz_verification_reasoning: str = "none"
@@ -213,12 +218,13 @@ class LLMConfig:
 
 @dataclass
 class TTSConfig:
-    provider: str = "openrouter"
-    base_url: str = "https://openrouter.ai/api/v1"
-    model: str = "fish-audio/s2.1-pro-free:free"
-    voice: str = "33a2191b8fda440cae962137e9793985"
+    provider: str = "fish"
+    base_url: str = "https://api.fish.audio"
+    model: str = "s2.1-pro-free"
+    voice: str = "278d128593e44753a522dd52a5a63645"
+    ask_voice: str = ""
     response_format: str = "mp3"
-    api_key_env: str = "OPENROUTER_API_KEY"
+    api_key_env: str = "FISH_API_KEY"
     piper_model: str = ""
     latency: str = "low"
     temperature: float = 1.2

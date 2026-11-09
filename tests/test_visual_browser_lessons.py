@@ -148,6 +148,30 @@ def test_directed_lesson_cannot_invent_pages_assets_or_connections(library):
  with pytest.raises(PlanError,match='rewrite concisely'):validate_lesson(long,d,store.icons)
 
 
+def test_direction_rejects_repeated_beat_openings_and_stock_scaffolding(library):
+ lib,d=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib);_,draft=sample()
+ from assistant.visual.browser_lessons import _check_narration_style
+ base=copy.deepcopy(draft)
+ for c in base['chapters']:
+  c['narration']=c['continuity']['bridge']+' '+' '.join(c['narration'].split()[len(c['continuity']['bridge'].split()):])
+ assert _check_narration_style(base) is True
+ dup=copy.deepcopy(base)
+ for c in dup['chapters']:c['narration']='So next we learn. '+c['narration']
+ with pytest.raises(PlanError,match='Vary the beat openings'):
+  _check_narration_style(dup)
+ filled=copy.deepcopy(base)
+ filled['chapters'][0]['narration']+=' This works in order to teach the idea.'
+ with pytest.raises(PlanError,match='in order to'):
+  _check_narration_style(filled)
+ partial=copy.deepcopy(base)
+ partial['chapters'][0]['narration']='Knowing the ropes. '+partial['chapters'][0]['narration']
+ with pytest.raises(PlanError,match='Vary the beat openings'):
+  _check_narration_style(partial,own_ids={partial['chapters'][0]['id']})
+ grandfathered=copy.deepcopy(base)
+ grandfathered['chapters'][1]['narration']='Identify the terms. '+grandfathered['chapters'][1]['narration']
+ assert _check_narration_style(grandfathered,own_ids=set()) is True
+
+
 def test_new_direction_requires_an_ordered_reasoning_bridge(library):
  lib,d=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib);_,draft=sample()
  assert validate_lesson(draft,d,store.icons,require_continuity=True)['chapters'][1]['continuity']['from']=='protection'
@@ -410,7 +434,13 @@ def test_visual_revision_preserves_corrected_unflagged_beats_and_skips_their_mod
  lib,d=library;model=Model();store=BrowserLessonStore(model,STUDIO,tmp_path/'lessons',lib);_,raw=sample()
  for i in range(2):
   extra=copy.deepcopy(raw['chapters'][i]);extra['id']=['third','fourth'][i];extra['insight']+=f' Additional inference {i}.'
-  extra['continuity']['from']=['audit','third'][i];raw['chapters'].append(extra)
+  extra['continuity']['from']=['audit','third'][i]
+  bridge=['Later, revisit the assets for added inferences.','Finally, confirm the permitted use before acting.'][i]
+  old_bridge=' '.join(extra['narration'].split()[:len(extra['continuity']['bridge'].split())])
+  assert old_bridge==extra['continuity']['bridge']
+  extra['continuity']['bridge']=bridge
+  extra['narration']=bridge+' '+' '.join(extra['narration'].split()[len(old_bridge.split()):])
+  raw['chapters'].append(extra)
  raw['chapters'][0]['nodes'][0]['body']='An already corrected scientific qualification that must survive layout repairs.'
  candidate=validate_lesson(raw,d,store.icons);canonical=store._raw(candidate)
  story={**{k:canonical[k] for k in ('title','question','representation','example')},'beats':[{**c,'visibleOperation':'A visible relationship.'} for c in canonical['chapters']]}
@@ -717,6 +747,14 @@ def test_descriptive_diagram_reserves_artwork_and_text_space(library):
   clone=copy.deepcopy(c['nodes'][i%2]);clone['id']=f'extra{i}';clone['position']={'x':45+i*315,'y':110,'width':300,'height':260}
   c['nodes'].append(clone)
  with pytest.raises(PlanError,match='at most three objects'):
+  validate_lesson(raw,d,store.icons)
+
+
+def test_labels_diagram_rejects_boxes_too_short_for_their_artwork(library):
+ lib,d=library;store=BrowserLessonStore(Model(),STUDIO,documents=lib);raw=diagram_draft()
+ assert validate_lesson(raw,d,store.icons)['chapters'][0]['visual']['layout']=='diagram'
+ raw['chapters'][0]['nodes'][0]['position']['height']=120
+ with pytest.raises(PlanError,match='at least 140 pixels'):
   validate_lesson(raw,d,store.icons)
 
 

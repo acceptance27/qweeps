@@ -13,7 +13,16 @@ from .pedagogy import _model_json
 from .alignment import align_recordings,measured_cues,validate_anchors,script_word_times,spoken_sentence_cues,phrase_range,tokens,ENGINE,cue_objects
 
 RATE=24000
-VERSION=7
+VERSION=11
+# Breathing room the Fish endpoint will not render itself: its pause tags are
+# stripped on this route, so the assembler splices real silence instead. An
+# opening pause settles the listener, then a short pause opens every handoff.
+OPENING_PAUSE=0.8
+BEAT_PAUSE=0.7
+# Longest a new beat's visual waits for its spoken bridge to finish. The bridge
+# still plays in full and stays captioned; only the visual handoff is bounded
+# so the voice cannot run minutes ahead of the picture on long bridges.
+BRIDGE_HOLD_LIMIT=3.0
 SCRIPT='''Attach visual cues to the supplied EXISTING continuous beat narration.
 This is a bounded data transformation. Everything needed is supplied below.
 Do not call tools, browse, read files, run commands or edit a workspace.
@@ -56,11 +65,12 @@ def fingerprint(base,narration,version=VERSION):
 def lesson_script(base):
     return ' '.join(c['narration'].strip() for c in base['chapters'])
 
-def compile_speech(store,j,base):
+def compile_speech(store,j,base,clip=None,alignment=None,opening_pause=OPENING_PAUSE,beat_pause=BEAT_PAUSE,lead=.3,tail=1.0):
     narration=store.narration
     if narration is None:raise PlanError('Synchronized speech needs the configured Fish/OpenRouter narration provider.')
     folder=store.folder/j['lessonId'];signature=fingerprint(base,narration);target=folder/f'speech-{signature}.json'
-    if target.exists():return json.loads(target.read_text())
+    provided=clip is not None
+    if not provided and target.exists():return json.loads(target.read_text())
     chapters=base['chapters'];saved={}
     def valid_anchors(payload, section):
         try:
@@ -97,7 +107,7 @@ def compile_speech(store,j,base):
         raw=store._request(j,lambda:_model_json(store.llm,SCRIPT,payload,lambda r:validate_anchors(r,[c]),tokens=8000))
         pending=part.with_suffix('.'+uuid.uuid4().hex+'.tmp');pending.write_text(json.dumps({'chapters':raw},ensure_ascii=False));pending.replace(part)
         return raw[0]
-    pool=ThreadPoolExecutor(max_workers=2)
+    pool=ThreadPoolExecutor(max_workers=4)
     futures={pool.submit(script,c):i for i,c in enumerate(chapters)}
     plans=[None]*len(chapters)
     try:
@@ -111,7 +121,15 @@ def compile_speech(store,j,base):
     else:pool.shutdown(wait=True)
     j['stage']='Recording the whole lesson as one connected explanation'
     script_text=lesson_script(base)
-    clip=narration.prepare_lesson(script_text)
+    # One continuous Fish performance: a single synthesis request preserves
+    # natural prosody across beats. Breathing room is spliced as real silence
+    # during assembly, since this route strips Fish pause tags server-side.
+    if clip is None:
+        aligned=narration.prepare_lesson_aligned(script_text) if hasattr(narration,'prepare_lesson_aligned') else None
+        if isinstance(aligned,tuple) and len(aligned)==2 and isinstance(aligned[0],dict) and aligned[0].get('key') and aligned[1]:
+            clip,alignment=aligned
+        else:
+            clip=narration.prepare_lesson(script_text)
     def decode(clip):
         audio=narration.folder/(clip['key']+'.mp3');pcm=narration.folder/(clip['key']+'.pcm')
         if pcm.exists():data=pcm.read_bytes()
@@ -122,11 +140,12 @@ def compile_speech(store,j,base):
         if not data or len(data)%2:raise PlanError('Narration must contain complete audio samples')
         return data
     piece=decode(clip);duration=len(piece)/(RATE*2)
-    alignment=align_recordings(narration,[{**clip,'text':script_text}],lambda stage:j.update(stage=stage),timeout=min(900,max(180,int(duration*1.5))))[0]
+    if alignment is None:
+        alignment=align_recordings(narration,[{**clip,'text':script_text}],lambda stage:j.update(stage=stage),timeout=min(900,max(180,int(duration*1.5))))[0]
     j['stage']='Matching spoken phrases to measured word times'
     from .native_timing import NativeTimingError
     try:
-        track,candidate=assemble_lesson(base,plans,piece,alignment)
+        track,candidate=assemble_lesson(base,plans,piece,alignment,opening_pause=opening_pause,beat_pause=beat_pause,lead=lead,tail=tail)
     except NativeTimingError as exc:
         index=next(i for i,c in enumerate(chapters) if c['id']==exc.chapter)
         (folder/f'native-anchor-rejected-{signature}-{exc.chapter}.json').write_text(
@@ -135,17 +154,19 @@ def compile_speech(store,j,base):
         plans[index]=script(chapters[index],feedback=str(exc),previous=plans[index])
         # A bounded anchor repair reuses the exact recording and measured words.
         # If it still cannot align the actions, preserve the published lesson.
-        track,candidate=assemble_lesson(base,plans,piece,alignment)
-    key=hashlib.sha256(signature.encode()+track).hexdigest();audio=narration.folder/(key+'.wav');pending=audio.with_suffix('.'+uuid.uuid4().hex+'.tmp')
-    with wave.open(str(pending),'wb') as wav:
-        wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(RATE);wav.writeframes(track)
-    pending.replace(audio)
-    candidate['audioTrack']={'url':f'/narration/{key}.wav','key':key,'duration':candidate['duration'],'clock':'audio'}
+        track,candidate=assemble_lesson(base,plans,piece,alignment,opening_pause=opening_pause,beat_pause=beat_pause,lead=lead,tail=tail)
+    if not provided:
+        key=hashlib.sha256(signature.encode()+track).hexdigest();audio=narration.folder/(key+'.wav');pending=audio.with_suffix('.'+uuid.uuid4().hex+'.tmp')
+        with wave.open(str(pending),'wb') as wav:
+            wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(RATE);wav.writeframes(track)
+        pending.replace(audio)
+        candidate['audioTrack']={'url':f'/narration/{key}.wav','key':key,'duration':candidate['duration'],'clock':'audio'}
     candidate['speechSynchronization']={'version':VERSION,'baseFingerprint':signature,'method':'one-lesson-recording-with-measured-word-anchors','scriptSource':'approved narration joined as one lesson script','recordingCount':1}
-    pending=target.with_suffix('.tmp');pending.write_text(json.dumps(candidate,ensure_ascii=False));pending.replace(target)
+    if not provided:
+        pending=target.with_suffix('.tmp');pending.write_text(json.dumps(candidate,ensure_ascii=False));pending.replace(target)
     return candidate
 
-def assemble_lesson(base,plans,piece,alignment):
+def assemble_lesson(base,plans,piece,alignment,opening_pause=OPENING_PAUSE,beat_pause=BEAT_PAUSE,lead=.3,tail=1.0):
     if not piece or len(piece)%2:raise PlanError('Speech must contain complete audio frames')
     if len(base['chapters'])!=len(plans):raise PlanError('Every visual beat needs its own measured cues')
     duration=len(piece)/(RATE*2);times,coverage=script_word_times(lesson_script(base),alignment,duration)
@@ -162,29 +183,38 @@ def assemble_lesson(base,plans,piece,alignment):
             bridge_ends.append(section[hi-1][1])
         else:bridge_ends.append(None)
     if any(right[0]<left[1]-.05 for left,right in zip(spans,spans[1:])):raise PlanError('Spoken beat boundaries overlap; no guessed navigation times were published.')
-    lead=.3;tail=1.0
-    # Divide at natural gaps in the one recording, never insert per-beat silence.
+    # Divide at natural gaps in the one recording, then splice real silence at
+    # the lesson opening and every beat boundary. Word-level measurement runs
+    # on the untouched recording below; only the published track and its
+    # absolute chapter times shift, by a deterministic per-beat offset.
     boundaries=[0.0]+[(a[1]+b[0])/2 for a,b in zip(spans,spans[1:])]+[duration]
+    def _slice(a,b):
+        return piece[int(round(a*RATE))*2:int(round(b*RATE))*2]
+    _open_sil=bytes(int(round(opening_pause*RATE))*2)
+    _mid_sil=bytes(int(round(beat_pause*RATE))*2)
+    _segments=[_slice(boundaries[i],boundaries[i+1]) for i in range(len(plans))]
+    _paused=b''.join([_open_sil]+[s+_mid_sil for s in _segments[:-1]]+[_segments[-1]]) if _segments else b''
+    def _off(i):return opening_pause+i*beat_pause
     for i,(c,plan) in enumerate(zip(result['chapters'],plans)):
         start,end=boundaries[i:i+2]
         local={'words':[{**w,'start':max(0,w['start']-start),'end':min(end-start,w['end']-start)} for w in alignment['words'] if start<=w['start']<end]}
         events,chapter_coverage=measured_cues(c['narration'],plan['anchors'],local,end-start)
-        c['start']=0 if i==0 else lead+start
-        c['end']=lead+end+(tail if i==len(plans)-1 else 0)
-        shift=lead+start-c['start']
+        c['start']=(0 if i==0 else lead+start)+_off(i)
+        c['end']=lead+end+(tail if i==len(plans)-1 else 0)+_off(i)
+        shift=lead+_off(i)+start-c['start']
         c['narrationCues']=[{**e,'start':shift+e['start'],'end':shift+e['end']} for e in events]
-        c['narrationAt']=lead+spans[i][0]-c['start'];c['audio']=''
+        c['narrationAt']=lead+_off(i)+spans[i][0]-c['start'];c['audio']=''
         c['transitionOut']=min(.4,max(.06,end-spans[i][1]))
-        c['finishedAt']=max(c['start'],min(c['end']-c['transitionOut']-.01,lead+spans[i][1]+.02))
+        c['finishedAt']=max(c['start'],min(c['end']-c['transitionOut']-.01,lead+_off(i)+spans[i][1]+.02))
         c['cues']=[{**q,'at':shift+q['at']} for q in spoken_sentence_cues(c['narration'],local,end-start)]
         c['speechAlignment']={'method':ENGINE,'scriptCoverage':chapter_coverage,'wordCount':len(local['words']),'recording':'whole-lesson'}
-    result['duration']=lead+duration+tail
+    result['duration']=lead+duration+tail+opening_pause+(len(plans)-1)*beat_pause if plans else lead+duration+tail
     for i,c in enumerate(result['chapters']):
         bridge_end=bridge_ends[i]
         if bridge_end is not None:
-            c['continuity']['spokenEnd']=lead+bridge_end
-            if lead+bridge_end<c['end']-.5:
-                c['visualStart']=lead+bridge_end
+            c['continuity']['spokenEnd']=lead+_off(i)+bridge_end
+            if lead+_off(i)+bridge_end<c['end']-.5:
+                c['visualStart']=min(lead+_off(i)+bridge_end,c['start']+BRIDGE_HOLD_LIMIT)
             else:
                 c['visualStart']=c['start']
         else:
@@ -197,4 +227,4 @@ def assemble_lesson(base,plans,piece,alignment):
             manifest=(result.get('nativeScenes') or {}).get(c.get('nativeScene'),{})
             c['nativeMap']=native_map(c,manifest.get('cues') or [])
     result['narrationScript']=lesson_script(base)
-    return bytes(int(lead*RATE)*2)+piece+bytes(int(tail*RATE)*2),result
+    return bytes(int(lead*RATE)*2)+_paused+bytes(int(tail*RATE)*2),result

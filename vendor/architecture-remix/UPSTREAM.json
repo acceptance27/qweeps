@@ -42,7 +42,7 @@
   },
   "providerLabelChanges": {
     "src/procedural/proceduralCompiler.ts": "3ae955fd435948e20951e6d02f0be430f026043f08fa4aac427311f3648a0731",
-    "src/components/AskQweepsDrawer.tsx": "98178c6becc6507d42644a61ff2fb0ddca51c11a9b4591b03c2e6582d282abdb"
+    "src/components/AskQweepsDrawer.tsx": "afc01844ac7725eca4090945406a53b75a5304af9272cb1ed1bde4a716764b33"
   },
   "voiceIntegrationChanges": {
     "src/components/ArchitectureCanvas.tsx": {

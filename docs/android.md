@@ -16,7 +16,8 @@ for this wrapper.
   portrait and two columns alongside the prompt in landscape. Tapping an answer
   submits it directly. Feedback replaces the choices until advancing.
 - Ordered recall uses 2–5 numbered blanks and a shared bank of 8–10 short choices.
-  Each blank counts as one graded answer. Correct answers advance within the
+  The complete sentence counts as one card. Any mistake repeats the whole card
+  after all its blanks are finished, until a mistake-free pass. Correct answers advance within the
   sentence automatically; already placed choices darken and display “Placed”.
 - All Questions challenges include difficulty-based points, combos, five hearts,
   half-heart recovery after every five correct answers, adaptive retries, and

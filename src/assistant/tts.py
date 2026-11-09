@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import base64
+import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -81,12 +84,13 @@ class OpenRouterTTS:
         self.base_url = cfg.tts.base_url.rstrip("/")
         self.url = f"{self.base_url}/audio/speech"
         self.model = cfg.tts.model
-        self.voice = cfg.tts.voice
+        self.voice = os.environ.get("QWEEPS_TTS_VOICE") or cfg.tts.voice
         self.fmt = cfg.tts.response_format or "mp3"
         self.api_key = api_key
         self.temperature = cfg.tts.temperature
         self.top_p = cfg.tts.top_p
         self.stream = cfg.tts.stream
+        self.rate_limit = 3.3 if "free" in self.model else 0.0
 
     def _headers(self) -> dict[str, str]:
         return {
@@ -170,8 +174,71 @@ class OpenRouterTTS:
             out.unlink(missing_ok=True)
 
 
+class FishTTS:
+    """Direct Fish Audio synthesis, with the timestamp stream for alignment.
+
+    Direct Fish avoids the OpenRouter gate: no per-minute throttle and the
+    /v1/tts/stream/with-timestamp endpoint returns measured word times, so the
+    lesson does not need a separate local whisper pass.
+    """
+
+    def __init__(self, cfg: Config, api_key: str) -> None:
+        self.base_url = cfg.tts.base_url.rstrip("/")
+        self.url = f"{self.base_url}/v1/tts"
+        self.stream_url = f"{self.base_url}/v1/tts/stream/with-timestamp"
+        self.model = cfg.tts.model or "s2.1-pro-free"
+        self.voice = os.environ.get("QWEEPS_TTS_VOICE") or cfg.tts.voice
+        self.fmt = cfg.tts.response_format or "mp3"
+        self.api_key = api_key
+        self.temperature = cfg.tts.temperature
+        self.top_p = cfg.tts.top_p
+        self.stream = cfg.tts.stream
+        self.latency = cfg.tts.latency or "low"
+        self.rate_limit = 0.0
+
+    def _headers(self) -> dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "model": self.model,
+        }
+
+    def _payload(self, text: str) -> dict[str, object]:
+        payload: dict[str, object] = {
+            "text": text,
+            "format": self.fmt,
+            "mp3_bitrate": 128,
+            "latency": self.latency,
+            "chunk_length": 300,
+            "normalize": True,
+        }
+        if self.voice:
+            payload["reference_id"] = self.voice
+        return payload
+
+    def speak(self, text: str) -> bool:
+        if not text.strip():
+            return False
+        try:
+            data = post_raw(self.url, self._payload(text), headers=self._headers(), timeout=120)
+        except (HTTPError, OSError):
+            return False
+        with tempfile.NamedTemporaryFile(suffix=f".{self.fmt}", delete=False) as fh:
+            out = Path(fh.name)
+            fh.write(data)
+        try:
+            return audio.play(out)
+        finally:
+            out.unlink(missing_ok=True)
+
+
 def build_tts(cfg: Config) -> TTSEngine:
     provider = cfg.tts.provider.lower()
+    if provider == "fish":
+        key = cfg.secret(cfg.tts.api_key_env)
+        if key:
+            return FishTTS(cfg, key)
+        return NullTTS()
     if provider == "openrouter":
         key = cfg.secret(cfg.tts.api_key_env)
         if key:

@@ -11,6 +11,8 @@ import {
   Send,
   Loader2,
   AlertCircle,
+  Volume2,
+  Square,
 } from 'lucide-react';
 import {
   MINI_EXPLANATION_STEPS,
@@ -24,6 +26,7 @@ import {
   SavedParentState,
   Step,
 } from '../types/lesson';
+import { useAnswerVoice } from './useAnswerVoice';
 
 interface AskQweepsDrawerProps {
   isOpen: boolean;
@@ -50,6 +53,7 @@ interface LiveAiAnswer {
   answer: string;
   takeaway: string;
   codeLines: number[];
+  model?: string;
 }
 
 export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
@@ -83,6 +87,7 @@ export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
   const [isAskingAi, setIsAskingAi] = useState<boolean>(false);
   const [liveAiAnswer, setLiveAiAnswer] = useState<LiveAiAnswer | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const voice = useAnswerVoice();
 
   useEffect(() => {
     if (
@@ -113,6 +118,11 @@ export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
   const selectedNodeObj = selectedNodeId
     ? activeGraph.nodes.find((n) => n.id === selectedNodeId)
     : null;
+
+  const speakAnswer = (answer: LiveAiAnswer) => {
+    const text = answer.answer.trim();
+    if (text) void voice.speak(text);
+  };
 
   const handleAskLiveAi = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,7 +167,7 @@ export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
         throw new Error(data.error || 'Failed to get response from OpenCode Go');
       }
 
-      setLiveAiAnswer({
+      const answer: LiveAiAnswer = {
         question: trimmed,
         answer: data.answer,
         takeaway: data.takeaway,
@@ -165,8 +175,11 @@ export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
           Array.isArray(data.codeLines) && data.codeLines.length > 0
             ? data.codeLines
             : highlightedCodeLines,
-      });
+        model: typeof data.model === 'string' ? data.model : undefined,
+      };
+      setLiveAiAnswer(answer);
       setCustomQuery('');
+      speakAnswer(answer);
     } catch (err) {
       setAiError(err instanceof Error ? err.message : 'Unable to reach AI endpoint');
     } finally {
@@ -272,7 +285,7 @@ export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
             <div className="p-2.5 rounded border border-[#3574F0] bg-[#1E1F22] space-y-2">
               <div className="flex items-center justify-between gap-2 border-b border-[#393B40] pb-1.5">
                 <span className="text-[11px] font-mono text-[#56A8F5] font-semibold">
-                  OpenCode Go Explanation
+                  {(liveAiAnswer.model ?? 'OpenCode Go').replace('opencode-go/', '')} Explanation
                 </span>
                 <span className="font-mono text-[10.5px] text-[#6AAB73] flex items-center gap-1">
                   <Code2 className="w-3 h-3" />
@@ -285,10 +298,47 @@ export const AskQweepsDrawer: React.FC<AskQweepsDrawerProps> = ({
               <p className="text-xs text-[#BCBEC4] leading-relaxed">
                 {liveAiAnswer.answer}
               </p>
-              <div className="p-2 rounded bg-[#25272B] border border-[#393B40] text-xs text-[#D9A354]">
-                <span className="font-semibold">Takeaway: </span>
-                <span className="text-[#DFE1E5]">{liveAiAnswer.takeaway}</span>
+              {liveAiAnswer.takeaway &&
+                liveAiAnswer.takeaway.trim().toLowerCase() !== liveAiAnswer.answer.trim().toLowerCase() && (
+                <div className="p-2 rounded bg-[#25272B] border border-[#393B40] text-xs text-[#D9A354]">
+                  <span className="font-semibold">Takeaway: </span>
+                  <span className="text-[#DFE1E5]">{liveAiAnswer.takeaway}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => speakAnswer(liveAiAnswer)}
+                  disabled={voice.state.loading}
+                  className="px-2.5 py-1.5 rounded bg-[#3574F0] text-white font-semibold text-[11px] flex items-center gap-1.5 hover:bg-[#4682FA] disabled:opacity-50 transition-colors cursor-pointer"
+                >
+                  {voice.state.loading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Volume2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>
+                    {voice.state.loading
+                      ? 'Preparing voice…'
+                      : voice.state.playing
+                        ? 'Replay voice'
+                        : 'Speak answer'}
+                  </span>
+                </button>
+                {(voice.state.playing || voice.state.loading) && (
+                  <button
+                    type="button"
+                    onClick={voice.stop}
+                    className="px-2.5 py-1.5 rounded border border-[#4E5157] bg-[#35373B] text-[#DFE1E5] text-[11px] flex items-center gap-1.5 hover:bg-[#3E4146] transition-colors cursor-pointer"
+                  >
+                    <Square className="w-3 h-3" />
+                    <span>Stop</span>
+                  </button>
+                )}
               </div>
+              {voice.state.error && (
+                <div className="text-[11px] text-[#E88B8E]">{voice.state.error}</div>
+              )}
             </div>
           )}
         </div>

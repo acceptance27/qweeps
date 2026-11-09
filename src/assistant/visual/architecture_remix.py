@@ -46,12 +46,18 @@ def _ensure_started():
             except (OSError,urllib.error.URLError):time.sleep(.1)
         raise RuntimeError('The architecture backend did not start in time.')
 
-def _ai_headers(cfg):
+def _ai_headers(cfg, path=''):
     # Use the service's current settings on every request, including after a hot reload.
     model = cfg.llm.visual_model or cfg.llm.model
+    effort = ''
+    if path == '/api/ai/ask':
+        model = getattr(cfg.llm, 'ask_model', '') or model
+        effort = getattr(cfg.llm, 'ask_reasoning', '') or getattr(cfg.llm, 'reasoning_effort', '')
     if not model.startswith('opencode-go/'):
         model = 'opencode-go/muse-spark-1.3-contributor'
     headers = {'X-Qweeps-AI-Model': model, 'X-Qweeps-AI-Session': _session}
+    if effort:
+        headers['X-Qweeps-AI-Effort'] = effort
     key = go_api_key(cfg)
     if key:
         headers['Authorization'] = 'Bearer ' + key
@@ -63,7 +69,7 @@ def request(method,path,payload=None,*,cfg=None):
     data=json.dumps(payload).encode() if payload is not None else None
     headers={'Content-Type':'application/json'}
     if path.startswith('/api/ai/'):
-        headers.update(_ai_headers(cfg or load_config()))
+        headers.update(_ai_headers(cfg or load_config(), path))
     req=urllib.request.Request(f'http://127.0.0.1:{_port}'+path,data=data,headers=headers,method=method)
     try:
         with urllib.request.urlopen(req,timeout=300) as response:return response.status,json.load(response)

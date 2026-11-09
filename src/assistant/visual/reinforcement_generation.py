@@ -38,7 +38,8 @@ REQUIRED FORMAT:
   do not hide all but one of their facts in the stem of a single-blank card.
 - orderedAnswers is the answer TEXT for each blank from left to right. Every answer
   must appear exactly once in the bank, and answers cannot repeat across blanks.
-  The learner must fill the numbered blanks in order; each blank is graded separately.
+  The learner fills and checks the numbered blanks in order. The whole sentence is
+  ONE card: any mistake repeats all its blanks until one complete mistake-free pass.
   Make each position distinguishable by its own wording or a source-defined sequence.
   Avoid interchangeable blanks whose only distinction is an arbitrary ordering.
   Test meaningful facts or concepts, not generic filler such as 'improve', 'make',
