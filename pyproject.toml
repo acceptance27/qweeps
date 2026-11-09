@@ -1,6 +1,6 @@
 [project]
 name = "qweeps"
-version = "0.2.0"
+version = "0.2.1"
 description = "AI-generated visual lessons with synchronized narration, interactive exploration, and contextual Q&A."
 readme = "README.md"
 requires-python = ">=3.11"

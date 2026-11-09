@@ -26,6 +26,7 @@ controls, captions over the lesson stage, and all answer choices visible togethe
 A standalone Android wrapper bundles the React studio, Python 3.11 and the Python
 backend using Chaquopy. See [Android setup and build instructions](docs/android.md)
 for supported features, background-service limits and APK generation.
+Download the current installer from [GitHub Releases](https://github.com/acceptance27/qweeps/releases/latest).
 
 ## Reinforcement quizzes
 

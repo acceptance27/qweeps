@@ -93,7 +93,7 @@ package and signing key, to retain its app-private data.
 The default output is `android/app/build/outputs/apk/release/app-release.apk`;
 `bash scripts/build_android.sh --debug` builds the debug variant instead. Both
 currently use the local Android debug signing key for testing and direct installation.
-Version 0.2.0 uses version code 2 and the existing `org.qweeps.app` package.
+Version 0.2.1 uses version code 3 and the existing `org.qweeps.app` package.
 This is not a Play Store release. Do not commit
 SDK paths, provider credentials, signing keys, or generated build output. To
 produce a release for distribution, configure a private release signing key and
