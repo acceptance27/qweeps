@@ -9,6 +9,9 @@ for this wrapper.
 ## Interface
 
 - The home screen has separate Create and Library tabs, with paged lesson cards.
+- Import JSON accepts quiz/lesson requests up to 32 MiB (33,554,432 bytes), including
+  large question banks with explanations and numbered blanks. The limit applies
+  to the JSON sent to the server; importing does not regenerate or trim the bank.
 - Lessons fill the remaining viewport. Captions overlay the stage with a transparent
   background. The object-instruction/context bar and page labels are removed.
 - Mobile chapter selection uses a native select, and quiz controls expand on demand.
@@ -94,7 +97,7 @@ package and signing key, to retain its app-private data.
 The default output is `android/app/build/outputs/apk/release/app-release.apk`;
 `bash scripts/build_android.sh --debug` builds the debug variant instead. Both
 currently use the local Android debug signing key for testing and direct installation.
-Version 0.2.1 uses version code 3 and the existing `org.qweeps.app` package.
+Version 0.2.2 uses version code 4 and the existing `org.qweeps.app` package.
 This is not a Play Store release. Do not commit
 SDK paths, provider credentials, signing keys, or generated build output. To
 produce a release for distribution, configure a private release signing key and

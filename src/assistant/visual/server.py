@@ -27,6 +27,9 @@ from .beat_factory import BeatFactory
 from .visual_beat_factory import VisualBeatFactory
 
 PORT = 4174
+# Exported quiz banks include explanations and sometimes complete lesson chapters.
+# They must not share the small limit used for ordinary control requests.
+MAX_LESSON_IMPORT_BYTES = 32 * 1024 * 1024
 _BUNDLED_STUDIO = Path(__file__).resolve().parents[3] / "visual-studio"
 STUDIO_DIR = Path(os.environ.get("QWEEPS_STUDIO_DIR", str(
     _BUNDLED_STUDIO if _BUNDLED_STUDIO.is_dir() else Path.home() / "Work/manim-movingcamerascene-studio")))
@@ -1021,6 +1024,10 @@ class Handler(SimpleHTTPRequestHandler):
             route = urlsplit(self.path).path
             length = int(self.headers.get("Content-Length", "0"))
             limit=150_000_000 if route=='/api/visual/documents' else 48_000_000 if route=='/api/visual/live/review' else 8_000_000 if route.startswith('/api/architecture/') else 2_000_000 if route=='/api/visual/live/check' or route.startswith(('/api/ai/','/api/repo/')) else 250_000
+            if route == '/api/visual/live/import-lesson':
+                limit = MAX_LESSON_IMPORT_BYTES
+                if length > limit:
+                    raise PlanError('Quiz/lesson JSON is too large. The import limit is 32 MiB (33,554,432 bytes).')
             if not 0 < length <= limit:
                 raise PlanError(f"Request must be 1–{limit} bytes")
             payload = json.loads(self.rfile.read(length))
