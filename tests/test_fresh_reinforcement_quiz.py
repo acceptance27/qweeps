@@ -30,6 +30,19 @@ def response(unit):
             'sourceQuote': 'Rizal began the novel in Calamba during October 1887.'} for i in range(unit['count'])]}
 
 
+def test_english_section_title_keeps_original_document_and_evidence():
+    quote = 'Sinimulan ni Rizal ang nobela sa Calamba noong Oktubre 1887.'
+    unit = {'id': 'source-1', 'title': 'Pagbabalik ni Rizal', 'count': 1,
+            'pages': [{'documentId': 'a' * 32, 'page': 1, 'text': quote}]}
+    raw = response(unit)
+    raw['questions'][0].update({'chapterTitle': "Rizal's Return", 'sourceQuote': quote})
+    card = validate_cards(raw, unit, 0)[0]
+    assert card['chapterTitle'] == "Rizal's Return"
+    assert card['source']['title'] == 'Pagbabalik ni Rizal'
+    assert card['source']['quote'] == quote
+    assert card['options'][card['correctIndex']] == 'Calamba'
+
+
 @pytest.fixture
 def store(tmp_path):
     return BrowserLessonStore(Mock(), Path(__file__).resolve().parents[1] / 'visual-studio', tmp_path / 'lessons', DocumentLibrary(tmp_path / 'documents'))

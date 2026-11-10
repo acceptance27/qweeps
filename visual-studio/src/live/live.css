@@ -2036,3 +2036,33 @@
 .mastery-quiz-modal .ordered-answer-bank .ordered-answer-placed .mastery-option-lead-hook { color: var(--q-muted); }
 .mastery-quiz-modal .ordered-answer-bank .ordered-answer-placed .mastery-option-key { background: transparent; border-color: var(--q-line); color: var(--q-muted); }
 .ordered-placed-label { display: inline-flex; align-items: center; gap: 3px; margin-left: 7px; font: 500 10px/1.2 var(--q-font); color: var(--q-accent); white-space: nowrap; }
+
+/* Contextual Ask QWEEPS inside the quiz card */
+.mastery-quiz-modal{position:relative}
+.mastery-ask-qweeps{position:fixed;right:24px;bottom:24px;z-index:80;width:min(430px,calc(100% - 28px));max-height:min(72dvh,520px);display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--q-strong);border-radius:10px;background:var(--q-panel);box-shadow:0 18px 55px rgba(0,0,0,.65);box-sizing:border-box}
+.mastery-ask-qweeps-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font:600 12px/1.4 var(--workspace-font);color:var(--q-text)}
+.mastery-ask-qweeps-head span{display:flex;align-items:center;gap:6px}
+.mastery-ask-qweeps-head button{display:grid;place-items:center;width:26px;height:26px;border:1px solid var(--q-strong);border-radius:5px;background:var(--q-raised);color:var(--q-text)}
+.mastery-ask-messages{display:flex;flex-direction:column;gap:7px;flex:1 1 auto;min-height:0;overflow-y:auto;padding-right:3px}
+.mastery-ask-msg{padding:7px 9px;border:1px solid var(--q-line);border-radius:7px;background:var(--q-input)}
+.mastery-ask-msg.user{border-color:var(--q-strong);background:var(--q-raised)}
+.mastery-ask-msg span{display:block;margin-bottom:3px;font:600 9px/1.2 var(--workspace-font);letter-spacing:.12em;color:var(--q-accent)}
+.mastery-ask-msg.user span{color:var(--q-muted)}
+.mastery-ask-msg p{margin:0;font:13px/1.55 var(--workspace-font);color:var(--q-text);white-space:pre-wrap;overflow-wrap:anywhere}
+.mastery-ask-status,.mastery-ask-error{font:11px/1.45 var(--workspace-font);color:var(--q-muted)}
+.mastery-ask-error{color:#f5ad97}
+.mastery-ask-voice{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.mastery-ask-voice button{display:flex;align-items:center;gap:4px;padding:5px 7px;border:1px solid var(--q-strong);border-radius:5px;background:var(--q-raised);color:var(--q-text);font:11px/1.3 var(--workspace-font)}
+.mastery-ask-form{display:flex;gap:6px}
+.mastery-ask-form input{flex:1;min-width:0;padding:8px 9px;border:1px solid var(--q-strong);border-radius:5px;background:var(--q-input);color:var(--q-text);font:13px/1.3 var(--workspace-font)}
+.mastery-ask-form button{display:flex;align-items:center;gap:4px;padding:0 10px;border:1px solid var(--q-accent);border-radius:5px;background:var(--q-accent);color:var(--q-on-accent);font:600 11px/1.3 var(--workspace-font)}
+.mastery-ask-form button:disabled{opacity:.45}
+@keyframes masteryAskSpin{to{transform:rotate(360deg)}}
+.mastery-ask-spinner{animation:masteryAskSpin .9s linear infinite}
+@media(max-width:760px){.mastery-ask-qweeps{right:8px;bottom:8px;width:calc(100% - 16px);max-height:min(78dvh,520px)}}
+
+/* Floating launcher lives outside the quiz card. */
+.mastery-ask-launcher{position:fixed;right:24px;bottom:24px;z-index:80;display:flex;align-items:center;gap:7px;padding:11px 15px;border:1px solid var(--q-accent);border-radius:999px;background:var(--q-panel);color:var(--q-text);font:600 12px/1.3 var(--workspace-font);box-shadow:0 10px 30px rgba(0,0,0,.45);cursor:pointer}
+.mastery-ask-launcher:hover{background:var(--q-raised)}
+.mastery-ask-launcher svg{color:var(--q-accent)}
+@media(max-width:760px){.mastery-ask-qweeps{right:10px;bottom:10px;width:calc(100% - 20px);max-height:min(78dvh,520px)}.mastery-ask-launcher{right:12px;bottom:12px}}

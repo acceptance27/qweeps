@@ -34,7 +34,9 @@ def start(files_dir, studio_dir, port=4174):
         except ModelProviderError:
             cfg.llm.enabled = False
         # Browser narration uses remote audio; desktop speech/ffmpeg is optional.
-        if cfg.tts.provider != 'openrouter' or not cfg.secret(cfg.tts.api_key_env):
+        # Fish and OpenRouter use HTTPS and the WebView audio player. Keep the
+        # selected remote provider visible even before its key has been entered.
+        if cfg.tts.provider not in {'fish', 'openrouter', 'none'}:
             cfg.tts.provider = 'none'
         try:
             _service = VisualService(cfg=cfg)

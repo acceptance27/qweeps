@@ -26,6 +26,13 @@ for this wrapper.
   half-heart recovery after every five correct answers, adaptive retries, and
   automatic typed recall for later returns of successfully recalled questions.
 - Settings → Appearance offers Pixel Forest, Architecture, Midnight and Amethyst.
+- Ask QWEEPS in quizzes supports conversation, hints, and follow-ups. Provider
+  failures report an error instead of repeating the stored card explanation.
+  Text chat remains available while optional reply speech is prepared.
+- Direct Fish Audio is the default narration provider: `s2.1-pro-free`, voice
+  `278d128593e44753a522dd52a5a63645`. Ask replies inherit that voice. Enter your
+  Fish API key in Settings/APIs; personal API keys are not bundled in the APK.
+  Existing saved provider and voice selections remain unchanged on upgrade.
 - Scorecards use Summary and Concept review tabs, with paged concept results.
 - Portrait and short landscape layouts use the available viewport, including safe
   insets. Settings and source input remain usable with the on-screen keyboard.
@@ -97,7 +104,7 @@ package and signing key, to retain its app-private data.
 The default output is `android/app/build/outputs/apk/release/app-release.apk`;
 `bash scripts/build_android.sh --debug` builds the debug variant instead. Both
 currently use the local Android debug signing key for testing and direct installation.
-Version 0.2.2 uses version code 4 and the existing `org.qweeps.app` package.
+Version 0.2.3 uses version code 5 and the existing `org.qweeps.app` package.
 This is not a Play Store release. Do not commit
 SDK paths, provider credentials, signing keys, or generated build output. To
 produce a release for distribution, configure a private release signing key and

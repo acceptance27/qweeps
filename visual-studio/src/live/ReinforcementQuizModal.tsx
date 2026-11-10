@@ -23,7 +23,11 @@ import {
   VolumeX,
   Zap,
   Download,
+  MessageCircle,
+  Loader2,
+  Square,
 } from 'lucide-react';
+import { StreamingNarrationTransport, type VoiceState } from '../learning/NarrationTransport';
 import { ensureLessonQuiz, type LiveLesson, type QuizQuestion } from './lessonTypes';
 import {advanceChallenge, answerChallenge, challengeHelp, challengeRequiresTyping, comboMultiplier, difficultyLabels, isChallenge,
   pauseChallenge, restoreChallenge, resumeChallenge, saveChallenge, startChallenge, type QuizChallenge} from './quizChallenge';
@@ -165,7 +169,7 @@ export const RIZAL_THEMATIC_UNITS: ThematicUnitSpec[] = [
     id: 'unit-4-propaganda-defense',
     title: 'Unit 4: Propaganda Societies & Defense Against Critics',
     shortTitle: '4. Propaganda & Defense',
-    subtitle: 'Paris Samahan (Kidlat, Indios Bravos, RDLM) & Rebutting Spanish Critics',
+    subtitle: 'Paris Societies (Kidlat, Indios Bravos, RDLM) & Rebutting Spanish Critics',
     chapterIds: ['paris-samahan', 'tugon-kritiko', 'paris-organize', 'answering-critics', 'who-narrates'],
     titleKeywords: ['paris', 'kidlat', 'indios bravos', 'r.d.l.m.', 'rdlm', 'critics', 'tugon'],
   },
@@ -176,7 +180,7 @@ export function getQuizSets(questions: QuizQuestion[]): QuizSet[] {
 
   // Check if questions match the Rizal Morga reviewer thematic curriculum
   const isRizalThematic = questions.some(q => {
-    if (q.formatVersion === 2) return false;
+    if ((q.formatVersion || 0) >= 2) return false;
     const cid = (q.chapterId || '').toLowerCase();
     const ctitle = (q.chapterTitle || '').toLowerCase();
     return (
@@ -754,6 +758,41 @@ export function ReinforcementQuizModal({
   setQuizState: externalSetState,
 }: ReinforcementQuizModalProps) {
   const {compact,landscape} = useCompactLayout();
+  const [askOpen,setAskOpen] = useState(false);
+  const [askInput,setAskInput] = useState('');
+  const [askMessages,setAskMessages] = useState<{role:'user'|'assistant';text:string}[]>([]);
+  const [askLoading,setAskLoading] = useState(false);
+  const [askError,setAskError] = useState<string|null>(null);
+  const [askVoiceError,setAskVoiceError] = useState<string|null>(null);
+  const [askSession,setAskSession] = useState<string|null>(null);
+  const [voiceState,setVoiceState] = useState<VoiceState>({loading:false,playing:false,ready:false});
+  const askAudio = useRef<StreamingNarrationTransport | null>(null);
+  const askAbort = useRef<AbortController | null>(null);
+  const askEpoch = useRef(0);
+  const askVoiceEpoch = useRef(0);
+  const askInputRef = useRef<HTMLInputElement>(null);
+  if (!askAudio.current) {
+    askAudio.current = new StreamingNarrationTransport(
+      (text, signal) => fetch('/api/visual/narration/stream', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text}),
+        signal,
+      }),
+      setVoiceState,
+    );
+  }
+  useEffect(() => () => {
+    askEpoch.current++;
+    askVoiceEpoch.current++;
+    askAbort.current?.abort();
+    askAudio.current?.dispose();
+  }, []);
+  useEffect(() => {
+    if (!askOpen) return;
+    const timer = setTimeout(() => askInputRef.current?.focus(), 30);
+    return () => clearTimeout(timer);
+  }, [askOpen]);
   const [feedbackDetail,setFeedbackDetail] = useState<'explanation'|'takeaway'>('explanation');
   const [completionView,setCompletionView] = useState<'summary'|'review'>('summary');
   const [breakdownPage,setBreakdownPage] = useState(0);
@@ -888,6 +927,122 @@ export function ReinforcementQuizModal({
   const feedbackCorrect = isCorrect && !orderedFailed;
   const orderedUsedAnswers = new Set(currentCard?.orderedSlot?.answers.filter((_,i) => i < orderedIndex && Boolean(orderedResults[i])) || []);
 
+  const stopAskVoice = () => {
+    askVoiceEpoch.current++;
+    askAudio.current?.stop();
+  };
+
+  const speakAskAnswer = async (text: string) => {
+    if (!text.trim()) return;
+    const epoch = askEpoch.current;
+    const voiceEpoch = ++askVoiceEpoch.current;
+    setAskVoiceError(null);
+    try {
+      await askAudio.current!.prepare(text);
+      if (epoch !== askEpoch.current || voiceEpoch !== askVoiceEpoch.current) return;
+      await askAudio.current!.playFrom(0);
+    } catch {
+      if (epoch === askEpoch.current && voiceEpoch === askVoiceEpoch.current) {
+        setAskVoiceError('Answer shown · voice unavailable.');
+      }
+    }
+  };
+
+  const askQuizQuestion = async (question: string, displayText = question) => {
+    const card = currentCard;
+    if (!card || !question.trim() || askLoading) return;
+    askAbort.current?.abort();
+    stopAskVoice();
+    const controller = new AbortController();
+    askAbort.current = controller;
+    const epoch = ++askEpoch.current;
+    setAskLoading(true);
+    setAskError(null);
+    setAskVoiceError(null);
+    setAskMessages(prev => [...prev, {role:'user', text:displayText}]);
+    const chapter = lesson.chapters[card.chapterIndex] ?? lesson.chapters[0];
+    const context = {
+      sceneId: lesson.id === 'rizal_live' || lesson.id === 'jose_rizal' ? lesson.id : 'live_generated',
+      lessonId: lesson.rootLessonId || lesson.id,
+      documentId: lesson.documentId ?? null,
+      title: lesson.title,
+      focused: true,
+      time: chapter?.start ?? 0,
+      camera: {x:0,y:0,zoom:1},
+      selection: [],
+      region: null,
+      architectureScope: lesson.architectureScope,
+      lessonContext: {
+        chapter: card.chapterIndex,
+        narrationChapter: card.chapterIndex,
+        sources: lesson.sources,
+        representation: lesson.representation,
+      },
+      browserRenderer: {backend: lesson.architecture ? 'SVG/ELK' : 'SVG/GSAP', live:true, focus:''},
+      sourceContext: '',
+      branchDepth: 0,
+      quizCard: {
+        id: card.id,
+        chapterTitle: card.chapterTitle,
+        prompt: card.prompt,
+        options: card.options,
+        correctAnswer: card.options?.[card.correctIndex] ?? '',
+        explanation: card.explanation,
+        safeguardNote: card.safeguardNote,
+        source: card.source,
+      },
+    };
+    try {
+      const response = await fetch('/api/visual/ask', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({sessionId:askSession, question, mode:'question', context}),
+        signal: controller.signal,
+      });
+      const data = await response.json();
+      if (epoch !== askEpoch.current) return;
+      if (!response.ok) throw new Error(data.error || `Ask QWEEPS failed (${response.status}).`);
+      if (data.sessionId) setAskSession(data.sessionId);
+      const answer = typeof data.answer === 'string' ? data.answer.trim() : '';
+      if (!answer) throw new Error('QWEEPS returned no answer.');
+      setAskMessages(prev => [...prev, {role:'assistant', text:answer}]);
+      setAskLoading(false);
+      void speakAskAnswer(answer);
+    } catch (error) {
+      if (controller.signal.aborted || epoch !== askEpoch.current) return;
+      setAskError(error instanceof Error ? error.message : 'Ask QWEEPS failed.');
+    } finally {
+      if (epoch === askEpoch.current) setAskLoading(false);
+    }
+  };
+
+  const toggleQuizAsk = () => {
+    if (!currentCard) return;
+    if (askOpen) {
+      askEpoch.current++;
+      askAbort.current?.abort();
+      setAskLoading(false);
+      setAskOpen(false);
+      stopAskVoice();
+      return;
+    }
+    setAskOpen(true);
+  };
+
+  const lastAskAnswer = [...askMessages].reverse().find(message => message.role === 'assistant')?.text || '';
+
+  useEffect(() => {
+    askEpoch.current++;
+    askAbort.current?.abort();
+    setAskMessages([]);
+    setAskInput('');
+    setAskError(null);
+    setAskVoiceError(null);
+    setAskLoading(false);
+    setAskOpen(false);
+    setAskSession(null);
+    stopAskVoice();
+  }, [currentCard?.id, currentCard?.attemptNumber, isAnswered, isReviewing]);
 
   const effectiveTypedFeedback = isReviewing
     ? (cardHistory?.typedFeedback ?? (isCardMastered && currentCard ? { status: 'correct' as const, userText: currentCard.options[currentCard.correctIndex] } : null))
@@ -1631,6 +1786,87 @@ export function ReinforcementQuizModal({
           onClose={onClose}
           showCloseButton={!embedded}
         />
+      )}
+
+      {askOpen && (
+        <section className="mastery-ask-qweeps" aria-label="Ask QWEEPS about this quiz card">
+          <div className="mastery-ask-qweeps-head">
+            <span><MessageCircle size={14} /> Ask QWEEPS</span>
+            <button
+              type="button"
+              aria-label="Close Ask QWEEPS"
+              onClick={() => {
+                askEpoch.current++;
+                askAbort.current?.abort();
+                setAskLoading(false);
+                setAskOpen(false);
+                stopAskVoice();
+              }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <div className="mastery-ask-messages" aria-live="polite">
+            {!askMessages.length && !askLoading && (
+              <div className="mastery-ask-status">Ask about this card, the concept, or why an option is wrong.</div>
+            )}
+            {askMessages.map((message, index) => (
+              <div key={index} className={`mastery-ask-msg ${message.role}`}>
+                <span>{message.role === 'user' ? 'YOU' : 'QWEEPS'}</span>
+                <p>{message.text}</p>
+              </div>
+            ))}
+            {askLoading && <div className="mastery-ask-status">Consulting the lesson…</div>}
+            {askError && <div className="mastery-ask-error" role="alert">{askError}</div>}
+            {askVoiceError && <div className="mastery-ask-status">{askVoiceError}</div>}
+          </div>
+          <div className="mastery-ask-voice">
+            {lastAskAnswer && (
+              <button type="button" onClick={() => void speakAskAnswer(lastAskAnswer)} disabled={voiceState.loading}>
+                <Volume2 size={13} /> Replay voice
+              </button>
+            )}
+            {(voiceState.playing || voiceState.loading) && (
+              <button type="button" onClick={stopAskVoice}>
+                <Square size={12} /> Stop
+              </button>
+            )}
+          </div>
+          <form
+            className="mastery-ask-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const question = askInput.trim();
+              if (!question || askLoading) return;
+              setAskInput('');
+              void askQuizQuestion(question);
+            }}
+          >
+            <input
+              ref={askInputRef}
+              value={askInput}
+              onChange={(event) => setAskInput(event.target.value)}
+              placeholder="Ask anything about this card…"
+              aria-label="Ask QWEEPS about this quiz card"
+              disabled={askLoading}
+            />
+            <button type="submit" disabled={askLoading || !askInput.trim()}>
+              {askLoading ? <Loader2 size={13} className="mastery-ask-spinner" /> : <ArrowRight size={13} />}
+              <span>Ask</span>
+            </button>
+          </form>
+        </section>
+      )}
+
+      {!askOpen && currentCard && (
+        <button
+          type="button"
+          className="mastery-ask-launcher"
+          onClick={toggleQuizAsk}
+          aria-label="Ask QWEEPS about this quiz card"
+        >
+          <MessageCircle size={16} /> Ask QWEEPS
+        </button>
       )}
 
       {/* Main Body */}

@@ -91,7 +91,7 @@ fallback_provider = "offline"
 visual_provider = "opencode-go"  # empty inherits the main provider
 visual_model = "opencode-go/muse-spark-1.3-contributor"
 visual_vision_model = "opencode-go/muse-spark-1.3-contributor"
-ask_model = "opencode-go/crouton-alpha-free"   # Ask QWEEPS text replies
+ask_model = "opencode-go/muse-spark-1.3-contributor"   # Ask QWEEPS text replies
 ask_reasoning = "minimal"
 quiz_verification_provider = "openrouter-free"
 quiz_verification_model = "nvidia/nemotron-3.5-super-vl:free"
@@ -209,7 +209,7 @@ class LLMConfig:
     visual_provider: str = "opencode-go"
     visual_model: str = "opencode-go/muse-spark-1.3-contributor"
     visual_vision_model: str = "opencode-go/muse-spark-1.3-contributor"
-    ask_model: str = "opencode-go/crouton-alpha-free"
+    ask_model: str = "opencode-go/muse-spark-1.3-contributor"
     ask_reasoning: str = "minimal"
     quiz_verification_provider: str = "openrouter-free"
     quiz_verification_model: str = "nvidia/nemotron-3.5-super-vl:free"

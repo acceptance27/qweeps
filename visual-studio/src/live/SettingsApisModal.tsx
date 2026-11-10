@@ -59,6 +59,7 @@ export type ProcessConfig = {
 export type SettingsData = {
   processes: Record<string, ProcessConfig>;
   api_keys: {
+    fish?: { configured: boolean; masked: string; source: string };
     openrouter: { configured: boolean; masked: string; source: string };
     opencode_go: { configured: boolean; masked: string; source: string };
     antigravity: { available: boolean; path: string };
@@ -84,8 +85,10 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
   // API Key inputs
   const [openRouterKeyInput, setOpenRouterKeyInput] = useState<string>('');
   const [opencodeKeyInput, setOpencodeKeyInput] = useState<string>('');
+  const [fishKeyInput, setFishKeyInput] = useState<string>('');
   const [showOrKey, setShowOrKey] = useState<boolean>(false);
   const [showOcKey, setShowOcKey] = useState<boolean>(false);
+  const [showFishKey, setShowFishKey] = useState<boolean>(false);
   const [showGuide, setShowGuide] = useState<boolean>(false);
 
   // Fetch settings on open
@@ -305,6 +308,9 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
     if (opencodeKeyInput.trim()) {
       payload.api_keys.opencode_key = opencodeKeyInput.trim();
     }
+    if (fishKeyInput.trim()) {
+      payload.api_keys.fish_key = fishKeyInput.trim();
+    }
 
     try {
       const res = await api<{ ok: boolean; settings: SettingsData }>('settings', payload);
@@ -312,6 +318,7 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
         setSettings(res.settings);
         setOpenRouterKeyInput('');
         setOpencodeKeyInput('');
+        setFishKeyInput('');
         setSuccessMsg('✅ Settings and APIs successfully saved and hot-reloaded!');
         setTimeout(() => setSuccessMsg(null), 4000);
       }
@@ -551,13 +558,45 @@ export function SettingsApisModal({ isOpen, onClose }: SettingsApisModalProps) {
                       <div>
                         <h3 className="settings-card-title">API Keys & Authentication</h3>
                         <p className="settings-card-desc">
-                          Manage OpenRouter and OpenCode credentials. Compatible with OpenCode’s API and model ecosystem.
+                          Manage Fish Audio, OpenRouter, and OpenCode credentials.
                         </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="settings-keys-grid">
+                    <div className="settings-key-item">
+                      <div className="settings-key-header">
+                        <span className="settings-key-name">Fish Audio API Key</span>
+                        <span className={`settings-status-badge ${settings.api_keys.fish?.configured ? 'badge-connected' : 'badge-missing'}`}>
+                          {settings.api_keys.fish?.configured ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                          {settings.api_keys.fish?.configured ? 'Connected' : 'Key Missing'}
+                        </span>
+                      </div>
+                      <div className="settings-key-meta">
+                        <code>{settings.api_keys.fish?.masked || 'No Fish key saved'}</code>
+                      </div>
+                      <div className="settings-key-input-row">
+                        <input
+                          type={showFishKey ? 'text' : 'password'}
+                          aria-label="Fish Audio API Key"
+                          placeholder="Enter FISH_API_KEY"
+                          value={fishKeyInput}
+                          onChange={e => setFishKeyInput(e.target.value)}
+                          className="settings-input"
+                          autoComplete="off"
+                        />
+                        <button
+                          type="button"
+                          className="settings-input-toggle-btn"
+                          onClick={() => setShowFishKey(!showFishKey)}
+                          title={showFishKey ? 'Hide Fish key' : 'Show Fish key'}
+                        >
+                          <Eye size={14} />
+                        </button>
+                      </div>
+                      <p className="settings-key-hint">Enables the default Fish voice for lesson narration and Ask QWEEPS replies.</p>
+                    </div>
                     {/* OpenRouter */}
                     <div className="settings-key-item">
                       <div className="settings-key-header">

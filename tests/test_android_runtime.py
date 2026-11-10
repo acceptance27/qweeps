@@ -1,6 +1,8 @@
 """Verify the loopback wrapper and Android's portable PDF extraction path."""
 import base64
 import io
+import importlib.util
+from pathlib import Path
 import threading
 import urllib.error
 import urllib.request
@@ -11,6 +13,35 @@ import pytest
 from assistant.visual.server import create_server
 from assistant.visual.documents import DocumentLibrary
 from assistant.visual.plan import PlanError
+
+
+@pytest.mark.parametrize('provider', ['fish', 'openrouter', 'piper'])
+@pytest.mark.parametrize('has_key', [False, True])
+def test_android_start_preserves_remote_speech_selection(monkeypatch, tmp_path, provider, has_key):
+    from assistant.config import TTSConfig
+    from assistant import config, llm
+    from assistant.visual import server as server_module
+    monkeypatch.setenv('HOME', str(tmp_path))
+    monkeypatch.setenv('QWEEPS_PLATFORM', 'test')
+    monkeypatch.setenv('QWEEPS_STUDIO_DIR', str(tmp_path))
+    cfg = SimpleNamespace(tts=TTSConfig(provider=provider), llm=SimpleNamespace(enabled=True),
+                          secret=lambda name: 'synthetic-fish-test-key' if has_key and name == 'FISH_API_KEY' else None)
+    monkeypatch.setattr(config, 'load_config', lambda: cfg)
+    monkeypatch.setattr(llm, 'build_visual_llm', lambda cfg: object())
+    captured = []
+    def make_service(cfg):
+        captured.append(cfg.tts.provider)
+        return SimpleNamespace(live=SimpleNamespace(folder=tmp_path/'lessons'),
+                               narration=SimpleNamespace(folder=tmp_path/'narration'))
+    monkeypatch.setattr(server_module, 'VisualService', make_service)
+    monkeypatch.setattr(server_module, 'create_server', lambda **kwargs: SimpleNamespace(serve_forever=lambda: None))
+    path = Path(__file__).resolve().parents[1]/'android/app/src/main/python/qweeps_android.py'
+    spec = importlib.util.spec_from_file_location('android_speech_test_runtime', path)
+    runtime = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runtime)
+    runtime.start(str(tmp_path), str(tmp_path/'studio'))
+    assert captured == [provider if provider in {'fish', 'openrouter'} else 'none']
+    assert cfg.tts.voice == '278d128593e44753a522dd52a5a63645'
 
 
 def test_embedded_server_serves_same_origin_api_and_assets(tmp_path):

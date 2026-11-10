@@ -154,15 +154,16 @@ class VisualService:
         cfg = self.cfg
         or_key = get_openrouter_key(cfg)
         oc_key = get_opencode_go_key(cfg)
+        fish_key = cfg.secret('FISH_API_KEY')
         agy_path = shutil.which('agy')
 
         masked_or = (or_key[:8] + '••••••••' + or_key[-4:]) if (or_key and len(or_key) > 12) else ('••••••••' if or_key else '')
         masked_oc = (oc_key[:6] + '••••••••' + oc_key[-4:]) if (oc_key and len(oc_key) > 10) else ('••••••••' if oc_key else '')
+        masked_fish = ('••••••••' + fish_key[-4:]) if fish_key else ''
 
         # OpenCode-compatible Provider -> Model mappings
         general_provider_models = {
             "opencode-go": [
-                {"value": "opencode-go/crouton-alpha-free", "label": "crouton-alpha-free", "badge": "🧪 Crouton Alpha (Free, New)"},
                 {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⭐ Recommended Free Tier & High Structure"},
                 {"value": "opencode-go/beam-free", "label": "beam-free", "badge": "Free Tier"},
                 {"value": "opencode-go/deepseek-v4.1-flash", "label": "deepseek-v4.1-flash", "badge": "⚡ Fast Flash"},
@@ -200,7 +201,6 @@ class VisualService:
                 {"value": "nvidia/nemotron-3.5-super-vl:free", "label": "nvidia/nemotron-3.5-super-vl:free", "badge": "⭐ Recommended Vision Free"}
             ],
             "opencode-go": [
-                {"value": "opencode-go/crouton-alpha-free", "label": "crouton-alpha-free", "badge": "🧪 Crouton Alpha Vision (New)"},
                 {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⭐ Vision & SVG Review"},
                 {"value": "opencode-go/deepseek-v4.1-flash", "label": "deepseek-v4.1-flash", "badge": "⚡ Fast Vision Flash"},
                 {"value": "opencode-go/mimo-v2.6-flash", "label": "mimo-v2.6-flash", "badge": "Fast Vision"}
@@ -222,7 +222,6 @@ class VisualService:
             ],
             "opencode-go": [
                 {"value": "opencode-go/deepseek-v4.1-flash", "label": "deepseek-v4.1-flash", "badge": "⚡ Fast Flash Evaluation"},
-                {"value": "opencode-go/crouton-alpha-free", "label": "crouton-alpha-free", "badge": "🧪 Crouton Alpha (New)"},
                 {"value": "opencode-go/muse-spark-1.3-contributor", "label": "muse-spark-1.3-contributor", "badge": "⚡ Fast Go Fallback"},
                 {"value": "opencode-go/beam-free", "label": "beam-free", "badge": "Free"}
             ],
@@ -404,8 +403,8 @@ class VisualService:
                     "model": getattr(cfg.tts, "model", "fish-audio/s2.1-pro-free:free"),
                     "voice": getattr(cfg.tts, "voice", "278d128593e44753a522dd52a5a63645"),
                     "recommended": {
-                        "provider": "openrouter",
-                        "model": "fish-audio/s2.1-pro-free:free",
+                        "provider": "fish",
+                        "model": "s2.1-pro-free",
                         "voice": "278d128593e44753a522dd52a5a63645",
                         "badge": "⭐ Recommended (Fish Audio Natural Free Voice)"
                     },
@@ -437,6 +436,11 @@ class VisualService:
                 }
             },
             "api_keys": {
+                "fish": {
+                    "configured": bool(fish_key),
+                    "masked": masked_fish,
+                    "source": "local credentials" if fish_key else "none"
+                },
                 "openrouter": {
                     "configured": bool(or_key),
                     "masked": masked_or,
@@ -465,6 +469,10 @@ class VisualService:
 
         # 1. Update API Keys in secrets.toml if provided
         api_keys = payload.get("api_keys") or {}
+        fish_key = (api_keys.get("fish_key") or "").strip()
+        if fish_key and "••••" not in fish_key:
+            write_secret(config_dir, "FISH_API_KEY", fish_key, "fish")
+            os.environ["FISH_API_KEY"] = fish_key
         or_key = (api_keys.get("openrouter_key") or "").strip()
         if or_key and "••••" not in or_key:
             write_secret(config_dir, "OPENROUTER_API_KEY", or_key, "openrouter")
@@ -511,6 +519,15 @@ class VisualService:
         tts = processes.get("tts") or {}
         if tts.get("provider"):
             text = set_config_value(text, "tts", "provider", f'"{tts["provider"]}"')
+            if tts['provider'] != self.cfg.tts.provider:
+                remote_defaults = {
+                    'fish': ('https://api.fish.audio', 'FISH_API_KEY'),
+                    'openrouter': ('https://openrouter.ai/api/v1', 'OPENROUTER_API_KEY'),
+                }
+                if tts['provider'] in remote_defaults:
+                    base_url, key_env = remote_defaults[tts['provider']]
+                    text = set_config_value(text, 'tts', 'base_url', json.dumps(base_url))
+                    text = set_config_value(text, 'tts', 'api_key_env', json.dumps(key_env))
         if tts.get("model"):
             text = set_config_value(text, "tts", "model", f'"{tts["model"]}"')
         if tts.get("voice"):

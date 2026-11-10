@@ -35,8 +35,15 @@ public class PythonRuntimeTest {
             JSONObject health = new JSONObject(get("/api/visual/health"));
             assertEquals("qweeps-visual", health.getString("service"));
             assertFalse(health.getBoolean("manimReady"));
+            assertEquals("fish", health.getString("tts"));
             assertTrue(get("/?home=1").contains("QWEEPS"));
             assertTrue(get("/api/visual/settings").contains("processes"));
+            JSONObject settings = new JSONObject(get("/api/visual/settings"));
+            JSONObject speech = settings.getJSONObject("processes").getJSONObject("tts");
+            assertEquals("fish", speech.getString("provider"));
+            assertEquals("s2.1-pro-free", speech.getString("model"));
+            assertEquals("278d128593e44753a522dd52a5a63645", speech.getString("voice"));
+            assertFalse(settings.getJSONObject("api_keys").getJSONObject("fish").getBoolean("configured"));
             assertNotNull(Python.getInstance().getModule("pypdf").get("PdfReader"));
         } finally {
             runtime.callAttr("stop");

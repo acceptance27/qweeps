@@ -10,6 +10,20 @@ import {
 } from './ReinforcementQuizModal';
 import type { LiveLesson, QuizQuestion } from './lessonTypes';
 
+test('English source titles do not regroup a generated ordered bank into the curated Morga curriculum', () => {
+  const questions: QuizQuestion[] = Array.from({length: 181}, (_, i) => ({
+    id: `source-card-${i}`, chapterId: `source-${i < 60 ? 1 : 2}`, chapterIndex: 0,
+    chapterTitle: i < 60 ? "Morga's Annotations Study Guide" : 'El Filibusterismo Study Guide',
+    formatVersion: 3, kind: 'ordered_cloze', prompt: 'Recall ____ and ____.',
+    options: ['London', 'English', 'Paris', 'Madrid', 'Berlin', 'Spanish', 'French', 'German'],
+    orderedAnswers: ['London', 'English'], correctIndex: 0, explanation: 'Related facts from the source.',
+  }));
+  const sets = getQuizSets(questions);
+  assert.equal(sets.length, 18);
+  assert.deepEqual(sets.flatMap(set => set.questions.map(q => q.id)), questions.map(q => q.id));
+  assert.equal(sets.at(-1)!.questions.length, 11);
+});
+
 test('splitOptionHook correctly isolates 3-6 word lead hooks from supporting clauses', () => {
   // Colon split
   const colonCase = splitOptionHook('Decided: decision and decider');
@@ -298,7 +312,7 @@ test('getQuizSets partitions 48-question Rizal Morga reviewer into 4 thematic un
   // Unit 4: Propaganda Societies & Defense Against Critics (14 Qs: 7 paris-samahan + 7 tugon-kritiko)
   assert.equal(units[3].title, 'Unit 4: Propaganda Societies & Defense Against Critics');
   assert.equal(units[3].shortTitle, '4. Propaganda & Defense');
-  assert.equal(units[3].subtitle, 'Paris Samahan (Kidlat, Indios Bravos, RDLM) & Rebutting Spanish Critics');
+  assert.equal(units[3].subtitle, 'Paris Societies (Kidlat, Indios Bravos, RDLM) & Rebutting Spanish Critics');
   assert.equal(units[3].questions.length, 14);
   assert.equal(units[3].startNumber, 35);
   assert.equal(units[3].endNumber, 48);
